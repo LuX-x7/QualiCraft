@@ -16,6 +16,10 @@ from xml.etree import ElementTree as ET
 
 COLORS = ["#427d77", "#ba8650", "#7b77b5", "#5c85b0", "#ba6e85", "#778c51"]
 
+SCHEMA_VERSION = 2
+
+CODE_STATUSES = ("emergent", "provisional", "final")
+
 
 def uid():
     return uuid.uuid4().hex
@@ -45,8 +49,66 @@ def event(project, action, **details):
     project["audit"].append({"id": uid(), "time": now(), "action": action, **details})
 
 
+def migrate(project):
+    """Upgrade an older project in place to the current schema. Idempotent.
+
+    v1 -> v2 adds the codebook hierarchy and the methodological fields that the
+    analysis workflows need: codes gain parent_id / memo / anchor examples /
+    inclusion and exclusion criteria / status, and documents gain attributes.
+    Every added value is a neutral default, so an existing project keeps its
+    codes, annotations and offsets untouched.
+    """
+    if project.get("schema_version") == SCHEMA_VERSION:
+        return project
+    for code in project.get("codes", []):
+        code.setdefault("parent_id", None)
+        code.setdefault("memo", "")
+        code.setdefault("anchor_examples", [])
+        code.setdefault("inclusion", "")
+        code.setdefault("exclusion", "")
+        code.setdefault("status", "final")
+        code.setdefault("order", 0)
+    for document in project.get("documents", []):
+        document.setdefault("attributes", {})
+    project["schema_version"] = SCHEMA_VERSION
+    return project
+
+
+def descendants(codes, code_id):
+    """Every code id below code_id, at any depth."""
+    out, stack = set(), [code_id]
+    while stack:
+        current = stack.pop()
+        for code in codes:
+            if code.get("parent_id") == current and code["id"] not in out:
+                out.add(code["id"])
+                stack.append(code["id"])
+    return out
+
+
+def code_depth(codes, code_id):
+    by_id = {c["id"]: c for c in codes}
+    depth, seen, current = 0, set(), by_id.get(code_id)
+    while current and current.get("parent_id") and current["id"] not in seen:
+        seen.add(current["id"])
+        current = by_id.get(current["parent_id"])
+        depth += 1
+    return depth
+
+
+def code_path(codes, code):
+    """'Parent > Child' label, for exports and reports."""
+    by_id = {c["id"]: c for c in codes}
+    parts, seen, current = [code["name"]], {code["id"]}, code
+    while current.get("parent_id") and current["parent_id"] in by_id and current["parent_id"] not in seen:
+        current = by_id[current["parent_id"]]
+        seen.add(current["id"])
+        parts.append(current["name"])
+    return " > ".join(reversed(parts))
+
+
 def new_project(name):
-    return {"schema_version": 1, "id": uid(), "name": string(name, "Project name", 160),
+    return {"schema_version": SCHEMA_VERSION, "id": uid(), "name": string(name, "Project name", 160),
             "created_at": now(), "updated_at": now(), "documents": [], "codes": [],
             "annotations": [], "suggestions": [], "audit": [], "provenance": ""}
 
@@ -80,16 +142,120 @@ def add_document(project, name, text):
     return doc
 
 
-def add_code(project, name, definition="", color=None):
+def add_code(project, name, definition="", color=None, parent_id=None):
     name = string(name, "Code name", 160)
     require(not any(c["name"].casefold() == name.casefold() for c in project["codes"]), "A code with this name already exists")
     require(isinstance(definition, str) and len(definition) <= 5000, "The definition is too long")
+    require(parent_id is None or any(c["id"] == parent_id for c in project["codes"]), "The parent code does not exist")
     color = color or COLORS[len(project["codes"]) % len(COLORS)]
     require(bool(re.fullmatch(r"#[0-9a-fA-F]{6}", color)), "The color must be a six-digit hexadecimal value")
-    code = {"id": uid(), "name": name, "definition": definition, "color": color}
+    code = {"id": uid(), "name": name, "definition": definition, "color": color, "parent_id": parent_id,
+            "memo": "", "anchor_examples": [], "inclusion": "", "exclusion": "", "status": "final",
+            "order": len([c for c in project["codes"] if c.get("parent_id") == parent_id])}
     project["codes"].append(code)
-    event(project, "code_create", code_id=code["id"], name=name)
+    event(project, "code_create", code_id=code["id"], name=name, parent_id=parent_id)
     return code
+
+
+def update_code(project, code_id, changes):
+    """Rename, redefine, recolour, re-parent or annotate a single code."""
+    require(isinstance(changes, dict), "The code changes are invalid")
+    code = find(project["codes"], code_id)
+    if "name" in changes:
+        name = string(changes["name"], "Code name", 160)
+        require(not any(c["id"] != code_id and c["name"].casefold() == name.casefold() for c in project["codes"]),
+                "A code with this name already exists")
+        code["name"] = name
+    if "definition" in changes:
+        value = changes["definition"]
+        require(isinstance(value, str) and len(value) <= 5000, "The definition is too long")
+        code["definition"] = value
+    if "color" in changes:
+        require(isinstance(changes["color"], str) and bool(re.fullmatch(r"#[0-9a-fA-F]{6}", changes["color"])),
+                "The color must be a six-digit hexadecimal value")
+        code["color"] = changes["color"]
+    if "memo" in changes:
+        value = changes["memo"]
+        require(isinstance(value, str) and len(value) <= 20000, "The memo is too long")
+        code["memo"] = value
+    if "inclusion" in changes:
+        value = changes["inclusion"]
+        require(isinstance(value, str) and len(value) <= 5000, "The inclusion criteria are too long")
+        code["inclusion"] = value
+    if "exclusion" in changes:
+        value = changes["exclusion"]
+        require(isinstance(value, str) and len(value) <= 5000, "The exclusion criteria are too long")
+        code["exclusion"] = value
+    if "anchor_examples" in changes:
+        value = changes["anchor_examples"]
+        require(isinstance(value, list) and len(value) <= 20, "At most 20 anchor examples are supported")
+        require(all(isinstance(x, str) and len(x) <= 5000 for x in value), "An anchor example is invalid")
+        code["anchor_examples"] = [x.strip() for x in value if x.strip()]
+    if "status" in changes:
+        require(changes["status"] in CODE_STATUSES, "The code status is invalid")
+        code["status"] = changes["status"]
+    if "parent_id" in changes:
+        parent_id = changes["parent_id"]
+        if parent_id is not None:
+            require(parent_id != code_id, "A code cannot be its own parent")
+            require(any(c["id"] == parent_id for c in project["codes"]), "The parent code does not exist")
+            require(parent_id not in descendants(project["codes"], code_id),
+                    "A code cannot be moved under one of its own descendants")
+        code["parent_id"] = parent_id
+    event(project, "code_update", code_id=code_id, fields=sorted(changes))
+    return code
+
+
+def delete_code(project, code_id):
+    """Remove a code. Children move up to its parent; its codings are removed.
+
+    Returns a summary so the caller can report what was affected. Nothing is
+    silently lost: the counts land in the audit trail.
+    """
+    code = find(project["codes"], code_id)
+    parent_id = code.get("parent_id")
+    children = [c for c in project["codes"] if c.get("parent_id") == code_id]
+    for child in children:
+        child["parent_id"] = parent_id
+    removed_annotations = [a for a in project["annotations"] if a["code_id"] == code_id]
+    project["annotations"] = [a for a in project["annotations"] if a["code_id"] != code_id]
+    project["codes"] = [c for c in project["codes"] if c["id"] != code_id]
+    summary = {"id": code_id, "name": code["name"], "codings_removed": len(removed_annotations),
+               "children_reparented": len(children)}
+    event(project, "code_delete", **summary)
+    return summary
+
+
+def merge_codes(project, source_id, target_id):
+    """Fold source into target: codings move across, duplicates collapse."""
+    require(source_id != target_id, "Choose two different codes")
+    source = find(project["codes"], source_id)
+    target = find(project["codes"], target_id)
+    kept, moved, collapsed = [], 0, 0
+    known = {(a["document_id"], a["code_id"], a["start"], a["end"])
+             for a in project["annotations"] if a["code_id"] != source_id}
+    for annotation in project["annotations"]:
+        if annotation["code_id"] != source_id:
+            kept.append(annotation)
+            continue
+        signature = (annotation["document_id"], target_id, annotation["start"], annotation["end"])
+        if signature in known:
+            collapsed += 1
+            continue
+        known.add(signature)
+        annotation["code_id"] = target_id
+        annotation["merged_from"] = source["name"]
+        moved += 1
+        kept.append(annotation)
+    project["annotations"] = kept
+    for child in project["codes"]:
+        if child.get("parent_id") == source_id:
+            child["parent_id"] = target_id
+    project["codes"] = [c for c in project["codes"] if c["id"] != source_id]
+    summary = {"source": source["name"], "target": target["name"], "codings_moved": moved,
+               "duplicates_collapsed": collapsed}
+    event(project, "code_merge", **summary)
+    return summary
 
 
 def validate_span(doc, start, end, quote=None):
@@ -192,7 +358,9 @@ def grounded_theory_examples_project(guide):
 
 
 def validate_project(project):
-    require(isinstance(project, dict) and project.get("schema_version") == 1, "This project format is not supported")
+    require(isinstance(project, dict) and project.get("schema_version") in (1, SCHEMA_VERSION),
+            "This project format is not supported")
+    migrate(project)
     string(project.get("name"), "Project name", 160)
     for key, limit in [("documents", 100), ("codes", 2000), ("annotations", 50000), ("suggestions", 50000), ("audit", 100000)]:
         require(isinstance(project.get(key), list) and len(project[key]) <= limit, f"{key} has an invalid format or item count")
@@ -203,6 +371,13 @@ def validate_project(project):
         string(d.get("name"), "Document name", 200)
         require(isinstance(d.get("text"), str) and 0 < len(d["text"]) <= 500000, "The document text is invalid")
         require(d.get("sha256") == hashlib.sha256(d["text"].encode()).hexdigest(), "Document integrity validation failed")
+        attributes = d.get("attributes", {})
+        require(isinstance(attributes, dict) and len(attributes) <= 50, "The document attributes are invalid")
+        for key, value in attributes.items():
+            require(isinstance(key, str) and 0 < len(key) <= 60, "A document attribute name is invalid")
+            require(value is None or isinstance(value, (str, int, float)) and not isinstance(value, bool),
+                    "A document attribute value is invalid")
+            require(not isinstance(value, str) or len(value) <= 500, "A document attribute value is too long")
     names = set()
     for c in project["codes"]:
         name = string(c.get("name"), "Code name", 160).casefold()
@@ -210,6 +385,22 @@ def validate_project(project):
         names.add(name)
         require(isinstance(c.get("color"), str) and bool(re.fullmatch(r"#[0-9a-fA-F]{6}", c["color"])), "The code color is invalid")
         require(isinstance(c.get("definition"), str) and len(c["definition"]) <= 5000, "The code definition is invalid")
+        require(c.get("status") in CODE_STATUSES, "The code status is invalid")
+        for field, limit in (("memo", 20000), ("inclusion", 5000), ("exclusion", 5000)):
+            require(isinstance(c.get(field, ""), str) and len(c[field]) <= limit, f"The code {field} is invalid")
+        examples = c.get("anchor_examples", [])
+        require(isinstance(examples, list) and len(examples) <= 20, "The anchor examples are invalid")
+        require(all(isinstance(x, str) and len(x) <= 5000 for x in examples), "An anchor example is invalid")
+    by_id = {c["id"]: c for c in project["codes"]}
+    for c in project["codes"]:
+        parent_id = c.get("parent_id")
+        require(parent_id is None or parent_id in by_id, "A code references a missing parent")
+        require(parent_id != c["id"], "A code cannot be its own parent")
+        walked, current = set(), c
+        while current.get("parent_id"):
+            require(current["id"] not in walked, "The code hierarchy contains a cycle")
+            walked.add(current["id"])
+            current = by_id[current["parent_id"]]
     for a in project["annotations"] + project["suggestions"]:
         require(isinstance(a.get("quote"), str), "The source quotation is missing")
         validate_span(find(project["documents"], a.get("document_id")), a.get("start"), a.get("end"), a.get("quote"))
@@ -246,7 +437,7 @@ class Store:
         with self.connect() as conn:
             row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
         require(row is not None, "The project does not exist")
-        return json.loads(row[0])
+        return migrate(json.loads(row[0]))
 
     def create(self, project):
         with self.connect() as conn:
@@ -258,7 +449,7 @@ class Store:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
             require(row is not None, "The project does not exist")
-            project = json.loads(row[0])
+            project = migrate(json.loads(row[0]))
             result = operation(project)
             project["updated_at"] = now()
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
@@ -305,7 +496,10 @@ def csv_export(project, matrix=False):
         for d in project["documents"]:
             writer.writerow([safe(d["name"])] + [counts[d["id"], c["id"]] for c in project["codes"]])
     else:
-        writer.writerow(["document", "code", "start", "end", "quote", "memo", "source"])
+        writer.writerow(["document", "code", "code_path", "start", "end", "quote", "memo", "source"])
         for a in project["annotations"]:
-            writer.writerow([safe(find(project["documents"], a["document_id"])["name"]), safe(find(project["codes"], a["code_id"])["name"]), a["start"], a["end"], safe(a["quote"]), safe(a.get("memo", "")), safe(a["source"])])
+            code = find(project["codes"], a["code_id"])
+            writer.writerow([safe(find(project["documents"], a["document_id"])["name"]), safe(code["name"]),
+                             safe(code_path(project["codes"], code)), a["start"], a["end"], safe(a["quote"]),
+                             safe(a.get("memo", "")), safe(a["source"])])
     return ("\ufeff" + stream.getvalue()).encode("utf-8")

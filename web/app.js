@@ -3,7 +3,7 @@ const $ = (s, root = document) => root.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cp = s => Array.from(s);
 const cut = (s, a, b) => cp(s).slice(a, b).join('');
-const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[]};
+const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[], collapsed:new Set()};
 const icons = {
   grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   chart:'<path d="M4 3v17h17M8 16v-5m5 5V6m5 10v-8"/>',
@@ -24,6 +24,68 @@ async function api(path, body) {
 const projectUrl = action => `/api/projects/${state.project.id}${action?'/'+action:''}`;
 const doc = () => state.project?.documents.find(d=>d.id===state.docId);
 const codesFor = a => state.project.codes.find(c=>c.id===a.code_id);
+function codePath(code) {
+  const byId=new Map(state.project.codes.map(c=>[c.id,c]));
+  const parts=[code.name]; let cur=code; const seen=new Set([code.id]);
+  while(cur.parent_id && byId.has(cur.parent_id) && !seen.has(cur.parent_id)) {
+    cur=byId.get(cur.parent_id); seen.add(cur.id); parts.push(cur.name);
+  }
+  return parts.reverse().join(' > ');
+}
+function codeDescendants(id) {
+  const out=new Set(); const stack=[id];
+  while(stack.length) {
+    const cur=stack.pop();
+    state.project.codes.forEach(c=>{ if(c.parent_id===cur && !out.has(c.id)) { out.add(c.id); stack.push(c.id); } });
+  }
+  return out;
+}
+function codeTree() {
+  const byParent=new Map();
+  state.project.codes.forEach(c=>{ const k=c.parent_id||null; if(!byParent.has(k)) byParent.set(k,[]); byParent.get(k).push(c); });
+  byParent.forEach(list=>list.sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name)));
+  const rows=[];
+  (function walk(parentId,depth){
+    (byParent.get(parentId)||[]).forEach(c=>{
+      const kids=byParent.get(c.id)||[];
+      rows.push({code:c, depth, childCount:kids.length});
+      if(kids.length && !state.collapsed.has(c.id)) walk(c.id, depth+1);
+    });
+  })(null,0);
+  return rows;
+}
+function codeCounts() {
+  const byId=new Map(state.project.codes.map(c=>[c.id,c]));
+  const own=new Map(state.project.codes.map(c=>[c.id,0]));
+  state.project.annotations.forEach(a=>{ if(own.has(a.code_id)) own.set(a.code_id, own.get(a.code_id)+1); });
+  const total=new Map(own);
+  state.project.codes.forEach(c=>{
+    let cur=c.parent_id; const seen=new Set([c.id]);
+    while(cur && byId.has(cur) && !seen.has(cur)) {
+      seen.add(cur.id);
+      total.set(cur, (total.get(cur)||0) + (own.get(c.id)||0));
+      cur=byId.get(cur).parent_id;
+    }
+  });
+  return {own, total};
+}
+function codebookHtml() {
+  const p=state.project;
+  if(!p.codes.length) return '<div class="empty">No codes yet. Add one to start coding.</div>';
+  const {own,total}=codeCounts();
+  return codeTree().map(({code:c,depth,childCount})=>{
+    const open=!state.collapsed.has(c.id);
+    return `<div class="code-row" style="--depth:${depth}">
+      <button class="twisty${childCount?'':' leaf'}" data-action="toggle-code" data-id="${c.id}" title="${childCount?(open?'Collapse':'Expand'):''}" aria-label="Toggle">${childCount?(open?'▾':'▸'):''}</button>
+      <button class="side-item${state.codeFilter===c.id?' selected':''}" data-action="filter-code" data-id="${c.id}" title="${esc(c.definition||c.name)}">
+        <span class="dot" style="background:${esc(c.color)}"></span>
+        <span class="name">${esc(c.name)}${c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}</span>
+        <span class="count" title="${own.get(c.id)||0} direct · ${total.get(c.id)||0} including sub-codes">${total.get(c.id)||0}</span>
+      </button>
+      <button class="edit-code" data-action="code-edit" data-id="${c.id}" title="Edit, re-parent, merge or delete" aria-label="Edit code">⋯</button>
+    </div>`;
+  }).join('') || '<div class="empty">No codes to show.</div>';
+}
 function segments(text) {
   let speaker='unknown';
   return [...text.matchAll(/[^\r\n]+/gu)].filter(m=>m[0].trim()).map((m,i)=>{
@@ -50,7 +112,6 @@ function errorDisplay(error) { if($('#dialog').open && $('#modal-error')) { $('#
 function render() {
   const p=state.project; if(!p) return;
   const pending=p.suggestions.filter(s=>s.status==='pending').length;
-  const count=new Map(p.codes.map(c=>[c.id,p.annotations.filter(a=>a.code_id===c.id).length]));
   const titles={coding:'Coding workspace',insights:'Insights',audit:'Audit trail'};
   $('#app').innerHTML=`<div class="shell">
     <aside class="sidebar"><div class="brand"><span class="brand-icon">Q</span><span class="brand-name">QualiCraft</span><span class="version">ALPHA</span></div>
@@ -60,7 +121,7 @@ function render() {
     <div class="sidebar-scroll"><div class="side-title"><div class="section-label">DOCUMENTS <span class="count">${p.documents.length}</span></div><button class="link" data-action="import" aria-label="Import interview">＋</button></div>
     ${p.documents.map(d=>`<button class="side-item ${d.id===state.docId?'selected':''}" data-action="doc" data-id="${d.id}" title="${esc(d.name)}">${icon('doc')}<span class="name">${esc(d.name)}</span></button>`).join('') || '<div class="empty">Import your first interview</div>'}
     <div class="side-title"><div class="section-label">CODEBOOK <span class="count">${p.codes.length}</span></div><button class="link" data-action="code" aria-label="New code">＋</button></div>
-    ${p.codes.map(c=>`<button class="side-item ${state.codeFilter===c.id?'selected':''}" data-action="filter-code" data-id="${c.id}" title="${esc(c.definition || c.name)}"><span class="dot" style="background:${esc(c.color)}"></span><span class="name">${esc(c.name)}</span><span class="count">${count.get(c.id)}</span></button>`).join('')}
+    ${codebookHtml()}
     </div><div class="local-note"><span class="status-dot"></span><div><strong>Local workspace</strong><span>Cloud only when requested</span></div></div></aside>
     <main class="workspace"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions"><span class="save-state">Saved locally</span><button data-action="settings">${icon('setting')}Model</button><button data-action="export">${icon('down')}Export</button><span class="avatar">QC</span></div></header>
     <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> to review</span></div></div><button class="primary" data-action="import">${icon('upload')}Import interview</button></section>
@@ -127,8 +188,47 @@ function locate(start) {
 function showImport() {
   modal('Import interview',`<p>Import UTF-8 TXT or DOCX, or paste a transcript. Original line breaks define segments. Use Doctor:/Patient:, Interviewer:/Participant:, or IQ.../IP1: speaker labels. Chinese labels are also supported.</p><label class="field">Choose a file<input id="import-file" type="file" accept=".txt,.docx"><small>DOCX imports paragraph and table text; layout, comments, and headers are not retained.</small></label><label class="field">Document name<input id="document-name" placeholder="e.g. P02 · Care experience" maxlength="200"></label><label class="field">Or paste a transcript<textarea id="document-text" rows="9" placeholder="Doctor: How did the conversation feel?&#10;Patient: ..."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-document">Import locally</button>');
 }
-function showCode() {
-  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label><label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
+function showCode(parentId=null) {
+  const parents=state.project.codes;
+  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label>${parents.length?`<label class="field">Group under (optional)<select id="code-parent"><option value="">— top level —</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.</small></label>`:''}<label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
+}
+function showCodeEdit(id) {
+  const c=state.project.codes.find(x=>x.id===id); if(!c) return;
+  const blocked=codeDescendants(id);
+  const {own,total}=codeCounts();
+  const others=state.project.codes.filter(x=>x.id!==id);
+  modal('Edit code', `
+    <label class="field">Name<input id="ec-name" maxlength="160" value="${esc(c.name)}"></label>
+    <label class="field">Definition<textarea id="ec-definition" rows="3" placeholder="What this code means.">${esc(c.definition)}</textarea></label>
+    <div class="form-row">
+      <label class="field">Group under<select id="ec-parent"><option value="">— top level —</option>${others.map(o=>`<option value="${o.id}"${c.parent_id===o.id?' selected':''}${blocked.has(o.id)?' disabled':''}>${esc(codePath(o))}${blocked.has(o.id)?' — its own sub-code':''}</option>`).join('')}</select></label>
+      <label class="field">Status<select id="ec-status">${[['emergent','Emergent'],['provisional','Provisional'],['final','Final']].map(([v,t])=>`<option value="${v}"${c.status===v?' selected':''}>${t}</option>`).join('')}</select></label>
+    </div>
+    <label class="field">Code / theme memo<textarea id="ec-memo" rows="3" placeholder="How is this code or theme developing?">${esc(c.memo||'')}</textarea></label>
+    <div class="form-row">
+      <label class="field">Inclusion criteria<textarea id="ec-inclusion" rows="2" placeholder="Use this code when…">${esc(c.inclusion||'')}</textarea></label>
+      <label class="field">Exclusion criteria<textarea id="ec-exclusion" rows="2" placeholder="Do not use it when…">${esc(c.exclusion||'')}</textarea></label>
+    </div>
+    <label class="field">Anchor examples (one per line)<textarea id="ec-anchors" rows="3" placeholder="Typical quotations that illustrate this code.">${esc((c.anchor_examples||[]).join('\n'))}</textarea></label>
+    <label class="field">Colour<input id="ec-color" type="color" value="${esc(c.color)}"></label>
+    <div class="notice">${own.get(id)||0} direct coding(s) · ${total.get(id)||0} including sub-codes · ${blocked.size} sub-code(s).</div>`,
+    `<button class="danger" data-action="code-delete-ask" data-id="${id}">Delete</button>${others.length?`<button data-action="code-merge-ask" data-id="${id}">Merge into…</button>`:''}<button data-action="close">Cancel</button><button class="primary" data-action="code-save" data-id="${id}">Save changes</button>`);
+}
+function showCodeDeleteAsk(id) {
+  const c=state.project.codes.find(x=>x.id===id); if(!c) return;
+  const {own}=codeCounts();
+  const kids=codeDescendants(id).size;
+  modal('Delete code', `<p>Delete <b>${esc(c.name)}</b>?</p>
+    <div class="notice">${own.get(id)||0} coding(s) will be removed from the transcript.${kids?` ${kids} sub-code(s) will move up to the level above.`:''} The removal is written to the audit trail but cannot be undone from the interface.</div>`,
+    `<button data-action="close">Cancel</button><button class="danger" data-action="code-delete" data-id="${id}">Delete code</button>`);
+}
+function showMergeAsk(id) {
+  const src=state.project.codes.find(x=>x.id===id); if(!src) return;
+  const others=state.project.codes.filter(x=>x.id!==id);
+  modal('Merge code', `<p>Move every coding from <b>${esc(src.name)}</b> into another code, then remove it.</p>
+    <label class="field">Merge into<select id="merge-target">${others.map(o=>`<option value="${o.id}">${esc(codePath(o))}</option>`).join('')}</select></label>
+    <div class="notice">Sub-codes of <b>${esc(src.name)}</b> are re-parented to the target. A coding that would duplicate an existing target coding on the same passage is collapsed rather than copied.</div>`,
+    `<button data-action="close">Cancel</button><button class="primary" data-action="code-merge" data-id="${id}">Merge</button>`);
 }
 function showAnnotation() {
   if(!state.selection||state.selection.document_id!==state.docId) throw new Error('Select a passage in the transcript first.');
@@ -165,6 +265,10 @@ async function action(button) {
   if(a==='view'){state.view=button.dataset.view;state.selection=null;render();return;}
   if(a==='doc'){state.docId=button.dataset.id;state.selection=null;state.search='';state.codeFilter=null;state.view='coding';render();return;}
   if(a==='filter-code'){state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();return;}
+  if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);render();return;}
+  if(a==='code-edit')return showCodeEdit(button.dataset.id);
+  if(a==='code-delete-ask')return showCodeDeleteAsk(button.dataset.id);
+  if(a==='code-merge-ask')return showMergeAsk(button.dataset.id);
   if(a==='clear-filter'){state.codeFilter=null;state.search='';render();return;}
   if(a==='import')return showImport();
   if(a==='code')return showCode();
@@ -181,7 +285,30 @@ async function action(button) {
     if(file){if(file.size>8_000_000)throw new Error('File exceeds 8 MB.'); if(/\.docx$/i.test(file.name)){const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));body.docx_base64=btoa(binary);delete body.text;}else if(/\.txt$/i.test(file.name)){body.text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());}else throw new Error('Choose a TXT or DOCX file.');}
     const d=await api(projectUrl('documents'),body);state.docId=d.id;state.selection=null;closeModal();await refresh();toast('Interview imported.');return;
   }
-  if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value});closeModal();await refresh();toast('Code saved.');return;}
+  if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null});closeModal();await refresh();toast('Code saved.');return;}
+  if(a==='code-save'){
+    const id=button.dataset.id;
+    await api(projectUrl('code-update'),{id,changes:{
+      name:$('#ec-name').value, definition:$('#ec-definition').value, color:$('#ec-color').value,
+      parent_id:$('#ec-parent').value||null, status:$('#ec-status').value, memo:$('#ec-memo').value,
+      inclusion:$('#ec-inclusion').value, exclusion:$('#ec-exclusion').value,
+      anchor_examples:$('#ec-anchors').value.split('\n').map(x=>x.trim()).filter(Boolean)}});
+    closeModal();await refresh();toast('Code updated.');return;
+  }
+  if(a==='code-delete'){
+    const id=button.dataset.id;
+    const result=await api(projectUrl('code-delete'),{id});
+    if(state.codeFilter===id)state.codeFilter=null;
+    closeModal();await refresh();
+    toast(`Deleted “${result.name}” · ${result.codings_removed} coding(s) removed${result.children_reparented?` · ${result.children_reparented} sub-code(s) moved up`:''}.`);return;
+  }
+  if(a==='code-merge'){
+    const id=button.dataset.id, target=$('#merge-target').value;
+    const result=await api(projectUrl('code-merge'),{source_id:id,target_id:target});
+    if(state.codeFilter===id)state.codeFilter=null;
+    closeModal();await refresh();
+    toast(`Merged “${result.source}” into “${result.target}” · ${result.codings_moved} coding(s) moved${result.duplicates_collapsed?` · ${result.duplicates_collapsed} duplicate(s) collapsed`:''}.`);return;
+  }
   if(a==='save-annotation'){await api(projectUrl('annotations'),{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();await refresh();toast('Passage coded.');return;}
   if(a==='review'){const start=state.project.suggestions.find(s=>s.id===button.dataset.id)?.start;await api(projectUrl('review'),{id:button.dataset.id,action:button.dataset.decision});await refresh();locate(start);toast(button.dataset.decision==='accept'?'Accepted and added to your codings.':'Rejected; review decision saved.');return;}
   if(a==='annotation'){

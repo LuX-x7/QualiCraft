@@ -8,6 +8,9 @@ The current release is a practical MVP. It is not a hosted multi-user service, a
 
 - Read-only transcript view with Unicode-safe character offsets.
 - Manual coding by selecting a source passage, applying a code, and recording a memo.
+- A hierarchical codebook: group codes under themes, collapse branches, and read rolled-up counts.
+- Full codebook maintenance: rename, redefine, recolour, re-parent, merge or delete a code.
+- Methodological fields per code: definition, memo, inclusion and exclusion criteria, anchor examples, and a status (emergent / provisional / final).
 - TXT and DOCX import without third-party Python packages.
 - Deductive and inductive AI-assisted coding through an OpenAI-compatible chat endpoint.
 - Qwen3.8-Flash defaults for Alibaba Cloud Model Studio (Beijing); other compatible endpoints can be configured.
