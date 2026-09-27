@@ -1,0 +1,32 @@
+# Local runtime state
+data/
+reports/
+*.sqlite3
+*.db
+*.sqlite
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+API_key.txt
+api_key.txt
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Editors and OS files
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store
