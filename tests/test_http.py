@@ -90,6 +90,35 @@ class HTTPTests(unittest.TestCase):
             model.server_close()
             thread.join()
 
+    def test_http_codebook_hierarchy_and_maintenance(self):
+        p = self.request("/api/projects", {"kind": "demo"})
+        root = "/api/projects/" + p["id"]
+        parent, other = p["codes"][0], p["codes"][1]
+
+        child = self.request(root + "/codes", {"name": "Sub-code", "definition": "", "parent_id": parent["id"]})
+        self.assertEqual(child["parent_id"], parent["id"])
+
+        updated = self.request(root + "/code-update", {"id": child["id"],
+                                                       "changes": {"name": "Renamed sub-code", "memo": "a note"}})
+        self.assertEqual(updated["name"], "Renamed sub-code")
+        self.assertEqual(updated["memo"], "a note")
+
+        # A code may not be moved beneath its own descendant.
+        with self.assertRaises(urllib.error.HTTPError):
+            self.request(root + "/code-update", {"id": parent["id"], "changes": {"parent_id": child["id"]}})
+
+        merged = self.request(root + "/code-merge", {"source_id": child["id"], "target_id": other["id"]})
+        self.assertEqual(merged["source"], "Renamed sub-code")
+        self.assertEqual(merged["target"], other["name"])
+
+        deleted = self.request(root + "/code-delete", {"id": other["id"]})
+        self.assertIn("codings_removed", deleted)
+
+        project = self.request(root)
+        self.assertEqual(project["schema_version"], 2)
+        self.assertNotIn(other["id"], [c["id"] for c in project["codes"]])
+        self.assertTrue(any(a["action"] == "code_delete" for a in project["audit"]))
+
 
 if __name__ == "__main__":
     unittest.main()

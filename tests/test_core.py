@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 
 from qualicraft.ai import grounded_suggestions, make_payload, validate_config, Analyzer
-from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, csv_export, grounded_theory_examples_project, new_project, paragraphs, read_docx, review, synthetic_project, validate_project
+from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, validate_project
 from qualicraft.evaluate import evaluate, from_project
 
 
@@ -138,6 +138,101 @@ class CoreTests(unittest.TestCase):
         interview_answer = next(x for x in paragraphs(p["documents"][0]["text"]) if x["text"].startswith("IP1:"))
         self.assertEqual(interview_answer["speaker"], "patient")
         validate_project(p)
+
+    def test_schema_v1_migrates_to_v2_without_data_loss(self):
+        p = new_project("Legacy")
+        quote = "the doctor explained things clearly and I felt heard."
+        d = add_document(p, "I1", "Patient: " + quote)
+        c = add_code(p, "Legacy code", "old definition")
+        start = d["text"].index(quote)
+        annotate(p, d["id"], c["id"], start, start + len(quote))
+        for code in p["codes"]:
+            for key in ("parent_id", "memo", "anchor_examples", "inclusion", "exclusion", "status", "order"):
+                code.pop(key, None)
+        for document in p["documents"]:
+            document.pop("attributes", None)
+        p["schema_version"] = 1
+        validate_project(p)
+        self.assertEqual(p["schema_version"], 2)
+        self.assertEqual(len(p["annotations"]), 1)
+        self.assertEqual(p["annotations"][0]["quote"], quote)
+        self.assertIsNone(p["codes"][0]["parent_id"])
+        self.assertEqual(p["codes"][0]["status"], "final")
+        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 2)
+
+    def test_code_hierarchy_and_paths(self):
+        p = new_project("Hierarchy")
+        theme = add_code(p, "Experience with RDM")
+        researcher = add_code(p, "Experience with RDM [R]", parent_id=theme["id"])
+        policy = add_code(p, "Experience with RDM [PM/SP]", parent_id=theme["id"])
+        self.assertIsNone(theme["parent_id"])
+        self.assertEqual(researcher["parent_id"], theme["id"])
+        self.assertEqual(code_path(p["codes"], researcher), "Experience with RDM > Experience with RDM [R]")
+        with self.assertRaises(ValueError):
+            add_code(p, "Orphan", parent_id="missing")
+        validate_project(p)
+
+    def test_update_code_rejects_cycles_duplicates_and_bad_status(self):
+        p = new_project("Update")
+        theme = add_code(p, "Theme")
+        child = add_code(p, "Child", parent_id=theme["id"])
+        update_code(p, child["id"], {"name": "Renamed child", "memo": "note", "inclusion": "when x",
+                                     "exclusion": "when y", "anchor_examples": ["a quote"], "status": "provisional"})
+        self.assertEqual(child["name"], "Renamed child")
+        self.assertEqual(child["status"], "provisional")
+        self.assertEqual(child["anchor_examples"], ["a quote"])
+        with self.assertRaises(ValueError):
+            update_code(p, child["id"], {"name": "Theme"})
+        with self.assertRaises(ValueError):
+            update_code(p, theme["id"], {"parent_id": child["id"]})
+        with self.assertRaises(ValueError):
+            update_code(p, theme["id"], {"parent_id": theme["id"]})
+        with self.assertRaises(ValueError):
+            update_code(p, theme["id"], {"status": "invented"})
+        validate_project(p)
+
+    def test_delete_code_reparents_children_and_removes_codings(self):
+        p = new_project("Delete")
+        d = add_document(p, "I1", "Patient: " + "Some analysable content here. " * 6)
+        top = add_code(p, "Top")
+        middle = add_code(p, "Middle", parent_id=top["id"])
+        leaf = add_code(p, "Leaf", parent_id=middle["id"])
+        annotate(p, d["id"], middle["id"], 9, 40)
+        annotate(p, d["id"], leaf["id"], 45, 70)
+        result = delete_code(p, middle["id"])
+        self.assertEqual(result["codings_removed"], 1)
+        self.assertEqual(result["children_reparented"], 1)
+        self.assertEqual(next(c for c in p["codes"] if c["id"] == leaf["id"])["parent_id"], top["id"])
+        self.assertEqual(len(p["annotations"]), 1)
+        self.assertTrue(any(a["action"] == "code_delete" for a in p["audit"]))
+        validate_project(p)
+
+    def test_merge_codes_moves_codings_and_collapses_duplicates(self):
+        p = new_project("Merge")
+        d = add_document(p, "I1", "Patient: " + "Some analysable content here. " * 6)
+        source = add_code(p, "Source")
+        target = add_code(p, "Target")
+        annotate(p, d["id"], source["id"], 9, 40)
+        annotate(p, d["id"], source["id"], 45, 70)
+        annotate(p, d["id"], target["id"], 9, 40)   # same span as the first source coding
+        result = merge_codes(p, source["id"], target["id"])
+        self.assertEqual(result["codings_moved"], 1)
+        self.assertEqual(result["duplicates_collapsed"], 1)
+        self.assertEqual(len(p["annotations"]), 2)
+        self.assertTrue(all(c["id"] != source["id"] for c in p["codes"]))
+        with self.assertRaises(ValueError):
+            merge_codes(p, target["id"], target["id"])
+        validate_project(p)
+
+    def test_codings_csv_carries_the_code_path(self):
+        p = new_project("Export")
+        d = add_document(p, "I1", "Patient: " + "Some analysable content here. " * 6)
+        theme = add_code(p, "Theme")
+        child = add_code(p, "Child", parent_id=theme["id"])
+        annotate(p, d["id"], child["id"], 9, 40)
+        text = csv_export(p).decode("utf-8-sig")
+        self.assertIn("code_path", text.splitlines()[0])
+        self.assertIn("Theme > Child", text)
 
 
 if __name__ == "__main__":

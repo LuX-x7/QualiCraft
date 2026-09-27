@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .ai import Analyzer
-from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, event, find, grounded_theory_examples_project, new_project, now, read_docx, require, review, synthetic_project, uid, validate_project
+from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, new_project, now, read_docx, require, review, synthetic_project, uid, update_code, validate_project
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -139,7 +139,13 @@ def create_server(data_dir, guide_dir, port=8765):
                                     raise ValueError("The DOCX file could not be parsed. Use a valid Word document under 8 MB.") from None
                             return add_document(project, body.get("name"), text)
                         if action == "codes":
-                            return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"))
+                            return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"))
+                        if action == "code-update":
+                            return update_code(project, body.get("id"), body.get("changes"))
+                        if action == "code-delete":
+                            return delete_code(project, body.get("id"))
+                        if action == "code-merge":
+                            return merge_codes(project, body.get("source_id"), body.get("target_id"))
                         if action == "annotations":
                             return annotate(project, body.get("document_id"), body.get("code_id"), body.get("start"), body.get("end"), body.get("memo", ""))
                         if action == "remove-annotation":

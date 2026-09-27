@@ -41,8 +41,21 @@ The local MVP is suitable for a single researcher or a controlled local network.
 
 GitHub Pages can host documentation and a static product tour, but it cannot run the Python service or safely store private projects. Until the hosted architecture is reviewed, the supported public artifact is the source repository and local application.
 
+## Project format
+
+A project is a single JSON document stored in one SQLite row. The format is versioned.
+
+`schema_version: 2` added the codebook hierarchy and the fields the analysis workflows need:
+
+- a code gains `parent_id` (its place in the code tree), `memo`, `inclusion`, `exclusion`, `anchor_examples`, `status` and `order`;
+- a document gains `attributes`, reserved for case-level metadata.
+
+`migrate()` upgrades a v1 project in place the first time it is read. Every added value is a neutral default, so an existing codebook, its codings and all character offsets are preserved untouched. Migration is idempotent and runs inside `Store.get` and `Store.change`.
+
+The code tree is validated on every write: a code may not be its own parent, may not point at a missing parent, and may not be moved beneath one of its own descendants.
+
 ## Planned phases
 
-1. MVP: local project store, manual coding, review queue, Qwen-compatible API, exports, and benchmark tooling.
-2. Research tooling: richer code hierarchies, co-occurrence tables, reproducible plots, REFI-QDA export, and stronger evaluation reports.
+1. MVP: local project store, manual coding, review queue, Qwen-compatible API, exports, and benchmark tooling. **Complete.**
+2. Research tooling: codebook hierarchy, code-level maintenance (rename, re-parent, merge, delete) and the methodological code fields are **complete**. Still to come: document attributes and cross-tabulation, inter-coder reliability, co-occurrence tables, reproducible plots, and REFI-QDA export.
 3. Hosted edition: authenticated accounts, isolated encrypted storage, provider abstraction, and deployment-specific privacy controls.
