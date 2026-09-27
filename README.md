@@ -14,7 +14,7 @@ The current release is a practical MVP. It is not a hosted multi-user service, a
 - Exact quote validation: a model suggestion is discarded if its quote cannot be located unambiguously in the source.
 - A review queue, accept/reject decisions, source highlighting, activity trail, and JSON/CSV export.
 - A TU Delft QDA benchmark importer and a deliberately separate agreement evaluator.
-- A Guide importer for the eight Tian et al. (2021) English grounded-theory interview examples.
+- A Guide importer for eight Tian et al. (2021) semi-structured software-architecture interviews in Chinese and English.
 - A fully fictional demonstration project that never calls a model.
 
 ## Quick start on Windows
@@ -65,7 +65,7 @@ This writes only ignored local files under `reports/`. It is an interface smoke 
 
 The TU Delft material is not bundled in this repository. Point `--guide-dir` to the local Guide folder to create either a blind workspace (transcripts and codebook only) or a researcher-reference workspace (the exported researcher annotations). The source README identifies the dataset as van Gend and Zuiderwijk (2022), DOI `10.4121/19635147.v1`, CC BY 4.0.
 
-The same project dialog can import `Grounded_Theory_Interview_Examples_Tian_2021` from the Guide directory. QualiCraft reads its eight DOCX transcripts into an uncoded practice workspace and recognizes the collection's `IQ...` / `Answer:` dialogue structure. The accompanying MAXQDA project is not automatically treated as ground truth.
+The same project dialog can import `Grounded_Theory_Interview_Examples_Tian_2021` from the Guide directory. QualiCraft reads its eight DOCX interviews into an uncoded practice workspace and recognizes the collection's `IQ...`, `Answer:`, and `IP1:`–`IP8:` dialogue structure. These are practitioner interviews about relationships between software architecture and source code; IP1–IP2 pair Chinese answer passages with English translations, while IP3–IP8 are in English. The accompanying MAXQDA project is not automatically treated as ground truth.
 
 The reference annotations are an interpretive comparison point, not a unique ground truth. Unselected text is not a negative label. Use interview-level holdouts and report agreement cautiously. The evaluator reports exact and overlap-based precision, recall, F1, and IoU matching; it does not establish clinical validity.
 

@@ -22,6 +22,10 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(paragraphs(d["text"])[1]["start"], d["text"].index("患者"))
         validate_project(p)
 
+    def test_tian_interview_labels_distinguish_questions_and_answers(self):
+        rows = paragraphs("IQ2.1\nContext for the question\nIQ2.1.1: How do you work?\nIP1: A detailed answer\nIQ3.1: Another question\nIP1：另一个回答")
+        self.assertEqual([row["speaker"] for row in rows], ["doctor", "doctor", "doctor", "patient", "doctor", "patient"])
+
     def test_overlap_and_duplicate(self):
         p = synthetic_project()
         a = p["annotations"][0]
@@ -126,10 +130,13 @@ class CoreTests(unittest.TestCase):
     @unittest.skipUnless(Path("E:/Software/Guide/Grounded_Theory_Interview_Examples_Tian_2021").is_dir(), "Local grounded theory examples unavailable")
     def test_grounded_theory_examples_import(self):
         p = grounded_theory_examples_project("E:/Software/Guide")
+        self.assertEqual(p["name"], "Tian 2021 · software architecture interviews")
         self.assertEqual(len(p["documents"]), 8)
         self.assertEqual(len(p["annotations"]), 0)
         answer = next(x for x in paragraphs(p["documents"][0]["text"]) if x["text"].startswith("Answer:"))
         self.assertEqual(answer["speaker"], "patient")
+        interview_answer = next(x for x in paragraphs(p["documents"][0]["text"]) if x["text"].startswith("IP1:"))
+        self.assertEqual(interview_answer["speaker"], "patient")
         validate_project(p)
 
 

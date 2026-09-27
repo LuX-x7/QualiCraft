@@ -58,10 +58,10 @@ def paragraphs(text):
         raw = match.group()
         if not raw.strip():
             continue
-        label = re.match(r"^\s*(患者|病人|受访者|Patient|Participant|Answer|P|A|医生|访谈者|采访者|Doctor|Interviewer|D|Q)\s*[:：]\s*", raw, re.I)
+        label = re.match(r"^\s*(患者|病人|受访者|Patient|Participant|Answer|IP\d+|P|A|医生|访谈者|采访者|Doctor|Interviewer|D|Q)\s*[:：]\s*", raw, re.I)
         if label:
-            speaker = "patient" if label[1].lower() in {"患者", "病人", "受访者", "patient", "participant", "answer", "p", "a"} else "doctor"
-        elif re.match(r"^\s*IQ\d+(?:\.\d+)?\s*[:.]", raw, re.I):
+            speaker = "patient" if label[1].lower() in {"患者", "病人", "受访者", "patient", "participant", "answer", "p", "a"} or re.fullmatch(r"IP\d+", label[1], re.I) else "doctor"
+        elif re.match(r"^\s*IQ\d+(?:\.\d+)*(?:\s*[:.]|\s*$)", raw, re.I):
             speaker = "doctor"
         if speaker == "doctor":
             question = raw
@@ -181,8 +181,8 @@ def benchmark_project(guide, reference=False):
 def grounded_theory_examples_project(guide):
     root = Path(guide) / "Grounded_Theory_Interview_Examples_Tian_2021" / "Complementary_Material" / "Interview Transcripts"
     require(root.is_dir(), "The grounded theory interview examples were not found in the Guide directory")
-    project = new_project("Grounded theory interview examples · Tian 2021")
-    project["provenance"] = "Eight English interview transcripts from Tian et al. (2021), supplied in the local Guide materials. Imported as an uncoded workspace for grounded theory practice; no source coding is treated as a single correct interpretation."
+    project = new_project("Tian 2021 · software architecture interviews")
+    project["provenance"] = "Eight semi-structured practitioner interview documents from Tian et al. (2021) on relationships between software architecture and source code. IP1–IP2 include paired Chinese and English answer passages; IP3–IP8 are in English. Imported from the local Guide as an uncoded workspace. The separate MAXQDA project also contains researcher coding, but it is not imported here as ground truth."
     paths = sorted(root.glob("*.docx"))
     require(bool(paths), "No DOCX interview transcripts were found in the grounded theory example directory")
     for path in paths:
@@ -282,6 +282,15 @@ class Store:
                 replacement["created_at"] = old.get("created_at", replacement["created_at"])
                 replacement["updated_at"] = now()
                 conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(replacement, ensure_ascii=False), project_id))
+
+            for project_id, raw in rows:
+                project = json.loads(raw)
+                if project.get("name") not in {"Grounded theory interview examples · Tian 2021", "Tian 2021 · software architecture interviews"}:
+                    continue
+                project["name"] = "Tian 2021 · software architecture interviews"
+                project["provenance"] = "Eight semi-structured practitioner interview documents from Tian et al. (2021) on relationships between software architecture and source code. IP1–IP2 include paired Chinese and English answer passages; IP3–IP8 are in English. Imported from the local Guide as an uncoded workspace. The separate MAXQDA project also contains researcher coding, but it is not imported here as ground truth."
+                project["updated_at"] = now()
+                conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
 
 
 def csv_export(project, matrix=False):
