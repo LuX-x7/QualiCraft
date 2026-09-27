@@ -14,6 +14,7 @@ The current release is a practical MVP. It is not a hosted multi-user service, a
 - Exact quote validation: a model suggestion is discarded if its quote cannot be located unambiguously in the source.
 - A review queue, accept/reject decisions, source highlighting, activity trail, and JSON/CSV export.
 - A TU Delft QDA benchmark importer and a deliberately separate agreement evaluator.
+- A Guide importer for the eight Tian et al. (2021) English grounded-theory interview examples.
 - A fully fictional demonstration project that never calls a model.
 
 ## Quick start on Windows
@@ -47,7 +48,7 @@ python -m unittest discover -s tests -v
 node --check web/app.js
 ```
 
-The tests cover Unicode offsets, CRLF text, overlapping codes, DOCX extraction, CSV formula injection, SQLite transaction rollback, request authentication, quote validation, project restore, and an OpenAI-compatible fake model server. The optional benchmark test reads `E:\Software\Guide\Paired_Qualitative_Transcripts_TU_Delft` when that folder exists.
+The tests cover Unicode offsets, CRLF text, overlapping codes, DOCX extraction, CSV formula injection, SQLite transaction rollback, request authentication, quote validation, project restore, and an OpenAI-compatible fake model server. Optional Guide tests read the TU Delft benchmark and Tian et al. grounded-theory examples when those folders exist.
 
 For an explicit paid integration smoke test using only the fictional demo transcript:
 
@@ -63,6 +64,8 @@ This writes only ignored local files under `reports/`. It is an interface smoke 
 ## Benchmark and data provenance
 
 The TU Delft material is not bundled in this repository. Point `--guide-dir` to the local Guide folder to create either a blind workspace (transcripts and codebook only) or a researcher-reference workspace (the exported researcher annotations). The source README identifies the dataset as van Gend and Zuiderwijk (2022), DOI `10.4121/19635147.v1`, CC BY 4.0.
+
+The same project dialog can import `Grounded_Theory_Interview_Examples_Tian_2021` from the Guide directory. QualiCraft reads its eight DOCX transcripts into an uncoded practice workspace and recognizes the collection's `IQ...` / `Answer:` dialogue structure. The accompanying MAXQDA project is not automatically treated as ground truth.
 
 The reference annotations are an interpretive comparison point, not a unique ground truth. Unselected text is not a negative label. Use interview-level holdouts and report agreement cautiously. The evaluator reports exact and overlap-based precision, recall, F1, and IoU matching; it does not establish clinical validity.
 

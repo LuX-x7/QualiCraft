@@ -20,7 +20,7 @@ or invent evidence. Return JSON: {"suggestions":[{"code_name":"...","definition"
 start is a zero-based Unicode character offset within target_text, not the full document.
 In deductive mode use only exact codebook names. In inductive mode reuse suitable existing codes
 or propose a concise new code with a definition. Return at most 8 suggestions. Empty suggestions
-is allowed. Preserve the original quote language; use Chinese explanations. No confidence scores.'''
+is allowed. Preserve the original quote language; use concise English explanations. No confidence scores.'''
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -29,13 +29,13 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def validate_config(body):
-    base = string(body.get("base_url", ""), "API 地址", 500).rstrip("/")
+    base = string(body.get("base_url", ""), "API base URL", 500).rstrip("/")
     parsed = urllib.parse.urlsplit(base)
-    require(parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1"}), "云端接口必须使用 HTTPS；HTTP 仅允许本机接口")
-    require(bool(parsed.hostname) and not parsed.username and not parsed.password and not parsed.query and not parsed.fragment, "API 地址不应包含凭证、查询参数或片段")
+    require(parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1"}), "Cloud endpoints must use HTTPS; HTTP is allowed only for local endpoints")
+    require(bool(parsed.hostname) and not parsed.username and not parsed.password and not parsed.query and not parsed.fragment, "The API URL must not contain credentials, query parameters, or fragments")
     key = body.get("api_key", "")
-    require(isinstance(key, str) and len(key) <= 1000 and "\n" not in key and "\r" not in key, "密钥格式无效")
-    return {"base_url": base, "model": string(body.get("model", ""), "模型名", 150), "api_key": key.strip()}
+    require(isinstance(key, str) and len(key) <= 1000 and "\n" not in key and "\r" not in key, "The API key format is invalid")
+    return {"base_url": base, "model": string(body.get("model", ""), "Model name", 150), "api_key": key.strip()}
 
 
 def make_payload(config, segment, codes, mode):
@@ -61,44 +61,44 @@ def call_model(config, payload):
     try:
         with opener.open(request, timeout=60) as response:
             raw = response.read(2_000_001)
-        require(len(raw) <= 2_000_000, "模型响应超过大小限制")
+        require(len(raw) <= 2_000_000, "The model response exceeds the size limit")
         data = json.loads(raw)
         choice = data["choices"][0]
-        require(choice.get("finish_reason") == "stop", "模型输出未正常完成（可能被截断）；本段未保存，请缩短文本后重试")
+        require(choice.get("finish_reason") == "stop", "The model response did not finish normally and may be truncated. This segment was not saved; shorten the text and try again")
         content = json.loads(choice["message"]["content"])
         return content, {"response_id": data.get("id"), "model": data.get("model", config["model"]), "usage": data.get("usage", {})}
     except urllib.error.HTTPError as exc:
-        messages = {401: "密钥无效或已过期", 402: "账户余额不足", 429: "请求限流，请稍后手动重试"}
-        raise ValueError(f"API HTTP {exc.code}：{messages.get(exc.code, '服务商拒绝请求，请检查模型名称与接口地址')}。本工具不会自动重试扣费请求。") from None
+        messages = {401: "the API key is invalid or expired", 402: "the account balance is insufficient", 429: "the request was rate-limited; try again later"}
+        raise ValueError(f"API HTTP {exc.code}: {messages.get(exc.code, 'the provider rejected the request; check the model name and endpoint')}. QualiCraft does not automatically retry billable requests.") from None
     except (urllib.error.URLError, TimeoutError, OSError):
-        raise ValueError("API 连接失败或超时；本工具未自动重试，服务商可能已处理本次请求。") from None
+        raise ValueError("The API connection failed or timed out. QualiCraft did not retry; the provider may still have processed the request.") from None
     except (KeyError, IndexError, TypeError, json.JSONDecodeError):
-        raise ValueError("模型未返回预期的 JSON 格式；本段未保存。") from None
+        raise ValueError("The model did not return the expected JSON format. This segment was not saved.") from None
 
 
 def grounded_suggestions(result, segment, codes, mode, document_id, run_id):
-    require(isinstance(result, dict) and isinstance(result.get("suggestions"), list), "缺少 suggestions 数组")
-    require(len(result["suggestions"]) <= 8, "单段返回的建议超过 8 条")
+    require(isinstance(result, dict) and isinstance(result.get("suggestions"), list), "The response is missing the suggestions array")
+    require(len(result["suggestions"]) <= 8, "The model returned more than eight suggestions for one segment")
     valid, discarded = [], []
     names = {c["name"] for c in codes}
     for row in result["suggestions"]:
         try:
-            require(isinstance(row, dict), "建议不是对象")
-            name = string(row.get("code_name"), "代码名", 160)
-            require(mode != "deductive" or name in names, "演绎编码返回了码表外的代码")
+            require(isinstance(row, dict), "A suggestion is not an object")
+            name = string(row.get("code_name"), "Code name", 160)
+            require(mode != "deductive" or name in names, "Deductive coding returned a code outside the codebook")
             quote = row.get("quote")
-            require(isinstance(quote, str) and quote.strip(), "引用为空")
+            require(isinstance(quote, str) and quote.strip(), "The quotation is empty")
             text = segment["text"]
             start = row.get("start")
             if not (type(start) is int and 0 <= start < len(text) and text[start:start + len(quote)] == quote):
                 first = text.find(quote)
-                require(first >= 0 and text.find(quote, first + 1) < 0, "引用不存在或重复出现而无法唯一定位")
+                require(first >= 0 and text.find(quote, first + 1) < 0, "The quotation is absent or repeated and cannot be located uniquely")
                 start = first
-            rationale = string(row.get("rationale"), "理由", 3000)
+            rationale = string(row.get("rationale"), "Rationale", 3000)
             definition = row.get("definition", "")
-            require(isinstance(definition, str) and len(definition) <= 5000, "定义无效")
+            require(isinstance(definition, str) and len(definition) <= 5000, "The definition is invalid")
             if name not in names:
-                string(definition, "新代码定义", 5000)
+                string(definition, "New code definition", 5000)
             valid.append({"id": uid(), "document_id": document_id, "start": segment["start"] + start,
                           "end": segment["start"] + start + len(quote), "quote": quote, "code_name": name,
                           "definition": definition, "rationale": rationale, "status": "pending",
@@ -117,7 +117,7 @@ class Analyzer:
             try:
                 key = Path(key_file).read_text(encoding="utf-8-sig").strip()
             except OSError:
-                raise ValueError("无法读取指定的 API 密钥文件，请检查路径和权限") from None
+                raise ValueError("The configured API key file could not be read; check its path and permissions") from None
         self.config = validate_config({"base_url": os.getenv("QUALICRAFT_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
                                        "model": os.getenv("QUALICRAFT_MODEL", "qwen3.8-flash"), "api_key": key})
         self.previews, self.jobs = {}, {}
@@ -129,7 +129,7 @@ class Analyzer:
 
     def configure(self, body):
         with self.lock:
-            require(not any(j["status"] == "running" for j in self.jobs.values()), "请等待当前分析结束再修改 API 设置")
+            require(not any(j["status"] == "running" for j in self.jobs.values()), "Wait for the current analysis to finish before changing API settings")
             config = validate_config(body)
             if body.get("keep_key") and config["base_url"] == self.config["base_url"] and not config["api_key"]:
                 config["api_key"] = self.config["api_key"]
@@ -141,17 +141,17 @@ class Analyzer:
         project = self.store.get(project_id)
         doc = find(project["documents"], body.get("document_id"))
         mode, scope = body.get("mode", "deductive"), body.get("scope", "patient")
-        require(mode in {"deductive", "inductive"}, "编码方法无效")
-        require(scope in {"patient", "all", "selection"}, "发送范围无效")
+        require(mode in {"deductive", "inductive"}, "The coding method is invalid")
+        require(scope in {"patient", "all", "selection"}, "The analysis scope is invalid")
         codes = [{"name": c["name"], "definition": c["definition"]} for c in project["codes"]]
-        require(mode != "deductive" or codes, "演绎编码需要先建立码表")
+        require(mode != "deductive" or codes, "Deductive coding requires a codebook")
         if scope == "selection":
             from .core import validate_span
             text = validate_span(doc, body.get("start"), body.get("end"))
             segments = [{"start": body["start"], "end": body["end"], "text": text, "context": ""}]
         else:
             segments = [p for p in paragraphs(doc["text"]) if scope == "all" or p["speaker"] == "patient"]
-        require(segments, "没有可分析的段落。请标明“患者：/Patient:”说话人，或选择全部段落/划选片段。")
+        require(segments, "No analyzable passages were found. Add Patient: or Participant: labels, analyze all passages, or select a passage.")
         # Split long paragraphs without dropping characters. Each part has its own exact source offset.
         chunks = []
         for s in segments:
@@ -160,7 +160,7 @@ class Analyzer:
                 if text.strip():
                     chunks.append({"start": s["start"] + offset, "end": s["start"] + offset + len(text), "text": text,
                                    "context": s.get("context", "")[-3000:] if body.get("include_context", True) else ""})
-        require(len(chunks) <= 200, "单次最多 200 个请求，请划选部分文本分析")
+        require(len(chunks) <= 200, "One run can contain at most 200 requests; select a smaller section")
         with self.lock:
             config = self.config.copy()
             if len(self.previews) >= 20:
@@ -175,12 +175,12 @@ class Analyzer:
 
     def start(self, preview_id):
         with self.lock:
-            require(not any(j["status"] == "running" for j in self.jobs.values()), "已有分析任务正在运行")
-            require(preview_id in self.previews, "预览已失效，请重新预览")
+            require(not any(j["status"] == "running" for j in self.jobs.values()), "Another analysis is already running")
+            require(preview_id in self.previews, "This preview has expired; create a new preview")
             preview = self.previews[preview_id]
             config = self.config.copy()
             local = urllib.parse.urlsplit(config["base_url"]).hostname in {"localhost", "127.0.0.1", "::1"}
-            require(config["api_key"] or local, "请先在模型设置中填写 API 密钥")
+            require(config["api_key"] or local, "Add an API key in model settings before starting")
             job = {"id": uid(), "project_id": preview["project_id"], "document_id": preview["document_id"], "status": "running",
                    "done": 0, "total": len(preview["segments"]), "saved": 0, "discarded": 0, "error": "", "cancel_requested": False, "created_at": now()}
             self.jobs[job["id"]] = job
@@ -224,7 +224,7 @@ class Analyzer:
         except Exception as exc:
             with self.lock:
                 job["status"] = "failed"
-                job["error"] = str(exc) if isinstance(exc, ValueError) else "处理失败；已完成的段落保留，请查看项目审计记录。"
+                job["error"] = str(exc) if isinstance(exc, ValueError) else "Processing failed. Completed segments were kept; review the project audit trail."
         finally:
             job["finished_at"] = now()
             self.store.change(preview["project_id"], lambda p: event(p, "analysis_finish", **job.copy()))
@@ -235,6 +235,6 @@ class Analyzer:
 
     def cancel(self, job_id):
         with self.lock:
-            require(job_id in self.jobs, "找不到任务")
+            require(job_id in self.jobs, "The analysis job could not be found")
             self.jobs[job_id]["cancel_requested"] = True
             return self.jobs[job_id].copy()

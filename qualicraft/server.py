@@ -13,13 +13,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .ai import Analyzer
-from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, event, find, new_project, now, read_docx, require, review, synthetic_project, uid, validate_project
+from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, event, find, grounded_theory_examples_project, new_project, now, read_docx, require, review, synthetic_project, uid, validate_project
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
 def create_server(data_dir, guide_dir, port=8765):
     store = Store(Path(data_dir) / "qualicraft.sqlite3")
+    store.migrate_legacy_demo_projects()
     if not store.list():
         store.create(synthetic_project())
     analyzer = Analyzer(store)
@@ -48,10 +49,10 @@ def create_server(data_dir, guide_dir, port=8765):
 
         def check_request(self):
             allowed = {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"}
-            require(self.headers.get("Host") in allowed, "Host 不允许")
+            require(self.headers.get("Host") in allowed, "This host is not allowed")
             origin = self.headers.get("Origin")
-            require(origin is None or origin in {"http://" + host for host in allowed}, "跨站请求不允许")
-            require(self.headers.get("Sec-Fetch-Site", "") != "cross-site", "跨站请求不允许")
+            require(origin is None or origin in {"http://" + host for host in allowed}, "Cross-site requests are not allowed")
+            require(self.headers.get("Sec-Fetch-Site", "") != "cross-site", "Cross-site requests are not allowed")
 
         def do_GET(self):
             try:
@@ -62,7 +63,7 @@ def create_server(data_dir, guide_dir, port=8765):
                     return self.send({"token": token, "projects": store.list(), "config": analyzer.public_config(),
                                       "guide_available": (Path(guide_dir) / "Paired_Qualitative_Transcripts_TU_Delft").is_dir()})
                 if path.startswith("/api/"):
-                    require(self.headers.get("X-QualiCraft-Token") == token, "会话已过期，请刷新页面")
+                    require(self.headers.get("X-QualiCraft-Token") == token, "The session has expired; refresh the page")
                     parts = path.strip("/").split("/")
                     if path == "/api/projects":
                         return self.send(store.list())
@@ -78,31 +79,31 @@ def create_server(data_dir, guide_dir, port=8765):
                                 return self.send(csv_export(project, fmt == "matrix"), "text/csv; charset=utf-8", filename=f"qualicraft-{fmt}.csv")
                             if fmt == "json":
                                 return self.send(json.dumps(project, ensure_ascii=False, indent=2).encode(), filename="qualicraft-project.json")
-                    return self.send({"error": "接口不存在"}, status=404)
+                    return self.send({"error": "The API endpoint does not exist"}, status=404)
                 files = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css"}
                 if path not in files:
-                    return self.send({"error": "文件不存在"}, status=404)
+                    return self.send({"error": "The file does not exist"}, status=404)
                 file = ROOT / "web" / files[path]
                 return self.send(file.read_bytes(), (mimetypes.guess_type(file.name)[0] or "text/plain") + "; charset=utf-8")
             except (ValueError, KeyError, TypeError):
-                return self.send({"error": "请求无效或会话已过期"}, status=400)
+                return self.send({"error": "The request is invalid or the session has expired"}, status=400)
             except (BrokenPipeError, ConnectionResetError):
                 pass
 
         def do_POST(self):
             try:
                 self.check_request()
-                require(self.headers.get("X-QualiCraft-Token") == token, "会话已过期，请刷新页面")
-                require(self.headers.get("Content-Type", "").startswith("application/json"), "仅接受 JSON 请求")
+                require(self.headers.get("X-QualiCraft-Token") == token, "The session has expired; refresh the page")
+                require(self.headers.get("Content-Type", "").startswith("application/json"), "Only JSON requests are accepted")
                 size = int(self.headers.get("Content-Length", "0"))
-                require(0 < size <= 20_000_000, "请求过大或为空")
+                require(0 < size <= 20_000_000, "The request is empty or too large")
                 body = json.loads(self.rfile.read(size))
-                require(isinstance(body, dict), "请求格式错误")
+                require(isinstance(body, dict), "The request format is invalid")
                 parts = urllib.parse.urlsplit(self.path).path.strip("/").split("/")
                 if parts == ["api", "config"]:
                     return self.send(analyzer.configure(body))
                 if parts == ["api", "analyze"]:
-                    require(body.get("confirmed") is True, "需要确认发送预览中的数据")
+                    require(body.get("confirmed") is True, "Confirm the preview before sending data")
                     return self.send(analyzer.start(body.get("preview_id")))
                 if len(parts) == 4 and parts[:2] == ["api", "jobs"] and parts[3] == "cancel":
                     return self.send(analyzer.cancel(parts[2]))
@@ -112,15 +113,17 @@ def create_server(data_dir, guide_dir, port=8765):
                         project = synthetic_project()
                     elif kind in {"benchmark", "reference"}:
                         project = benchmark_project(guide_dir, reference=kind == "reference")
+                    elif kind == "grounded_examples":
+                        project = grounded_theory_examples_project(guide_dir)
                     elif kind == "restore":
                         project = validate_project(body.get("project"))
                         project["id"] = uid()
                         project["updated_at"] = now()
                         event(project, "project_restore")
                     elif kind == "empty":
-                        project = new_project(body.get("name", "新研究项目"))
+                        project = new_project(body.get("name", "Untitled research project"))
                     else:
-                        raise ValueError("项目类型无效")
+                        raise ValueError("The project type is invalid")
                     return self.send(store.create(project))
                 if len(parts) == 4 and parts[:2] == ["api", "projects"]:
                     project_id, action = parts[2:]
@@ -133,7 +136,7 @@ def create_server(data_dir, guide_dir, port=8765):
                                 try:
                                     text = read_docx(base64.b64decode(body["docx_base64"], validate=True))
                                 except Exception:
-                                    raise ValueError("无法解析 DOCX；请确认是有效的 Word 文档（8 MB 以内）") from None
+                                    raise ValueError("The DOCX file could not be parsed. Use a valid Word document under 8 MB.") from None
                             return add_document(project, body.get("name"), text)
                         if action == "codes":
                             return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"))
@@ -147,24 +150,24 @@ def create_server(data_dir, guide_dir, port=8765):
                         if action == "memo":
                             annotation = find(project["annotations"], body.get("id"))
                             memo = body.get("memo", "")
-                            require(isinstance(memo, str) and len(memo) <= 5000, "备忘录过长")
+                            require(isinstance(memo, str) and len(memo) <= 5000, "The memo is too long")
                             event(project, "memo_update", annotation_id=annotation["id"], before=annotation.get("memo", ""), after=memo)
                             annotation["memo"] = memo
                             return annotation
                         if action == "review":
                             review(project, body.get("id"), body.get("action"))
                             return {"ok": True}
-                        raise ValueError("操作不存在")
+                        raise ValueError("The requested action does not exist")
                     return self.send(store.change(project_id, operation))
-                return self.send({"error": "接口不存在"}, status=404)
+                return self.send({"error": "The API endpoint does not exist"}, status=404)
             except ValueError as exc:
                 return self.send({"error": str(exc)}, status=400)
             except (KeyError, TypeError, AttributeError, OverflowError):
-                return self.send({"error": "数据格式无效，请检查输入"}, status=400)
+                return self.send({"error": "The data format is invalid; check the input"}, status=400)
             except (BrokenPipeError, ConnectionResetError):
                 pass
             except Exception:
-                return self.send({"error": "本地处理失败；请检查存储目录是否可写"}, status=500)
+                return self.send({"error": "Local processing failed; check that the storage directory is writable"}, status=500)
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.daemon_threads = True

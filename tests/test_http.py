@@ -55,7 +55,7 @@ class HTTPTests(unittest.TestCase):
                 data = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 calls.append(data)
                 target = json.loads(data["messages"][1]["content"])["target_text"]
-                output = {"suggestions": [{"code_name": "被倾听与尊重", "quote": target[:12], "start": 0, "rationale": "测试引文"}]}
+                output = {"suggestions": [{"code_name": "Feeling heard and respected", "quote": target[:12], "start": 0, "rationale": "The quotation supports the code."}]}
                 result = json.dumps({"id": "test-response", "model": "fake", "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(output)}}], "usage": {"total_tokens": 1}}).encode()
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")

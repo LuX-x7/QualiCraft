@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 
 from qualicraft.ai import grounded_suggestions, make_payload, validate_config, Analyzer
-from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, csv_export, new_project, paragraphs, read_docx, review, synthetic_project, validate_project
+from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, csv_export, grounded_theory_examples_project, new_project, paragraphs, read_docx, review, synthetic_project, validate_project
 from qualicraft.evaluate import evaluate, from_project
 
 
@@ -87,6 +87,19 @@ class CoreTests(unittest.TestCase):
                 store.change(p["id"], broken)
             self.assertEqual(store.get(p["id"])["name"], p["name"])
 
+    def test_legacy_fixture_migration_preserves_unknown_projects(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "test.sqlite3")
+            legacy = synthetic_project()
+            legacy["name"] = "医患沟通 · 合成演示"
+            user = store.create(new_project("My study"))
+            store.create(legacy)
+            store.migrate_legacy_demo_projects()
+            self.assertEqual(store.get(user["id"])["name"], "My study")
+            migrated = store.get(legacy["id"])
+            self.assertEqual(migrated["name"], "Fictional care interview")
+            self.assertTrue(all(ord(char) < 128 for char in migrated["documents"][0]["text"]))
+
     def test_cloud_url_validation_and_preview_no_secret(self):
         for url in ["http://example.com", "https://user:password@example.com", "https://example.com?api_key=secret"]:
             with self.assertRaises(ValueError):
@@ -109,6 +122,15 @@ class CoreTests(unittest.TestCase):
         validate_project(p)
         blind = benchmark_project("E:/Software/Guide", reference=False)
         self.assertEqual(len(blind["annotations"]), 0)
+
+    @unittest.skipUnless(Path("E:/Software/Guide/Grounded_Theory_Interview_Examples_Tian_2021").is_dir(), "Local grounded theory examples unavailable")
+    def test_grounded_theory_examples_import(self):
+        p = grounded_theory_examples_project("E:/Software/Guide")
+        self.assertEqual(len(p["documents"]), 8)
+        self.assertEqual(len(p["annotations"]), 0)
+        answer = next(x for x in paragraphs(p["documents"][0]["text"]) if x["text"].startswith("Answer:"))
+        self.assertEqual(answer["speaker"], "patient")
+        validate_project(p)
 
 
 if __name__ == "__main__":
