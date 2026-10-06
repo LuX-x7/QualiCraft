@@ -16,7 +16,7 @@ from xml.etree import ElementTree as ET
 
 COLORS = ["#427d77", "#ba8650", "#7b77b5", "#5c85b0", "#ba6e85", "#778c51"]
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 CODE_STATUSES = ("emergent", "provisional", "final")
 
@@ -52,25 +52,36 @@ def event(project, action, **details):
 def migrate(project):
     """Upgrade an older project in place to the current schema. Idempotent.
 
-    v1 -> v2 adds the codebook hierarchy and the methodological fields that the
+    v1 -> v2 adds the codebook hierarchy and the methodological fields the
     analysis workflows need: codes gain parent_id / memo / anchor examples /
     inclusion and exclusion criteria / status, and documents gain attributes.
+
+    v2 -> v3 gives every document a reading note, so the familiarisation phase
+    of a qualitative study has somewhere to live.
+
     Every added value is a neutral default, so an existing project keeps its
-    codes, annotations and offsets untouched.
+    codes, annotations and character offsets untouched.
     """
-    if project.get("schema_version") == SCHEMA_VERSION:
+    version = project.get("schema_version", 1)
+    if version >= SCHEMA_VERSION:
         return project
-    for code in project.get("codes", []):
-        code.setdefault("parent_id", None)
-        code.setdefault("memo", "")
-        code.setdefault("anchor_examples", [])
-        code.setdefault("inclusion", "")
-        code.setdefault("exclusion", "")
-        code.setdefault("status", "final")
-        code.setdefault("order", 0)
-    for document in project.get("documents", []):
-        document.setdefault("attributes", {})
-    project["schema_version"] = SCHEMA_VERSION
+    if version < 2:
+        for code in project.get("codes", []):
+            code.setdefault("parent_id", None)
+            code.setdefault("memo", "")
+            code.setdefault("anchor_examples", [])
+            code.setdefault("inclusion", "")
+            code.setdefault("exclusion", "")
+            code.setdefault("status", "final")
+            code.setdefault("order", 0)
+        for document in project.get("documents", []):
+            document.setdefault("attributes", {})
+        version = 2
+    if version < 3:
+        for document in project.get("documents", []):
+            document.setdefault("memo", "")
+        version = 3
+    project["schema_version"] = version
     return project
 
 
@@ -136,9 +147,28 @@ def add_document(project, name, text):
     require(isinstance(text, str) and text.strip() and len(text) <= 500_000, "The document is empty or exceeds 500,000 characters")
     require(len(project["documents"]) < 100, "This release supports up to 100 documents per project")
     doc = {"id": uid(), "name": string(name, "Document name", 200), "text": text,
-           "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "created_at": now()}
+           "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "created_at": now(),
+           "memo": "", "attributes": {}}
     project["documents"].append(doc)
     event(project, "document_import", document_id=doc["id"], sha256=doc["sha256"])
+    return doc
+
+
+def update_document(project, document_id, changes):
+    """Rename a document or edit its reading note."""
+    require(isinstance(changes, dict), "The document changes are invalid")
+    doc = find(project["documents"], document_id)
+    if "name" in changes:
+        doc["name"] = string(changes["name"], "Document name", 200)
+    if "memo" in changes:
+        value = changes["memo"]
+        require(isinstance(value, str) and len(value) <= 20000, "The reading note is too long")
+        doc["memo"] = value
+    if "attributes" in changes:
+        attributes = changes["attributes"]
+        require(isinstance(attributes, dict) and len(attributes) <= 50, "The document attributes are invalid")
+        doc["attributes"] = attributes
+    event(project, "document_update", document_id=document_id, fields=sorted(changes))
     return doc
 
 
@@ -358,8 +388,8 @@ def grounded_theory_examples_project(guide):
 
 
 def validate_project(project):
-    require(isinstance(project, dict) and project.get("schema_version") in (1, SCHEMA_VERSION),
-            "This project format is not supported")
+    version = project.get("schema_version") if isinstance(project, dict) else None
+    require(isinstance(version, int) and 1 <= version <= SCHEMA_VERSION, "This project format is not supported")
     migrate(project)
     string(project.get("name"), "Project name", 160)
     for key, limit in [("documents", 100), ("codes", 2000), ("annotations", 50000), ("suggestions", 50000), ("audit", 100000)]:
@@ -371,6 +401,7 @@ def validate_project(project):
         string(d.get("name"), "Document name", 200)
         require(isinstance(d.get("text"), str) and 0 < len(d["text"]) <= 500000, "The document text is invalid")
         require(d.get("sha256") == hashlib.sha256(d["text"].encode()).hexdigest(), "Document integrity validation failed")
+        require(isinstance(d.get("memo", ""), str) and len(d["memo"]) <= 20000, "The document reading note is invalid")
         attributes = d.get("attributes", {})
         require(isinstance(attributes, dict) and len(attributes) <= 50, "The document attributes are invalid")
         for key, value in attributes.items():
@@ -482,6 +513,161 @@ class Store:
                 project["provenance"] = "Eight semi-structured practitioner interview documents from Tian et al. (2021) on relationships between software architecture and source code. IP1–IP2 include paired Chinese and English answer passages; IP3–IP8 are in English. Imported from the local Guide as an uncoded workspace. The separate MAXQDA project also contains researcher coding, but it is not imported here as ground truth."
                 project["updated_at"] = now()
                 conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
+
+
+def methods_narrative(project):
+    """A Markdown account of how the analysis was carried out.
+
+    Assembled from the project state and the audit trail, so a methods section
+    can be drafted from what actually happened rather than reconstructed from
+    memory. Nothing is inferred: every figure is read off the project.
+    """
+    codes, documents, annotations = project["codes"], project["documents"], project["annotations"]
+    audit = project["audit"]
+    children = {}
+    for code in codes:
+        children.setdefault(code.get("parent_id"), []).append(code)
+    for group in children.values():
+        group.sort(key=lambda c: (c.get("order", 0), c["name"]))
+    own = {}
+    for annotation in annotations:
+        own[annotation["code_id"]] = own.get(annotation["code_id"], 0) + 1
+
+    def rollup(code_id):
+        return own.get(code_id, 0) + sum(rollup(c["id"]) for c in children.get(code_id, []))
+
+    def field(value, fallback):
+        return value.strip() if isinstance(value, str) and value.strip() else fallback
+
+    out = []
+    add = out.append
+    add("# Methods record - " + project["name"])
+    add("")
+    add("Generated " + now()[:16].replace("T", " ") + " from the local workspace. No source text left this machine.")
+    add("")
+
+    add("## 1. Data")
+    add("")
+    add("| Document | Characters | Codings | Reading note | Imported |")
+    add("| --- | ---: | ---: | :---: | --- |")
+    for document in documents:
+        count = len([a for a in annotations if a["document_id"] == document["id"]])
+        note = "yes" if field(document.get("memo"), "") else "-"
+        add("| " + document["name"] + " | " + format(len(document["text"]), ",") + " | "
+            + str(count) + " | " + note + " | " + document["created_at"][:10] + " |")
+    add("")
+    add("**" + str(len(documents)) + " document(s), "
+        + format(sum(len(d["text"]) for d in documents), ",") + " characters, "
+        + str(len(annotations)) + " coding(s).**")
+    add("")
+
+    noted = [d for d in documents if field(d.get("memo"), "")]
+    if noted:
+        add("### Reading notes")
+        add("")
+        add("Familiarisation notes, as written. These are the researcher's first impressions")
+        add("before any coding took place.")
+        add("")
+        for document in noted:
+            add("**" + document["name"] + "**")
+            add("")
+            add("> " + document["memo"].strip().replace("\n", "\n> "))
+            add("")
+
+    add("## 2. Coding")
+    add("")
+    ai = [a for a in annotations if a.get("source") == "ai_reviewed"]
+    add("- Codings: **" + str(len(annotations)) + "** - "
+        + str(len(annotations) - len(ai)) + " made by hand, " + str(len(ai)) + " accepted from AI suggestions.")
+    add("- Codebook: **" + str(len(codes)) + "** codes, of which **"
+        + str(len(children.get(None, []))) + "** sit at the top level.")
+    if annotations:
+        busiest = sorted(own.items(), key=lambda kv: -kv[1])[:3]
+        named = [(next((c["name"] for c in codes if c["id"] == k), k), v) for k, v in busiest]
+        add("- Most used: " + ", ".join(n + " (" + str(v) + ")" for n, v in named) + ".")
+    add("")
+
+    add("## 3. How the codebook changed")
+    add("")
+    add("Read from the audit trail, in order. This is the record a reader needs in order to")
+    add("judge how the analysis developed.")
+    add("")
+    changes = [e for e in audit if e.get("action") in
+               ("code_create", "code_update", "code_delete", "code_merge", "annotation_remove")]
+    if not changes:
+        add("_No codebook changes recorded._")
+    else:
+        add("| When | Action | Detail |")
+        add("| --- | --- | --- |")
+        for e in changes:
+            when = e.get("time", "")[:16].replace("T", " ")
+            action = e["action"]
+            if action == "code_create":
+                detail = "created \"" + e.get("name", "") + "\""
+            elif action == "code_update":
+                detail = "edited " + ", ".join(e.get("fields", []))
+            elif action == "code_delete":
+                detail = ("deleted \"" + e.get("name", "") + "\" - "
+                          + str(e.get("codings_removed", 0)) + " coding(s) removed")
+            elif action == "code_merge":
+                detail = ("merged \"" + e.get("source", "") + "\" into \""
+                          + e.get("target", "") + "\" - " + str(e.get("codings_moved", 0)) + " coding(s) moved")
+            else:
+                detail = "coding removed"
+            add("| " + when + " | " + action + " | " + detail + " |")
+    add("")
+
+    add("## 4. Themes")
+    add("")
+    if not codes:
+        add("_The codebook is empty._")
+    else:
+        def emit(code, depth):
+            head = "#" * min(3 + depth, 6)
+            add(head + " " + code["name"])
+            add("")
+            add("- Definition: " + field(code.get("definition"), "_not recorded_"))
+            if field(code.get("inclusion"), ""):
+                add("- Include when: " + code["inclusion"].strip())
+            if field(code.get("exclusion"), ""):
+                add("- Exclude when: " + code["exclusion"].strip())
+            if code.get("anchor_examples"):
+                add("- Anchor example: \u201c" + code["anchor_examples"][0] + "\u201d")
+            add("- Status: " + code.get("status", "final")
+                + " - " + str(rollup(code["id"])) + " coding(s)")
+            if field(code.get("memo"), ""):
+                add("")
+                add("> " + code["memo"].strip().replace("\n", "\n> "))
+            add("")
+            for child in children.get(code["id"], []):
+                emit(child, depth + 1)
+        for top in children.get(None, []):
+            emit(top, 0)
+
+    add("## 5. AI assistance")
+    add("")
+    suggestions = project["suggestions"]
+    if not suggestions:
+        add("_No model was used on this project._")
+    else:
+        accepted = len([s for s in suggestions if s["status"] == "accepted"])
+        rejected = len([s for s in suggestions if s["status"] == "rejected"])
+        pending = len([s for s in suggestions if s["status"] == "pending"])
+        add("- Suggestions produced: **" + str(len(suggestions)) + "**")
+        add("- Accepted: " + str(accepted) + " | Rejected: " + str(rejected) + " | Still pending: " + str(pending))
+        add("- Every suggestion had to be accepted by hand before it entered the codebook; "
+            "suggestions whose quotation could not be located in the source were discarded on arrival.")
+    add("")
+
+    add("## 6. Integrity")
+    add("")
+    add("- Every document carries a SHA-256 digest; all "
+        + str(len(documents)) + " verified on load.")
+    add("- " + str(len(audit)) + " audit entries recorded.")
+    add("- Codings are anchored to character offsets, not to text markup, so the "
+        "source can be re-imported without losing alignment.")
+    add("")
+    return "\n".join(out)
 
 
 def csv_export(project, matrix=False):

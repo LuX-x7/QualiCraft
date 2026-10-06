@@ -115,9 +115,24 @@ class HTTPTests(unittest.TestCase):
         self.assertIn("codings_removed", deleted)
 
         project = self.request(root)
-        self.assertEqual(project["schema_version"], 2)
+        self.assertEqual(project["schema_version"], 3)
         self.assertNotIn(other["id"], [c["id"] for c in project["codes"]])
         self.assertTrue(any(a["action"] == "code_delete" for a in project["audit"]))
+
+
+    def test_http_reading_note_and_methods_export(self):
+        p = self.request("/api/projects", {"kind": "demo"})
+        root = "/api/projects/" + p["id"]
+        updated = self.request(root + "/document-update",
+                               {"id": p["documents"][0]["id"], "changes": {"memo": "first pass note"}})
+        self.assertEqual(updated["memo"], "first pass note")
+        request = urllib.request.Request(self.base + root + "/export?format=methods",
+                                         headers={"X-QualiCraft-Token": self.token})
+        with urllib.request.urlopen(request, timeout=3) as response:
+            body = response.read().decode("utf-8")
+        self.assertIn("# Methods record", body)
+        self.assertIn("## 6. Integrity", body)
+        self.assertIn("first pass note", body)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 
 from qualicraft.ai import grounded_suggestions, make_payload, validate_config, Analyzer
-from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, validate_project
+from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, methods_narrative, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, update_document, validate_project
 from qualicraft.evaluate import evaluate, from_project
 
 
@@ -139,7 +139,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(interview_answer["speaker"], "patient")
         validate_project(p)
 
-    def test_schema_v1_migrates_to_v2_without_data_loss(self):
+    def test_schema_v1_migrates_to_current_without_data_loss(self):
         p = new_project("Legacy")
         quote = "the doctor explained things clearly and I felt heard."
         d = add_document(p, "I1", "Patient: " + quote)
@@ -153,12 +153,12 @@ class CoreTests(unittest.TestCase):
             document.pop("attributes", None)
         p["schema_version"] = 1
         validate_project(p)
-        self.assertEqual(p["schema_version"], 2)
+        self.assertEqual(p["schema_version"], 3)
         self.assertEqual(len(p["annotations"]), 1)
         self.assertEqual(p["annotations"][0]["quote"], quote)
         self.assertIsNone(p["codes"][0]["parent_id"])
         self.assertEqual(p["codes"][0]["status"], "final")
-        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 2)
+        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 3)
 
     def test_code_hierarchy_and_paths(self):
         p = new_project("Hierarchy")
@@ -233,6 +233,51 @@ class CoreTests(unittest.TestCase):
         text = csv_export(p).decode("utf-8-sig")
         self.assertIn("code_path", text.splitlines()[0])
         self.assertIn("Theme > Child", text)
+
+
+    def test_schema_v2_migrates_to_v3_with_reading_notes(self):
+        p = new_project("V2")
+        add_document(p, "I1", "Patient: " + "Some content here. " * 6)
+        for document in p["documents"]:
+            document.pop("memo", None)
+        p["schema_version"] = 2
+        validate_project(p)
+        self.assertEqual(p["schema_version"], 3)
+        self.assertEqual(p["documents"][0]["memo"], "")
+
+    def test_document_reading_note_round_trip(self):
+        p = new_project("Note")
+        d = add_document(p, "I1", "Patient: " + "Some content here. " * 6)
+        update_document(p, d["id"], {"memo": "First pass: the participant keeps returning to tooling."})
+        self.assertIn("tooling", p["documents"][0]["memo"])
+        update_document(p, d["id"], {"name": "Interview 1"})
+        self.assertEqual(p["documents"][0]["name"], "Interview 1")
+        validate_project(p)
+        with self.assertRaises(ValueError):
+            update_document(p, d["id"], {"memo": "x" * 20001})
+
+    def test_methods_narrative_reports_the_process(self):
+        p = new_project("Methods")
+        d = add_document(p, "I1", "Patient: " + "Some content here. " * 6)
+        update_document(p, d["id"], {"memo": "first read"})
+        theme = add_code(p, "Tooling", "How tools shape the work")
+        child = add_code(p, "Tooling friction", "Where tools get in the way", parent_id=theme["id"])
+        update_code(p, child["id"], {"inclusion": "when the participant describes friction",
+                                     "anchor_examples": ["the tool got in the way"]})
+        annotate(p, d["id"], child["id"], 9, 40)
+        text = methods_narrative(p)
+        for expected in ["# Methods record", "## 1. Data", "## 2. Coding", "## 3. How the codebook changed",
+                         "## 4. Themes", "## 5. AI assistance", "## 6. Integrity",
+                         "Tooling friction", "when the participant describes friction",
+                         "the tool got in the way", "1 coding(s)", "1 document(s)", "first read"]:
+            self.assertIn(expected, text)
+        self.assertIn("| yes |", text)
+
+    def test_methods_narrative_handles_an_empty_project(self):
+        text = methods_narrative(new_project("Empty"))
+        self.assertIn("# Methods record", text)
+        self.assertIn("_The codebook is empty._", text)
+        self.assertIn("_No model was used on this project._", text)
 
 
 if __name__ == "__main__":

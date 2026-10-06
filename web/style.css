@@ -42,3 +42,15 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .code-popup-count{flex:1;color:var(--subtle);font-size:10px}
 .code-popup-foot button{font-size:10px;padding:4px 7px}
 ::highlight(pending){background:color-mix(in srgb,#4656a6 30%,transparent)}
+
+
+/* --- Reading notes -----------------------------------------------------------
+   The familiarisation phase of a qualitative study needs somewhere to put first
+   impressions. The note lives on the document itself and saves as you type. */
+.reading-note{display:flex;align-items:flex-start;gap:10px;padding:10px 24px 10px 48px;border-bottom:1px solid #eef0f3;background:#fcfcfd}
+.reading-note-label{flex:0 0 auto;padding-top:6px;color:#8b94a4;font-size:9px;font-weight:750;letter-spacing:.09em}
+.reading-note textarea{flex:1;min-width:0;border:1px solid transparent;border-radius:3px;background:transparent;padding:5px 8px;font:12px/1.6 var(--sans);color:#3a4459;resize:vertical}
+.reading-note textarea:hover{border-color:var(--line)}
+.reading-note textarea:focus{border-color:var(--accent);background:#fff;outline:0}
+.reading-note textarea::placeholder{color:#aab2c0}
+.reading-note-state{flex:0 0 auto;padding-top:7px;color:var(--subtle);font-size:9px;min-width:46px;text-align:right}

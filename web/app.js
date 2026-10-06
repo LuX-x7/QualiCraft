@@ -163,6 +163,7 @@ function codingView() {
   return `<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="Search in document" aria-label="Search transcript" value="${esc(state.search)}"></div>
   <div class="work-grid"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">DOCUMENT</div><div class="tool-group"><span class="selection-hint">Select text to code a passage</span><button data-action="code">+ New code</button><button class="primary" data-action="analyze">${icon('star')}Analyze with AI</button></div></div>
   <div class="reader-header"><div><h2 class="reader-heading">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">CODING MARGIN</div></div>
+  <div class="reading-note"><span class="reading-note-label">READING NOTES</span><textarea id="doc-memo" rows="2" placeholder="First impressions, questions to follow up, anything that stands out.">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
   <div id="reader">${readerHtml()}</div></section><aside class="review-pane" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
 }
 function readerHtml() {
@@ -402,7 +403,7 @@ function showProjects() {
   modal('Research projects',`<label class="field">Existing projects<select id="modal-project-select">${state.projects.map(p=>`<option value="${p.id}" ${p.id===state.project.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><button data-action="switch-project">Open project</button><hr style="border:0;border-top:1px solid #e3e7e2;margin:22px 0"><label class="field">New project name<input id="new-project-name" placeholder="e.g. Experiences of outpatient care" maxlength="160"></label><button class="primary" data-action="new-project">Create project</button><div class="option-grid"><button class="option-card" data-action="grounded-project"><strong>Tian 2021 · software architecture interviews</strong><span>Import 8 semi-structured practitioner interviews. IP1–IP2 pair Chinese responses with English translations; IP3–IP8 are in English.</span></button><button class="option-card" data-action="demo-project"><strong>Fictional care interview</strong><span>Explore a fictional transcript, sample coding, and fixed review suggestions.</span></button><button class="option-card" data-action="benchmark-project"><strong>TU Delft · blind workspace</strong><span>Import 7 transcripts and 54 codes, without reference annotations.</span></button><button class="option-card" data-action="reference-project"><strong>TU Delft · researcher reference</strong><span>Explore 377 researcher annotations for comparison. These are not model predictions.</span></button><button class="option-card" data-action="restore-pick"><strong>Restore project JSON</strong><span>Restore a backup as a new project while keeping the original.</span></button></div><input id="restore-file" type="file" accept=".json" hidden><p>Guide collections are imported from the local Guide directory and retain source provenance in the project audit trail.</p>`);
 }
 function showExport() {
-  modal('Export your research',`<p>Files are saved to your browser download folder. Full project exports include source transcripts; handle them as research data.</p><div class="option-grid"><button class="option-card" data-action="download" data-format="json"><strong>Full project · JSON</strong><span>Transcripts, codebook, codings, suggestions, and activity. Restore later to continue.</span></button><button class="option-card" data-action="download" data-format="csv"><strong>Codings · CSV</strong><span>Document, code, source quote, character offsets, memo, and provenance.</span></button><button class="option-card" data-action="download" data-format="matrix"><strong>Document × code · CSV</strong><span>Confirmed codings only, ready for Excel, R, or Python.</span></button></div>`);
+  modal('Export your research',`<p>Files are saved to your browser download folder. Full project exports include source transcripts; handle them as research data.</p><div class="option-grid"><button class="option-card" data-action="download" data-format="json"><strong>Full project · JSON</strong><span>Transcripts, codebook, codings, suggestions, and activity. Restore later to continue.</span></button><button class="option-card" data-action="download" data-format="csv"><strong>Codings · CSV</strong><span>Document, code, source quote, character offsets, memo, and provenance.</span></button><button class="option-card" data-action="download" data-format="matrix"><strong>Document × code · CSV</strong><span>Confirmed codings only, ready for Excel, R, or Python.</span></button><button class="option-card" data-action="download" data-format="methods"><strong>Methods record · Markdown</strong><span>How the analysis was actually carried out, assembled from your audit trail. Draft the methods section from it.</span></button></div>`);
 }
 async function createProject(body) {
   const p=await api('/api/projects',body); state.projects=await api('/api/projects'); closeModal(); state.view='coding'; await loadProject(p.id); toast('Project created and saved locally.');
@@ -485,7 +486,7 @@ async function action(button) {
   if(a==='restore-pick'){$('#restore-file').click();return;}
   if(a==='download'){
     const format=button.dataset.format,response=await fetch(projectUrl('export')+'?format='+format,{headers:{'X-QualiCraft-Token':state.token}});
-    if(!response.ok)throw new Error('Export failed.');const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download=`qualicraft-${format==='json'?'project.json':format+'.csv'}`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Exported to your browser download folder.');return;
+    if(!response.ok)throw new Error('Export failed.');const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download='qualicraft-'+(format==='json'?'project.json':format==='methods'?'methods.md':format+'.csv');link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Exported to your browser download folder.');return;
   }
 }
 function renderJob(){
@@ -509,6 +510,24 @@ document.addEventListener('change',async e=>{
   }catch(error){errorDisplay(error);}
 });
 document.addEventListener('input',e=>{if(e.target.id==='search'){state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();}});
+let docMemoTimer=null;
+document.addEventListener('input',e=>{
+  if(e.target.id!=='doc-memo')return;
+  const doc=state.project.documents.find(d=>d.id===state.docId);
+  if(doc)doc.memo=e.target.value;
+  const badge=$('#doc-memo-state');
+  if(badge)badge.textContent='\u2026';
+  clearTimeout(docMemoTimer);
+  docMemoTimer=setTimeout(async()=>{
+    const target=$('#doc-memo-state');
+    try{
+      await api(projectUrl('document-update'),{id:state.docId,changes:{memo:e.target.value}});
+      if(target){target.textContent='saved';setTimeout(()=>{if(target.isConnected)target.textContent='';},1600);}
+    }catch(error){
+      if(target)target.textContent='not saved';
+    }
+  },900);
+});
 document.addEventListener('mouseup',e=>{if(e.target.closest('#reader'))selectionUpdate();});
 document.addEventListener('keyup',e=>{if(e.shiftKey&&e.target.closest('#reader'))selectionUpdate();});
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#code-popup')&&!e.target.closest('#reader')&&!e.target.closest('dialog'))closeCodePopup();});
