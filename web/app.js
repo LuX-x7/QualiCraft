@@ -40,6 +40,18 @@ function codeDescendants(id) {
   }
   return out;
 }
+function codeDepthMap() {
+  const byId=new Map(state.project.codes.map(c=>[c.id,c]));
+  const depth=new Map();
+  state.project.codes.forEach(c=>{
+    let d=0, cur=c; const seen=new Set([c.id]);
+    while(cur.parent_id && byId.has(cur.parent_id) && !seen.has(cur.parent_id)) {
+      seen.add(cur.id); cur=byId.get(cur.parent_id); d++;
+    }
+    depth.set(c.id, d);
+  });
+  return depth;
+}
 function codeTree() {
   const byParent=new Map();
   state.project.codes.forEach(c=>{ const k=c.parent_id||null; if(!byParent.has(k)) byParent.set(k,[]); byParent.get(k).push(c); });
@@ -136,15 +148,22 @@ function highlight(text, start, annotations) {
   const bounds=[...new Set([start,end,...relevant.flatMap(a=>[Math.max(start,a.start),Math.min(end,a.end)])])].sort((a,b)=>a-b);
   return bounds.slice(0,-1).map((a,i)=>{
     const b=bounds[i+1], active=relevant.filter(x=>x.start<b&&x.end>a), part=esc(chars.slice(a-start,b-start).join(''));
-    return active.length?`<mark title="${esc(active.map(x=>codesFor(x)?.name).join(' · '))}">${part}</mark>`:part;
+    if(!active.length) return part;
+    const activeCodes=active.map(x=>codesFor(x)).filter(Boolean);
+    if(!activeCodes.length) return part;
+    const depth=codeDepthMap();
+    const shallow=activeCodes.reduce((m,c)=>((depth.get(c.id)||0)<(depth.get(m.id)||0)?c:m),activeCodes[0]);
+    const deep=activeCodes.reduce((m,c)=>((depth.get(c.id)||0)>(depth.get(m.id)||0)?c:m),activeCodes[0]);
+    return `<mark style="background:color-mix(in srgb,${esc(shallow.color)} 20%,#fff);border-bottom-color:${esc(deep.color)}" title="${esc(activeCodes.map(c=>c.name).join(' · '))}">${part}</mark>`;
   }).join('');
 }
+
 function codingView() {
   const d=doc(); if(!d) return `<div class="no-doc"><div class="eyebrow">A SPACE FOR YOUR QUESTIONS</div><h2>Start with a conversation</h2><p>Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.</p><button class="primary" data-action="import">Import interview</button> <button data-action="code">Create code</button></div>`;
   return `<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="Search in document" aria-label="Search transcript" value="${esc(state.search)}"></div>
   <div class="work-grid"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">DOCUMENT</div><div class="tool-group"><span class="selection-hint">Select text to code a passage</span><button data-action="code">+ New code</button><button class="primary" data-action="analyze">${icon('star')}Analyze with AI</button></div></div>
   <div class="reader-header"><div><h2 class="reader-heading">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">CODING MARGIN</div></div>
-  <div id="reader">${readerHtml()}</div><div id="selection-slot"></div></section><aside class="review-pane" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
+  <div id="reader">${readerHtml()}</div></section><aside class="review-pane" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
 }
 function readerHtml() {
   const d=doc(), annotations=state.project.annotations.filter(a=>a.document_id===d.id);
@@ -178,7 +197,136 @@ function selectionUpdate() {
   const start=offset(first,range.startContainer,range.startOffset), end=offset(last,range.endContainer,range.endOffset);
   if(start>=end) return;
   state.selection={start,end,document_id:state.docId};
-  $('#selection-slot').innerHTML=`<div class="selection-bar"><span>Selected ${end-start} characters${first!==last?' (includes intervening source text)':''}</span><button class="primary" data-action="annotate">Apply code</button><button data-action="analyze-selection">Analyze selection</button></div>`;
+  state.selectionRect=range.getBoundingClientRect();
+  state.selectionSpansParagraphs=first!==last;
+  markPendingSelection(range);
+  showCodePopup();
+}
+let pendingRange=null;
+function markPendingSelection(range) {
+  if(!window.CSS||!CSS.highlights||typeof Highlight==='undefined') return;
+  try { pendingRange=range.cloneRange(); CSS.highlights.set('pending', new Highlight(pendingRange)); } catch(e) {}
+}
+function clearPendingSelection() {
+  pendingRange=null;
+  if(window.CSS&&CSS.highlights) CSS.highlights.delete('pending');
+}
+function removeCodePopupDom() {
+  const el=$('#code-popup'); if(el) el.remove();
+}
+function closeCodePopup() {
+  removeCodePopupDom();
+  clearPendingSelection();
+}
+function codePopupMatches(query) {
+  const needle=query.trim().toLowerCase();
+  const all=state.project.codes.map(c=>({code:c, path:codePath(c)}));
+  if(!needle) return all.slice(0,8);
+  return all.filter(x=>x.path.toLowerCase().includes(needle)).slice(0,8);
+}
+function showCodePopup() {
+  removeCodePopupDom();
+  const sel=state.selection; if(!sel) return;
+  const host=document.createElement('div');
+  host.id='code-popup';
+  host.className='code-popup';
+  host.innerHTML=`
+    <div class="code-popup-row">
+      <input id="code-search" type="text" autocomplete="off" spellcheck="false" placeholder="输入关键字，回车即打标">
+      <button class="code-popup-x" data-action="close-popup" title="关闭 (Esc)">✕</button>
+    </div>
+    <div class="code-suggest" id="code-suggest"></div>
+    <div class="code-popup-foot">
+      <span class="code-popup-count">${sel.end-sel.start} 字符${state.selectionSpansParagraphs?'（跨段）':''}</span>
+      <button data-action="annotate">更多选项…</button>
+      <button data-action="analyze-selection">AI 分析</button>
+    </div>`;
+  document.body.appendChild(host);
+  renderCodeSuggest('');
+  positionCodePopup();
+  setTimeout(positionCodePopup,120);
+  setTimeout(positionCodePopup,320);
+  const input=$('#code-search');
+  if(input) {
+    input.focus();
+    input.addEventListener('input',e=>renderCodeSuggest(e.target.value));
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){ e.preventDefault(); submitCodePopup(); }
+      else if(e.key==='Escape'){ e.preventDefault(); closeCodePopup(); }
+      else if(e.key==='ArrowDown'){ e.preventDefault(); movePopupCursor(1); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); movePopupCursor(-1); }
+    });
+  }
+}
+function positionCodePopup() {
+  const host=$('#code-popup'); if(!host) return;
+  const anchor=pendingRange?pendingRange.getBoundingClientRect():(state.selectionRect||null);
+  if(!anchor||(!anchor.width&&!anchor.height)) return;
+  const list=$('#code-suggest');
+  const vw=window.innerWidth, vh=window.innerHeight, gap=8;
+  const above=anchor.top-gap*2, below=vh-anchor.bottom-gap*2;
+  const useBelow=below>=above;
+  const room=Math.max(130,useBelow?below:above);
+  if(list) {
+    const chrome=host.getBoundingClientRect().height-(list.getBoundingClientRect().height||0);
+    list.style.maxHeight=Math.max(56,Math.min(212,room-chrome))+'px';
+  }
+  const box=host.getBoundingClientRect();
+  let left=anchor.left;
+  if(left+box.width>vw-gap) left=Math.max(gap,vw-box.width-gap);
+  if(left<gap) left=gap;
+  let top=useBelow?anchor.bottom+gap:anchor.top-box.height-gap;
+  top=Math.max(gap,Math.min(top,vh-box.height-gap));
+  host.style.left=left+'px'; host.style.top=top+'px';
+}
+function renderCodeSuggest(query) {
+  const box=$('#code-suggest'); if(!box) return;
+  const needle=query.trim();
+  const matches=codePopupMatches(needle);
+  const depth=codeDepthMap();
+  const exact=matches.some(m=>m.path.toLowerCase()===needle.toLowerCase());
+  state.popupMatches=matches;
+  state.popupCursor=0;
+  const rows=matches.map((m,i)=>`<button class="suggest-row${i===0?' active':''}" data-action="popup-apply" data-id="${m.code.id}">
+      <span class="dot" style="background:${esc(m.code.color)}"></span>
+      <span class="suggest-name">${esc(m.path)}</span>
+      ${(depth.get(m.code.id)||0)>0?'<span class="suggest-tag">子级</span>':''}
+    </button>`).join('');
+  const createRow=(needle&&!exact)
+    ? `<button class="suggest-row create" data-action="popup-create" data-name="${esc(needle)}">＋ 新建编码「${esc(needle)}」并打标</button>`
+    : '';
+  box.innerHTML=(rows+createRow)||'<div class="suggest-empty">还没有编码，输入关键字即可新建</div>';
+}
+function movePopupCursor(delta) {
+  const rows=[...document.querySelectorAll('#code-suggest .suggest-row')];
+  if(!rows.length) return;
+  const next=Math.max(0,Math.min(rows.length-1,(state.popupCursor||0)+delta));
+  state.popupCursor=next;
+  rows.forEach((r,i)=>r.classList.toggle('active',i===next));
+  rows[next].scrollIntoView({block:'nearest'});
+}
+async function applyCodeById(codeId) {
+  const sel=state.selection; if(!sel) return;
+  await api(projectUrl('annotations'),{document_id:sel.document_id,start:sel.start,end:sel.end,code_id:codeId,memo:''});
+  closeCodePopup(); state.selection=null;
+  await refresh();
+  toast('已打标。');
+}
+async function createAndApplyCode(name) {
+  const code=await api(projectUrl('codes'),{name,definition:'',color:null});
+  await refresh();
+  await applyCodeById(code.id);
+  toast(`已新建编码「${name}」并打标。`);
+}
+async function submitCodePopup() {
+  const input=$('#code-search'); if(!input) return;
+  const q=input.value.trim();
+  const matches=state.popupMatches||[];
+  const exact=matches.find(m=>m.path.toLowerCase()===q.toLowerCase());
+  const pick=exact||matches[state.popupCursor||0];
+  if(pick) return applyCodeById(pick.code.id);
+  if(q) return createAndApplyCode(q);
+  toast('先输入关键字，或从列表里选一个编码。',true);
 }
 function locate(start) {
   if(state.search||state.codeFilter){state.search='';state.codeFilter=null;render();}
@@ -275,8 +423,11 @@ async function action(button) {
   if(a==='settings')return showSettings();
   if(a==='projects')return showProjects();
   if(a==='export')return showExport();
-  if(a==='annotate')return showAnnotation();
-  if(a==='analyze'||a==='analyze-selection')return showAnalyze(a==='analyze-selection');
+  if(a==='annotate'){closeCodePopup();return showAnnotation();}
+  if(a==='analyze'||a==='analyze-selection'){closeCodePopup();return showAnalyze(a==='analyze-selection');}
+  if(a==='close-popup'){closeCodePopup();return;}
+  if(a==='popup-apply'){await applyCodeById(button.dataset.id);return;}
+  if(a==='popup-create'){await createAndApplyCode(button.dataset.name);return;}
   if(a==='locate')return locate(Number(button.dataset.start));
   if(a==='preview-analysis')return previewAnalysis();
   if(a==='save-document'){
@@ -357,8 +508,11 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(e.target.id==='search'){state.search=e.target.value;state.selection=null;$('#reader').innerHTML=readerHtml();$('#selection-slot').innerHTML='';}});
+document.addEventListener('input',e=>{if(e.target.id==='search'){state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();}});
 document.addEventListener('mouseup',e=>{if(e.target.closest('#reader'))selectionUpdate();});
 document.addEventListener('keyup',e=>{if(e.shiftKey&&e.target.closest('#reader'))selectionUpdate();});
+document.addEventListener('mousedown',e=>{if(!e.target.closest('#code-popup')&&!e.target.closest('#reader')&&!e.target.closest('dialog'))closeCodePopup();});
+window.addEventListener('scroll',()=>positionCodePopup(),true);
+window.addEventListener('resize',()=>positionCodePopup());
 async function init(){try{const boot=await api('/api/bootstrap');state.token=boot.token;state.projects=boot.projects;state.config=boot.config;await loadProject(state.projects[0].id);state.jobs=await api('/api/jobs');renderJob();if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(error){$('#app').innerHTML=`<div class="loading">Could not open workspace: ${esc(error.message)}. Check that the local server is running, then refresh.</div>`;}}
 init();
