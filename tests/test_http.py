@@ -115,7 +115,7 @@ class HTTPTests(unittest.TestCase):
         self.assertIn("codings_removed", deleted)
 
         project = self.request(root)
-        self.assertEqual(project["schema_version"], 3)
+        self.assertEqual(project["schema_version"], 4)
         self.assertNotIn(other["id"], [c["id"] for c in project["codes"]])
         self.assertTrue(any(a["action"] == "code_delete" for a in project["audit"]))
 
@@ -133,6 +133,16 @@ class HTTPTests(unittest.TestCase):
         self.assertIn("# Methods record", body)
         self.assertIn("## 6. Integrity", body)
         self.assertIn("first pass note", body)
+
+
+    def test_http_capability_blocks(self):
+        p = self.request("/api/projects", {"kind": "demo"})
+        root = "/api/projects/" + p["id"]
+        result = self.request(root + "/blocks", {"blocks": ["memos", "plotting"]})
+        self.assertEqual(result["blocks"], ["memos", "plotting"])
+        self.assertEqual(self.request(root)["blocks"], ["memos", "plotting"])
+        with self.assertRaises(urllib.error.HTTPError):
+            self.request(root + "/blocks", {"blocks": ["nonsense"]})
 
 
 if __name__ == "__main__":

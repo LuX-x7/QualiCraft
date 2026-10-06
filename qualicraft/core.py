@@ -16,9 +16,15 @@ from xml.etree import ElementTree as ET
 
 COLORS = ["#427d77", "#ba8650", "#7b77b5", "#5c85b0", "#ba6e85", "#778c51"]
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 CODE_STATUSES = ("emergent", "provisional", "final")
+
+# Capability blocks. The core is always on; everything here is opt-in, so a
+# researcher assembles the tool they need instead of getting everything at once.
+# See docs/NOT_BUILDING.md: "not built in" is not the same as "not available".
+BLOCKS = ("hierarchy", "memos", "ai", "insights", "audit", "plotting")
+DEFAULT_BLOCKS = ("hierarchy", "memos", "ai", "insights", "audit")
 
 
 def uid():
@@ -59,6 +65,9 @@ def migrate(project):
     v2 -> v3 gives every document a reading note, so the familiarisation phase
     of a qualitative study has somewhere to live.
 
+    v3 -> v4 records which capability blocks the project uses, so a researcher
+    can assemble the tool they need rather than receiving everything at once.
+
     Every added value is a neutral default, so an existing project keeps its
     codes, annotations and character offsets untouched.
     """
@@ -81,6 +90,9 @@ def migrate(project):
         for document in project.get("documents", []):
             document.setdefault("memo", "")
         version = 3
+    if version < 4:
+        project.setdefault("blocks", list(DEFAULT_BLOCKS))
+        version = 4
     project["schema_version"] = version
     return project
 
@@ -121,7 +133,26 @@ def code_path(codes, code):
 def new_project(name):
     return {"schema_version": SCHEMA_VERSION, "id": uid(), "name": string(name, "Project name", 160),
             "created_at": now(), "updated_at": now(), "documents": [], "codes": [],
-            "annotations": [], "suggestions": [], "audit": [], "provenance": ""}
+            "annotations": [], "suggestions": [], "audit": [], "provenance": "",
+            "blocks": list(DEFAULT_BLOCKS)}
+
+
+def set_blocks(project, blocks):
+    """Turn capability blocks on or off for this project.
+
+    The choice is stored with the project, so which tools a study used is part
+    of the record rather than a local preference.
+    """
+    require(isinstance(blocks, list), "The capability list is invalid")
+    require(len(blocks) <= len(BLOCKS), "Too many capability blocks were selected")
+    cleaned = []
+    for name in blocks:
+        require(name in BLOCKS, "Unknown capability block: " + str(name))
+        if name not in cleaned:
+            cleaned.append(name)
+    project["blocks"] = cleaned
+    event(project, "blocks_update", blocks=sorted(cleaned))
+    return {"blocks": cleaned}
 
 
 def paragraphs(text):
@@ -392,6 +423,10 @@ def validate_project(project):
     require(isinstance(version, int) and 1 <= version <= SCHEMA_VERSION, "This project format is not supported")
     migrate(project)
     string(project.get("name"), "Project name", 160)
+    blocks = project.get("blocks", [])
+    require(isinstance(blocks, list) and len(blocks) <= len(BLOCKS), "The capability list is invalid")
+    require(all(b in BLOCKS for b in blocks), "An unknown capability block is selected")
+    require(len(blocks) == len(set(blocks)), "The capability list contains duplicates")
     for key, limit in [("documents", 100), ("codes", 2000), ("annotations", 50000), ("suggestions", 50000), ("audit", 100000)]:
         require(isinstance(project.get(key), list) and len(project[key]) <= limit, f"{key} has an invalid format or item count")
         ids = [string(x.get("id"), "Record ID", 100) for x in project[key]]

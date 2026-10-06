@@ -4,6 +4,21 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const cp = s => Array.from(s);
 const cut = (s, a, b) => cp(s).slice(a, b).join('');
 const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[], collapsed:new Set()};
+
+// Capability blocks. The core (documents, codes, codings) is always on; these
+// are opt-in, so a researcher assembles the tool they need. See docs/NOT_BUILDING.md.
+const BLOCKS = [
+  {id:'hierarchy', name:'Theme grouping', desc:'Group codes under themes. Turns the flat list into a collapsible tree with rolled-up counts.'},
+  {id:'memos', name:'Memos', desc:'Reading notes on a document, notes on a code or theme, notes on a single coding.'},
+  {id:'ai', name:'AI suggestions', desc:'A model proposes codings; each one arrives in a review queue and only enters the codebook if you accept it.'},
+  {id:'insights', name:'Frequency analysis', desc:'How often each code was used, and a document by code matrix.'},
+  {id:'audit', name:'Audit trail', desc:'Every action with a timestamp, stored with the project and included in exports.'},
+  {id:'plotting', name:'Plotting workbench', desc:'Publication figures: theme co-occurrence heatmap, diverging thematic bars, mixed-methods bubble matrix.', planned:true}
+];
+function hasBlock(id) {
+  const blocks = state.project && state.project.blocks;
+  return Array.isArray(blocks) ? blocks.includes(id) : true;
+}
 const icons = {
   grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   chart:'<path d="M4 3v17h17M8 16v-5m5 5V6m5 10v-8"/>',
@@ -129,11 +144,12 @@ function render() {
     <aside class="sidebar"><div class="brand"><span class="brand-icon">Q</span><span class="brand-name">QualiCraft</span><span class="version">ALPHA</span></div>
     <div class="section-label">PROJECT</div><select id="project-select" class="project-select" aria-label="Switch project">${state.projects.map(x=>`<option value="${esc(x.id)}" ${x.id===p.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
     <button class="link new-project" data-action="projects">+ New / import project</button>
-    <nav class="nav" aria-label="Main navigation">${[['coding','grid','Coding workspace'],['insights','chart','Insights'],['audit','history','Audit trail']].map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}">${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
+    <nav class="nav" aria-label="Main navigation">${[['coding','grid','Coding workspace'],['insights','chart','Insights'],['audit','history','Audit trail']].filter(([view])=>view==='coding'||hasBlock(view)).map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}">${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
     <div class="sidebar-scroll"><div class="side-title"><div class="section-label">DOCUMENTS <span class="count">${p.documents.length}</span></div><button class="link" data-action="import" aria-label="Import interview">＋</button></div>
     ${p.documents.map(d=>`<button class="side-item ${d.id===state.docId?'selected':''}" data-action="doc" data-id="${d.id}" title="${esc(d.name)}">${icon('doc')}<span class="name">${esc(d.name)}</span></button>`).join('') || '<div class="empty">Import your first interview</div>'}
     <div class="side-title"><div class="section-label">CODEBOOK <span class="count">${p.codes.length}</span></div><button class="link" data-action="code" aria-label="New code">＋</button></div>
     ${codebookHtml()}
+    <div class="side-title"><div class="section-label">TOOLS <span class="count">${(p.blocks||[]).length}/${BLOCKS.length}</span></div></div><button class="side-item" data-action="tools" title="Add or remove capability blocks"><span class="tools-glyph">\u229e</span><span class="name">Capability blocks</span><span class="count">${(p.blocks||[]).length}</span></button>
     </div><div class="local-note"><span class="status-dot"></span><div><strong>Local workspace</strong><span>Cloud only when requested</span></div></div></aside>
     <main class="workspace"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions"><span class="save-state">Saved locally</span><button data-action="settings">${icon('setting')}Model</button><button data-action="export">${icon('down')}Export</button><span class="avatar">QC</span></div></header>
     <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> to review</span></div></div><button class="primary" data-action="import">${icon('upload')}Import interview</button></section>
@@ -161,10 +177,10 @@ function highlight(text, start, annotations) {
 function codingView() {
   const d=doc(); if(!d) return `<div class="no-doc"><div class="eyebrow">A SPACE FOR YOUR QUESTIONS</div><h2>Start with a conversation</h2><p>Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.</p><button class="primary" data-action="import">Import interview</button> <button data-action="code">Create code</button></div>`;
   return `<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="Search in document" aria-label="Search transcript" value="${esc(state.search)}"></div>
-  <div class="work-grid"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">DOCUMENT</div><div class="tool-group"><span class="selection-hint">Select text to code a passage</span><button data-action="code">+ New code</button><button class="primary" data-action="analyze">${icon('star')}Analyze with AI</button></div></div>
+  <div class="work-grid${hasBlock('ai')?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">DOCUMENT</div><div class="tool-group"><span class="selection-hint">Select text to code a passage</span><button data-action="code">+ New code</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze">${icon('star')}Analyze with AI</button></div></div>
   <div class="reader-header"><div><h2 class="reader-heading">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">CODING MARGIN</div></div>
-  <div class="reading-note"><span class="reading-note-label">READING NOTES</span><textarea id="doc-memo" rows="2" placeholder="First impressions, questions to follow up, anything that stands out.">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
-  <div id="reader">${readerHtml()}</div></section><aside class="review-pane" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
+  <div class="reading-note${hasBlock('memos')?'':' block-off'}"><span class="reading-note-label">READING NOTES</span><textarea id="doc-memo" rows="2" placeholder="First impressions, questions to follow up, anything that stands out.">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
+  <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
 }
 function readerHtml() {
   const d=doc(), annotations=state.project.annotations.filter(a=>a.document_id===d.id);
@@ -337,9 +353,26 @@ function locate(start) {
 function showImport() {
   modal('Import interview',`<p>Import UTF-8 TXT or DOCX, or paste a transcript. Original line breaks define segments. Use Doctor:/Patient:, Interviewer:/Participant:, or IQ.../IP1: speaker labels. Chinese labels are also supported.</p><label class="field">Choose a file<input id="import-file" type="file" accept=".txt,.docx"><small>DOCX imports paragraph and table text; layout, comments, and headers are not retained.</small></label><label class="field">Document name<input id="document-name" placeholder="e.g. P02 · Care experience" maxlength="200"></label><label class="field">Or paste a transcript<textarea id="document-text" rows="9" placeholder="Doctor: How did the conversation feel?&#10;Patient: ..."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-document">Import locally</button>');
 }
+function showTools() {
+  const enabled = state.project.blocks || [];
+  const rows = BLOCKS.map(b=>{
+    const on = enabled.includes(b.id);
+    return '<label class="block-row' + (b.planned ? ' planned' : '') + '">'
+      + '<input type="checkbox" data-block="' + b.id + '"' + (on ? ' checked' : '') + (b.planned ? ' disabled' : '') + '>'
+      + '<span class="block-text"><strong>' + esc(b.name)
+      + (b.planned ? ' <span class="block-tag">planned</span>' : '') + '</strong>'
+      + '<span>' + esc(b.desc) + '</span></span></label>';
+  }).join('');
+  modal('Capability blocks',
+    '<p>The core is always available: <strong>documents, codes and codings</strong>. Everything below is optional. '
+    + 'Turn on what your study needs and the interface grows to match; turn something off and it disappears. '
+    + 'The choice is stored with the project, so it becomes part of the record.</p>'
+    + '<div class="block-list">' + rows + '</div>',
+    '<button data-action="close">Cancel</button><button class="primary" data-action="save-blocks">Save blocks</button>');
+}
 function showCode(parentId=null) {
   const parents=state.project.codes;
-  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label>${parents.length?`<label class="field">Group under (optional)<select id="code-parent"><option value="">— top level —</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.</small></label>`:''}<label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
+  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label>${parents.length&&hasBlock('hierarchy')?`<label class="field">Group under (optional)<select id="code-parent"><option value="">— top level —</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.</small></label>`:''}<label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
 }
 function showCodeEdit(id) {
   const c=state.project.codes.find(x=>x.id===id); if(!c) return;
@@ -350,10 +383,10 @@ function showCodeEdit(id) {
     <label class="field">Name<input id="ec-name" maxlength="160" value="${esc(c.name)}"></label>
     <label class="field">Definition<textarea id="ec-definition" rows="3" placeholder="What this code means.">${esc(c.definition)}</textarea></label>
     <div class="form-row">
-      <label class="field">Group under<select id="ec-parent"><option value="">— top level —</option>${others.map(o=>`<option value="${o.id}"${c.parent_id===o.id?' selected':''}${blocked.has(o.id)?' disabled':''}>${esc(codePath(o))}${blocked.has(o.id)?' — its own sub-code':''}</option>`).join('')}</select></label>
+      <label class="field${hasBlock('hierarchy')?'':' block-off'}">Group under<select id="ec-parent"><option value="">— top level —</option>${others.map(o=>`<option value="${o.id}"${c.parent_id===o.id?' selected':''}${blocked.has(o.id)?' disabled':''}>${esc(codePath(o))}${blocked.has(o.id)?' — its own sub-code':''}</option>`).join('')}</select></label>
       <label class="field">Status<select id="ec-status">${[['emergent','Emergent'],['provisional','Provisional'],['final','Final']].map(([v,t])=>`<option value="${v}"${c.status===v?' selected':''}>${t}</option>`).join('')}</select></label>
     </div>
-    <label class="field">Code / theme memo<textarea id="ec-memo" rows="3" placeholder="How is this code or theme developing?">${esc(c.memo||'')}</textarea></label>
+    <label class="field${hasBlock('memos')?'':' block-off'}">Code / theme memo<textarea id="ec-memo" rows="3" placeholder="How is this code or theme developing?">${esc(c.memo||'')}</textarea></label>
     <div class="form-row">
       <label class="field">Inclusion criteria<textarea id="ec-inclusion" rows="2" placeholder="Use this code when…">${esc(c.inclusion||'')}</textarea></label>
       <label class="field">Exclusion criteria<textarea id="ec-exclusion" rows="2" placeholder="Do not use it when…">${esc(c.exclusion||'')}</textarea></label>
@@ -382,7 +415,7 @@ function showMergeAsk(id) {
 function showAnnotation() {
   if(!state.selection||state.selection.document_id!==state.docId) throw new Error('Select a passage in the transcript first.');
   if(!state.project.codes.length) {showCode();return;}
-  modal('Code this passage',`<blockquote class="big-quote">${esc(cut(doc().text,state.selection.start,state.selection.end))}</blockquote><label class="field">Select a code<select id="annotation-code">${state.project.codes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label class="field">Research memo (optional)<textarea id="annotation-memo" rows="3" placeholder="Record your interpretation or a question for comparison."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-annotation">Apply code</button>');
+  modal('Code this passage',`<blockquote class="big-quote">${esc(cut(doc().text,state.selection.start,state.selection.end))}</blockquote><label class="field">Select a code<select id="annotation-code">${state.project.codes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label class="field${hasBlock('memos')?'':' block-off'}">Research memo (optional)<textarea id="annotation-memo" rows="3" placeholder="Record your interpretation or a question for comparison."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-annotation">Apply code</button>');
 }
 function showSettings() {
   modal('Cloud model settings',`<p>The launcher can read a local API_key.txt. Keys entered here stay in server memory only, outside browser storage, projects, and exports.</p><label class="field">API Base URL<input id="api-base" value="${esc(state.config.base_url)}" spellcheck="false"><small>Alibaba Cloud Beijing: https://dashscope.aliyuncs.com/compatible-mode/v1. A workspace-specific URL in the same region or another compatible endpoint also works.</small></label><label class="field">Model name<input id="api-model" value="${esc(state.config.model)}" spellcheck="false"><small>Default: qwen3.8-flash. When switching providers, update the endpoint, model, and key together.</small></label><label class="field">API Key<input id="api-key" type="password" autocomplete="off" placeholder="${state.config.has_key?'Configured; leave blank to keep the key for this endpoint':'Enter your key here, not in chat'}"></label><div class="notice">Manual coding is free and works offline. Cloud analysis runs only after confirmation and may incur provider charges. De-identify real transcripts and confirm that sharing them with this provider is permitted.</div><a class="source-link" href="https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope" target="_blank" rel="noreferrer">Official Model Studio API documentation ↗</a>`, '<button data-action="clear-key">Clear key</button><button class="primary" data-action="save-settings">Save settings</button>');
@@ -421,6 +454,14 @@ async function action(button) {
   if(a==='clear-filter'){state.codeFilter=null;state.search='';render();return;}
   if(a==='import')return showImport();
   if(a==='code')return showCode();
+  if(a==='tools')return showTools();
+  if(a==='save-blocks'){
+    const picked=[...document.querySelectorAll('#dialog [data-block]')].filter(x=>x.checked).map(x=>x.dataset.block);
+    await api(projectUrl('blocks'),{blocks:picked});
+    if(!picked.includes(state.view)&&state.view!=='coding')state.view='coding';
+    closeModal();await refresh();
+    toast('Capability blocks updated.');return;
+  }
   if(a==='settings')return showSettings();
   if(a==='projects')return showProjects();
   if(a==='export')return showExport();

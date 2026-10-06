@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .ai import Analyzer
-from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, synthetic_project, uid, update_code, update_document, validate_project
+from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -144,6 +144,8 @@ def create_server(data_dir, guide_dir, port=8765):
                             return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"))
                         if action == "document-update":
                             return update_document(project, body.get("id"), body.get("changes"))
+                        if action == "blocks":
+                            return set_blocks(project, body.get("blocks"))
                         if action == "code-update":
                             return update_code(project, body.get("id"), body.get("changes"))
                         if action == "code-delete":

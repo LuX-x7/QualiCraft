@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 
 from qualicraft.ai import grounded_suggestions, make_payload, validate_config, Analyzer
-from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, methods_narrative, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, update_document, validate_project
+from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, methods_narrative, migrate, new_project, paragraphs, read_docx, review, set_blocks, synthetic_project, update_code, update_document, validate_project
 from qualicraft.evaluate import evaluate, from_project
 
 
@@ -153,12 +153,12 @@ class CoreTests(unittest.TestCase):
             document.pop("attributes", None)
         p["schema_version"] = 1
         validate_project(p)
-        self.assertEqual(p["schema_version"], 3)
+        self.assertEqual(p["schema_version"], 4)
         self.assertEqual(len(p["annotations"]), 1)
         self.assertEqual(p["annotations"][0]["quote"], quote)
         self.assertIsNone(p["codes"][0]["parent_id"])
         self.assertEqual(p["codes"][0]["status"], "final")
-        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 3)
+        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 4)
 
     def test_code_hierarchy_and_paths(self):
         p = new_project("Hierarchy")
@@ -235,14 +235,14 @@ class CoreTests(unittest.TestCase):
         self.assertIn("Theme > Child", text)
 
 
-    def test_schema_v2_migrates_to_v3_with_reading_notes(self):
+    def test_schema_v2_migrates_to_current_with_reading_notes(self):
         p = new_project("V2")
         add_document(p, "I1", "Patient: " + "Some content here. " * 6)
         for document in p["documents"]:
             document.pop("memo", None)
         p["schema_version"] = 2
         validate_project(p)
-        self.assertEqual(p["schema_version"], 3)
+        self.assertEqual(p["schema_version"], 4)
         self.assertEqual(p["documents"][0]["memo"], "")
 
     def test_document_reading_note_round_trip(self):
@@ -278,6 +278,40 @@ class CoreTests(unittest.TestCase):
         self.assertIn("# Methods record", text)
         self.assertIn("_The codebook is empty._", text)
         self.assertIn("_No model was used on this project._", text)
+
+
+    def test_schema_v3_migrates_to_v4_with_capability_blocks(self):
+        p = new_project("V3")
+        p.pop("blocks", None)
+        p["schema_version"] = 3
+        validate_project(p)
+        self.assertEqual(p["schema_version"], 4)
+        self.assertIn("hierarchy", p["blocks"])
+        self.assertNotIn("plotting", p["blocks"])
+
+    def test_capability_blocks_round_trip(self):
+        p = new_project("Blocks")
+        self.assertEqual(set_blocks(p, ["memos", "plotting"])["blocks"], ["memos", "plotting"])
+        self.assertNotIn("hierarchy", p["blocks"])
+        # duplicates collapse rather than failing
+        self.assertEqual(set_blocks(p, ["ai", "ai", "memos"])["blocks"], ["ai", "memos"])
+        # everything can be switched off: the core still works
+        self.assertEqual(set_blocks(p, [])["blocks"], [])
+        validate_project(p)
+        with self.assertRaises(ValueError):
+            set_blocks(p, ["nonsense"])
+        with self.assertRaises(ValueError):
+            set_blocks(p, "not-a-list")
+
+    def test_core_works_with_every_block_switched_off(self):
+        p = new_project("Minimal")
+        set_blocks(p, [])
+        d = add_document(p, "I1", "Patient: " + "Some content here. " * 6)
+        c = add_code(p, "A code")
+        annotate(p, d["id"], c["id"], 9, 40)
+        validate_project(p)
+        self.assertEqual(len(p["annotations"]), 1)
+        self.assertIn("# Methods record", methods_narrative(p))
 
 
 if __name__ == "__main__":

@@ -54,3 +54,22 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .reading-note textarea:focus{border-color:var(--accent);background:#fff;outline:0}
 .reading-note textarea::placeholder{color:#aab2c0}
 .reading-note-state{flex:0 0 auto;padding-top:7px;color:var(--subtle);font-size:9px;min-width:46px;text-align:right}
+
+
+/* --- Capability blocks --------------------------------------------------------
+   A project records which blocks it uses. Switching one off removes it from the
+   interface entirely rather than greying it out, so the workspace matches the
+   study instead of the study fitting the workspace. */
+.block-off{display:none!important}
+.work-grid.no-review{grid-template-columns:minmax(0,1fr)}
+.tools-glyph{flex:0 0 15px;width:15px;margin-right:8px;color:#6b7484;font-size:12px;text-align:center}
+.block-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.block-row{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line);cursor:pointer}
+.block-row:last-child{border-bottom:0}
+.block-row:hover{background:#fafbfc}
+.block-row.planned{cursor:default;opacity:.62}
+.block-row input{margin:2px 0 0;flex:0 0 auto}
+.block-text{display:flex;flex-direction:column;gap:3px}
+.block-text strong{font-size:12px;font-weight:650;color:#2c3546}
+.block-text span{font-size:11px;line-height:1.5;color:var(--muted)}
+.block-tag{font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#8a6d1f;background:#fdf4d8;border-radius:2px;padding:1px 4px;vertical-align:1px;font-weight:600}
