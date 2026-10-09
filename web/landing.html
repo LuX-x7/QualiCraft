@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QT · 定性研究工作台</title>
+<link rel="stylesheet" href="landing.css">
+</head>
+<body>
+
+<div class="announce">
+  <span class="announce-tag">v0.4</span>
+  <span>六个能力块已可自由开关，方法学记录可一键导出为 Markdown。</span>
+</div>
+
+<header class="nav">
+  <a class="nav-brand" href="/">
+    <span class="mark" aria-hidden="true">
+      <i class="s s0"></i><i class="s s1"></i><i class="s s2"></i>
+      <i class="s s4"></i><i class="s s7"></i><i class="s s8"></i>
+    </span>
+    <span class="nav-name">QT</span>
+  </a>
+  <nav class="nav-links">
+    <a href="#how">怎么用</a>
+    <a href="#method">方法学</a>
+    <a href="#why">为什么不同</a>
+    <a href="#data">数据集</a>
+  </nav>
+  <a class="btn btn-small" href="/app">进入工作台</a>
+</header>
+
+<main>
+
+  <section class="hero">
+    <p class="eyebrow">定性研究 · 本地优先 · 可审计</p>
+    <h1>很多工具能帮你打标签，<br>但这一份<em>属于你</em>。</h1>
+    <p class="lede">
+      QT 是一个跑在你自己电脑上的定性研究工作台。转录稿、码表、标注、审计轨迹
+      全部保存在本地——不上传、不联网也能用。AI 只提建议，是否采纳由你决定。
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-large" href="/app">进入工作台 →</a>
+      <a class="btn btn-ghost" href="#how">先看看怎么用</a>
+    </div>
+    <p class="hero-note">无需注册 · 无需联网 · 开源</p>
+  </section>
+
+  <section id="how" class="section">
+    <h2>三个动作，就是全部</h2>
+    <p class="section-lede">我们刻意把界面做小。你不需要学一套新概念。</p>
+    <div class="demo-grid">
+      <div class="demo-pane">
+        <div class="demo-chrome"><span></span><span></span><span></span></div>
+        <div class="demo-body">
+          <p class="demo-line"><span class="hl hl-a">受访者反复提到工具链</span>，尤其是代码生成之后的对齐问题。</p>
+          <p class="demo-line">他说模型是<b>唯一可信来源</b>，但<span class="hl hl-b">一旦架构改动，代码必须重新生成</span>。</p>
+          <p class="demo-line"><span class="hl hl-c">人工复核</span>仍然不可替代。</p>
+        </div>
+        <div class="demo-pop">
+          <div class="demo-pop-row"><span class="dot"></span>输入关键字，回车即打标</div>
+          <div class="demo-pop-item"><i style="background:#844f3b"></i>架构与代码的对齐</div>
+          <div class="demo-pop-item active"><i style="background:#6a9fcc"></i>变更传播</div>
+          <div class="demo-pop-item create">＋ 新建编码「工具链」</div>
+        </div>
+      </div>
+      <div class="demo-copy">
+        <ol class="steps">
+          <li><strong>划选</strong><span>在转录稿里选中一段话，批注框跟着选区出现。</span></li>
+          <li><strong>打标</strong><span>输入关键字，回车。已有编码直接套用，没有的就地新建。</span></li>
+          <li><strong>看规律</strong><span>编码归组为主题，频次表和共现热力图随时可出。</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="method" class="section">
+    <h2>它知道你在研究的第几步</h2>
+    <p class="section-lede">按主题分析（Braun &amp; Clarke）的六阶段组织，而不是把所有面板一起摊开。</p>
+    <div class="phases">
+      <div class="phase"><span class="phase-n">1</span><strong>熟悉数据</strong><p>文档级阅读笔记，随手记下第一印象。</p></div>
+      <div class="phase"><span class="phase-n">2</span><strong>开放编码</strong><p>划选即打标，编码随分析生长。</p></div>
+      <div class="phase"><span class="phase-n">3</span><strong>搜寻主题</strong><p>把编码归到主题下，支持多层。</p></div>
+      <div class="phase"><span class="phase-n">4</span><strong>审查主题</strong><p>合并、拆分、改父级，随时回退。</p></div>
+      <div class="phase"><span class="phase-n">5</span><strong>界定命名</strong><p>定义、纳入排除标准、锚例、状态。</p></div>
+      <div class="phase done"><span class="phase-n">6</span><strong>撰写报告</strong><p>方法学记录自动成文，直接进论文。</p></div>
+    </div>
+  </section>
+
+  <section id="why" class="section">
+    <h2>和 ATLAS.ti 不一样的地方</h2>
+    <p class="section-lede">不是功能更多，是结构不同。</p>
+    <div class="cards">
+      <div class="card">
+        <h3>数据不出本机</h3>
+        <p>转录稿、标注、码表全在本地文件里。断网可用，不需要账号，没有云端副本——伦理审查和 GDPR 场景下这是硬要求。</p>
+      </div>
+      <div class="card">
+        <h3>每条 AI 建议可溯源</h3>
+        <p>建议锚在字符坐标上，引文必须能在原文唯一匹配，否则丢弃。采纳还是拒绝，由你决定，决策进审计轨迹。</p>
+      </div>
+      <div class="card">
+        <h3>方法学记录自动成文</h3>
+        <p>做完分析不用再花两周回忆自己怎么做的。码表如何演化、AI 用在哪、审计全貌，一键导出 Markdown。</p>
+      </div>
+      <div class="card">
+        <h3>界面听你的</h3>
+        <p>核心只有文档、编码、标注。其余是可选能力块——需要哪个开哪个，关掉就从界面消失。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="data" class="section">
+    <h2>可以先拿公开数据试</h2>
+    <p class="section-lede">不需要自己的数据也能跑通全流程。</p>
+    <div class="datasets">
+      <div class="dataset"><strong>Tian 2021</strong><span>8 篇软件架构访谈，无预设编码——适合练开放编码。</span></div>
+      <div class="dataset"><strong>TU Delft</strong><span>7 篇科研数据管理访谈，含参考码表——适合对照验证。</span></div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>准备好了就开始</h2>
+    <p>打开工作台，导入一份转录稿，标第一段话。</p>
+    <a class="btn btn-large" href="/app">进入工作台 →</a>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>QT · 定性研究工作台</span>
+  <span>本地运行 · 数据不外传</span>
+</footer>
+
+</body>
+</html>

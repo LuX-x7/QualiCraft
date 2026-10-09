@@ -98,7 +98,8 @@ def create_server(data_dir, guide_dir, port=8765):
                                     archive.writestr(name, payload)
                             return self.send(buffer.getvalue(), "application/zip", filename="qualicraft-figure.zip")
                     return self.send({"error": "The API endpoint does not exist"}, status=404)
-                files = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css"}
+                files = {"/": "landing.html", "/app": "index.html", "/app.js": "app.js",
+                         "/style.css": "style.css", "/landing.css": "landing.css"}
                 if path not in files:
                     return self.send({"error": "The file does not exist"}, status=404)
                 file = ROOT / "web" / files[path]
