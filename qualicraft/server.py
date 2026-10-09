@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import io
 import json
 import mimetypes
 import os
@@ -9,9 +10,11 @@ import secrets
 import sys
 import urllib.parse
 import webbrowser
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from . import plotting
 from .ai import Analyzer
 from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
@@ -60,7 +63,8 @@ def create_server(data_dir, guide_dir, port=8765):
                 parsed = urllib.parse.urlsplit(self.path)
                 path = parsed.path
                 if path == "/api/bootstrap":
-                    return self.send({"token": token, "projects": store.list(), "config": analyzer.public_config(),
+                    return self.send({"token": token, "projects": store.list(),
+                                      "config": {**analyzer.public_config(), "plotting": plotting.availability()},
                                       "guide_available": (Path(guide_dir) / "Paired_Qualitative_Transcripts_TU_Delft").is_dir()})
                 if path.startswith("/api/"):
                     require(self.headers.get("X-QualiCraft-Token") == token, "The session has expired; refresh the page")
@@ -81,6 +85,18 @@ def create_server(data_dir, guide_dir, port=8765):
                                 return self.send(methods_narrative(project).encode(), "text/markdown; charset=utf-8", filename="qualicraft-methods.md")
                             if fmt == "json":
                                 return self.send(json.dumps(project, ensure_ascii=False, indent=2).encode(), filename="qualicraft-project.json")
+                        if len(parts) == 4 and parts[3] in ("plot", "plot-bundle"):
+                            query = urllib.parse.parse_qs(parsed.query)
+                            options = {key: query[key][0] for key in query if query[key]}
+                            if parts[3] == "plot":
+                                svg, _ = plotting.render(project, options)
+                                return self.send(svg.encode("utf-8"), "image/svg+xml; charset=utf-8")
+                            files, _ = plotting.bundle(project, options)
+                            buffer = io.BytesIO()
+                            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+                                for name, payload in files.items():
+                                    archive.writestr(name, payload)
+                            return self.send(buffer.getvalue(), "application/zip", filename="qualicraft-figure.zip")
                     return self.send({"error": "The API endpoint does not exist"}, status=404)
                 files = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css"}
                 if path not in files:
