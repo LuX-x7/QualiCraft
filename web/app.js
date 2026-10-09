@@ -425,19 +425,20 @@ function showImport() {
 }
 function showTools() {
   const enabled = state.project.blocks || [];
-  const rows = BLOCKS.map(b=>{
+  const bricks = BLOCKS.map(b => {
     const on = enabled.includes(b.id);
-    return '<label class="block-row' + (b.planned ? ' planned' : '') + '">'
-      + '<input type="checkbox" data-block="' + b.id + '"' + (on ? ' checked' : '') + (b.planned ? ' disabled' : '') + '>'
-      + '<span class="block-text"><strong>' + esc(b.name)
-      + (b.planned ? ' <span class="block-tag">planned</span>' : '') + '</strong>'
-      + '<span>' + esc(b.desc) + '</span></span></label>';
+    return '<button type="button" class="brick' + (on ? ' on' : '') + '" data-block="' + b.id + '"'
+      + ' aria-pressed="' + on + '">'
+      + '<span class="brick-grip" aria-hidden="true"></span>'
+      + '<span class="brick-body"><strong>' + esc(b.name) + '</strong>'
+      + '<span>' + esc(b.desc) + '</span></span>'
+      + '<span class="brick-state">' + (on ? 'Added' : 'Add') + '</span></button>';
   }).join('');
   modal('Capability blocks',
-    '<p>The core is always available: <strong>documents, codes and codings</strong>. Everything below is optional. '
-    + 'Turn on what your study needs and the interface grows to match; turn something off and it disappears. '
-    + 'The choice is stored with the project, so it becomes part of the record.</p>'
-    + '<div class="block-list">' + rows + '</div>',
+    '<p>The core is always there: <strong>documents, codes and codings</strong>. Everything else is a block — '
+    + 'click one to add it to this project and the interface grows to match. Click again to take it away. '
+    + 'Which blocks a study used is stored with the project, so it becomes part of the record.</p>'
+    + '<div class="block-tray">' + bricks + '</div>',
     '<button data-action="close">Cancel</button><button class="primary" data-action="save-blocks">Save blocks</button>');
 }
 function showCode(parentId=null) {
@@ -526,7 +527,7 @@ async function action(button) {
   if(a==='code')return showCode();
   if(a==='tools')return showTools();
   if(a==='save-blocks'){
-    const picked=[...document.querySelectorAll('#dialog [data-block]')].filter(x=>x.checked).map(x=>x.dataset.block);
+    const picked=[...document.querySelectorAll('#dialog .brick.on')].map(x=>x.dataset.block);
     await api(projectUrl('blocks'),{blocks:picked});
     if(!picked.includes(state.view)&&state.view!=='coding')state.view='coding';
     closeModal();await refresh();
@@ -623,6 +624,12 @@ function startPolling(){
   clearTimeout(pollTimer);pollTimer=setTimeout(async()=>{try{const before=state.jobs.filter(j=>j.status==='running').map(j=>j.id);state.jobs=await api('/api/jobs');renderJob();const finished=state.jobs.find(j=>before.includes(j.id)&&j.status!=='running');if(finished){if(finished.project_id===state.project.id)await refresh();toast(finished.error||'Analysis finished. Review your suggestions.',finished.status==='failed');}if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(e){toast('Could not read task status. Refresh to view saved results.',true);}},1500);
 }
 document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected)button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;}});
+document.addEventListener('click',e=>{
+  const brick=e.target.closest('.brick'); if(!brick) return;
+  const on=brick.classList.toggle('on');
+  brick.setAttribute('aria-pressed',String(on));
+  const state_=brick.querySelector('.brick-state'); if(state_) state_.textContent=on?'Added':'Add';
+});
 document.addEventListener('change',async e=>{
   if(e.target.dataset&&e.target.dataset.plot){state.plotOptions[e.target.dataset.plot]=e.target.value;render();return;}
 
