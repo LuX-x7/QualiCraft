@@ -13,7 +13,7 @@ const BLOCKS = [
   {id:'ai', name:'AI suggestions', desc:'A model proposes codings; each one arrives in a review queue and only enters the codebook if you accept it.'},
   {id:'insights', name:'Frequency analysis', desc:'How often each code was used, and a document by code matrix.'},
   {id:'audit', name:'Audit trail', desc:'Every action with a timestamp, stored with the project and included in exports.'},
-  {id:'plotting', name:'Plotting workbench', desc:'Publication figures: theme co-occurrence heatmap, diverging thematic bars, mixed-methods bubble matrix.', planned:true}
+  {id:'plotting', name:'Plotting workbench', desc:'Publication figures: a theme co-occurrence heatmap with clustering, plus the script that drew it so a co-author can re-run it. Needs matplotlib, seaborn and scipy.'}
 ];
 function hasBlock(id) {
   const blocks = state.project && state.project.blocks;
@@ -22,6 +22,7 @@ function hasBlock(id) {
 const icons = {
   grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   chart:'<path d="M4 3v17h17M8 16v-5m5 5V6m5 10v-8"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/>',
   history:'<path d="M3 10a9 9 0 1 1 2 8M3 4v6h6m3-4v6l4 2"/>',
   doc:'<path d="M5 3h9l5 5v13H5zM14 3v6h5M8 13h8m-8 4h6"/>',
   upload:'<path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5"/>',
@@ -144,7 +145,7 @@ function render() {
     <aside class="sidebar"><div class="brand"><span class="brand-icon">Q</span><span class="brand-name">QualiCraft</span><span class="version">ALPHA</span></div>
     <div class="section-label">PROJECT</div><select id="project-select" class="project-select" aria-label="Switch project">${state.projects.map(x=>`<option value="${esc(x.id)}" ${x.id===p.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
     <button class="link new-project" data-action="projects">+ New / import project</button>
-    <nav class="nav" aria-label="Main navigation">${[['coding','grid','Coding workspace'],['insights','chart','Insights'],['audit','history','Audit trail']].filter(([view])=>view==='coding'||hasBlock(view)).map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}">${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
+    <nav class="nav" aria-label="Main navigation">${[['coding','grid','Coding workspace'],['insights','chart','Insights'],['plotting','image','Figures'],['audit','history','Audit trail']].filter(([view])=>view==='coding'||hasBlock(view)).map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}">${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
     <div class="sidebar-scroll"><div class="side-title"><div class="section-label">DOCUMENTS <span class="count">${p.documents.length}</span></div><button class="link" data-action="import" aria-label="Import interview">＋</button></div>
     ${p.documents.map(d=>`<button class="side-item ${d.id===state.docId?'selected':''}" data-action="doc" data-id="${d.id}" title="${esc(d.name)}">${icon('doc')}<span class="name">${esc(d.name)}</span></button>`).join('') || '<div class="empty">Import your first interview</div>'}
     <div class="side-title"><div class="section-label">CODEBOOK <span class="count">${p.codes.length}</span></div><button class="link" data-action="code" aria-label="New code">＋</button></div>
@@ -154,9 +155,10 @@ function render() {
     <main class="workspace"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions"><span class="save-state">Saved locally</span><button data-action="settings">${icon('setting')}Model</button><button data-action="export">${icon('down')}Export</button><span class="avatar">QC</span></div></header>
     <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> to review</span></div></div><button class="primary" data-action="import">${icon('upload')}Import interview</button></section>
     <div id="job-status"></div><button class="link mobile-only" data-action="projects">Switch / create project</button>
-    ${state.view==='coding'?codingView():state.view==='insights'?insightsView():auditView()}
+    ${state.view==='coding'?codingView():state.view==='insights'?insightsView():state.view==='plotting'?plottingView():auditView()}
     <footer class="bottom-bar"><span>QUALICRAFT 0.1 · LOCAL WORKSPACE</span><span>Exact source ranges · Researcher-reviewed coding</span></footer></main></div>`;
   renderJob();
+  loadPlotPreview();
 }
 function highlight(text, start, annotations) {
   const chars=cp(text), end=start+chars.length;
@@ -199,6 +201,74 @@ function insightsView() {
   const p=state.project, counts=p.codes.map(c=>({...c,count:p.annotations.filter(a=>a.code_id===c.id).length})).sort((a,b)=>b.count-a.count);
   const max=Math.max(1,...counts.map(c=>c.count));
   return `<div class="view-body"><section class="panel"><h2>Code frequency</h2><p>Each confirmed quotation–code link counts once. Frequency is not importance or a count of participants. Pending suggestions are excluded.</p>${counts.map(c=>`<div class="bar-row"><span>${esc(c.name)}</span><div class="bar-track"><div class="bar-value" style="width:${c.count/max*100}%;background:${esc(c.color)}"></div></div><b>${c.count}</b></div>`).join('')||'<div class="empty">Apply codes to see your research take shape.</div>'}</section><section class="panel"><h2>Document × code</h2><p>Export the complete matrix as CSV for further analysis and plotting.</p><div class="table-wrap"><table><thead><tr><th>Document</th>${p.codes.map(c=>`<th>${esc(c.name)}</th>`).join('')}</tr></thead><tbody>${p.documents.map(d=>`<tr><td>${esc(d.name)}</td>${p.codes.map(c=>`<td>${p.annotations.filter(a=>a.document_id===d.id&&a.code_id===c.id).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section></div>`;
+}
+let plotBlobUrl = null;
+async function loadPlotPreview() {
+  const img = document.getElementById('plot-preview');
+  if (!img) return;
+  if (plotBlobUrl) { URL.revokeObjectURL(plotBlobUrl); plotBlobUrl = null; }
+  try {
+    const response = await fetch(projectUrl('plot') + '?' + plotQuery(),
+                                 {headers: {'X-QualiCraft-Token': state.token}});
+    if (!response.ok) {
+      const problem = await response.json().catch(() => ({error: 'The figure could not be produced.'}));
+      throw new Error(problem.error || 'The figure could not be produced.');
+    }
+    plotBlobUrl = URL.createObjectURL(await response.blob());
+    img.src = plotBlobUrl;
+    img.classList.remove('loading');
+  } catch (error) {
+    const stage = img.parentElement;
+    if (stage) stage.innerHTML = '<div class="plot-empty"><strong>Could not draw the figure</strong><p>'
+      + esc(error.message) + '</p></div>';
+  }
+}
+function plotQuery() {
+  const o = state.plotOptions;
+  const q = new URLSearchParams();
+  Object.keys(o).forEach(k => { if (o[k] !== '' && o[k] !== null) q.set(k, String(o[k])); });
+  return q.toString();
+}
+function plottingView() {
+  const conf = state.config.plotting || {};
+  if (!state.plotOptions) state.plotOptions = {level:'theme', unit:'paragraph', palette:'viridis',
+    cluster:1, method:'ward', annotate:1, title:'', fontsize:9};
+  const o = state.plotOptions;
+  const codings = state.project.annotations.length;
+  const ready = conf.available && codings >= 2;
+  const select = (key, choices) => '<select data-plot="' + key + '">'
+    + choices.map(([v, label]) => '<option value="' + v + '"' + (String(o[key]) === String(v) ? ' selected' : '') + '>'
+        + esc(label) + '</option>').join('') + '</select>';
+
+  const controls = '<div class="plot-controls">'
+    + '<label class="field">Group by' + select('level', [['theme','Themes'],['code','Codes']]) + '</label>'
+    + '<label class="field">Count within' + select('unit', [['paragraph','Passages'],['document','Documents']]) + '</label>'
+    + '<label class="field">Palette' + select('palette', [['viridis','Viridis'],['rocket','Rocket'],['mako','Mako'],['flare','Flare'],['crest','Crest'],['Blues','Blues'],['Reds','Reds']]) + '</label>'
+    + '<label class="field">Clustering' + select('cluster', [['1','On'],['0','Off']]) + '</label>'
+    + '<label class="field">Linkage' + select('method', [['ward','Ward'],['complete','Complete'],['average','Average'],['single','Single']]) + '</label>'
+    + '<label class="field">Show counts' + select('annotate', [['1','Yes'],['0','No']]) + '</label>'
+    + '<label class="field">Base font size<select data-plot="fontsize">'
+      + [7,8,9,10,11,12].map(n => '<option value="' + n + '"' + (Number(o.fontsize) === n ? ' selected' : '') + '>' + n + ' pt</option>').join('')
+      + '</select></label>'
+    + '<label class="field">Title<input type="text" data-plot="title" value="' + esc(o.title) + '" placeholder="Optional"></label>'
+    + '</div>';
+
+  const stage = !conf.available
+    ? '<div class="plot-empty"><strong>The plotting workbench is not installed</strong>'
+      + '<p>Figures are drawn by a Python script rather than in the browser, so the same script can be exported and re-run by a co-author. Install the three packages and reopen this view:</p>'
+      + '<pre>' + esc(conf.install || 'pip install matplotlib seaborn scipy') + '</pre></div>'
+    : codings < 2
+      ? '<div class="plot-empty"><strong>Not enough codings yet</strong><p>Co-occurrence needs at least two coded passages before there is anything to plot.</p></div>'
+      : '<img class="plot-preview loading" id="plot-preview" alt="Theme co-occurrence heatmap">';
+
+  return '<div class="view-body"><section class="panel"><h2>Figures</h2>'
+    + '<p>Two themes co-occur when they are used in the same passage. The figure is drawn by a script on the server, '
+    + 'not in the browser, so the preview you see is exactly what the exported script produces.</p>'
+    + '<div class="plot-grid">' + controls + '<div class="plot-stage">' + stage + '</div></div>'
+    + '<div class="plot-actions">'
+    + '<button class="primary" data-action="plot-export"' + (ready ? '' : ' disabled') + '>Download figure + script</button>'
+    + '<span class="muted">A folder with the counts as CSV, the script, and the figure as SVG, PDF and 300 dpi PNG.</span>'
+    + '</div></section></div>';
 }
 const actionNames={document_import:'Document imported',code_create:'Create code',annotation_create:'Coding created',suggestion_review:'Suggestion reviewed',analysis_start:'Analysis started',analysis_segment:'Segment analyzed',analysis_finish:'Analysis finished',benchmark_import:'Benchmark imported',annotation_remove:'Coding removed',memo_update:'Memo updated',project_restore:'Project restored'};
 function auditView() {
@@ -525,6 +595,18 @@ async function action(button) {
   if(a==='benchmark-project')return createProject({kind:'benchmark'});
   if(a==='reference-project')return createProject({kind:'reference'});
   if(a==='restore-pick'){$('#restore-file').click();return;}
+  if(a==='plot-export'){
+    const response=await fetch(projectUrl('plot-bundle')+'?'+plotQuery(),{headers:{'X-QualiCraft-Token':state.token}});
+    if(!response.ok){
+      const problem=await response.json().catch(()=>({error:'The figure could not be produced.'}));
+      throw new Error(problem.error||'The figure could not be produced.');
+    }
+    const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');
+    link.href=url;link.download='qualicraft-figure.zip';link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('Figure, counts and script exported.');
+    return;
+  }
   if(a==='download'){
     const format=button.dataset.format,response=await fetch(projectUrl('export')+'?format='+format,{headers:{'X-QualiCraft-Token':state.token}});
     if(!response.ok)throw new Error('Export failed.');const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download='qualicraft-'+(format==='json'?'project.json':format==='methods'?'methods.md':format+'.csv');link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Exported to your browser download folder.');return;
@@ -542,6 +624,8 @@ function startPolling(){
 }
 document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected)button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;}});
 document.addEventListener('change',async e=>{
+  if(e.target.dataset&&e.target.dataset.plot){state.plotOptions[e.target.dataset.plot]=e.target.value;render();return;}
+
   try{
     if(e.target.id==='project-select')await loadProject(e.target.value);
     if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;render();}

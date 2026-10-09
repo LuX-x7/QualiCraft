@@ -73,3 +73,22 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .block-text strong{font-size:12px;font-weight:650;color:#2c3546}
 .block-text span{font-size:11px;line-height:1.5;color:var(--muted)}
 .block-tag{font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#8a6d1f;background:#fdf4d8;border-radius:2px;padding:1px 4px;vertical-align:1px;font-weight:600}
+
+
+/* --- Plotting workbench ------------------------------------------------------
+   Controls on the left, the rendered figure on the right. The figure is an <img>
+   pointing at the plot endpoint, so the preview is the server's output and not a
+   second drawing path that could drift from the exported script. */
+.plot-grid{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);gap:22px;align-items:start;margin:18px 0 0}
+.plot-controls{display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:4px;padding:15px 16px;background:#fcfcfd}
+.plot-controls .field{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
+.plot-controls select,.plot-controls input[type=text]{width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--ink)}
+.plot-stage{min-height:340px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:4px;background:#fff;padding:16px;overflow:auto}
+.plot-preview{max-width:100%;height:auto;display:block}
+.plot-empty{max-width:34rem;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+.plot-empty strong{display:block;color:var(--ink);font-size:13px;margin-bottom:6px}
+.plot-empty pre{margin:12px 0 0;padding:9px 12px;background:#f4f5f7;border-radius:3px;font:11px var(--mono);color:#404b5e;text-align:left;overflow:auto}
+.plot-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 0}
+.notice{margin:14px 0 0;padding:10px 13px;border:1px solid var(--line);border-left:3px solid var(--warn,#e8993a);border-radius:3px;background:#fdfaf4;font-size:12px;color:var(--muted)}
+.notice code{font:11px var(--mono);color:var(--ink)}
+@media (max-width:900px){.plot-grid{grid-template-columns:minmax(0,1fr)}}
