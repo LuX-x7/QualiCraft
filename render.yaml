@@ -41,6 +41,10 @@ services:
     buildCommand: npm install && npm run build
     startCommand: QUALICRAFT_PUBLIC_SITE=1 node start.js
     autoDeployTrigger: 'off'
+    # Probe a path that does not boot the database. The default `/` renders the
+    # home page, and on a small instance that is slow enough to miss the probe's
+    # timeout — the platform then decides nothing is listening and restarts.
+    healthCheckPath: /api/health
     envVars:
       # The workbench's public address, not its `fromService` `host` property.
       # Render resolves that property over its private network, and the
