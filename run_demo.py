@@ -14,8 +14,12 @@ def main():
     port = int(os.environ.get("PORT", "8765"))
     host = os.environ.get("HOST", "0.0.0.0")
     data_dir = os.environ.get("QUALICRAFT_DATA_DIR", "demo-data")
-    server = create_server(data_dir, ".", port=port, host=host, public_demo=True)
-    print(f"QualiCraft public demo listening on {host}:{port} (read-only)", flush=True)
+    # Mounted under /w so the marketing site's rewrite can proxy to it; a bare
+    # "/" redirects there so the service URL is shareable on its own.
+    base_path = os.environ.get("QUALICRAFT_BASE_PATH", "/w")
+    server = create_server(data_dir, ".", port=port, base_path=base_path, host=host,
+                           public_demo=True)
+    print(f"QualiCraft public demo listening on {host}:{port}{base_path} (read-only)", flush=True)
     try:
         server.serve_forever()
     finally:

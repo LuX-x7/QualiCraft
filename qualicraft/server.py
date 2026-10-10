@@ -86,6 +86,16 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 parsed = urllib.parse.urlsplit(self.path)
                 path = parsed.path
                 if base_path:
+                    # A hosted demo is mounted under a prefix so the marketing
+                    # site can proxy to it. Someone who was handed the service
+                    # URL on its own would land on a bare "/", so send them to
+                    # the mount instead of a 404.
+                    if path == "/" and public_demo:
+                        self.send_response(302)
+                        self.send_header("Location", base_path + "/")
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+                        return
                     if path == base_path:
                         path = "/"
                     elif path.startswith(base_path + "/"):

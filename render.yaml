@@ -2,21 +2,16 @@
 # read-only teaching workbench. Connect this repository in Render and it
 # provisions both services with public URLs.
 #
-#   • qualicraft-website   — the English-first marketing site (Next.js)
-#   • qualicraft-workbench — the read-only workbench demo (Python + SQLite)
+#   • qualicraft-website   — the English-first marketing site (Next.js).
+#                            Its /w path proxies to the workbench, so a reviewer
+#                            reaches the tool from the site itself.
+#   • qualicraft-workbench — the read-only workbench demo (Python + SQLite),
+#                            mounted at /w to match that proxy.
 #
-# Both bind the PORT Render injects and listen on 0.0.0.0. The workbench runs
-# in public-demo mode: no writes, no uploads, no admin surface.
+# Both bind the PORT Render injects and listen on 0.0.0.0. The workbench runs in
+# public-demo mode: no writes, no uploads, no admin surface.
 
 services:
-  - type: web
-    name: qualicraft-website
-    runtime: node
-    plan: free
-    rootDir: website
-    buildCommand: npm install && npm run build
-    startCommand: QUALICRAFT_PUBLIC_SITE=1 node start.js
-
   - type: web
     name: qualicraft-workbench
     runtime: python
@@ -26,3 +21,21 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+
+  - type: web
+    name: qualicraft-website
+    runtime: node
+    plan: free
+    rootDir: website
+    buildCommand: npm install && npm run build
+    startCommand: QUALICRAFT_PUBLIC_SITE=1 node start.js
+    envVars:
+      # Resolved from the workbench service so the proxy target cannot drift
+      # from the actual deployment. next.config fills in the scheme.
+      - key: QT_WORKBENCH_URL
+        fromService:
+          type: web
+          name: qualicraft-workbench
+          property: host
+      # No DATABASE_URL: the site falls back to embedded PGlite seeded from the
+      # repository, which needs no external service.

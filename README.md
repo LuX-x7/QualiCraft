@@ -6,12 +6,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/LuX-x7/QualiCraft/tree/main/website">Project website source</a>
+  <a href="#deploy"><strong>Put it online</strong></a>
+  ·
+  <a href="https://github.com/LuX-x7/QualiCraft/tree/main/website">Website source</a>
   ·
   <a href="https://github.com/LuX-x7/QualiCraft/tree/main/web">Workbench source</a>
 </p>
 
-<p align="center"><em>Live demo links will be added here after publishing completes.</em></p>
+<p align="center"><em>A live demo link will be added here once the deployment below is run.</em></p>
 
 <p align="center">
   <a href="#english"><strong>English</strong></a>
@@ -35,11 +37,67 @@ QualiCraft is a modular workbench for interview studies and other open-ended mat
 
 ## Try it
 
-- **[Project website source](https://github.com/LuX-x7/QualiCraft/tree/main/website)** — English-first overview, with a language switch at the top of the page.
+- **[Deploy it online](#deploy)** — one blueprint puts the site and a read-only
+  workbench on the internet so someone else can open them in a browser.
+- **[Website source](https://github.com/LuX-x7/QualiCraft/tree/main/website)** — English-first overview, with a language switch at the top of the page.
 - **[Workbench source](https://github.com/LuX-x7/QualiCraft/tree/main/web)** — the standalone interface and local Python server.
 - **[Chinese README](#中文)** — jump to the Chinese translation below.
 
-Online publishing did not complete in this session, so no live share link is listed yet. The workbench build prepared for teaching is read-only and uses the public Bologna sample; it is not a place to upload participant material. Use the local installation below for your own work.
+The hosted workbench is read-only and uses the public Bologna sample; it is not
+a place to upload participant material. Use the local installation below for
+your own work.
+
+<a id="deploy"></a>
+
+## Putting a demo online
+
+**GitHub alone cannot host this.** GitHub Pages serves static files only, so it
+cannot run the Python workbench, its SQLite storage, or the Next.js site. A
+shareable link needs a host that runs a process; [Render](https://render.com)
+does that on its free plan and deploys straight from this repository.
+
+`render.yaml` in the repository root defines both services, so there is nothing
+to configure by hand:
+
+| Service | What it is |
+|:--|:--|
+| `qualicraft-workbench` | The workbench in read-only public-demo mode, mounted at `/w`. Rejects every write. |
+| `qualicraft-website` | The marketing site. Its `/w` path proxies to the workbench, so a reviewer reaches the tool from the site itself. `QUALICRAFT_PUBLIC_SITE=1` also 404s `/admin`. |
+
+To deploy:
+
+1. **Fork** this repository to your own GitHub account (a contributor cannot
+   deploy from someone else's account).
+2. Sign in at [render.com](https://render.com) with GitHub.
+3. **New +** → **Blueprint** → pick your fork. Render reads `render.yaml` and
+   lists both services.
+4. **Apply**. First build takes a few minutes; dependencies are installed and
+   the site's database is seeded from the repository on first boot.
+5. Copy the two URLs Render gives you — one for the site, one for the workbench.
+
+Notes worth knowing before you share the link:
+
+- The free plan **sleeps after ~15 minutes idle**, so the first visit afterwards
+  takes about 30 seconds to wake. Later visits are fast.
+- The workbench demo is **read-only by construction** (`QUALICRAFT_PUBLIC_DEMO=1`):
+  every `POST` is refused before it is parsed, so a shared instance cannot be
+  written through. It ships the public, attributed Bologna corpus in
+  `demo-data/`, which is the only database exempted from the `*.sqlite3` ignore
+  rule in `.gitignore`.
+- The site proxies the workbench through a route handler
+  (`website/app/w/[[...path]]/route.ts`) rather than a `next.config` rewrite,
+  because rewrite destinations are frozen at build time. The handler reads
+  `QT_WORKBENCH_URL` per request, so pointing the site at a different workbench
+  needs no rebuild; `render.yaml` fills it from the workbench service's host.
+
+### A hosted public instance is not for private data
+
+The public demo runs on loopback-free, read-only terms and ships sample
+material. It is the right way to show the interface to a supervisor or a
+reviewer. It is **not** the right place for real participant data: a proper
+multi-user deployment still needs identity and access management, per-user
+encrypted storage, rate limits, session and CSRF controls, backups, deletion
+and export workflows, and a reviewed ethics and data-retention process.
 
 ## The five modules
 
@@ -143,6 +201,9 @@ The suite covers Unicode and CRLF offsets, overlapping codings, importers agains
 qualicraft/      Python library: core, ingest, analyze, plotting, AI, evaluation, server
 web/             standalone workbench UI (plain JavaScript; no frontend build step)
 website/         English-first marketing site and recorded module walkthrough
+ run_demo.py     hosted entrypoint for the read-only public demo
+ render.yaml     one-click blueprint for the site + workbench deployment
+ demo-data/      the public Bologna corpus the demo opens into
  tests/          unit, integration, importer and HTTP tests
  data/           local project state and downloaded datasets (git-ignored)
  examples/        five reference figure bundles: CSV + Python + SVG/PDF/PNG
@@ -187,11 +248,51 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 
 ## 在线查看
 
+- **[部署到线上](#部署)** —— 一份蓝图把网站和一个只读工作台放到公网，别人用浏览器就能打开。
 - **[项目网站源码](https://github.com/LuX-x7/QualiCraft/tree/main/website)** —— 英文为主，页面顶部可切换语言。
 - **[工作台源码](https://github.com/LuX-x7/QualiCraft/tree/main/web)** —— 独立界面与本机 Python 服务端。
 - **[English README](#english)** —— 跳转至上方英文说明。
 
-本轮在线发布未完成，因此这里暂未列出可用的在线链接。准备给老师演示的工作台版本使用 Bologna 公开样例并设为只读；在线演示禁止创建、修改、上传及其他写入操作。自己的研究请使用下面的本机安装方式。
+在线工作台是只读的，使用 Bologna 公开样例，不适合上传参与者材料。自己的研究请使用下面的本机安装方式。
+
+<a id="部署"></a>
+
+## 把它放到线上
+
+**只靠 GitHub 做不到。** GitHub Pages 只能提供静态文件，跑不了 Python 工作台、它的 SQLite 存储，
+也跑不了 Next.js 网站。想要一个可分享的链接，需要能跑进程的托管平台；[Render](https://render.com)
+的免费方案可以，并且能直接从本仓库部署。
+
+仓库根目录的 `render.yaml` 已经定义好两个服务，不需要手工配置：
+
+| 服务 | 说明 |
+|:--|:--|
+| `qualicraft-workbench` | 只读公开演示模式的工作台，挂在 `/w`；拒绝一切写入。 |
+| `qualicraft-website` | 宣传网站。它的 `/w` 路径代理到工作台，测评者从网站内部就能进到工具；`QUALICRAFT_PUBLIC_SITE=1` 同时让 `/admin` 返回 404。 |
+
+部署步骤：
+
+1. 先把本仓库 **Fork** 到自己的 GitHub 账号（协作者无法从别人的账号部署）。
+2. 用 GitHub 账号登录 [render.com](https://render.com)。
+3. **New +** → **Blueprint** → 选择你的 fork。Render 会读取 `render.yaml` 并列出两个服务。
+4. 点 **Apply**。首次构建需要几分钟；依赖会自动安装，网站数据库在首次启动时从仓库植入。
+5. 记下 Render 给出的两个网址——网站一个，工作台一个。
+
+分享链接前值得知道：
+
+- 免费方案**闲置约 15 分钟会休眠**，之后第一次访问需要约 30 秒唤醒；之后很快。
+- 工作台演示是**构造上只读**（`QUALICRAFT_PUBLIC_DEMO=1`）：每个 `POST` 在解析之前就被拒绝，
+  共享实例无法被写入。它自带公开且有署名的 Bologna 语料（`demo-data/`），这是 `.gitignore`
+  中 `*.sqlite3` 规则唯一放行的数据库。
+- 网站用**路由处理器**（`website/app/w/[[...path]]/route.ts`）代理工作台，而不是 `next.config`
+  的 rewrite——因为 rewrite 的目标在构建时就固化了。处理器按请求读取 `QT_WORKBENCH_URL`，
+  所以把网站指向另一个工作台无需重新构建；`render.yaml` 会从工作台服务的主机名自动填入。
+
+### 公开实例不适合放私人数据
+
+公开演示以只读方式运行并自带样例材料，适合向老师或评审展示界面，**不适合放真实参与者数据**。
+一个正经的多人部署仍需要身份权限管理、用户隔离加密、限流、会话与 CSRF 控制、备份、
+删除和导出流程，以及经过评审的伦理与数据留存规范。
 
 ## 五个模块
 
@@ -293,6 +394,9 @@ node --check web/app.js
 qualicraft/      Python 库：core、ingest、analyze、plotting、AI、评估、服务端
 web/             独立工作台前端（原生 JavaScript，无需构建）
 website/         英文优先的宣传网站及模块操作演示
+ run_demo.py     只读公开演示的托管入口
+ render.yaml     网站 + 工作台一键部署蓝图
+ demo-data/      演示启动即打开的 Bologna 公开语料
  tests/          单元、集成、导入及 HTTP 测试
  data/           本地项目状态和下载数据集（git 忽略）
 examples/        五套参考图包：CSV + Python + SVG/PDF/PNG
