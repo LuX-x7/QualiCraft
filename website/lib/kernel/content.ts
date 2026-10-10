@@ -13,6 +13,10 @@
 import { one, query } from './db'
 import { id, slugify } from './ids'
 import { plain } from './md'
+import {
+  staticContent, staticGetPage, staticGetSettings, staticListBlocks,
+  staticListEntries, staticListPages, staticNavPages,
+} from './static-content'
 import { getBlock as getBlockDef, getCollection, type Block, type Entry, type EntryQuery, type SiteSettings } from './types'
 
 export type Page = {
@@ -48,6 +52,7 @@ export type Lead = {
 /* ------------------------------ block APIs ------------------------------- */
 
 export async function listBlocks(pageId: number, opts: { includeDisabled?: boolean } = {}): Promise<Block[]> {
+  if (staticContent()) return staticListBlocks(pageId, opts)
   const rows = await query<Block>(
     `select id, page_id, type, position, enabled, data
        from blocks
@@ -152,14 +157,17 @@ export async function restoreRevision(revisionId: number, actor = ''): Promise<B
 /* ------------------------------- page APIs ------------------------------- */
 
 export async function getPage(slug: string): Promise<Page | null> {
+  if (staticContent()) return staticGetPage(slug)
   return one<Page>(`select * from pages where slug = $1`, [slug])
 }
 
 export async function listPages(): Promise<Page[]> {
+  if (staticContent()) return staticListPages()
   return query<Page>(`select * from pages order by nav_order asc, id asc`)
 }
 
 export async function navPages(): Promise<Page[]> {
+  if (staticContent()) return staticNavPages()
   return query<Page>(
     `select * from pages where show_in_nav = true and status = 'published' order by nav_order asc, id asc`,
   )
@@ -238,6 +246,7 @@ function orderClause(order: EntryQuery['order']): string {
 }
 
 export async function listEntries(collection: string, opts: EntryQuery = {}): Promise<Entry[]> {
+  if (staticContent()) return staticListEntries(collection, opts)
   const params: any[] = [collection]
   const where: string[] = ['collection = $1']
 
@@ -358,6 +367,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
 }
 
 export async function getSettings(): Promise<SiteSettings> {
+  if (staticContent()) return staticGetSettings()
   const rows = await query<{ key: string; value: any }>(`select key, value from settings`)
   const merged: any = structuredClone(DEFAULT_SETTINGS)
   for (const row of rows) {
@@ -460,6 +470,11 @@ export async function dashboardStats() {
 /* ------------------------------ translations ----------------------------- */
 
 export async function getTranslations(locale: string): Promise<Record<string, string>> {
+  // A public deployment has no translations table, and does not need one: with
+  // no overrides, getDict falls back to the built-in dictionary, which is the
+  // copy that deployment is meant to show. Returning early also keeps this call
+  // from being the thing that boots the database on every page render.
+  if (staticContent()) return {}
   const rows = await query<{ key: string; value: string }>(
     `select key, value from translations where locale = $1 and value <> ''`,
     [locale],

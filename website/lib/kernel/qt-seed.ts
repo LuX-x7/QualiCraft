@@ -21,7 +21,7 @@ export const QT_PAGES: Array<{
   {
     slug: 'home',
     title: 'Home',
-    seo_title: 'QT — 定性研究工作台',
+    seo_title: 'QualiCraft — a researcher-led qualitative coding workbench',
     seo_description:
       'A qualitative research workbench that runs on your own machine. Code transcripts, group codes into themes, and export a methods record without your data leaving the desk.',
     show_in_nav: false,
@@ -149,7 +149,7 @@ export const QT_PAGES: Array<{
   {
     slug: 'method',
     title: 'Method',
-    seo_title: 'Method — how QT follows a thematic analysis',
+    seo_title: 'Method — how QualiCraft follows a thematic analysis',
     seo_description:
       'The six phases of a thematic analysis, and what the tool does at each one. Including the phases it does not cover yet.',
     show_in_nav: true,
@@ -178,7 +178,7 @@ export const QT_PAGES: Array<{
   {
     slug: 'about',
     title: 'About',
-    seo_title: 'About QT',
+    seo_title: 'About QualiCraft',
     seo_description: 'What QT is, who it is for, and what it deliberately does not do.',
     show_in_nav: true,
     nav_label: 'About',
@@ -228,10 +228,10 @@ export const QT_PAGES: Array<{
 
 export const QT_SETTINGS = {
   identity: {
-    site_name: 'QT',
-    site_short: 'QT',
+    site_name: 'QualiCraft',
+    site_short: 'QC',
     tagline: 'A qualitative research workbench',
-    logo_text: 'QT',
+    logo_text: 'QC',
     description: 'Code interviews, build themes, keep the record. Runs on your own machine.',
   },
   contact: {
@@ -245,7 +245,7 @@ export const QT_SETTINGS = {
   social: { linkedin: '', facebook: '', instagram: '' },
   theme: { accent: '#4b607c', accent_ink: '#33465c' },
   seo: {
-    default_title: 'QT — 定性研究工作台',
+    default_title: 'QualiCraft — a researcher-led qualitative coding workbench',
     default_description: 'A qualitative research workbench that runs locally and keeps a readable record of the analysis.',
   },
   languages: { enabled: ['en', 'zh'], default: 'en' },
