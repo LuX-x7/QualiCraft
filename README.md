@@ -6,6 +6,10 @@
 </p>
 
 <p align="center">
+  <a href="https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" height="32"></a>
+</p>
+
+<p align="center">
   <a href="#deploy"><strong>Put it online</strong></a>
   ·
   <a href="https://github.com/LuX-x7/QualiCraft/tree/main/website">Website source</a>
@@ -13,7 +17,7 @@
   <a href="https://github.com/LuX-x7/QualiCraft/tree/main/web">Workbench source</a>
 </p>
 
-<p align="center"><em>A live demo link will be added here once the deployment below is run.</em></p>
+<p align="center"><em>The button above deploys both the site and a read-only workbench to your own free host, and gives you a public link to share.</em></p>
 
 <p align="center">
   <a href="#english"><strong>English</strong></a>
@@ -64,21 +68,30 @@ to configure by hand:
 | `qualicraft-workbench` | The workbench in read-only public-demo mode, mounted at `/w`. Rejects every write. |
 | `qualicraft-website` | The marketing site. Its `/w` path proxies to the workbench, so a reviewer reaches the tool from the site itself. `QUALICRAFT_PUBLIC_SITE=1` also 404s `/admin`. |
 
-To deploy:
+To deploy — no fork, no GitHub App, no CLI:
 
-1. **Fork** this repository to your own GitHub account (a contributor cannot
-   deploy from someone else's account).
-2. Sign in at [render.com](https://render.com) with GitHub.
-3. **New +** → **Blueprint** → pick your fork. Render reads `render.yaml` and
-   lists both services.
-4. **Apply**. First build takes a few minutes; dependencies are installed and
-   the site's database is seeded from the repository on first boot.
-5. Copy the two URLs Render gives you — one for the site, one for the workbench.
+1. Click **[Deploy to Render](https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft)**,
+   or go to [render.com](https://render.com) and sign in (GitHub or email; the free plan is enough).
+2. Render reads `render.yaml` from this public repository and lists both services
+   with their build and start commands. Review them.
+3. **Apply**. The first build takes a few minutes: dependencies are installed,
+   and the site's database seeds itself from the repository on first boot.
+4. Copy the two URLs Render gives you — one for the site, one for the workbench.
+
+Because this repository is **public**, Render can deploy it directly: the deploy
+link names the repo (`?repo=https://github.com/LuX-x7/QualiCraft`), so being a
+collaborator rather than the owner is not a problem. Add `autoDeployTrigger: 'off'`
+(already set) if the deployment is for review rather than for every commit.
 
 Notes worth knowing before you share the link:
 
 - The free plan **sleeps after ~15 minutes idle**, so the first visit afterwards
-  takes about 30 seconds to wake. Later visits are fast.
+  takes about 30 seconds to wake. Later visits are fast. For a link that never
+  sleeps, move to a paid instance or your own server — the repository is the
+  same either way.
+- To later point the deployment at a different workbench (for instance one on
+  your own server), set `QT_WORKBENCH_URL` in the site service's environment to
+  its address. No rebuild is needed; the proxy reads it per request.
 - The workbench demo is **read-only by construction** (`QUALICRAFT_PUBLIC_DEMO=1`):
   every `POST` is refused before it is parsed, so a shared instance cannot be
   written through. It ships the public, attributed Bologna corpus in
@@ -270,17 +283,24 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 | `qualicraft-workbench` | 只读公开演示模式的工作台，挂在 `/w`；拒绝一切写入。 |
 | `qualicraft-website` | 宣传网站。它的 `/w` 路径代理到工作台，测评者从网站内部就能进到工具；`QUALICRAFT_PUBLIC_SITE=1` 同时让 `/admin` 返回 404。 |
 
-部署步骤：
+部署步骤——**不用 Fork，不用装 GitHub App，不用命令行**：
 
-1. 先把本仓库 **Fork** 到自己的 GitHub 账号（协作者无法从别人的账号部署）。
-2. 用 GitHub 账号登录 [render.com](https://render.com)。
-3. **New +** → **Blueprint** → 选择你的 fork。Render 会读取 `render.yaml` 并列出两个服务。
-4. 点 **Apply**。首次构建需要几分钟；依赖会自动安装，网站数据库在首次启动时从仓库植入。
-5. 记下 Render 给出的两个网址——网站一个，工作台一个。
+1. 点 **[Deploy to Render](https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft)**，
+   或打开 [render.com](https://render.com) 登录（GitHub 或邮箱均可，免费方案就够）。
+2. Render 会读取这个**公开仓库**里的 `render.yaml`，列出两个服务及其构建/启动命令。核对一下。
+3. 点 **Apply**。首次构建需要几分钟：依赖自动安装，网站数据库在首次启动时从仓库植入。
+4. 记下 Render 给出的两个网址——网站一个，工作台一个。
+
+因为这个仓库是**公开**的，Render 可以直接部署：部署链接里带了仓库地址
+（`?repo=https://github.com/LuX-x7/QualiCraft`），所以"你是协作者而不是仓库所有者"完全不影响。
+如果这份部署是给别人评审用、不希望每次提交都自动重新部署，保持 `autoDeployTrigger: 'off'`（已设好）。
 
 分享链接前值得知道：
 
 - 免费方案**闲置约 15 分钟会休眠**，之后第一次访问需要约 30 秒唤醒；之后很快。
+  想要永不休眠的链接，升级到付费实例或用你自己的服务器——两种情况用的都是同一个仓库。
+- 以后想把网站指向另一个工作台（比如部署在你自己服务器上的那个），
+  在网站服务的环境变量里设置 `QT_WORKBENCH_URL` 即可，**不需要重新构建**，代理按请求读取它。
 - 工作台演示是**构造上只读**（`QUALICRAFT_PUBLIC_DEMO=1`）：每个 `POST` 在解析之前就被拒绝，
   共享实例无法被写入。它自带公开且有署名的 Bologna 语料（`demo-data/`），这是 `.gitignore`
   中 `*.sqlite3` 规则唯一放行的数据库。

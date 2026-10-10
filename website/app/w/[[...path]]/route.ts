@@ -6,7 +6,7 @@
  *
  * This is a route handler rather than a `rewrites()` entry on purpose: rewrite
  * destinations are resolved when `next build` runs, so a hosted deployment
- * would bake in whatever the workbench URL happened to be at build time and
+ * would bake in whatever workbench URL happened to exist at build time and
  * break whenever that host changed. A handler reads the environment per
  * request, so the deployment can be pointed anywhere without a rebuild.
  *
@@ -23,13 +23,36 @@ function workbenchBase(): string {
   return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
 }
 
-/** Headers that describe the browser↔site hop, not the request itself. */
+/** Headers that describe the browser-to-site hop, not the request itself. */
 const HOP_BY_HOP = new Set([
   'host', 'connection', 'keep-alive', 'transfer-encoding', 'upgrade',
   'origin', 'referer', 'cookie',
   'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest', 'sec-fetch-user',
   'accept-encoding', 'content-length',
 ])
+
+/**
+ * A hosted platform may hand over the workbench's private-network hostname,
+ * and those do not always answer on the scheme you guessed. Trying the other
+ * one costs nothing and turns a hard 502 into a working page.
+ */
+async function fetchUpstream(
+  target: string,
+  method: string,
+  headers: Headers,
+  body?: ArrayBuffer,
+): Promise<Response> {
+  const send = (url: string) =>
+    fetch(url, { method, headers, body, redirect: 'manual', cache: 'no-store' })
+
+  try {
+    return await send(target)
+  } catch (error) {
+    const alternate = target.replace(/^https:/i, 'http:')
+    if (alternate === target) throw error
+    return await send(alternate)
+  }
+}
 
 async function proxy(request: Request, segments: string[] | undefined): Promise<Response> {
   const incoming = new URL(request.url)
@@ -42,16 +65,11 @@ async function proxy(request: Request, segments: string[] | undefined): Promise<
   })
 
   const hasBody = !['GET', 'HEAD'].includes(request.method)
+  const body = hasBody ? await request.arrayBuffer() : undefined
 
   let upstream: Response
   try {
-    upstream = await fetch(target, {
-      method: request.method,
-      headers,
-      body: hasBody ? await request.arrayBuffer() : undefined,
-      redirect: 'manual',
-      cache: 'no-store',
-    })
+    upstream = await fetchUpstream(target, request.method, headers, body)
   } catch (error) {
     return new Response(
       `The workbench is not reachable at ${workbenchBase()}. ` +
@@ -62,6 +80,8 @@ async function proxy(request: Request, segments: string[] | undefined): Promise<
 
   const out = new Headers()
   for (const [key, value] of upstream.headers) {
+    // The workbench sets its own security headers; keep them, but drop the
+    // length so the platform recomputes it for this response.
     if (key.toLowerCase() === 'content-length') continue
     out.set(key, value)
   }

@@ -1,37 +1,50 @@
 # Render Blueprint — one-click deploy of the QualiCraft website and its
-# read-only teaching workbench. Connect this repository in Render and it
-# provisions both services with public URLs.
+# read-only teaching workbench.
 #
-#   • qualicraft-website   — the English-first marketing site (Next.js).
-#                            Its /w path proxies to the workbench, so a reviewer
-#                            reaches the tool from the site itself.
+# Deploy it with the button in the README, or by opening:
+#   https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft
+#
+# The repository is public, and Render supports public repos out of the box, so
+# nobody needs to fork it or install the Render GitHub App first.
+#
 #   • qualicraft-workbench — the read-only workbench demo (Python + SQLite),
-#                            mounted at /w to match that proxy.
+#                            mounted at /w to match the site's proxy.
+#   • qualicraft-website   — the English-first marketing site (Next.js). Its /w
+#                            path proxies to the workbench, so a reviewer
+#                            reaches the tool from the site itself.
 #
 # Both bind the PORT Render injects and listen on 0.0.0.0. The workbench runs in
 # public-demo mode: no writes, no uploads, no admin surface.
 
 services:
   - type: web
-    name: qualicraft-workbench
     runtime: python
+    name: qualicraft-workbench
+    repo: https://github.com/LuX-x7/QualiCraft
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python run_demo.py
+    # The Blueprint is the source of truth for reviews, not for every push:
+    # leaving this off means a commit cannot quietly redeploy a service someone
+    # is in the middle of reviewing.
+    autoDeployTrigger: 'off'
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
 
   - type: web
-    name: qualicraft-website
     runtime: node
-    plan: free
+    name: qualicraft-website
+    repo: https://github.com/LuX-x7/QualiCraft
     rootDir: website
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: QUALICRAFT_PUBLIC_SITE=1 node start.js
+    autoDeployTrigger: 'off'
     envVars:
       # Resolved from the workbench service so the proxy target cannot drift
-      # from the actual deployment. next.config fills in the scheme.
+      # from the actual deployment. next.config's route handler fills in the
+      # scheme when the platform hands over a bare hostname.
       - key: QT_WORKBENCH_URL
         fromService:
           type: web
