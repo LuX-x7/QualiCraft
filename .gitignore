@@ -5,6 +5,11 @@ reports/
 *.db
 *.sqlite
 
+# The hosted teaching demo ships its public, attributed sample corpus, so a
+# fresh deployment opens straight into real material. This is the one database
+# that is safe to track.
+!demo-data/qualicraft.sqlite3
+
 # Credentials and local configuration
 .env
 .env.*

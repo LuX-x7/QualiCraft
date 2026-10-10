@@ -1,0 +1,28 @@
+# Render Blueprint — one-click deploy of the QualiCraft website and its
+# read-only teaching workbench. Connect this repository in Render and it
+# provisions both services with public URLs.
+#
+#   • qualicraft-website   — the English-first marketing site (Next.js)
+#   • qualicraft-workbench — the read-only workbench demo (Python + SQLite)
+#
+# Both bind the PORT Render injects and listen on 0.0.0.0. The workbench runs
+# in public-demo mode: no writes, no uploads, no admin surface.
+
+services:
+  - type: web
+    name: qualicraft-website
+    runtime: node
+    plan: free
+    rootDir: website
+    buildCommand: npm install && npm run build
+    startCommand: QUALICRAFT_PUBLIC_SITE=1 node start.js
+
+  - type: web
+    name: qualicraft-workbench
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run_demo.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
