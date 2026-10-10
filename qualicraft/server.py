@@ -14,7 +14,7 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import plotting
+from . import analyze, plotting
 from .ai import Analyzer
 from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
@@ -102,6 +102,13 @@ def create_server(data_dir, guide_dir, port=8765, base_path=""):
                                 return self.send(methods_narrative(project).encode(), "text/markdown; charset=utf-8", filename="qualicraft-methods.md")
                             if fmt == "json":
                                 return self.send(json.dumps(project, ensure_ascii=False, indent=2).encode(), filename="qualicraft-project.json")
+                        if len(parts) == 4 and parts[3] == "network":
+                            # The graph is small enough to send whole; the
+                            # client decides which passages to reveal.
+                            query = urllib.parse.parse_qs(parsed.query)
+                            with_passages = query.get("passages", ["1"])[0] not in ("0", "false")
+                            return self.send(analyze.network(analyze.tidy(project),
+                                                             passages=with_passages))
                         if len(parts) == 4 and parts[3] in ("plot", "plot-bundle"):
                             query = urllib.parse.parse_qs(parsed.query)
                             options = {key: query[key][0] for key in query if query[key]}

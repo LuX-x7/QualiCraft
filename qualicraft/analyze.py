@@ -192,6 +192,92 @@ def hierarchy(rows):
     return {section: dict(counts) for section, counts in sections.items()}
 
 
+def network(rows, passages=True):
+    """Themes, codes and passages as one graph.
+
+    Three levels, sized by how much material sits under them: a theme is the
+    largest node, the codes inside it come next, and the passages themselves
+    are the smallest. That ordering is the point — it lets a reader see at a
+    glance which theme carries the study and which code is a footnote.
+
+    Edges carry three different relationships, and they mean different things:
+
+      hierarchy     theme -> code          the codebook's own structure
+      coding        code  -> passage       the evidence behind a code
+      cooccurrence  code <-> code          overlapping spans in one interview
+
+    Co-occurrence edges are the interesting ones: they are the relationships
+    the codebook does not record, and the reason this view exists at all.
+
+    Passages are included by default because they are what makes the graph
+    evidence rather than decoration, but the UI keeps them hidden until a code
+    is opened — several hundred passage nodes on screen at once is noise.
+    """
+    # Keyed by node id, not by label: a code and a theme can share a name, and
+    # keying by label silently merges them.
+    nodes = {}
+    links = []
+    code_id = lambda name: "code:" + name
+    theme_id = lambda name: "theme:" + name
+
+    counts = Counter(r["code"] for r in rows)
+    theme_weight = Counter()
+    code_theme = {}
+    for row in rows:
+        code, theme = row["code"], row["theme"] or row["code"]
+        code_theme[code] = theme
+        theme_weight[theme] += 1
+
+    for theme, weight in theme_weight.items():
+        nodes[theme_id(theme)] = {"id": theme_id(theme), "kind": "theme", "label": theme,
+                                  "weight": weight, "theme": theme}
+    for code, weight in counts.items():
+        theme = code_theme[code]
+        nodes[code_id(code)] = {"id": code_id(code), "kind": "code", "label": code,
+                                "weight": weight, "theme": theme}
+        # A code that is its own theme has no hierarchy edge to draw.
+        if theme_id(theme) != code_id(code) and theme_id(theme) in nodes:
+            links.append({"source": theme_id(theme), "target": code_id(code),
+                          "kind": "hierarchy", "weight": 1})
+
+    # Passages, and the coding edges that tie them to their code.
+    if passages:
+        for index, row in enumerate(rows):
+            pid = "p:%d" % index
+            nodes[pid] = {"id": pid, "kind": "passage", "label": row["text"][:80],
+                          "weight": 1, "theme": row["theme"], "case": row["case"],
+                          "code": row["code"]}
+            links.append({"source": code_id(row["code"]), "target": pid,
+                          "kind": "coding", "weight": 1})
+
+    # Co-occurrence: codes whose spans actually overlap in one interview. This
+    # is the stricter definition from docs/DESIGN.md, and the one worth
+    # drawing, because it shows relationships the codebook does not contain.
+    by_case = defaultdict(list)
+    for row in rows:
+        by_case[row["case"]].append(row)
+    pairs = Counter()
+    for group in by_case.values():
+        for i, a in enumerate(group):
+            for b in group[i + 1:]:
+                if a["code"] != b["code"] and a["start"] < b["end"] and b["start"] < a["end"]:
+                    pairs[tuple(sorted((a["code"], b["code"])))] += 1
+    for (left, right), weight in pairs.items():
+        links.append({"source": code_id(left), "target": code_id(right),
+                      "kind": "cooccurrence", "weight": weight})
+
+    return {
+        "nodes": list(nodes.values()),
+        "links": links,
+        "levels": {
+            "themes": len(theme_weight),
+            "codes": len(counts),
+            "passages": len(rows) if passages else 0,
+        },
+        "definition": "overlap",
+    }
+
+
 def summary(project, rows=None):
     """Headline numbers, for a figure subtitle or a report header."""
     rows = tidy(project) if rows is None else rows

@@ -106,6 +106,49 @@ class StatisticTests(unittest.TestCase):
         self.assertEqual(summary["themes"], 2)
 
 
+class NetworkTests(unittest.TestCase):
+    def test_three_levels_are_present(self):
+        graph = analyze.network(analyze.tidy(build()))
+        kinds = {n["kind"] for n in graph["nodes"]}
+        self.assertEqual(kinds, {"theme", "code", "passage"})
+        self.assertEqual(graph["levels"]["themes"], 2)
+        self.assertEqual(graph["levels"]["passages"], 3)
+
+    def test_every_node_has_a_unique_id(self):
+        graph = analyze.network(analyze.tidy(build()))
+        ids = [n["id"] for n in graph["nodes"]]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_themes_are_heavier_than_the_codes_inside_them(self):
+        graph = analyze.network(analyze.tidy(build()))
+        themes = {n["id"]: n["weight"] for n in graph["nodes"] if n["kind"] == "theme"}
+        codes = {n["id"]: n for n in graph["nodes"] if n["kind"] == "code"}
+        for node in codes.values():
+            self.assertGreaterEqual(themes["theme:" + node["theme"]], node["weight"])
+
+    def test_overlapping_codes_are_linked(self):
+        # Child (0-10) and Other (6-16) overlap in I1, so they must be joined.
+        graph = analyze.network(analyze.tidy(build()))
+        pairs = {(l["source"], l["target"]) for l in graph["links"] if l["kind"] == "cooccurrence"}
+        self.assertIn(("code:Child", "code:Other"), pairs)
+
+    def test_every_link_points_at_a_real_node(self):
+        graph = analyze.network(analyze.tidy(build()))
+        ids = {n["id"] for n in graph["nodes"]}
+        for link in graph["links"]:
+            self.assertIn(link["source"], ids)
+            self.assertIn(link["target"], ids)
+
+    def test_passages_can_be_left_out(self):
+        graph = analyze.network(analyze.tidy(build()), passages=False)
+        self.assertNotIn("passage", {n["kind"] for n in graph["nodes"]})
+
+    def test_an_empty_project_yields_an_empty_graph(self):
+        graph = analyze.network([])
+        self.assertEqual(graph["nodes"], [])
+        self.assertEqual(graph["links"], [])
+
+
 class EmptyProjectTests(unittest.TestCase):
     def test_everything_returns_empty_rather_than_raising(self):
         empty = new_project("Empty")
