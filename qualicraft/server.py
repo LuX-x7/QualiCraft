@@ -8,13 +8,14 @@ import mimetypes
 import os
 import secrets
 import sys
+import tempfile
 import urllib.parse
 import webbrowser
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import analyze, plotting
+from . import analyze, ingest, plotting
 from .ai import Analyzer
 from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
@@ -159,6 +160,25 @@ def create_server(data_dir, guide_dir, port=8765, base_path=""):
                 parts = raw.strip("/").split("/")
                 if parts == ["api", "config"]:
                     return self.send(analyzer.configure(body))
+                if parts == ["api", "import"]:
+                    # Another tool's export, uploaded from the interface. The
+                    # file is written to a scratch directory and handed to the
+                    # importer that recognises it; nothing is stored until the
+                    # importer returns a project.
+                    filename = str(body.get("filename") or "upload")
+                    payload = body.get("data")
+                    require(isinstance(payload, str) and payload, "The uploaded file is empty")
+                    try:
+                        blob = base64.b64decode(payload, validate=True)
+                    except Exception:
+                        raise ValueError("The uploaded file could not be read") from None
+                    require(0 < len(blob) <= 20_000_000, "The file is empty or larger than 20 MB")
+                    suffix = Path(filename).suffix.lower() or ".bin"
+                    with tempfile.TemporaryDirectory(prefix="qualicraft-import-") as scratch:
+                        target = Path(scratch) / ("upload" + suffix)
+                        target.write_bytes(blob)
+                        project = ingest.from_file(target, body.get("name") or None)
+                    return self.send(store.create(project))
                 if parts == ["api", "analyze"]:
                     require(body.get("confirmed") is True, "Confirm the preview before sending data")
                     return self.send(analyzer.start(body.get("preview_id")))

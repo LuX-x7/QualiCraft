@@ -459,6 +459,79 @@ def from_fairqual_codebook(path, name="FAIRqual workshop codebook", sheet="Sheet
     return project
 
 
+# ---------------------------------------------------------------------------
+# One entry point for the interface: work out what the file is and hand it to
+# the right importer. A researcher should not have to know that OpenQDA and
+# NVivo both export CSV, or that QualCoder exports a directory.
+# ---------------------------------------------------------------------------
+
+# Header markers, checked against the first line / first sheet.
+_SIGNATURES = (
+    ("openqda", ("code category", "start pos", "end pos", "selection")),
+    ("nvivo", ("report section", "report subsection", "thematic code")),
+    ("atlas", ("full code", "totals", "final count")),
+    ("fairqual", ("category", "subcategory", "code", "frequency")),
+)
+
+
+def _signature(text):
+    """Which exporter does this header line look like?"""
+    flat = text.lower().replace(";", ",").replace("_", " ")
+    for name, needles in _SIGNATURES:
+        if all(needle in flat for needle in needles):
+            return name
+    return None
+
+
+def from_file(path, name=None):
+    """Import any supported export, choosing the importer from the file.
+
+    Raises ValueError with a readable message when the format is not
+    recognised, because the caller is a person looking at an upload dialog.
+    """
+    path = Path(path)
+    suffix = path.suffix.lower()
+
+    if suffix == ".zip":
+        return from_qualcoder_qda(path, name or "Imported QualCoder project")
+
+    if suffix in (".xlsx", ".xls"):
+        sheets = _read_sheets(path)
+        header = ""
+        for rows in sheets.values():
+            if rows:
+                header = " ".join(str(c) for c in rows[0] if c is not None)
+                if _signature(header):
+                    break
+        kind = _signature(header)
+        if kind == "atlas":
+            return from_atlas_report(path, name or "Imported ATLAS.ti report")
+        if kind == "fairqual":
+            return from_fairqual_codebook(path, name or "Imported FAIRqual codebook")
+        raise ValueError(
+            "This spreadsheet is not a recognised coding export. Expected an "
+            "ATLAS.ti frequency report or a FAIRqual codebook."
+        )
+
+    if suffix in (".csv", ".tsv", ".txt"):
+        with open(path, "r", encoding="utf-8", errors="replace") as handle:
+            header = handle.readline()
+        kind = _signature(header)
+        if kind == "openqda":
+            return from_openqda_csv(path, name or "Imported OpenQDA coding table")
+        if kind == "nvivo":
+            return from_nvivo_csv(path, name or "Imported NVivo coding table")
+        raise ValueError(
+            "This CSV is not a recognised coding export. Expected an OpenQDA "
+            "passage-code export or an NVivo coding summary."
+        )
+
+    raise ValueError(
+        "Unsupported file type: %s. Supported: .zip (QualCoder), .csv "
+        "(OpenQDA, NVivo), .xlsx (ATLAS.ti, FAIRqual)." % (suffix or "no extension")
+    )
+
+
 def verify(project, expected):
     """Assert the imported shape matches what the dataset is documented to be."""
     problems = []
