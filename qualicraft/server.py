@@ -22,7 +22,7 @@ from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_pro
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def create_server(data_dir, guide_dir, port=8765, base_path=""):
+def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"):
     """Start the local workbench.
 
     `base_path` lets the server live behind a prefix — for example /w — so the
@@ -256,7 +256,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path=""):
             except Exception:
                 return self.send({"error": "Local processing failed; check that the storage directory is writable"}, status=500)
 
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer((host, port), Handler)
     server.daemon_threads = True
     server.store, server.analyzer, server.base_path = store, analyzer, base_path
     return server
@@ -264,7 +264,10 @@ def create_server(data_dir, guide_dir, port=8765, base_path=""):
 
 def main():
     parser = argparse.ArgumentParser(description="QualiCraft local research workbench")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--port", type=int, default=int(os.getenv("PORT", 8765)),
+                        help="Port to listen on; falls back to $PORT when set")
+    parser.add_argument("--host", default=os.getenv("QUALICRAFT_HOST", "127.0.0.1"),
+                        help="Bind address. Stays on loopback unless you ask otherwise: this tool is built to run on your own machine, and handing it to a network is a different decision.")
     parser.add_argument("--base-path", default=os.getenv("QUALICRAFT_BASE_PATH", ""),
                         help="Serve everything under this prefix, for embedding behind a proxy")
     parser.add_argument("--data-dir", default=str(ROOT / "data"))
@@ -281,7 +284,7 @@ def main():
     if args.model:
         os.environ["QUALICRAFT_MODEL"] = args.model
     try:
-        server = create_server(args.data_dir, args.guide_dir, args.port, args.base_path)
+        server = create_server(args.data_dir, args.guide_dir, args.port, args.base_path, args.host)
     except OSError as exc:
         print(f"Cannot start local service: {exc}", file=sys.stderr)
         return 1
