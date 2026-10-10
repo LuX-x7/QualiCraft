@@ -42,13 +42,16 @@ services:
     startCommand: QUALICRAFT_PUBLIC_SITE=1 node start.js
     autoDeployTrigger: 'off'
     envVars:
-      # Resolved from the workbench service so the proxy target cannot drift
-      # from the actual deployment. next.config's route handler fills in the
-      # scheme when the platform hands over a bare hostname.
+      # The workbench's public address, not its `fromService` `host` property.
+      # Render resolves that property over its private network, and the
+      # hostname it yields is not guaranteed to answer over TLS — which left
+      # the site proxying to something it could not reach. The public
+      # onrender.com address is the one a browser uses and is verifiable.
+      #
+      # If the workbench ends up at a different address (Render appends a
+      # suffix when a name is taken), change this one value in the dashboard;
+      # the proxy reads it per request, so no rebuild is needed.
       - key: QT_WORKBENCH_URL
-        fromService:
-          type: web
-          name: qualicraft-workbench
-          property: host
+        value: https://qualicraft-workbench.onrender.com
       # No DATABASE_URL: the site falls back to embedded PGlite seeded from the
       # repository, which needs no external service.
