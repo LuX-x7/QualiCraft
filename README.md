@@ -6,18 +6,16 @@
 </p>
 
 <p align="center">
-  <a href="https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" height="32"></a>
+  <strong><a href="https://qualicraft-website.onrender.com/">Website</a></strong>
+  ·
+  <strong><a href="https://qualicraft-workbench.onrender.com/w">Live workbench</a></strong>
 </p>
 
 <p align="center">
-  <a href="#deploy"><strong>Put it online</strong></a>
-  ·
-  <a href="https://github.com/LuX-x7/QualiCraft/tree/main/website">Website source</a>
-  ·
-  <a href="https://github.com/LuX-x7/QualiCraft/tree/main/web">Workbench source</a>
+  <a href="https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" height="32"></a>
 </p>
 
-<p align="center"><em>The button above deploys both the site and a read-only workbench to your own free host, and gives you a public link to share.</em></p>
+<p align="center"><em>The links above are a read-only demonstration running on the public Bologna corpus — no installation needed. The button deploys your own copy.</em></p>
 
 <p align="center">
   <a href="#english"><strong>English</strong></a>
@@ -41,15 +39,14 @@ QualiCraft is a modular workbench for interview studies and other open-ended mat
 
 ## Try it
 
-- **[Deploy it online](#deploy)** — one blueprint puts the site and a read-only
-  workbench on the internet so someone else can open them in a browser.
-- **[Website source](https://github.com/LuX-x7/QualiCraft/tree/main/website)** — English-first overview, with a language switch at the top of the page.
-- **[Workbench source](https://github.com/LuX-x7/QualiCraft/tree/main/web)** — the standalone interface and local Python server.
+- **[Website](https://qualicraft-website.onrender.com/)** — English-first overview, with a language switch and a recorded walkthrough of all five modules.
+- **[Live workbench](https://qualicraft-workbench.onrender.com/w)** — the real interface, running on the public Bologna corpus. Read-only: no uploads, no edits.
+- **[Deploy your own](#deploy)** — one blueprint puts both services on the internet from this repository.
 - **[Chinese README](#中文)** — jump to the Chinese translation below.
 
-The hosted workbench is read-only and uses the public Bologna sample; it is not
-a place to upload participant material. Use the local installation below for
-your own work.
+Both demo services run on a free tier, so the first visit after a quiet spell
+takes about half a minute to wake. The corpus is public and attributed; the demo
+is not a place to upload participant material.
 
 <a id="deploy"></a>
 
@@ -261,12 +258,13 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 
 ## 在线查看
 
-- **[部署到线上](#部署)** —— 一份蓝图把网站和一个只读工作台放到公网，别人用浏览器就能打开。
-- **[项目网站源码](https://github.com/LuX-x7/QualiCraft/tree/main/website)** —— 英文为主，页面顶部可切换语言。
-- **[工作台源码](https://github.com/LuX-x7/QualiCraft/tree/main/web)** —— 独立界面与本机 Python 服务端。
+- **[网站](https://qualicraft-website.onrender.com/)** —— 英文为主，可切换语言，含五个模块的真实操作演示。
+- **[在线工作台](https://qualicraft-workbench.onrender.com/w)** —— 真实界面，运行在 Bologna 公开语料上。只读：不能上传、不能修改。
+- **[部署你自己的](#部署)** —— 一份蓝图把这个仓库的两个服务放到公网。
 - **[English README](#english)** —— 跳转至上方英文说明。
 
-在线工作台是只读的，使用 Bologna 公开样例，不适合上传参与者材料。自己的研究请使用下面的本机安装方式。
+两个演示服务都在免费方案上，**闲置一段时间后第一次打开需要约半分钟唤醒**。
+语料是公开且带署名的；演示实例不适合上传参与者材料。
 
 <a id="部署"></a>
 

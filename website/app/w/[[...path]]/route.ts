@@ -18,9 +18,28 @@
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+/**
+ * Resolve the workbench address from QT_WORKBENCH_URL.
+ *
+ * Three shapes turn up in practice, and only the first is obvious:
+ *
+ *   https://host.example.com   a full URL — use it as given
+ *   host.example.com           a hostname without a scheme — assume https
+ *   qualicraft-workbench       a bare service name
+ *
+ * That last one comes from Render's `fromService` `host` property, which
+ * resolves to the service's *internal* name rather than a public hostname. It
+ * has no dot, so DNS cannot resolve it from here and every request fails. On
+ * Render a service is always reachable at `<name>.onrender.com`, so complete
+ * the name rather than dropping into a 502.
+ */
 function workbenchBase(): string {
   const raw = (process.env.QT_WORKBENCH_URL || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '')
-  return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  if (/^https?:\/\//i.test(raw)) return raw
+
+  const authority = raw.split('/')[0]
+  const withDomain = authority.includes('.') ? authority : `${authority}.onrender.com`
+  return `https://${withDomain}`
 }
 
 /** Headers that describe the browser-to-site hop, not the request itself. */
