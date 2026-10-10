@@ -18,6 +18,16 @@ const BYPASS = ['/api', '/admin', '/_next', '/uploads', '/w', '/world-map.json',
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // This CMS ships with a documented first-run admin account for local setup.
+  // A teaching deployment must never expose that login or its write APIs.
+  // Start the public build with QUALICRAFT_PUBLIC_SITE=1 to make the boundary
+  // server-enforced (not merely hidden in the interface).
+  if (process.env.QUALICRAFT_PUBLIC_SITE === '1'
+      && (pathname === '/admin' || pathname.startsWith('/admin/')
+        || pathname === '/api/admin' || pathname.startsWith('/api/admin/'))) {
+    return new NextResponse('Not found', { status: 404 })
+  }
+
   if (BYPASS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return NextResponse.next()
   }
@@ -53,5 +63,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|admin|_next|uploads|w/|w$|.*\\..*).*)'],
+  // Include /admin and /api/admin so the public-demo guard above actually
+  // runs there; normal APIs still fall through the BYPASS list unchanged.
+  matcher: ['/((?!_next|uploads|w/|w$|.*\\..*).*)'],
 }

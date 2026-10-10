@@ -31,6 +31,29 @@ class HTTPTests(unittest.TestCase):
         with urllib.request.urlopen(request, timeout=3) as response:
             return json.load(response)
 
+    def test_public_demo_accepts_proxy_host_but_rejects_writes(self):
+        public = create_server(self.tmp.name, self.tmp.name, port=0, public_demo=True)
+        thread = threading.Thread(target=public.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{public.server_port}"
+        try:
+            boot_req = urllib.request.Request(base + "/api/bootstrap",
+                headers={"Host": "teacher.example", "Origin": "https://teacher.example"})
+            with urllib.request.urlopen(boot_req, timeout=3) as response:
+                boot = json.load(response)
+            self.assertTrue(boot["config"]["public_demo"])
+            headers = {"Host": "teacher.example", "Origin": "https://teacher.example",
+                       "X-QualiCraft-Token": boot["token"], "Content-Type": "application/json"}
+            mutation = urllib.request.Request(base + "/api/projects", data=json.dumps({"kind": "demo"}).encode(),
+                                              headers=headers, method="POST")
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(mutation, timeout=3)
+            self.assertEqual(caught.exception.code, 403)
+        finally:
+            public.shutdown()
+            public.server_close()
+            thread.join()
+
     def test_block_cross_site_and_unauthenticated_mutations(self):
         for headers in [{"Content-Type": "application/json"}, {"X-QualiCraft-Token": self.token, "Content-Type": "application/json", "Origin": "https://evil.example"}]:
             with self.assertRaises(urllib.error.HTTPError):

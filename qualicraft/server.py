@@ -22,7 +22,7 @@ from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_pro
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"):
+def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1", public_demo=False):
     """Start the local workbench.
 
     `base_path` lets the server live behind a prefix — for example /w — so the
@@ -63,9 +63,21 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
 
         def check_request(self):
             allowed = {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"}
-            require(self.headers.get("Host") in allowed, "This host is not allowed")
-            origin = self.headers.get("Origin")
-            require(origin is None or origin in {"http://" + host for host in allowed}, "Cross-site requests are not allowed")
+            host = self.headers.get("Host", "")
+            if public_demo:
+                # The reverse proxy supplies the public host, not loopback.
+                # In this explicitly read-only mode there are no state-changing
+                # requests; still reject cross-origin browser fetches.
+                require(bool(host) and "\\r" not in host and "\\n" not in host,
+                        "This host is not allowed")
+                origin = self.headers.get("Origin")
+                require(origin is None or urllib.parse.urlsplit(origin).netloc.lower() == host.lower(),
+                        "Cross-site requests are not allowed")
+            else:
+                require(host in allowed, "This host is not allowed")
+                origin = self.headers.get("Origin")
+                require(origin is None or origin in {"http://" + item for item in allowed},
+                        "Cross-site requests are not allowed")
             require(self.headers.get("Sec-Fetch-Site", "") != "cross-site", "Cross-site requests are not allowed")
 
         def do_GET(self):
@@ -82,7 +94,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         return self.send({"error": "The file does not exist"}, status=404)
                 if path == "/api/bootstrap":
                     return self.send({"token": token, "projects": store.list(),
-                                      "config": {**analyzer.public_config(), "plotting": plotting.availability()},
+                                      "config": {**analyzer.public_config(), "plotting": plotting.availability(),
+                                                 "public_demo": public_demo},
                                       "guide_available": (Path(guide_dir) / "Paired_Qualitative_Transcripts_TU_Delft").is_dir()})
                 if path.startswith("/api/"):
                     require(self.headers.get("X-QualiCraft-Token") == token, "The session has expired; refresh the page")
@@ -148,6 +161,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
         def do_POST(self):
             try:
                 self.check_request()
+                if public_demo:
+                    return self.send({"error": "This public demonstration is read-only. Start a local copy to create or change projects."}, status=403)
                 require(self.headers.get("X-QualiCraft-Token") == token, "The session has expired; refresh the page")
                 require(self.headers.get("Content-Type", "").startswith("application/json"), "Only JSON requests are accepted")
                 size = int(self.headers.get("Content-Length", "0"))
@@ -266,7 +281,8 @@ def main():
     parser = argparse.ArgumentParser(description="QualiCraft local research workbench")
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", 8765)),
                         help="Port to listen on; falls back to $PORT when set")
-    parser.add_argument("--host", default=os.getenv("QUALICRAFT_HOST", "127.0.0.1"),
+    public_demo = os.getenv("QUALICRAFT_PUBLIC_DEMO", "").lower() in {"1", "true", "yes"}
+    parser.add_argument("--host", default=os.getenv("QUALICRAFT_HOST", "0.0.0.0" if public_demo else "127.0.0.1"),
                         help="Bind address. Stays on loopback unless you ask otherwise: this tool is built to run on your own machine, and handing it to a network is a different decision.")
     parser.add_argument("--base-path", default=os.getenv("QUALICRAFT_BASE_PATH", ""),
                         help="Serve everything under this prefix, for embedding behind a proxy")
@@ -284,7 +300,8 @@ def main():
     if args.model:
         os.environ["QUALICRAFT_MODEL"] = args.model
     try:
-        server = create_server(args.data_dir, args.guide_dir, args.port, args.base_path, args.host)
+        server = create_server(args.data_dir, args.guide_dir, args.port, args.base_path, args.host,
+                               public_demo=public_demo)
     except OSError as exc:
         print(f"Cannot start local service: {exc}", file=sys.stderr)
         return 1

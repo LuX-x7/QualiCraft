@@ -171,3 +171,14 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .net-dot--passage{background:#c8cfd8;width:7px;height:7px}
 .net-line{display:inline-block;width:20px;height:0;border-top:2px dashed #b8763f}
 .network-legend .link{font-size:11px;padding:2px 4px}
+
+/* Public demo banner is shown only when the deployment explicitly enables
+   read-only mode. Keep the boundary visible before anyone opens the importer. */
+.public-demo-banner{display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid #c9d4e1;background:#eef3f8;color:#33465c;font-size:11px;line-height:1.5}
+.public-demo-banner strong{flex:0 0 auto;font-size:10px;letter-spacing:.07em;text-transform:uppercase}
+.public-demo-banner span{color:#4d5b6c}
+.file-picker{position:relative;display:flex;align-items:center;gap:10px;min-height:35px;border:1px solid var(--strong);background:#fff;padding:4px 8px;font-size:11px;font-weight:400;cursor:pointer}
+.file-picker:focus-within{outline:2px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:1px}
+.file-picker-button{display:inline-flex;align-items:center;min-height:25px;padding:4px 9px;border:1px solid var(--strong);background:#f8f7f4;color:var(--ink);font-size:10px;font-weight:600}
+.file-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.file-picker input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
