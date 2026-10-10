@@ -74,7 +74,7 @@ export const QT_PAGES: Array<{
         data: {
           eyebrow: 'How it works',
           headline: 'Five modules, taken as you need them.',
-          body: 'Import, code, analyse, plot, export. Each one stands on its own — nothing forces you through a step you do not want. The screenshots below are the running workbench, not illustrations.',
+          body: 'Import, code, analyse, plot, export. Each one stands on its own — nothing forces you through a step you do not want. The clips below are the running workbench, recorded step by step.',
         },
       },
       {

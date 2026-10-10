@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
  * Five-module walkthrough: the real interface on the left, the explanation on
  * the right.
  *
- * The images are screenshots of the running workbench, not illustrations, so
- * what a visitor sees here is what they get. They advance on their own but stop
+ * The clips are recorded from the running workbench, step by step, so what a
+ * visitor sees here is the operation itself rather than a still of the result. They advance on their own but stop
  * as soon as the visitor picks a step by hand — an auto-rotating panel that
  * fights the reader is worse than a static one.
  */
@@ -22,7 +22,7 @@ type Step = {
 const STEPS: Step[] = [
   {
     key: 'ingest',
-    image: '/demo/m1_ingest.png',
+    image: '/demo/m1.gif',
     zh: {
       label: '数据导入',
       title: '把材料带进来',
@@ -36,7 +36,7 @@ const STEPS: Step[] = [
   },
   {
     key: 'coding',
-    image: '/demo/m2_coding.png',
+    image: '/demo/m2.gif',
     zh: {
       label: '编码',
       title: '逐段读，逐段标',
@@ -50,7 +50,7 @@ const STEPS: Step[] = [
   },
   {
     key: 'analyze',
-    image: '/demo/m3_analyze.png',
+    image: '/demo/m3.gif',
     zh: {
       label: '分析',
       title: '一张关系网，看见联系',
@@ -64,7 +64,7 @@ const STEPS: Step[] = [
   },
   {
     key: 'plot',
-    image: '/demo/m4_plot.png',
+    image: '/demo/m4.gif',
     zh: {
       label: '绘图',
       title: '预览就是脚本的输出',
@@ -78,7 +78,7 @@ const STEPS: Step[] = [
   },
   {
     key: 'export',
-    image: '/demo/m5_export.png',
+    image: '/demo/m5.gif',
     zh: {
       label: '导出',
       title: '交给合作者就能重跑',
