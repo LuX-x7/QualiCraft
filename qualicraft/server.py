@@ -21,7 +21,14 @@ from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_pro
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def create_server(data_dir, guide_dir, port=8765):
+def create_server(data_dir, guide_dir, port=8765, base_path=""):
+    """Start the local workbench.
+
+    `base_path` lets the server live behind a prefix — for example /w — so the
+    Next.js site can proxy to it without the two fighting over /api. Left empty,
+    every path is served at the root as before.
+    """
+    base_path = ("/" + base_path.strip("/")) if base_path.strip("/") else ""
     store = Store(Path(data_dir) / "qualicraft.sqlite3")
     store.migrate_legacy_demo_projects()
     if not store.list():
@@ -35,7 +42,8 @@ def create_server(data_dir, guide_dir, port=8765):
         def log_message(self, fmt, *args):
             pass  # No document content, credentials or patient identifiers in access logs.
 
-        def send(self, data, content_type="application/json; charset=utf-8", status=200, filename=None):
+        def send(self, data, content_type="application/json; charset=utf-8", status=200,
+                 filename=None, extra_headers=None):
             if not isinstance(data, bytes):
                 data = json.dumps(data, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
@@ -47,6 +55,8 @@ def create_server(data_dir, guide_dir, port=8765):
             self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
             if filename:
                 self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            for header, value in (extra_headers or []):
+                self.send_header(header, value)
             self.end_headers()
             self.wfile.write(data)
 
@@ -62,6 +72,13 @@ def create_server(data_dir, guide_dir, port=8765):
                 self.check_request()
                 parsed = urllib.parse.urlsplit(self.path)
                 path = parsed.path
+                if base_path:
+                    if path == base_path:
+                        path = "/"
+                    elif path.startswith(base_path + "/"):
+                        path = path[len(base_path):]
+                    else:
+                        return self.send({"error": "The file does not exist"}, status=404)
                 if path == "/api/bootstrap":
                     return self.send({"token": token, "projects": store.list(),
                                       "config": {**analyzer.public_config(), "plotting": plotting.availability()},
@@ -98,12 +115,23 @@ def create_server(data_dir, guide_dir, port=8765):
                                     archive.writestr(name, payload)
                             return self.send(buffer.getvalue(), "application/zip", filename="qualicraft-figure.zip")
                     return self.send({"error": "The API endpoint does not exist"}, status=404)
-                files = {"/": "landing.html", "/app": "index.html", "/app.js": "app.js",
-                         "/style.css": "style.css", "/landing.css": "landing.css"}
+                if path == "/config.js":
+                    return self.send(('window.QT_BASE=' + json.dumps(base_path) + ';').encode(),
+                                     "application/javascript; charset=utf-8")
+                files = {"/": "index.html", "/app.js": "app.js",
+                         "/style.css": "style.css",
+                         "/landing.html": "landing.html", "/landing.css": "landing.css"}
                 if path not in files:
                     return self.send({"error": "The file does not exist"}, status=404)
                 file = ROOT / "web" / files[path]
-                return self.send(file.read_bytes(), (mimetypes.guess_type(file.name)[0] or "text/plain") + "; charset=utf-8")
+                payload = file.read_bytes()
+                # Under a prefix the HTML cannot use relative asset paths, because
+                # the page is served at /w with no trailing slash. Rewrite them to
+                # absolute paths that include the prefix.
+                if base_path and file.suffix == ".html":
+                    for name in ("style.css", "config.js", "app.js", "landing.css"):
+                        payload = payload.replace(f'"{name}"'.encode(), f'"{base_path}/{name}"'.encode())
+                return self.send(payload, (mimetypes.guess_type(file.name)[0] or "text/plain") + "; charset=utf-8")
             except (ValueError, KeyError, TypeError):
                 return self.send({"error": "The request is invalid or the session has expired"}, status=400)
             except (BrokenPipeError, ConnectionResetError):
@@ -118,7 +146,10 @@ def create_server(data_dir, guide_dir, port=8765):
                 require(0 < size <= 20_000_000, "The request is empty or too large")
                 body = json.loads(self.rfile.read(size))
                 require(isinstance(body, dict), "The request format is invalid")
-                parts = urllib.parse.urlsplit(self.path).path.strip("/").split("/")
+                raw = urllib.parse.urlsplit(self.path).path
+                if base_path and raw.startswith(base_path + "/"):
+                    raw = raw[len(base_path):]
+                parts = raw.strip("/").split("/")
                 if parts == ["api", "config"]:
                     return self.send(analyzer.configure(body))
                 if parts == ["api", "analyze"]:
@@ -200,13 +231,15 @@ def create_server(data_dir, guide_dir, port=8765):
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.daemon_threads = True
-    server.store, server.analyzer = store, analyzer
+    server.store, server.analyzer, server.base_path = store, analyzer, base_path
     return server
 
 
 def main():
     parser = argparse.ArgumentParser(description="QualiCraft local research workbench")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--base-path", default=os.getenv("QUALICRAFT_BASE_PATH", ""),
+                        help="Serve everything under this prefix, for embedding behind a proxy")
     parser.add_argument("--data-dir", default=str(ROOT / "data"))
     parser.add_argument("--guide-dir", default=os.getenv("QUALICRAFT_GUIDE", str(ROOT.parent / "Guide")))
     parser.add_argument("--api-key-file", default=os.getenv("QUALICRAFT_API_KEY_FILE", ""), help="Read the provider key from this local file")
@@ -221,11 +254,11 @@ def main():
     if args.model:
         os.environ["QUALICRAFT_MODEL"] = args.model
     try:
-        server = create_server(args.data_dir, args.guide_dir, args.port)
+        server = create_server(args.data_dir, args.guide_dir, args.port, args.base_path)
     except OSError as exc:
         print(f"Cannot start local service: {exc}", file=sys.stderr)
         return 1
-    url = f"http://127.0.0.1:{server.server_port}"
+    url = f"http://127.0.0.1:{server.server_port}{server.base_path}"
     print(f"QualiCraft 0.1 | {url}\nStorage: {Path(args.data_dir).resolve()}\nPress Ctrl+C to stop. No cloud call is made at startup.", flush=True)
     if args.open:
         webbrowser.open(url)

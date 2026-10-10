@@ -1,14 +1,14 @@
 """Tests for the plotting module.
 
-The drawing itself needs matplotlib / seaborn / scipy, which are optional and may
-not be installed, so these tests cover the parts that decide *what* to draw: the
-co-occurrence counts, the CSV, the exported script, and option handling. The
-render step is exercised only when the stack happens to be present.
+The drawing itself needs matplotlib, which is optional, so these tests cover
+the parts that decide *what* to draw: the data each figure is handed, the CSV,
+the exported script, and option handling. The render step is exercised only
+when the stack happens to be present.
 """
 import unittest
 
-from qualicraft import plotting
-from qualicraft.core import add_code, add_document, annotate, new_project, set_blocks
+from qualicraft import analyze, plotting
+from qualicraft.core import add_code, add_document, annotate, new_project
 
 
 def project_with(text, codes, spans):
@@ -21,7 +21,7 @@ def project_with(text, codes, spans):
     return p
 
 
-class PlottingTests(unittest.TestCase):
+class AvailabilityTests(unittest.TestCase):
     def test_availability_reports_the_optional_stack(self):
         state = plotting.availability()
         self.assertIn("available", state)
@@ -30,72 +30,6 @@ class PlottingTests(unittest.TestCase):
         if not state["available"]:
             self.assertTrue(state["missing"])
             self.assertIn("pip install", state["install"])
-
-    def test_options_are_clamped_to_supported_values(self):
-        o = plotting.normalise({"level": "nonsense", "palette": "nope", "method": "???",
-                                "fontsize": 999, "figsize": -4, "dpi": 1, "title": "x" * 500})
-        self.assertEqual(o["level"], "theme")
-        self.assertEqual(o["palette"], "viridis")
-        self.assertEqual(o["method"], "ward")
-        self.assertEqual(o["fontsize"], 20)
-        self.assertEqual(o["figsize"], 3.0)
-        self.assertEqual(o["dpi"], 72)
-        self.assertEqual(len(o["title"]), 200)
-
-    def test_cooccurrence_counts_shared_passages(self):
-        # Three lines; A and B share the first, C appears alone on the second.
-        text = "A and B here\nonly C here\nnothing"
-        p = project_with(text, ["A", "B", "C"],
-                         [("A", 0, 1), ("B", 6, 7), ("C", 19, 20)])
-        result = plotting.cooccurrence(p, {"level": "code", "unit": "paragraph"})
-        self.assertEqual(result["units"], 3)
-        index = {name: i for i, name in enumerate(result["labels"])}
-        matrix = result["matrix"]
-        self.assertEqual(matrix[index["A"]][index["B"]], 1)   # same line
-        self.assertEqual(matrix[index["A"]][index["C"]], 0)   # different lines
-        self.assertEqual(matrix[index["A"]][index["A"]], 1)   # diagonal = own count
-
-    def test_cooccurrence_rolls_codes_up_to_their_theme(self):
-        p = new_project("Plot")
-        d = add_document(p, "I1", "one line of text")
-        theme = add_code(p, "Theme")
-        child = add_code(p, "Child", parent_id=theme["id"])
-        annotate(p, d["id"], child["id"], 0, 3)
-        at_theme = plotting.cooccurrence(p, {"level": "theme"})
-        at_code = plotting.cooccurrence(p, {"level": "code"})
-        self.assertEqual(at_theme["labels"], ["Theme"])
-        self.assertEqual(sorted(at_code["labels"]), ["Child", "Theme"])
-
-    def test_document_unit_is_coarser_than_paragraph(self):
-        text = "A here\nB here"
-        p = project_with(text, ["A", "B"], [("A", 0, 1), ("B", 7, 8)])
-        by_paragraph = plotting.cooccurrence(p, {"unit": "paragraph"})
-        by_document = plotting.cooccurrence(p, {"unit": "document"})
-        index = {name: i for i, name in enumerate(by_paragraph["labels"])}
-        self.assertEqual(by_paragraph["matrix"][index["A"]][index["B"]], 0)
-        self.assertEqual(by_document["matrix"][index["A"]][index["B"]], 1)
-
-    def test_matrix_csv_is_readable_on_its_own(self):
-        p = project_with("A and B", ["A", "B"], [("A", 0, 1), ("B", 6, 7)])
-        text = plotting.matrix_csv(plotting.cooccurrence(p, {"level": "code"}))
-        lines = text.strip().splitlines()
-        self.assertEqual(len(lines), 3)          # header + two codes
-        self.assertTrue(lines[0].startswith(","))
-        self.assertIn("A", lines[0])
-
-    def test_exported_script_is_valid_python_and_carries_the_settings(self):
-        script = plotting.build_script({"level": "code", "palette": "rocket", "annotate": False})
-        compile(script, "figure.py", "exec")     # raises if the script is not valid Python
-        self.assertIn("'level': 'code'", script)
-        self.assertIn("'palette': 'rocket'", script)
-        self.assertIn("'annotate': False", script)   # Python literal, not JSON
-        self.assertIn("figure_data.csv", script)
-
-    def test_empty_project_reports_no_data_instead_of_failing_oddly(self):
-        result = plotting.cooccurrence(new_project("Empty"), {})
-        self.assertEqual(result["labels"], [])
-        self.assertEqual(result["matrix"], [])
-        self.assertEqual(result["units"], 0)
 
     def test_render_says_which_pieces_are_missing(self):
         state = plotting.availability()
@@ -107,6 +41,125 @@ class PlottingTests(unittest.TestCase):
         for name in state["missing"]:
             self.assertIn(name, message)
         self.assertIn("pip install", message)
+
+
+class OptionTests(unittest.TestCase):
+    def test_unknown_values_fall_back_to_the_defaults(self):
+        o = plotting.normalise({"kind": "nonsense", "palette": "nope", "method": "???",
+                                "mode": "sideways", "fontsize": 999, "figsize": -4,
+                                "dpi": 1, "top": 900})
+        self.assertEqual(o["kind"], plotting.DEFAULT_OPTIONS["kind"])
+        self.assertEqual(o["palette"], plotting.DEFAULT_OPTIONS["palette"])
+        self.assertEqual(o["method"], "ward")
+        self.assertEqual(o["mode"], "overlap")
+        self.assertEqual(o["fontsize"], 20)
+        self.assertEqual(o["figsize"], 3.0)
+        self.assertEqual(o["dpi"], 72)
+        self.assertEqual(o["top"], 60)
+
+    def test_query_string_values_are_parsed_not_trusted(self):
+        o = plotting.normalise({"cluster": "true", "annotate": "0", "top": "12"})
+        self.assertTrue(o["cluster"])
+        self.assertFalse(o["annotate"])
+        self.assertEqual(o["top"], 12)
+
+    def test_a_name_defaults_to_the_kind(self):
+        self.assertEqual(plotting.normalise({"kind": "coverage"})["name"], "figure_coverage")
+
+    def test_every_kind_gets_a_default_title(self):
+        for kind in plotting.PLOT_KINDS:
+            self.assertTrue(plotting.normalise({"kind": kind})["title"])
+
+
+class CooccurrenceTests(unittest.TestCase):
+    def test_overlap_counts_only_intersecting_ranges(self):
+        text = "abcdefghij"
+        p = project_with(text, ["A", "B", "C"],
+                         [("A", 0, 4), ("B", 3, 7), ("C", 8, 10)])
+        result = plotting.cooccurrence(p, {"mode": "overlap"})
+        index = {name: i for i, name in enumerate(result["labels"])}
+        matrix = result["matrix"]
+        self.assertEqual(matrix[index["A"]][index["B"]], 1)   # 0-4 and 3-7 overlap
+        self.assertEqual(matrix[index["A"]][index["C"]], 0)   # 0-4 and 8-10 do not
+        self.assertEqual(matrix[index["A"]][index["A"]], 1)   # diagonal = own count
+
+    def test_unit_mode_is_coarser_than_overlap(self):
+        # Two codings on one line, but not overlapping each other.
+        text = "A here then B here"
+        p = project_with(text, ["A", "B"], [("A", 0, 1), ("B", 13, 14)])
+        by_overlap = plotting.cooccurrence(p, {"mode": "overlap"})
+        by_unit = plotting.cooccurrence(p, {"mode": "unit"})
+        index = {name: i for i, name in enumerate(by_overlap["labels"])}
+        self.assertEqual(by_overlap["matrix"][index["A"]][index["B"]], 0)
+        self.assertEqual(by_unit["matrix"][index["A"]][index["B"]], 1)
+
+    def test_labels_come_back_in_frequency_order(self):
+        text = "a b c d e f"
+        p = project_with(text, ["Rare", "Common"],
+                         [("Rare", 0, 1), ("Common", 2, 3),
+                          ("Common", 4, 5), ("Common", 6, 7)])
+        self.assertEqual(plotting.cooccurrence(p, {})["labels"][0], "Common")
+
+    def test_limit_keeps_the_most_frequent_codes(self):
+        text = "a b c d e f g h"
+        p = project_with(text, ["One", "Two", "Three"],
+                         [("One", 0, 1), ("One", 2, 3), ("Two", 4, 5), ("Three", 6, 7)])
+        result = plotting.cooccurrence(p, {"top": 2})
+        self.assertEqual(len(result["labels"]), 2)
+        self.assertIn("One", result["labels"])          # two codings, keeps its place
+        # Two and Three tie on one coding each, so the name breaks the tie and
+        # Three survives. Asserting on the tie is the point of this test.
+        self.assertEqual(result["labels"], ["One", "Three"])
+
+    def test_matrix_csv_is_readable_on_its_own(self):
+        p = project_with("A and B", ["A", "B"], [("A", 0, 1), ("B", 6, 7)])
+        text = plotting.matrix_csv(plotting.cooccurrence(p, {"mode": "overlap"}))
+        lines = text.strip().splitlines()
+        self.assertEqual(len(lines), 3)          # header + two codes
+        self.assertTrue(lines[0].startswith(","))
+        self.assertIn("A", lines[0])
+
+
+class ScriptTests(unittest.TestCase):
+    def test_every_kind_exports_valid_python(self):
+        for kind in plotting.PLOT_KINDS:
+            script = plotting.build_script({"kind": kind, "palette": "rocket",
+                                            "annotate": False, "top": 12})
+            compile(script, "figure.py", "exec")     # raises if not valid Python
+            self.assertIn("'palette': 'rocket'", script)
+            self.assertIn("'annotate': False", script)   # Python literal, not JSON
+            self.assertIn("'kind': '%s'" % kind, script)
+            self.assertIn("figure_data.csv", script)
+
+    def test_script_carries_a_resolved_font(self):
+        script = plotting.build_script({"kind": "frequency"})
+        self.assertIn("'font':", script)
+        self.assertNotIn("'font': ''", script)
+
+    def test_script_writes_png_svg_and_pdf(self):
+        script = plotting.build_script({"kind": "frequency"})
+        for ext in ("png", "svg", "pdf"):
+            self.assertIn('"%s"' % ext, script)
+
+
+class DatasetTests(unittest.TestCase):
+    def test_each_kind_produces_a_csv_with_a_header_and_rows(self):
+        # B deliberately overlaps A, so the co-occurrence figure has a pair.
+        p = project_with("alpha beta gamma delta",
+                         ["A", "B"],
+                         [("A", 0, 8), ("B", 6, 16), ("A", 11, 16)])
+        for kind in plotting.PLOT_KINDS:
+            options = plotting.normalise({"kind": kind, "top": 10})
+            data = plotting._dataset(analyze.tidy(p), options)
+            lines = [line for line in data.strip().splitlines() if line]
+            self.assertGreaterEqual(len(lines), 2, "%s produced no rows" % kind)
+
+    def test_result_reports_the_numbers_behind_the_figure(self):
+        p = project_with("alpha beta", ["A", "B"], [("A", 0, 5), ("B", 6, 10)])
+        result = plotting._result(analyze.tidy(p), plotting.normalise({"kind": "frequency"}))
+        self.assertEqual(result["kind"], "frequency")
+        self.assertEqual(sorted(result["labels"]), ["A", "B"])
+        self.assertEqual(result["codings"], 2)
 
 
 if __name__ == "__main__":

@@ -1,171 +1,546 @@
 """Publication figures, drawn by a script rather than by the browser.
 
-Two decisions shape this module.
+Three decisions shape this module.
 
 **A script draws the figure, and the preview is that script's output.** There is
 only one renderer, so "the exported code reproduces the figure" holds by
 construction rather than by careful maintenance of two parallel drawing paths.
 
-**matplotlib / seaborn / scipy are optional.** The rest of QualiCraft runs on the
-standard library alone. This module reports its own absence instead of failing,
-so the plotting block stays switched off until the researcher installs them.
+**Every figure reads the same tidy table.** The counting lives in `analyze`, so
+a chart is a renderer and nothing else. Five kinds share one option surface and
+one credit block.
 
-The export is a bundle, not just an image: the matrix as CSV, the script, and the
-finished figures. The CSV is the part that is hard to reconstruct; the script is
-short because the counting is already done.
+**matplotlib is the only hard dependency.** Clustering needs scipy; without it
+the figure is drawn unclustered rather than refusing to draw. The rest of
+QualiCraft runs on the standard library alone, so this module reports its own
+absence instead of failing at import.
+
+The export is a bundle, not just an image: the counts as CSV, the script, and
+the finished figure as PNG, SVG and PDF. The CSV is the part that is hard to
+reconstruct; the script is short because the counting is already done.
 """
+from __future__ import annotations
+
 import csv
 import importlib.util
 import io
 import pprint
-import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-REQUIRED = ("matplotlib", "seaborn", "scipy")
+from . import analyze
 
-INSTALL_HINT = "pip install matplotlib seaborn scipy"
+REQUIRED = ("matplotlib",)
+OPTIONAL = ("scipy",)          # clustering only
 
-PLOT_KINDS = ("cooccurrence",)
+INSTALL_HINT = "pip install matplotlib"
 
-PALETTES = ("viridis", "rocket", "mako", "flare", "crest", "Blues", "Reds")
+PLOT_KINDS = ("frequency", "coverage", "cooccurrence", "hierarchy", "accumulation")
 
-CLUSTER_METHODS = ("ward", "complete", "average", "single")
-
-DEFAULT_OPTIONS = {
-    "level": "theme",
-    "unit": "paragraph",
-    "palette": "viridis",
-    "cluster": True,
-    "method": "ward",
-    "annotate": True,
-    "fontsize": 9,
-    "figsize": 8.0,
-    "title": "",
-    "dpi": 300,
+KIND_TITLES = {
+    "frequency": "Code frequency",
+    "coverage": "Code-by-interview matrix",
+    "cooccurrence": "Code co-occurrence",
+    "hierarchy": "Themes and named subthemes",
+    "accumulation": "Code accumulation curve",
 }
 
-BUNDLE_FILES = ("figure_data.csv", "figure.py", "figure.svg", "figure.pdf", "figure.png")
+PALETTES = ("viridis", "YlGnBu", "Blues", "Greens", "magma", "rocket", "mako", "flare", "crest")
+CLUSTER_METHODS = ("ward", "complete", "average", "single")
+
+# Okabe–Ito: distinguishable in greyscale and for the common colour-vision
+# deficiencies, which matters when a figure is printed.
+OKABE_ITO = ("#0072B2", "#D55E00", "#009E73", "#CC79A7",
+             "#E69F00", "#56B4E9", "#8C564B", "#4B4B4B")
+
+DEFAULT_OPTIONS = {
+    "kind": "frequency",
+    "name": "",
+    "top": 15,
+    # YlGnBu is the conventional sequential ramp for a count heatmap and is
+    # what the reviewed examples use; viridis stays available.
+    "palette": "YlGnBu",
+    "color": "#73a89a",
+    "cluster": False,
+    "method": "ward",
+    "annotate": True,
+    "fontsize": 10,
+    "figsize": 11.0,
+    "dpi": 300,
+    "title": "",
+    "subtitle": "",
+    "credit": "",
+    "mode": "overlap",          # co-occurrence definition; see analyze
+    "font": "",
+}
+
+# The script writes <name>.<ext>; these two carry the data and the recipe.
+SIDECAR_FILES = ("figure_data.csv", "figure.py")
+FIGURE_EXTENSIONS = ("png", "svg", "pdf")
+
+# Fonts with CJK coverage, in preference order. Resolved at render time so a
+# Chinese codebook does not come out as a row of empty boxes.
+CJK_FONTS = ("PingFang SC", "Hiragino Sans GB", "Heiti SC", "Songti SC",
+             "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
+             "WenQuanYi Micro Hei", "SimHei", "Arial Unicode MS")
+
+
+def _as_bool(value, default=False):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value.strip().lower() not in ("", "0", "false", "no", "off")
+    return bool(value)
+
+
+def _as_int(value, default, low, high):
+    try:
+        return max(low, min(high, int(float(value))))
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_float(value, default, low, high):
+    try:
+        return max(low, min(high, float(value)))
+    except (TypeError, ValueError):
+        return default
+
+
+def available_font():
+    """A font family that can render the labels, preferring a CJK one."""
+    try:
+        from matplotlib import font_manager
+        installed = {f.name for f in font_manager.fontManager.ttflist}
+    except Exception:
+        return "DejaVu Sans"
+    for name in CJK_FONTS:
+        if name in installed:
+            return name
+    return "DejaVu Sans"
 
 
 def availability():
-    """Whether the optional plotting stack is importable."""
+    """Whether the drawing stack is importable, and what is missing."""
     missing = [name for name in REQUIRED if importlib.util.find_spec(name) is None]
+    optional = [name for name in OPTIONAL if importlib.util.find_spec(name) is None]
     return {
         "available": not missing,
         "missing": missing,
+        "optional_missing": optional,
         "install": INSTALL_HINT if missing else "",
     }
 
 
 def normalise(options):
-    """Coerce incoming options into the supported range."""
+    """Coerce incoming options into the supported range.
+
+    Query strings arrive as text, so booleans and numbers are parsed rather
+    than trusted; anything unrecognised falls back to the default instead of
+    raising, because a bad URL should not break the preview.
+    """
     merged = dict(DEFAULT_OPTIONS)
     for key, value in (options or {}).items():
         if key in merged and value is not None:
             merged[key] = value
-    if merged["level"] not in ("theme", "code"):
-        merged["level"] = "theme"
-    if merged["unit"] not in ("paragraph", "document"):
-        merged["unit"] = "paragraph"
+
+    if merged["kind"] not in PLOT_KINDS:
+        merged["kind"] = DEFAULT_OPTIONS["kind"]
     if merged["palette"] not in PALETTES:
-        merged["palette"] = "viridis"
+        merged["palette"] = DEFAULT_OPTIONS["palette"]
     if merged["method"] not in CLUSTER_METHODS:
-        merged["method"] = "ward"
-    merged["cluster"] = bool(merged["cluster"])
-    merged["annotate"] = bool(merged["annotate"])
-    try:
-        merged["fontsize"] = max(5, min(20, int(merged["fontsize"])))
-    except (TypeError, ValueError):
-        merged["fontsize"] = DEFAULT_OPTIONS["fontsize"]
-    try:
-        merged["figsize"] = max(3.0, min(20.0, float(merged["figsize"])))
-    except (TypeError, ValueError):
-        merged["figsize"] = DEFAULT_OPTIONS["figsize"]
-    try:
-        merged["dpi"] = max(72, min(1200, int(merged["dpi"])))
-    except (TypeError, ValueError):
-        merged["dpi"] = DEFAULT_OPTIONS["dpi"]
-    merged["title"] = str(merged["title"] or "")[:200]
+        merged["method"] = DEFAULT_OPTIONS["method"]
+    if merged["mode"] not in analyze.COOCCURRENCE_MODES:
+        merged["mode"] = DEFAULT_OPTIONS["mode"]
+
+    merged["cluster"] = _as_bool(merged["cluster"])
+    merged["annotate"] = _as_bool(merged["annotate"], True)
+    merged["top"] = _as_int(merged["top"], DEFAULT_OPTIONS["top"], 1, 60)
+    merged["fontsize"] = _as_int(merged["fontsize"], DEFAULT_OPTIONS["fontsize"], 5, 20)
+    merged["figsize"] = _as_float(merged["figsize"], DEFAULT_OPTIONS["figsize"], 3.0, 24.0)
+    merged["dpi"] = _as_int(merged["dpi"], DEFAULT_OPTIONS["dpi"], 72, 1200)
+    merged["name"] = str(merged["name"] or ("figure_" + merged["kind"]))[:80]
+    for field in ("title", "subtitle", "credit", "color", "font"):
+        merged[field] = str(merged[field] or "")[:400]
+    if not merged["color"].startswith("#"):
+        merged["color"] = DEFAULT_OPTIONS["color"]
+    if not merged["title"]:
+        merged["title"] = KIND_TITLES[merged["kind"]]
     return merged
 
 
-def _paragraph_ranges(text):
-    """Character ranges of the transcript's segments.
+# ---------------------------------------------------------------------------
+# Data: one long-form CSV per figure, so the generated script never needs the
+# project — only the file sitting next to it.
+# ---------------------------------------------------------------------------
 
-    Splits on non-empty lines, which is how the reader and the model prompts cut a
-    transcript up. Counting over the same units the researcher sees on screen
-    matters: a blank-line split would put a whole interview in one unit and every
-    pair would co-occur exactly once.
-    """
-    return [(m.start(), m.end()) for m in re.finditer(r"[^\r\n]+", text) if m.group().strip()]
-
-
-def _units(project, unit):
-    """A unit is what two codes have to share in order to count as co-occurring."""
-    units = []
-    for document in project["documents"]:
-        if unit == "document":
-            units.append((document["id"], 0, len(document["text"])))
-        else:
-            for start, end in _paragraph_ranges(document["text"]):
-                units.append((document["id"], start, end))
-    return units
+def _write_csv(fieldnames, rows):
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream)
+    writer.writerow(fieldnames)
+    writer.writerows(rows)
+    return stream.getvalue()
 
 
-def _theme_of(project, code_id):
-    """The top-level theme a code belongs to, or the code itself when it has no parent."""
-    by_id = {c["id"]: c for c in project["codes"]}
-    seen, current = {code_id}, by_id.get(code_id)
-    while current and current.get("parent_id") and current["parent_id"] in by_id:
-        if current["parent_id"] in seen:
-            break
-        seen.add(current["parent_id"])
-        current = by_id[current["parent_id"]]
-    return current["id"] if current else code_id
+def _dataset(rows, options):
+    kind = options["kind"]
+    if kind == "frequency":
+        data = analyze.frequency(rows)[:options["top"]]
+        return _write_csv(["code", "count"], [[d["label"], d["count"]] for d in data])
+    if kind == "coverage":
+        cov = analyze.coverage(rows, top=options["top"])
+        out = []
+        for case, line in zip(cov["cases"], cov["matrix"]):
+            for code, count in zip(cov["codes"], line):
+                out.append([case, code, count])
+        return _write_csv(["case", "code", "count"], out)
+    if kind == "cooccurrence":
+        co = analyze.cooccurrence(rows, mode=options["mode"], limit=options["top"])
+        labels = co["labels"]
+        out = []
+        for i, left in enumerate(labels):
+            for j, right in enumerate(labels):
+                if i != j and co["matrix"][i][j]:
+                    out.append([left, right, co["matrix"][i][j]])
+        return _write_csv(["code_a", "code_b", "count"], out)
+    if kind == "hierarchy":
+        h = analyze.hierarchy(rows)
+        out = []
+        for section in sorted(h, key=lambda s: -sum(h[s].values())):
+            for subsection, count in sorted(h[section].items(), key=lambda kv: -kv[1]):
+                out.append([section, subsection, count])
+        return _write_csv(["section", "subsection", "count"], out)
+    acc = analyze.accumulation(rows)
+    out = [[i + 1, case, cum, new]
+           for i, (case, cum, new) in enumerate(zip(acc["cases"], acc["cumulative"], acc["new"]))]
+    return _write_csv(["step", "case", "cumulative", "new"], out)
 
 
-def cooccurrence(project, options=None):
-    """How often each pair of codes (or themes) shares a unit.
+def _result(rows, options):
+    """The numbers behind the figure, for the caller and for the tests."""
+    kind = options["kind"]
+    if kind == "frequency":
+        data = analyze.frequency(rows)[:options["top"]]
+        return {"kind": kind, "labels": [d["label"] for d in data],
+                "counts": [d["count"] for d in data], "codings": len(rows)}
+    if kind == "coverage":
+        cov = analyze.coverage(rows, top=options["top"])
+        return {"kind": kind, "labels": cov["codes"], "cases": cov["cases"],
+                "matrix": cov["matrix"], "codings": len(rows)}
+    if kind == "cooccurrence":
+        co = analyze.cooccurrence(rows, mode=options["mode"], limit=options["top"])
+        return {"kind": kind, "labels": co["labels"], "matrix": co["matrix"],
+                "mode": co["mode"], "codings": len(rows)}
+    if kind == "hierarchy":
+        return {"kind": kind, "hierarchy": analyze.hierarchy(rows), "codings": len(rows)}
+    acc = analyze.accumulation(rows)
+    return {"kind": kind, "cumulative": acc["cumulative"], "cases": acc["cases"],
+            "codings": len(rows)}
 
-    The diagonal is the number of units the code appears in, so the matrix is
-    informative on its own and not only as a heatmap.
-    """
-    options = normalise(options)
-    level, unit = options["level"], options["unit"]
-    by_id = {c["id"]: c for c in project["codes"]}
 
-    target = {}
-    for code in project["codes"]:
-        target[code["id"]] = _theme_of(project, code["id"]) if level == "theme" else code["id"]
+# ---------------------------------------------------------------------------
+# The exported script. Generated once, used twice: it draws the preview and it
+# is what the co-author receives. That is what makes the two agree.
+# ---------------------------------------------------------------------------
 
-    labels = sorted({by_id[cid]["name"] for cid in target.values() if cid in by_id})
+_SCRIPT_PRELUDE = '''#!/usr/bin/env python3
+"""Publication figure generated by QualiCraft.
+
+This is the script that drew the figure you were looking at, exported
+unchanged. It reads figure_data.csv from its own folder, so the folder can be
+handed to a co-author as it stands.
+
+    pip install matplotlib
+    python figure.py       # writes figure.png, figure.svg and figure.pdf
+"""
+import csv
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+HERE = Path(__file__).resolve().parent
+
+SETTINGS = '''
+
+_SCRIPT_HELPERS = '''
+
+GRID = "#eae9ea"
+INK = "#251f21"
+MUTED = "#585254"
+
+plt.rcParams.update({
+    "font.family": SETTINGS["font"],
+    "font.size": SETTINGS["fontsize"],
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "text.color": INK,
+    "axes.labelcolor": INK,
+    "xtick.color": INK,
+    "ytick.color": INK,
+    "figure.facecolor": "white",
+    "savefig.facecolor": "white",
+    # Without a fixed salt matplotlib mints a random element id per run, so
+    # two runs of this same script would produce different bytes. Pinning it
+    # keeps the export byte-reproducible.
+    "svg.hashsalt": "qualicraft",
+})
+
+
+def wrap(text, width=34):
+    import textwrap
+    return "\\n".join(textwrap.wrap(str(text), width)) or str(text)
+
+
+def read_data():
+    with open(HERE / "figure_data.csv", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def finish(fig, title, subtitle, credit, rect=(0, 0.075, 1, 0.88)):
+    """The fixed header and footer every figure in this project carries."""
+    if title:
+        fig.text(.025, .975, title, ha="left", va="top", fontsize=16, fontweight="bold")
+    if subtitle:
+        fig.text(.025, .934, subtitle, ha="left", va="top", fontsize=10, color=MUTED)
+    if credit:
+        fig.text(.025, .018, credit, ha="left", va="bottom", fontsize=8, color=MUTED)
+    fig.tight_layout(rect=rect, pad=1.8)
+    # A wall-clock stamp would make the same data export different bytes on
+    # every run, which breaks "the export reproduces the preview". The key
+    # differs per backend: SVG uses Date, PDF uses CreationDate and ModDate.
+    for ext, meta in (("png", None),
+                      ("svg", {"Date": None}),
+                      ("pdf", {"CreationDate": None, "ModDate": None})):
+        fig.savefig(HERE / (SETTINGS["name"] + "." + ext),
+                    dpi=SETTINGS["dpi"], bbox_inches="tight", pad_inches=.2,
+                    metadata=meta)
+    plt.close(fig)
+'''
+
+_BODY_FREQUENCY = '''
+
+def main():
+    rows = read_data()
+    if not rows:
+        raise SystemExit("figure_data.csv is empty")
+    rows = rows[::-1]
+    labels = [wrap(r["code"], 34) for r in rows]
+    values = [int(r["count"]) for r in rows]
+    height = max(3.0, 0.52 * len(values) + 1.7)
+    fig, ax = plt.subplots(figsize=(SETTINGS["figsize"], height))
+    ax.barh(range(len(values)), values, color=SETTINGS["color"], height=0.72)
+    ax.set_yticks(range(len(labels)), labels)
+    ax.set_xlabel("Passage-code assignments")
+    peak = max(values) or 1
+    ax.set_xlim(0, peak * 1.15)
+    for i, value in enumerate(values):
+        ax.text(value + peak * 0.012, i, str(value), va="center", fontsize=9)
+    ax.xaxis.grid(True, color=GRID)
+    ax.set_axisbelow(True)
+    finish(fig, SETTINGS["title"], SETTINGS["subtitle"], SETTINGS["credit"])
+
+
+main()
+'''
+
+_BODY_COVERAGE = '''
+
+def main():
+    rows = read_data()
+    if not rows:
+        raise SystemExit("figure_data.csv is empty")
+    cases = sorted({r["case"] for r in rows})
+    order = {}
+    for r in rows:
+        order[r["code"]] = order.get(r["code"], 0) + int(r["count"])
+    codes = sorted(order, key=lambda c: (-order[c], c))[:SETTINGS["top"]]
+    counts = {(r["case"], r["code"]): int(r["count"]) for r in rows}
+    matrix = [[counts.get((case, code), 0) for code in codes] for case in cases]
+
+    fig, ax = plt.subplots(figsize=(max(SETTINGS["figsize"], 0.42 * len(cases) + 5),
+                                    max(6.0, 0.46 * len(codes) + 3)))
+    image = ax.imshow(matrix, cmap=SETTINGS["palette"], aspect="auto", vmin=0)
+    ax.set_xticks(range(len(cases)), [str(c).replace(".txt", "") for c in cases],
+                  rotation=90, fontsize=9)
+    ax.set_yticks(range(len(codes)), [wrap(c, 32) for c in codes], fontsize=9)
+    ax.set_xlabel("Interview file")
+    ax.set_ylabel("Code")
+    ax.grid(False)
+    fig.colorbar(image, ax=ax, label="Passage-code assignments", shrink=.85)
+    finish(fig, SETTINGS["title"], SETTINGS["subtitle"], SETTINGS["credit"])
+
+
+main()
+'''
+
+_BODY_COOCCURRENCE = '''
+
+def main():
+    rows = read_data()
+    if not rows:
+        raise SystemExit("figure_data.csv is empty")
+    # Keep the order the rows arrive in: the CSV is written most-frequent
+    # first, and re-sorting here would silently turn the matrix back into
+    # alphabetical order.
+    labels = []
+    for r in rows:
+        for key in ("code_a", "code_b"):
+            if r[key] not in labels:
+                labels.append(r[key])
     index = {name: i for i, name in enumerate(labels)}
     size = len(labels)
     matrix = [[0] * size for _ in range(size)]
+    for r in rows:
+        matrix[index[r["code_a"]]][index[r["code_b"]]] = int(r["count"])
 
-    units = _units(project, unit)
-    for document_id, start, end in units:
-        present = set()
-        for annotation in project["annotations"]:
-            if annotation["document_id"] != document_id:
-                continue
-            if annotation["end"] <= start or annotation["start"] >= end:
-                continue
-            name = by_id.get(target.get(annotation["code_id"], ""), {}).get("name")
-            if name in index:
-                present.add(name)
-        for left in present:
-            for right in present:
-                matrix[index[left]][index[right]] += 1
+    order = None
+    if SETTINGS["cluster"] and size > 2:
+        try:
+            import numpy as np
+            from scipy.cluster.hierarchy import linkage
+            from scipy.spatial.distance import squareform
+            peak = max(max(row) for row in matrix) or 1
+            distance = [[float(peak - matrix[i][j]) for j in range(size)] for i in range(size)]
+            condensed = squareform(np.array(distance), checks=False)
+            order = list(linkage(condensed, method=SETTINGS["method"]).argsort())
+        except Exception:
+            order = None
+    if order:
+        labels = [labels[i] for i in order]
+        matrix = [[matrix[i][j] for j in order] for i in order]
+        size = len(labels)
 
-    return {"labels": labels, "matrix": matrix, "level": level, "unit": unit, "units": len(units)}
+    fig, ax = plt.subplots(figsize=(SETTINGS["figsize"], SETTINGS["figsize"] * 0.92))
+    peak = max((max(row) for row in matrix), default=0)
+    image = ax.imshow(matrix, cmap=SETTINGS["palette"], vmin=0)
+    ax.set_xticks(range(size), [wrap(c, 20) for c in labels], rotation=90, fontsize=9)
+    ax.set_yticks(range(size), [wrap(c, 28) for c in labels], fontsize=9)
+    ax.grid(False)
+    if SETTINGS["annotate"] and size <= 30:
+        for i in range(size):
+            for j in range(size):
+                ax.text(j, i, "-" if i == j else str(matrix[i][j]),
+                        ha="center", va="center", fontsize=9,
+                        color="white" if matrix[i][j] > peak * .55 else INK)
+    fig.colorbar(image, ax=ax, label="Co-occurring coding pairs", shrink=.6)
+    finish(fig, SETTINGS["title"], SETTINGS["subtitle"], SETTINGS["credit"],
+           rect=(0, .055, 1, .90))
+
+
+main()
+'''
+
+_BODY_HIERARCHY = '''
+
+def main():
+    rows = read_data()
+    if not rows:
+        raise SystemExit("figure_data.csv is empty")
+    sections = {}
+    for r in rows:
+        sections.setdefault(r["section"], []).append((r["subsection"], int(r["count"])))
+    names = sorted(sections)
+    columns = 2 if len(names) > 4 else 1
+    grid_rows = -(-len(names) // columns)
+    fig, axes = plt.subplots(grid_rows, columns,
+                             figsize=(SETTINGS["figsize"] * columns / 2.0,
+                                      max(5.0, 4.6 * grid_rows)),
+                             squeeze=False)
+    for ax, section in zip(axes.flat, names):
+        pairs = sorted(sections[section], key=lambda p: p[1])
+        labels = [wrap(n, 42) for n, _c in pairs]
+        values = [c for _n, c in pairs]
+        ax.barh(range(len(values)), values, color=SETTINGS["color"], height=0.7)
+        ax.set_yticks(range(len(labels)), labels, fontsize=9)
+        ax.set_xlim(0, max(max(values) * 1.23, 20))
+        ax.set_title(wrap(section, 48) + "\\n%d coded extracts" % sum(values),
+                     fontsize=11, loc="left", pad=12)
+        for i, value in enumerate(values):
+            ax.text(value + max(max(values) * .02, .4), i, str(value),
+                    va="center", fontsize=9)
+        ax.set_xlabel("Coded extracts")
+        ax.xaxis.grid(True, color=GRID)
+        ax.set_axisbelow(True)
+    for ax in axes.flat[len(names):]:
+        ax.axis("off")
+    finish(fig, SETTINGS["title"], SETTINGS["subtitle"], SETTINGS["credit"],
+           rect=(0, .04, 1, .92))
+
+
+main()
+'''
+
+_BODY_ACCUMULATION = '''
+
+def main():
+    rows = read_data()
+    if not rows:
+        raise SystemExit("figure_data.csv is empty")
+    steps = [int(r["step"]) for r in rows]
+    values = [int(r["cumulative"]) for r in rows]
+    fig, ax = plt.subplots(figsize=(SETTINGS["figsize"] * 0.9, 6))
+    ax.plot(steps, values, marker="o", color=SETTINGS["color"], ms=4)
+    ax.set_xlabel("Interviews included (alphabetical filename order)")
+    ax.set_ylabel("Cumulative distinct codes")
+    ax.set_ylim(0, max(values) * 1.12 if values else 1)
+    ax.set_xticks([s for s in steps if s == 1 or s % 5 == 0 or s == steps[-1]])
+    ax.grid(color=GRID)
+    ax.annotate("%d codes" % values[-1], (steps[-1], values[-1]),
+                xytext=(-55, -22), textcoords="offset points")
+    finish(fig, SETTINGS["title"], SETTINGS["subtitle"], SETTINGS["credit"])
+
+
+main()
+'''
+
+_BODIES = {
+    "frequency": _BODY_FREQUENCY,
+    "coverage": _BODY_COVERAGE,
+    "cooccurrence": _BODY_COOCCURRENCE,
+    "hierarchy": _BODY_HIERARCHY,
+    "accumulation": _BODY_ACCUMULATION,
+}
+
+
+def build_script(options=None):
+    """The exact script that draws the figure, exported verbatim."""
+    settings = normalise(options)
+    settings["font"] = settings["font"] or available_font()
+    return (_SCRIPT_PRELUDE
+            + pprint.pformat(settings, indent=4, width=88, sort_dicts=True)
+            + _SCRIPT_HELPERS
+            + _BODIES[settings["kind"]])
+
+
+# ---------------------------------------------------------------------------
+# Backwards-compatible helpers. `cooccurrence` is kept because callers and
+# tests use it directly, but the counting now lives in `analyze`.
+# ---------------------------------------------------------------------------
+
+def cooccurrence(project, options=None):
+    """Co-occurrence over a project, in the shape callers already expect."""
+    options = options or {}
+    mode = options.get("mode")
+    if mode not in analyze.COOCCURRENCE_MODES:
+        # The old surface called this "unit"; paragraph units map onto it.
+        mode = "unit" if options.get("unit") == "paragraph" else "overlap"
+    rows = analyze.tidy(project)
+    case_text = {d["name"]: d["text"] for d in project.get("documents", [])}
+    limit = options.get("top")
+    result = analyze.cooccurrence(rows, mode=mode, case_text=case_text,
+                                  limit=int(limit) if limit else None)
+    result["units"] = len({r["case"] for r in rows})
+    return result
 
 
 def matrix_csv(result):
-    """The matrix as CSV, so the exported script needs nothing but the file."""
+    """A square matrix as CSV, header row included."""
     stream = io.StringIO(newline="")
     writer = csv.writer(stream)
     writer.writerow([""] + result["labels"])
@@ -174,87 +549,9 @@ def matrix_csv(result):
     return stream.getvalue()
 
 
-def build_script(options=None):
-    """The exact script that draws the figure, exported verbatim."""
-    settings = pprint.pformat(normalise(options), indent=4, width=88, sort_dicts=True)
-    return '''#!/usr/bin/env python3
-"""Theme co-occurrence heatmap for a QualiCraft project.
-
-This is the script that drew the figure you were looking at, exported unchanged.
-
-    pip install matplotlib seaborn scipy
-    python figure.py        # writes figure.svg, figure.pdf and figure.png
-
-figure_data.csv holds the counts; nothing else about the project is needed, so
-this folder can be handed to a co-author as it stands. Edit SETTINGS and re-run
-to change the figure.
-"""
-import json
-from pathlib import Path
-
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from scipy.cluster.hierarchy import linkage
-from scipy.spatial.distance import squareform
-
-SETTINGS = ''' + settings + '''
-
-HERE = Path(__file__).resolve().parent
-
-
-def main():
-    counts = pd.read_csv(HERE / "figure_data.csv", index_col=0)
-    counts = counts.astype(float)
-
-    # The diagonal counts passages a code appears in, which is always the largest
-    # number in its row. Left as is it would dominate the colour scale, so the
-    # diagonal is lifted to the maximum and the rest of the matrix drives the ramp.
-    square = counts.values.copy()
-    peak = square.max() if square.size else 1.0
-    np.fill_diagonal(square, peak)
-
-    order = None
-    if SETTINGS["cluster"] and len(counts) > 1:
-        distance = peak - square
-        np.fill_diagonal(distance, 0.0)
-        distance = (distance + distance.T) / 2.0
-        order = linkage(squareform(distance, checks=False), method=SETTINGS["method"])
-
-    sns.set_theme(style="white", font_scale=SETTINGS["fontsize"] / 9.0)
-    grid = sns.clustermap(
-        pd.DataFrame(square, index=counts.index, columns=counts.columns),
-        row_linkage=order,
-        col_linkage=order,
-        cmap=SETTINGS["palette"],
-        annot=SETTINGS["annotate"],
-        fmt=".0f",
-        linewidths=0.5,
-        linecolor="white",
-        figsize=(SETTINGS["figsize"], SETTINGS["figsize"] * 0.88),
-        cbar_kws={"label": "passages in common"},
-        dendrogram_ratio=0.14 if SETTINGS["cluster"] else 0.0,
-    )
-    grid.ax_heatmap.set_xlabel("")
-    grid.ax_heatmap.set_ylabel("")
-    plt.setp(grid.ax_heatmap.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-    if SETTINGS["title"]:
-        grid.figure.suptitle(SETTINGS["title"], y=1.02)
-
-    grid.figure.savefig(HERE / "figure.svg", bbox_inches="tight")
-    grid.figure.savefig(HERE / "figure.pdf", bbox_inches="tight")
-    grid.figure.savefig(HERE / "figure.png", dpi=SETTINGS["dpi"], bbox_inches="tight")
-    print(json.dumps({"ok": True, "codes": int(len(counts))}))
-
-
-if __name__ == "__main__":
-    main()
-'''
-
+# ---------------------------------------------------------------------------
+# Render and bundle
+# ---------------------------------------------------------------------------
 
 def _require_stack():
     state = availability()
@@ -263,14 +560,22 @@ def _require_stack():
                            + ". Install it with: " + state["install"])
 
 
-def _produce(project, options, root):
-    """Write the data and the script into root and run it. One path for preview and export."""
+def _prepare(project, options, root):
+    """Write the data and the script into root, then run the script.
+
+    One path for preview and export: they cannot disagree, because they are the
+    same file. Returns the produced files keyed by filename.
+    """
     options = normalise(options)
-    result = cooccurrence(project, options)
-    if not result["labels"]:
+    rows = analyze.tidy(project)
+    if not rows:
         raise ValueError("There is nothing to plot yet: code a few passages first.")
 
-    (root / "figure_data.csv").write_text(matrix_csv(result), encoding="utf-8")
+    data = _dataset(rows, options)
+    if len(data.strip().splitlines()) < 2:
+        raise ValueError("This figure has no data at this setting; widen the filter.")
+
+    (root / "figure_data.csv").write_text(data, encoding="utf-8")
     (root / "figure.py").write_text(build_script(options), encoding="utf-8")
 
     finished = subprocess.run([sys.executable, str(root / "figure.py")],
@@ -278,9 +583,16 @@ def _produce(project, options, root):
     if finished.returncode != 0:
         tail = (finished.stderr or "").strip().splitlines()
         raise RuntimeError("The figure script failed: " + (tail[-1] if tail else "no output"))
-    if not (root / "figure.svg").exists():
-        raise RuntimeError("The figure script produced no output.")
-    return result
+
+    produced = {}
+    for ext in FIGURE_EXTENSIONS:
+        path = root / ("%s.%s" % (options["name"], ext))
+        if not path.exists():
+            raise RuntimeError("The figure script produced no %s output." % ext)
+        produced[path.name] = path.read_bytes()
+    for name in SIDECAR_FILES:
+        produced[name] = (root / name).read_bytes()
+    return produced, _result(rows, options)
 
 
 def render(project, options=None):
@@ -288,8 +600,9 @@ def render(project, options=None):
     _require_stack()
     with tempfile.TemporaryDirectory(prefix="qualicraft-plot-") as workdir:
         root = Path(workdir)
-        result = _produce(project, options, root)
-        return (root / "figure.svg").read_text(encoding="utf-8"), result
+        produced, result = _prepare(project, options, root)
+        options = normalise(options)
+        return produced["%s.svg" % options["name"]].decode("utf-8"), result
 
 
 def bundle(project, options=None):
@@ -297,6 +610,4 @@ def bundle(project, options=None):
     _require_stack()
     with tempfile.TemporaryDirectory(prefix="qualicraft-plot-") as workdir:
         root = Path(workdir)
-        result = _produce(project, options, root)
-        files = {name: (root / name).read_bytes() for name in BUNDLE_FILES}
-        return files, result
+        return _prepare(project, options, root)

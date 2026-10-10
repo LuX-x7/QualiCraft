@@ -205,7 +205,12 @@ def update_document(project, document_id, changes):
 
 def add_code(project, name, definition="", color=None, parent_id=None):
     name = string(name, "Code name", 160)
-    require(not any(c["name"].casefold() == name.casefold() for c in project["codes"]), "A code with this name already exists")
+    # Uniqueness is scoped to the parent, not the whole codebook. Two themes
+    # each having a "Challenges" sub-code is ordinary qualitative practice, and
+    # real exports (ATLAS.ti, QualCoder) contain exactly that.
+    require(not any(c["name"].casefold() == name.casefold() and c.get("parent_id") == parent_id
+                    for c in project["codes"]),
+            "A code with this name already exists under this parent")
     require(isinstance(definition, str) and len(definition) <= 5000, "The definition is too long")
     require(parent_id is None or any(c["id"] == parent_id for c in project["codes"]), "The parent code does not exist")
     color = color or COLORS[len(project["codes"]) % len(COLORS)]
@@ -447,8 +452,11 @@ def validate_project(project):
     names = set()
     for c in project["codes"]:
         name = string(c.get("name"), "Code name", 160).casefold()
-        require(name not in names, "The codebook contains duplicate names")
-        names.add(name)
+        # Same rule as add_code: unique under a parent, not across the whole
+        # codebook.
+        scoped = (name, c.get("parent_id"))
+        require(scoped not in names, "The codebook contains duplicate names under the same parent")
+        names.add(scoped)
         require(isinstance(c.get("color"), str) and bool(re.fullmatch(r"#[0-9a-fA-F]{6}", c["color"])), "The code color is invalid")
         require(isinstance(c.get("definition"), str) and len(c["definition"]) <= 5000, "The code definition is invalid")
         require(c.get("status") in CODE_STATUSES, "The code status is invalid")

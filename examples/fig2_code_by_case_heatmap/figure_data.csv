@@ -1,0 +1,313 @@
+case,code,count
+A01.txt,open data,4
+A01.txt,open/closed access publishing,2
+A01.txt,7. OS in linguistics,4
+A01.txt,resistance/reasons not to do OS,0
+A01.txt,4. OS involvement,1
+A01.txt,8. how to improve OS uptake in linguistics,3
+A01.txt,5. sources of OS knowledge/motivation,0
+A01.txt,(lack of) incentives/motivation,3
+A01.txt,8. specificies of linguistics,1
+A01.txt,courses/training/coaching/curriculum,0
+A01.txt,2. personal associations,1
+A01.txt,3. terminology,2
+A02.txt,open data,2
+A02.txt,open/closed access publishing,4
+A02.txt,7. OS in linguistics,1
+A02.txt,resistance/reasons not to do OS,0
+A02.txt,4. OS involvement,1
+A02.txt,8. how to improve OS uptake in linguistics,0
+A02.txt,5. sources of OS knowledge/motivation,1
+A02.txt,(lack of) incentives/motivation,1
+A02.txt,8. specificies of linguistics,2
+A02.txt,courses/training/coaching/curriculum,1
+A02.txt,2. personal associations,1
+A02.txt,3. terminology,1
+A03.txt,open data,2
+A03.txt,open/closed access publishing,4
+A03.txt,7. OS in linguistics,1
+A03.txt,resistance/reasons not to do OS,4
+A03.txt,4. OS involvement,2
+A03.txt,8. how to improve OS uptake in linguistics,2
+A03.txt,5. sources of OS knowledge/motivation,1
+A03.txt,(lack of) incentives/motivation,2
+A03.txt,8. specificies of linguistics,1
+A03.txt,courses/training/coaching/curriculum,0
+A03.txt,2. personal associations,1
+A03.txt,3. terminology,1
+A04.txt,open data,2
+A04.txt,open/closed access publishing,6
+A04.txt,7. OS in linguistics,2
+A04.txt,resistance/reasons not to do OS,4
+A04.txt,4. OS involvement,1
+A04.txt,8. how to improve OS uptake in linguistics,1
+A04.txt,5. sources of OS knowledge/motivation,1
+A04.txt,(lack of) incentives/motivation,1
+A04.txt,8. specificies of linguistics,3
+A04.txt,courses/training/coaching/curriculum,0
+A04.txt,2. personal associations,1
+A04.txt,3. terminology,1
+A05.txt,open data,9
+A05.txt,open/closed access publishing,0
+A05.txt,7. OS in linguistics,3
+A05.txt,resistance/reasons not to do OS,1
+A05.txt,4. OS involvement,2
+A05.txt,8. how to improve OS uptake in linguistics,2
+A05.txt,5. sources of OS knowledge/motivation,2
+A05.txt,(lack of) incentives/motivation,3
+A05.txt,8. specificies of linguistics,3
+A05.txt,courses/training/coaching/curriculum,3
+A05.txt,2. personal associations,1
+A05.txt,3. terminology,1
+A06.txt,open data,4
+A06.txt,open/closed access publishing,1
+A06.txt,7. OS in linguistics,4
+A06.txt,resistance/reasons not to do OS,1
+A06.txt,4. OS involvement,0
+A06.txt,8. how to improve OS uptake in linguistics,0
+A06.txt,5. sources of OS knowledge/motivation,1
+A06.txt,(lack of) incentives/motivation,1
+A06.txt,8. specificies of linguistics,2
+A06.txt,courses/training/coaching/curriculum,3
+A06.txt,2. personal associations,1
+A06.txt,3. terminology,1
+A07.txt,open data,0
+A07.txt,open/closed access publishing,0
+A07.txt,7. OS in linguistics,1
+A07.txt,resistance/reasons not to do OS,0
+A07.txt,4. OS involvement,1
+A07.txt,8. how to improve OS uptake in linguistics,2
+A07.txt,5. sources of OS knowledge/motivation,1
+A07.txt,(lack of) incentives/motivation,1
+A07.txt,8. specificies of linguistics,0
+A07.txt,courses/training/coaching/curriculum,1
+A07.txt,2. personal associations,1
+A07.txt,3. terminology,2
+A08.txt,open data,3
+A08.txt,open/closed access publishing,4
+A08.txt,7. OS in linguistics,2
+A08.txt,resistance/reasons not to do OS,3
+A08.txt,4. OS involvement,1
+A08.txt,8. how to improve OS uptake in linguistics,1
+A08.txt,5. sources of OS knowledge/motivation,0
+A08.txt,(lack of) incentives/motivation,0
+A08.txt,8. specificies of linguistics,2
+A08.txt,courses/training/coaching/curriculum,0
+A08.txt,2. personal associations,2
+A08.txt,3. terminology,1
+A09.txt,open data,2
+A09.txt,open/closed access publishing,3
+A09.txt,7. OS in linguistics,2
+A09.txt,resistance/reasons not to do OS,3
+A09.txt,4. OS involvement,3
+A09.txt,8. how to improve OS uptake in linguistics,4
+A09.txt,5. sources of OS knowledge/motivation,1
+A09.txt,(lack of) incentives/motivation,2
+A09.txt,8. specificies of linguistics,0
+A09.txt,courses/training/coaching/curriculum,2
+A09.txt,2. personal associations,1
+A09.txt,3. terminology,1
+A10.txt,open data,3
+A10.txt,open/closed access publishing,2
+A10.txt,7. OS in linguistics,2
+A10.txt,resistance/reasons not to do OS,0
+A10.txt,4. OS involvement,2
+A10.txt,8. how to improve OS uptake in linguistics,3
+A10.txt,5. sources of OS knowledge/motivation,1
+A10.txt,(lack of) incentives/motivation,0
+A10.txt,8. specificies of linguistics,1
+A10.txt,courses/training/coaching/curriculum,5
+A10.txt,2. personal associations,1
+A10.txt,3. terminology,1
+A11.txt,open data,4
+A11.txt,open/closed access publishing,0
+A11.txt,7. OS in linguistics,1
+A11.txt,resistance/reasons not to do OS,0
+A11.txt,4. OS involvement,3
+A11.txt,8. how to improve OS uptake in linguistics,1
+A11.txt,5. sources of OS knowledge/motivation,2
+A11.txt,(lack of) incentives/motivation,1
+A11.txt,8. specificies of linguistics,1
+A11.txt,courses/training/coaching/curriculum,2
+A11.txt,2. personal associations,2
+A11.txt,3. terminology,1
+A12.txt,open data,3
+A12.txt,open/closed access publishing,0
+A12.txt,7. OS in linguistics,4
+A12.txt,resistance/reasons not to do OS,2
+A12.txt,4. OS involvement,1
+A12.txt,8. how to improve OS uptake in linguistics,3
+A12.txt,5. sources of OS knowledge/motivation,2
+A12.txt,(lack of) incentives/motivation,1
+A12.txt,8. specificies of linguistics,2
+A12.txt,courses/training/coaching/curriculum,0
+A12.txt,2. personal associations,1
+A12.txt,3. terminology,1
+A13.txt,open data,2
+A13.txt,open/closed access publishing,0
+A13.txt,7. OS in linguistics,1
+A13.txt,resistance/reasons not to do OS,0
+A13.txt,4. OS involvement,1
+A13.txt,8. how to improve OS uptake in linguistics,3
+A13.txt,5. sources of OS knowledge/motivation,2
+A13.txt,(lack of) incentives/motivation,0
+A13.txt,8. specificies of linguistics,0
+A13.txt,courses/training/coaching/curriculum,0
+A13.txt,2. personal associations,1
+A13.txt,3. terminology,1
+A14.txt,open data,0
+A14.txt,open/closed access publishing,5
+A14.txt,7. OS in linguistics,2
+A14.txt,resistance/reasons not to do OS,0
+A14.txt,4. OS involvement,1
+A14.txt,8. how to improve OS uptake in linguistics,0
+A14.txt,5. sources of OS knowledge/motivation,0
+A14.txt,(lack of) incentives/motivation,0
+A14.txt,8. specificies of linguistics,2
+A14.txt,courses/training/coaching/curriculum,1
+A14.txt,2. personal associations,1
+A14.txt,3. terminology,1
+A15.txt,open data,4
+A15.txt,open/closed access publishing,1
+A15.txt,7. OS in linguistics,1
+A15.txt,resistance/reasons not to do OS,1
+A15.txt,4. OS involvement,1
+A15.txt,8. how to improve OS uptake in linguistics,1
+A15.txt,5. sources of OS knowledge/motivation,1
+A15.txt,(lack of) incentives/motivation,0
+A15.txt,8. specificies of linguistics,1
+A15.txt,courses/training/coaching/curriculum,0
+A15.txt,2. personal associations,1
+A15.txt,3. terminology,1
+A16.txt,open data,3
+A16.txt,open/closed access publishing,3
+A16.txt,7. OS in linguistics,3
+A16.txt,resistance/reasons not to do OS,1
+A16.txt,4. OS involvement,1
+A16.txt,8. how to improve OS uptake in linguistics,3
+A16.txt,5. sources of OS knowledge/motivation,2
+A16.txt,(lack of) incentives/motivation,2
+A16.txt,8. specificies of linguistics,0
+A16.txt,courses/training/coaching/curriculum,0
+A16.txt,2. personal associations,1
+A16.txt,3. terminology,1
+A17.txt,open data,4
+A17.txt,open/closed access publishing,5
+A17.txt,7. OS in linguistics,0
+A17.txt,resistance/reasons not to do OS,2
+A17.txt,4. OS involvement,1
+A17.txt,8. how to improve OS uptake in linguistics,1
+A17.txt,5. sources of OS knowledge/motivation,1
+A17.txt,(lack of) incentives/motivation,1
+A17.txt,8. specificies of linguistics,0
+A17.txt,courses/training/coaching/curriculum,2
+A17.txt,2. personal associations,1
+A17.txt,3. terminology,1
+A18.txt,open data,5
+A18.txt,open/closed access publishing,2
+A18.txt,7. OS in linguistics,1
+A18.txt,resistance/reasons not to do OS,5
+A18.txt,4. OS involvement,1
+A18.txt,8. how to improve OS uptake in linguistics,0
+A18.txt,5. sources of OS knowledge/motivation,1
+A18.txt,(lack of) incentives/motivation,3
+A18.txt,8. specificies of linguistics,1
+A18.txt,courses/training/coaching/curriculum,0
+A18.txt,2. personal associations,1
+A18.txt,3. terminology,1
+A19.txt,open data,3
+A19.txt,open/closed access publishing,1
+A19.txt,7. OS in linguistics,2
+A19.txt,resistance/reasons not to do OS,2
+A19.txt,4. OS involvement,1
+A19.txt,8. how to improve OS uptake in linguistics,1
+A19.txt,5. sources of OS knowledge/motivation,2
+A19.txt,(lack of) incentives/motivation,3
+A19.txt,8. specificies of linguistics,1
+A19.txt,courses/training/coaching/curriculum,2
+A19.txt,2. personal associations,1
+A19.txt,3. terminology,1
+A20.txt,open data,3
+A20.txt,open/closed access publishing,4
+A20.txt,7. OS in linguistics,2
+A20.txt,resistance/reasons not to do OS,1
+A20.txt,4. OS involvement,3
+A20.txt,8. how to improve OS uptake in linguistics,1
+A20.txt,5. sources of OS knowledge/motivation,1
+A20.txt,(lack of) incentives/motivation,0
+A20.txt,8. specificies of linguistics,1
+A20.txt,courses/training/coaching/curriculum,1
+A20.txt,2. personal associations,1
+A20.txt,3. terminology,1
+A21.txt,open data,1
+A21.txt,open/closed access publishing,3
+A21.txt,7. OS in linguistics,2
+A21.txt,resistance/reasons not to do OS,1
+A21.txt,4. OS involvement,2
+A21.txt,8. how to improve OS uptake in linguistics,3
+A21.txt,5. sources of OS knowledge/motivation,1
+A21.txt,(lack of) incentives/motivation,3
+A21.txt,8. specificies of linguistics,0
+A21.txt,courses/training/coaching/curriculum,1
+A21.txt,2. personal associations,1
+A21.txt,3. terminology,1
+A22.txt,open data,2
+A22.txt,open/closed access publishing,2
+A22.txt,7. OS in linguistics,1
+A22.txt,resistance/reasons not to do OS,0
+A22.txt,4. OS involvement,1
+A22.txt,8. how to improve OS uptake in linguistics,1
+A22.txt,5. sources of OS knowledge/motivation,1
+A22.txt,(lack of) incentives/motivation,0
+A22.txt,8. specificies of linguistics,0
+A22.txt,courses/training/coaching/curriculum,0
+A22.txt,2. personal associations,1
+A22.txt,3. terminology,1
+A23.txt,open data,2
+A23.txt,open/closed access publishing,1
+A23.txt,7. OS in linguistics,2
+A23.txt,resistance/reasons not to do OS,6
+A23.txt,4. OS involvement,3
+A23.txt,8. how to improve OS uptake in linguistics,0
+A23.txt,5. sources of OS knowledge/motivation,3
+A23.txt,(lack of) incentives/motivation,0
+A23.txt,8. specificies of linguistics,1
+A23.txt,courses/training/coaching/curriculum,0
+A23.txt,2. personal associations,1
+A23.txt,3. terminology,1
+A24.txt,open data,5
+A24.txt,open/closed access publishing,1
+A24.txt,7. OS in linguistics,1
+A24.txt,resistance/reasons not to do OS,0
+A24.txt,4. OS involvement,2
+A24.txt,8. how to improve OS uptake in linguistics,1
+A24.txt,5. sources of OS knowledge/motivation,2
+A24.txt,(lack of) incentives/motivation,1
+A24.txt,8. specificies of linguistics,2
+A24.txt,courses/training/coaching/curriculum,2
+A24.txt,2. personal associations,1
+A24.txt,3. terminology,1
+A25.txt,open data,6
+A25.txt,open/closed access publishing,2
+A25.txt,7. OS in linguistics,1
+A25.txt,resistance/reasons not to do OS,5
+A25.txt,4. OS involvement,3
+A25.txt,8. how to improve OS uptake in linguistics,1
+A25.txt,5. sources of OS knowledge/motivation,1
+A25.txt,(lack of) incentives/motivation,0
+A25.txt,8. specificies of linguistics,1
+A25.txt,courses/training/coaching/curriculum,1
+A25.txt,2. personal associations,1
+A25.txt,3. terminology,1
+A26.txt,open data,3
+A26.txt,open/closed access publishing,1
+A26.txt,7. OS in linguistics,1
+A26.txt,resistance/reasons not to do OS,0
+A26.txt,4. OS involvement,1
+A26.txt,8. how to improve OS uptake in linguistics,1
+A26.txt,5. sources of OS knowledge/motivation,0
+A26.txt,(lack of) incentives/motivation,0
+A26.txt,8. specificies of linguistics,1
+A26.txt,courses/training/coaching/curriculum,2
+A26.txt,2. personal associations,1
+A26.txt,3. terminology,1
