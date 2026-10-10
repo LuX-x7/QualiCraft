@@ -1,0 +1,80 @@
+/**
+ * The QT mark.
+ * ---------------------------------------------------------------------------
+ * The two letters drawn as blocks on the same 20px grid the page background
+ * uses. A Q is a ring with a tail hanging off the corner; a T is a crossbar and
+ * a stem. Drawn in cells rather than as a path so the mark sits on the grid the
+ * way a brick does.
+ *
+ * Layout is seven columns by four rows: three for the Q, one gutter, three for
+ * the T. The tail needs the fourth row, which is why the grid is not square.
+ */
+
+/** [column, row, tone] — tone defaults to ink. */
+const CELLS: Array<[number, number, string?]> = [
+  // Q — ring
+  [0, 0],
+  [1, 0, 'sunkissed'],
+  [2, 0],
+  [0, 1],
+  [2, 1],
+  [0, 2],
+  [1, 2, 'sage'],
+  [2, 2],
+  // Q — tail
+  [2, 3, 'accent'],
+  // T — crossbar and stem
+  [4, 0, 'terracotta'],
+  [5, 0],
+  [6, 0],
+  [5, 1, 'tidal'],
+  [5, 2],
+]
+
+const COLUMNS = 7
+const ROWS = 4
+
+export default function QtMark({
+  label,
+  size = 12,
+  animate = false,
+  className = '',
+}: {
+  /** Screen-reader label. Pass '' when the mark sits beside visible text. */
+  label?: string
+  /** Cell size in pixels. */
+  size?: number
+  animate?: boolean
+  className?: string
+}) {
+  const gap = Math.max(1, Math.round(size / 5))
+  const at = new Map(CELLS.map(([x, y, tone]) => [`${x},${y}`, tone || 'ink']))
+  return (
+    <span
+      className={`qtmark${animate ? ' qtmark--animate' : ''} ${className}`}
+      style={{
+        display: 'inline-grid',
+        gridTemplateColumns: `repeat(${COLUMNS}, ${size}px)`,
+        gridTemplateRows: `repeat(${ROWS}, ${size}px)`,
+        gap: `${gap}px`,
+      }}
+      role={label ? 'img' : undefined}
+      aria-label={label || undefined}
+      aria-hidden={label ? undefined : true}
+    >
+      {Array.from({ length: COLUMNS * ROWS }, (_, index) => {
+        const x = index % COLUMNS
+        const y = Math.floor(index / COLUMNS)
+        const tone = at.get(`${x},${y}`)
+        if (!tone) return <span key={index} />
+        return (
+          <span
+            key={index}
+            className={`qtmark__cell qtmark__cell--${tone}`}
+            style={{ animationDelay: animate ? `${index * 22}ms` : undefined }}
+          />
+        )
+      })}
+    </span>
+  )
+}

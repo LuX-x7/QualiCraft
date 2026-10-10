@@ -33,3 +33,10 @@ Thumbs.db
 
 # Local backups made while editing
 *.bak
+
+# Website (Next.js) — the source is small; the build output is not.
+website/node_modules/
+website/.next/
+website/out/
+website/.data/
+website/.env.local
