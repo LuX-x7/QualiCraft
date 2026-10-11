@@ -41,7 +41,10 @@ console.log(`  workbench     ${base}${process.env.QT_WORKBENCH_URL ? '' : '  (de
 // Probe it once, without blocking startup: a free instance may be asleep, so a
 // slow first answer is expected rather than a fault.
 const started = Date.now()
-fetch(`${base}/api/health`)
+// Five seconds, then give up and say so. Without a bound this promise can hang
+// for as long as the platform's own socket timeout, so a misconfigured address
+// shows up as silence instead of as a line in the log.
+fetch(`${base}/api/health`, { signal: AbortSignal.timeout(5000) })
   .then((response) => console.log(
     `  health        ${response.status} in ${Date.now() - started}ms${response.ok ? '' : '  <- check QT_WORKBENCH_URL'}`))
   .catch((error) => console.log(

@@ -63,5 +63,8 @@ services:
       # site prints what it actually read at startup.
       - key: QT_WORKBENCH_URL
         sync: false
-      # No DATABASE_URL: the site falls back to embedded PGlite seeded from the
-      # repository, which needs no external service.
+      # No DATABASE_URL is set here. That matters in both directions:
+      # for local development it means the embedded PGlite backend, seeded from
+      # the repository, so a checkout runs without any external service; in
+      # production (QUALICRAFT_PUBLIC_SITE=1) it means the read side never opens
+      # a database at all and serves the committed seed instead.
