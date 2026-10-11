@@ -83,6 +83,33 @@ def main() -> int:
                   "plotting" not in second,
                   f"the next project shows {second}")
 
+            # The codebook is collapsed by default and stays that way. What is
+            # checked here is that the collapsed state says so: a twisty and a
+            # count read as a label, not as a control, so the word matters.
+            page.click('[data-action="code"]'); page.wait_for_timeout(700)
+            page.fill("#code-name", "Isolation")
+            page.click('[data-action="save-code"]'); page.wait_for_timeout(1200)
+
+            collapsed = page.evaluate("""() => {
+              const b = document.querySelector('[data-action="toggle-codebook"]');
+              return {expanded: b.getAttribute('aria-expanded'),
+                      hint: (b.querySelector('.side-hint') || {}).textContent || '',
+                      rows: document.querySelectorAll('.code-row').length};
+            }""")
+            check("test_the_collapsed_codebook_says_it_can_be_opened",
+                  collapsed["expanded"] == "false" and collapsed["hint"].strip() != ""
+                  and collapsed["rows"] == 0,
+                  f"collapsed: {collapsed}")
+
+            page.click('[data-action="toggle-codebook"]'); page.wait_for_timeout(800)
+            opened = page.evaluate("""() => ({
+              expanded: document.querySelector('[data-action="toggle-codebook"]').getAttribute('aria-expanded'),
+              rows: document.querySelectorAll('.code-row').length,
+            })""")
+            check("test_the_codebook_opens_and_shows_the_code",
+                  opened["expanded"] == "true" and opened["rows"] >= 1,
+                  f"opened: {opened}")
+
             browser.close()
     finally:
         server.shutdown()

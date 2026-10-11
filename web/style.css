@@ -256,3 +256,15 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .snap-row .snap-name{font-family:ui-monospace,Consolas,monospace;font-size:10px;color:#3f485a}
 .snap-row .muted{margin-left:auto}
 .snap-row button{font-size:10px;padding:5px 9px}
+
+/* The codebook section is collapsed by default, and a twisty beside a count is
+   not enough to say so — the count reads as a label, not as a control. A word
+   does say it. It appears only when there is something to show. */
+.side-hint {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .04em;
+  text-transform: none;
+  color: var(--accent);
+}
