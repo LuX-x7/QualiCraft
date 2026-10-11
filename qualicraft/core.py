@@ -486,12 +486,63 @@ def validate_project(project):
     return project
 
 
+# How many snapshots to keep per project. Twenty changes is several sessions of
+# work, which is the distance a mistake usually takes to notice.
+BACKUP_KEEP = 20
+
+
 class Store:
-    def __init__(self, path):
+    def __init__(self, path, backup_dir=None):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        # Snapshots live beside the database by default. `data/` is ignored by
+        # git, so they never end up in the repository.
+        self.backup_dir = Path(backup_dir) if backup_dir else self.path.parent / "backups"
         with self.connect() as conn:
             conn.execute("CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
+
+    def _snapshot(self, project):
+        """Write a restorable copy of the project beside the database.
+
+        The whole project is one row in one SQLite file. That is convenient, and
+        it is also a single point of failure: one bad delete and weeks of coding
+        are gone, with nothing to go back to. A JSON snapshot per change costs
+        almost nothing next to re-coding an interview, and it is written in the
+        same format the Restore dialog already reads, so recovery needs no
+        special tooling.
+
+        A failure here must never fail the edit the researcher just made, so
+        every error is swallowed.
+        """
+        try:
+            folder = self.backup_dir / project["id"]
+            folder.mkdir(parents=True, exist_ok=True)
+            # To the microsecond: three edits inside the same second are normal
+            # while coding, and a second-resolution name would let them overwrite
+            # each other. The result still sorts lexicographically.
+            stamp = (now().replace("-", "").replace(":", "")
+                     .replace("T", "").replace(".", "")[:20])
+            (folder / (stamp + ".json")).write_text(
+                json.dumps(project, ensure_ascii=False, indent=1), encoding="utf-8")
+            keep = sorted(folder.glob("*.json"))
+            for stale in keep[:-BACKUP_KEEP]:
+                stale.unlink()
+        except OSError:
+            pass
+
+    def backups(self, project_id):
+        """What is on disk for this project, newest first."""
+        folder = self.backup_dir / project_id
+        if not folder.is_dir():
+            return []
+        rows = []
+        for item in sorted(folder.glob("*.json"), reverse=True):
+            try:
+                rows.append({"name": item.name, "bytes": item.stat().st_size,
+                             "written_at": item.stat().st_mtime})
+            except OSError:
+                continue
+        return rows
 
     @contextmanager
     def connect(self):
@@ -516,6 +567,7 @@ class Store:
     def create(self, project):
         with self.connect() as conn:
             conn.execute("INSERT INTO projects VALUES (?,?)", (project["id"], json.dumps(project, ensure_ascii=False)))
+        self._snapshot(project)
         return project
 
     def change(self, project_id, operation):
@@ -527,6 +579,7 @@ class Store:
             result = operation(project)
             project["updated_at"] = now()
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
+        self._snapshot(project)
         return result
 
     def migrate_legacy_demo_projects(self):
@@ -616,6 +669,15 @@ def methods_narrative(project):
             add("")
             add("> " + document["memo"].strip().replace("\n", "\n> "))
             add("")
+    else:
+        # Reflexivity notes are a methodological expectation, so their absence
+        # is a finding rather than a blank. Saying so beats leaving the reader
+        # to wonder whether the section was dropped by accident.
+        add("### Reading notes")
+        add("")
+        add("_No familiarisation notes were recorded on any document. If the study expects "
+            "them, this is the place to say why not._")
+        add("")
 
     add("## 2. Coding")
     add("")
@@ -700,6 +762,18 @@ def methods_narrative(project):
         add("- Accepted: " + str(accepted) + " | Rejected: " + str(rejected) + " | Still pending: " + str(pending))
         add("- Every suggestion had to be accepted by hand before it entered the codebook; "
             "suggestions whose quotation could not be located in the source were discarded on arrival.")
+        # A reader reviewing the methods needs to know what was asked of which
+        # model, not only how many suggestions came back. The endpoint and model
+        # are recorded on the run's own audit entry, so they are read off it
+        # rather than remembered here.
+        runs = [e for e in audit if e.get("action") == "analysis_start"]
+        if runs:
+            endpoints = sorted({str(e.get("base_url", "")) for e in runs if e.get("base_url")})
+            models = sorted({str(e.get("model", "")) for e in runs if e.get("model")})
+            add("- Endpoint: " + (", ".join(endpoints) if endpoints else "_not recorded_"))
+            add("- Model: " + (", ".join(models) if models else "_not recorded_"))
+            add("- Analysis runs: " + str(len(runs)) + ", each sent only after the researcher "
+                "confirmed a preview of the exact text to be transmitted.")
     add("")
 
     add("## 6. Integrity")
@@ -709,6 +783,23 @@ def methods_narrative(project):
     add("- " + str(len(audit)) + " audit entries recorded.")
     add("- Codings are anchored to character offsets, not to text markup, so the "
         "source can be re-imported without losing alignment.")
+    add("")
+
+    # The figures carry these caveats in their own credit lines. Repeating them
+    # here means the methods record can be read without the figures beside it,
+    # which is how a methods section is usually read.
+    add("## 7. How to read the figures")
+    add("")
+    add("- Frequency, coverage and co-occurrence count **passage-code assignments**, not "
+        "participants. A code used forty times is not forty times as important, and the "
+        "count is not a proportion of the sample.")
+    add("- Co-occurrence means two codes were applied to **overlapping character ranges "
+        "within the same interview**. It is descriptive. It is not correlation, and it is "
+        "not evidence of a theoretical relationship.")
+    add("- The accumulation curve orders interviews by **file name**, which is not the "
+        "order they were conducted in. A plateau does not demonstrate thematic saturation.")
+    add("- On a co-occurrence matrix the diagonal counts the units a code appears in, "
+        "which is a different unit from the off-diagonal cells.")
     add("")
     return "\n".join(out)
 

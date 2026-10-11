@@ -118,6 +118,12 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         project = store.get(parts[2])
                         if len(parts) == 3:
                             return self.send(project)
+                        if len(parts) == 4 and parts[3] == "backups":
+                            # Snapshots written automatically on every change.
+                            # Listed so the interface can say when the last one
+                            # was taken, rather than leaving the researcher to
+                            # hope that something is looking after the file.
+                            return self.send(store.backups(parts[2]))
                         if len(parts) == 4 and parts[3] == "export":
                             fmt = urllib.parse.parse_qs(parsed.query).get("format", ["json"])[0]
                             if fmt in {"csv", "matrix"}:
@@ -302,6 +308,53 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
     return server
 
 
+def self_check(server, args, public_demo):
+    """Print the configuration the process actually came up with.
+
+    More than one deployment problem in this project was a setting that looked
+    right in the file and was something else at runtime: a dashboard variable
+    quietly overriding the blueprint, a key file that was never read, a data
+    directory that was not the one being written to. Printing the effective
+    values at startup turns that class of problem from a debugging session into
+    a glance.
+    """
+    data_dir = Path(args.data_dir).resolve()
+    database = data_dir / "qualicraft.sqlite3"
+    backups = data_dir / "backups"
+    snapshots = len(list(backups.glob("*/*.json"))) if backups.is_dir() else 0
+
+    lines = [
+        "QualiCraft 0.1",
+        f"  url             http://127.0.0.1:{server.server_port}{server.base_path}",
+        f"  bind            {args.host}:{server.server_port}",
+        f"  data dir        {data_dir}",
+        f"  database        {database} ({'found' if database.exists() else 'will be created'})",
+        f"  backups         {backups} ({snapshots} snapshot{'s' if snapshots != 1 else ''})",
+        f"  public demo     {'ON - every write is refused' if public_demo else 'off'}",
+    ]
+
+    state = plotting.availability()
+    if state["available"]:
+        lines.append("  plotting        available")
+    else:
+        lines.append(f"  plotting        MISSING: {', '.join(state['missing'])} "
+                     f"- install with: {state['install']}")
+    if state["optional_missing"]:
+        lines.append(f"  plotting extra  {', '.join(state['optional_missing'])} absent "
+                     "- figures still draw, without clustering")
+
+    config = server.analyzer.public_config()
+    if config.get("has_key"):
+        lines.append(f"  cloud model     key loaded; endpoint {config.get('base_url')}, "
+                     f"model {config.get('model')}")
+    else:
+        lines.append("  cloud model     no key; AI suggestions cannot run")
+
+    lines.append("  network         no outbound request is made until you confirm "
+                 "an analysis preview")
+    return "\n".join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser(description="QualiCraft local research workbench")
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", 8765)),
@@ -331,7 +384,7 @@ def main():
         print(f"Cannot start local service: {exc}", file=sys.stderr)
         return 1
     url = f"http://127.0.0.1:{server.server_port}{server.base_path}"
-    print(f"QualiCraft 0.1 | {url}\nStorage: {Path(args.data_dir).resolve()}\nPress Ctrl+C to stop. No cloud call is made at startup.", flush=True)
+    print(self_check(server, args, public_demo), flush=True)
     if args.open:
         webbrowser.open(url)
     try:

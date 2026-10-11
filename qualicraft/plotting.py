@@ -51,6 +51,23 @@ PALETTES = ("viridis", "YlGnBu", "Blues", "Greens", "magma", "rocket", "mako", "
 CLUSTER_METHODS = ("ward", "complete", "average", "single")
 LEVELS = ("code", "theme")      # what a frequency figure counts
 
+# What each figure counts, printed on the figure itself. These are routinely
+# screenshotted out of context, so the unit has to travel with the image rather
+# than living only in the methods record. DESIGN.md §4.2 requires all four.
+CREDIT_DEFAULTS = {
+    "frequency": "Counts passage-code assignments, not participants. Frequency is not importance.",
+    "coverage": "Counts passage-code assignments, not participants. Zero means no coding in this interview.",
+    "cooccurrence": "Overlapping code ranges within one interview. Descriptive; not correlation.",
+    "hierarchy": "Counts coded extracts per section and subsection, not participants.",
+    "accumulation": "Interviews in file-name order, not the order conducted. A plateau is not saturation.",
+}
+
+# The one figure whose name invites a causal reading gets the caveat in the
+# subtitle as well, because that line is read before the credit is.
+SUBTITLE_DEFAULTS = {
+    "cooccurrence": "Descriptive only: two codes sharing a range, not a correlation.",
+}
+
 # Okabe–Ito: distinguishable in greyscale and for the common colour-vision
 # deficiencies, which matters when a figure is printed.
 OKABE_ITO = ("#0072B2", "#D55E00", "#009E73", "#CC79A7",
@@ -181,6 +198,10 @@ def normalise(options):
         # title names only one of them.
         if merged["kind"] == "frequency" and merged["level"] == "theme":
             merged["title"] = "Theme frequency"
+    if not merged["subtitle"]:
+        merged["subtitle"] = SUBTITLE_DEFAULTS.get(merged["kind"], "")
+    if not merged["credit"]:
+        merged["credit"] = CREDIT_DEFAULTS.get(merged["kind"], "")
     return merged
 
 
