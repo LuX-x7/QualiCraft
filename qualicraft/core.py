@@ -5,7 +5,9 @@ import hashlib
 import io
 import json
 import re
+import os
 import sqlite3
+import sys
 import uuid
 import zipfile
 from collections import Counter
@@ -551,8 +553,12 @@ class Store:
                 except ValueError:
                     number = len(existing) + 1
             name = "%06d.json" % number
-            (folder / name).write_text(
-                json.dumps(project, ensure_ascii=False, indent=1), encoding="utf-8")
+            # Written to a sibling and renamed into place. A reader that opens
+            # the file while it is half-written would otherwise see truncated
+            # JSON, which is worse than no snapshot: it looks restorable.
+            tmp = folder / (name + ".part")
+            tmp.write_text(json.dumps(project, ensure_ascii=False, indent=1), encoding="utf-8")
+            os.replace(tmp, folder / name)
             # Keep the newest, but always keep the oldest as well. Accepting a
             # queue of fifty suggestions is fifty changes, and without that floor
             # the burst would prune away every snapshot from before it started —
@@ -565,9 +571,14 @@ class Store:
             self.last_backup = {"project_id": project["id"], "name": name,
                                 "written_at": now()}
             self.backup_error = None
-        except Exception as exc:                      # noqa: BLE001 - see docstring
+        except (OSError, TypeError, ValueError) as exc:
+            # The recorded state is what the interface reads; the stderr line
+            # exists so a failure is visible when nobody is looking at the
+            # header. Once, per failure, not per frame.
             self.backup_error = {"project_id": project["id"], "at": now(),
                                  "message": f"{type(exc).__name__}: {exc}"}
+            print(f"QualiCraft: snapshot failed for project {safe_id(project['id'])}: "
+                  f"{type(exc).__name__}: {exc}", file=sys.stderr)
 
     def backups(self, project_id):
         """What is on disk for this project, newest first."""
@@ -588,6 +599,32 @@ class Store:
         return {"last": self.last_backup, "error": self.backup_error,
                 "keep": BACKUP_KEEP, "dir": str(self.backup_dir)}
 
+    @contextmanager
+    def batch(self, project_id, label=""):
+        """Coalesce every change inside the block into one snapshot.
+
+        Accepting a queue of suggestions, merging codes, importing a corpus:
+        each is many calls to change(), and one snapshot per call would push
+        every earlier recovery point out of the thirty that are kept. Inside
+        the block changes write nothing; on exit the finished state is written
+        once. The state from before the burst is on disk already, put there by
+        the change that preceded the block.
+        """
+        depth = getattr(self, "_batch_depth", 0)
+        self._batch_depth = depth + 1
+        if depth == 0:
+            self._batch_project = project_id
+        try:
+            yield
+        finally:
+            self._batch_depth -= 1
+            if self._batch_depth == 0:
+                try:
+                    self._snapshot(self.get(project_id))
+                except (ValueError, KeyError, OSError, TypeError):
+                    pass
+                self._batch_project = None
+
     def restore(self, project_id, name):
         """Load a snapshot back as a NEW project, leaving the original alone.
 
@@ -595,6 +632,12 @@ class Store:
         worse than the first: the researcher would lose both the current state
         and the recovery point in one move. A copy is always safe to try.
         """
+        # Snapshot the live project first, so the state being restored over
+        # is not the one thing a recovery loses.
+        try:
+            self._snapshot(self.get(project_id))
+        except (ValueError, KeyError, OSError, TypeError):
+            pass
         folder = self.backup_dir / safe_id(project_id)
         # `Path(name).name` drops any directory part, so a caller cannot walk out
         # of the folder with `../`. Note this is deliberately not `safe_id`:
@@ -651,7 +694,9 @@ class Store:
             result = operation(project)
             project["updated_at"] = now()
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
-            if snapshot:
+            # Inside a batch the block writes one snapshot on exit, so a
+            # per-change write here would be the burst it exists to avoid.
+            if snapshot and not getattr(self, "_batch_depth", 0):
                 self._snapshot(project)
         return result
 
