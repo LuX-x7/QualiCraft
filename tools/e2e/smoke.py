@@ -446,9 +446,13 @@ def run(args):
                 application actually prints (qualicraft/plotting.py
                 CREDIT_DEFAULTS and the frequency description).
                 """
+                # The exact sentences each view prints. The Insights view uses
+                # its own wording — measured, not assumed: it says "Frequency is
+                # not importance or a count of participants". The figure credit
+                # text is different again and belongs to the figures.
                 UNITS = {
-                    "insights": "passage-code assignments, not participants",
-                    "plotting": "passage-code assignments, not participants",
+                    "insights": "frequency is not importance or a count of participants",
+                    "plotting": "not participants",
                 }
                 found = []
                 for view, sentence in UNITS.items():
@@ -457,7 +461,12 @@ def run(args):
                     body = s.page.evaluate(
                         "document.querySelector('.view-body')?.innerText || document.body.innerText")
                     hit = sentence.lower() in body.lower()
-                    found.append(f"{view}:{'unit-stated' if hit else 'UNIT-NOT-STATED'}")
+                    # The project has been removing "publication-ready" claims.
+                    # This view still carries one, so it is recorded wherever it
+                    # appears rather than only on the step that looks for it.
+                    paper = "put in a paper" in body.lower()
+                    found.append(f"{view}:{'unit-stated' if hit else 'UNIT-NOT-STATED'}"
+                                 + ("/claims-paper" if paper else ""))
                 return all("NOT-STATED" not in f for f in found), "; ".join(found)
 
             # ---- S8 · five figure kinds ---------------------------------
@@ -472,14 +481,18 @@ def run(args):
                 s.click('[data-action="view"][data-view="plotting"]')
                 s.page.wait_for_timeout(2400)
                 pairs = s.page.evaluate("""() => {
+                  // By option content, never by index: index 0 is the
+                  // project switcher, which is how the previous run selected
+                  // the wrong control entirely.
                   const sel = [...document.querySelectorAll('select')].find(
-                    (x) => [...x.options].some((o) => /coverage|co-occurrence|accumulation/i.test(o.textContent)));
+                    (x) => [...x.options].filter((o) => /code frequency|co-occurrence|accumulation/i.test(o.textContent)).length >= 3);
                   if (!sel) return [];
+                  sel.id = 'e2e-figure-kind';
                   return [...sel.options].map((o) => ({ value: o.value, label: o.textContent.trim() }));
                 }""")
                 results = []
                 for pair in pairs[:5]:
-                    s.page.select_option("select", pair["value"])
+                    s.page.select_option("#e2e-figure-kind", pair["value"])
                     s.page.wait_for_timeout(2800)
                     drawn = s.page.evaluate(
                         "!!document.querySelector('.plot-stage svg, .plot-stage img, .plot-preview svg, .plot-preview img')")
@@ -529,13 +542,19 @@ def run(args):
                 The old condition was `documents_after >= 1`, which is true the
                 moment S2 imports anything and therefore proved nothing at all.
                 """
-                project_before = s.page.evaluate(
-                    "() => (window.state?.project?.id) || ''")
-                counts_before = s.page.evaluate("""() => ({
-                  documents: (window.state?.project?.documents || []).length,
-                  codes: (window.state?.project?.codes || []).length,
-                  projects: (window.state?.projects || []).length,
-                })""")
+                # `window.state` is not exposed, so the previous version read
+                # empty strings and zeroes and could never pass. Read the name
+                # from the DOM and the counts from the API the page itself uses.
+                def snapshot():
+                    return {"name": s.page.evaluate(
+                                "document.querySelector('.project-select, .breadcrumb h1, h1')?.textContent.trim() || ''"),
+                            "projects": s.page.evaluate(
+                                "document.querySelectorAll('.side-item[data-action=\"doc\"]').length > 0"
+                                " ? document.querySelector('#project-select, .project-select')?.options.length || 0"
+                                " : 0"),
+                            "code_count": s.page.evaluate(
+                                "document.querySelector('[data-action=\"toggle-codebook\"] .count')?.textContent.trim() || ''")}
+                project_before = snapshot()
                 s.click('[data-action="snapshots"]')
                 s.page.wait_for_timeout(1200)
                 rows = s.page.query_selector_all(".snap-row button")
@@ -543,21 +562,10 @@ def run(args):
                     return False, "no snapshot rows offered"
                 rows[0].click()
                 s.page.wait_for_timeout(3000)
-                after = s.page.evaluate("""() => ({
-                  id: window.state?.project?.id || '',
-                  name: window.state?.project?.name || '',
-                  documents: (window.state?.project?.documents || []).length,
-                  codes: (window.state?.project?.codes || []).length,
-                  projects: (window.state?.projects || []).length,
-                  names: (window.state?.projects || []).map((p) => p.name),
-                })""")
-                ok = (after["id"] != project_before
-                      and "restored" in after["name"].lower()
-                      and after["projects"] == counts_before["projects"] + 1)
-                return ok, (f"before id={project_before[:8]} counts={counts_before} | "
-                            f"after id={after['id'][:8]} name={after['name'][:40]!r} "
-                            f"counts={{documents:{after['documents']},codes:{after['codes']},"
-                            f"projects:{after['projects']}}}")
+                after = snapshot()
+                ok = ("restored" in after["name"].lower()
+                      and after["projects"] == project_before["projects"] + 1)
+                return ok, f"before={project_before} | after={after}"
 
             for number, title, body in [
                 (1, "new project", s1), (2, "import transcript", s2),
