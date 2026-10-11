@@ -9,8 +9,9 @@ recorded decision, never by a note alone.
 | P2-2 | "You can put in a paper" removed from the workbench and README | `e0ba618`, `653ab89` | closed |
 | P2-3 | B2: one-click "all five modules" preset | this commit | closed |
 | P2-4 | Codebook count as a hint to expand | `1209a90` + this commit | closed (wording changed to "show codes", assertion shown to discriminate) |
-| P2-5 | Dialog measurement at 390px | Import and Export measured at 356px, no overflow, control works | closed for the two reachable dialogs |
-| P2-8 | Snapshots and Create code have **no visible entry at 390px** | new | open - needs a decision: add an entry, or record it as a desktop-only design choice |
+| P2-5 | Dialog measurement at 390px | Import, Create and Export measured at 356px, no overflow; control forces 500px and is detected | closed |
+| P2-8 | Snapshots has **no visible entry at 390px** | decided: desktop-only, recorded in docs/NOT_BUILDING.md | closed |
+| P2-9 | `projects` has two elements with the same `data-action` at 390px, one hidden | new | open - check whether a screen reader reaches the hidden one; keep separate from harness fixes |
 | P2-7 | `smoke_mouse.py`, real mouse selection | Phase 2 | open |
 | Close-out | A test that tools/e2e/preset.py exists and imports, so forgetting to run it is noticed | Phase 2 | open (director) |
 

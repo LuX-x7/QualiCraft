@@ -80,11 +80,13 @@ def main() -> int:
             page.fill("#new-project-name", "Dialog width")
             page.click('[data-action="new-project"]'); page.wait_for_timeout(2500)
 
-            def measure(label, opener):
-                # An action with no visible control at this width is a result,
-                # not an error: record it and move on, so one unreachable dialog
-                # does not hide the state of the others.
-                if page.locator(f'[data-action="{label[0].lower() + label[1:]}"]:visible').count() == 0:
+            def measure(label, action, opener):
+                # The action is passed in rather than derived from the label.
+                # Deriving it produced "create" for the label "Create", while the
+                # real action is "code" — so a reachable dialog was reported as
+                # unreachable because the script was looking for a selector that
+                # has never existed.
+                if page.locator(f'[data-action="{action}"]:visible').count() == 0:
                     results[label] = {"unreachable": "no visible control at this width"}
                     print(f"  {label:12s} no visible control at this width")
                     return
@@ -104,10 +106,10 @@ def main() -> int:
             def opener(action):
                 return lambda: page.locator(f'[data-action="{action}"]:visible').first.click()
 
-            measure("Snapshots", opener("snapshots"))
-            measure("Import", opener("import"))
-            measure("Create", opener("code"))
-            measure("Export", opener("export"))
+            measure("Snapshots", "snapshots", opener("snapshots"))
+            measure("Import", "import", opener("import"))
+            measure("Create", "code", opener("code"))
+            measure("Export", "export", opener("export"))
 
             # The control. Force one dialog past the viewport and confirm the
             # same measurement reports it, so "no overflow" means something.
@@ -151,9 +153,8 @@ def main() -> int:
     if failures:
         print(f"  {len(failures)} dialog(s) do not fit: {failures}")
         return 1
-    print(f"  {len(reachable)} of {len(reachable) + len(unreachable)} measured, none overflows")
-    if unreachable:
-        print(f"  unreachable at this width, not measured: {unreachable}")
+    print(f"  measured {len(reachable)} of {len(reachable) + len(unreachable)}; "
+          f"none of the measured overflows; unreachable: {unreachable or 'none'}")
     print("  the measurement can tell when one does not fit")
     return 0
 
