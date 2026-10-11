@@ -188,6 +188,15 @@ class Analyzer:
             metadata = {"run_id": job["id"], "document_id": preview["document_id"], "document_sha256": preview["document_sha256"],
                         "base_url": preview["base_url"], "model": preview["model"], "mode": preview["mode"], "codebook": preview["codebook"],
                         "system_prompt": SYSTEM, "ranges": [{k: c[k] for k in ("start", "end", "context")} for c in preview["segments"]]}
+            # The preview is the only text the researcher agreed to send, so the
+            # digest of exactly those request bodies is recorded with the run.
+            # The run then sends `preview["requests"][index]` unchanged, so a
+            # reader can check that the two are the same thing rather than
+            # having to take the methods record's word for it.
+            metadata["payload_sha256"] = hashlib.sha256(
+                json.dumps(preview["requests"], ensure_ascii=False, sort_keys=True).encode("utf-8")
+            ).hexdigest()
+            metadata["request_count"] = len(preview["requests"])
             self.store.change(preview["project_id"], lambda p: event(p, "analysis_start", **metadata))
             threading.Thread(target=self._run, args=(job, preview, config), daemon=True).start()
             return job.copy()

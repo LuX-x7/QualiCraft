@@ -17,12 +17,13 @@ from pathlib import Path
 
 from . import analyze, ingest, plotting
 from .ai import Analyzer
-from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
+from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1", public_demo=False):
+def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1",
+                  public_demo=False, backup_dir=None):
     """Start the local workbench.
 
     `base_path` lets the server live behind a prefix — for example /w — so the
@@ -30,7 +31,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
     every path is served at the root as before.
     """
     base_path = ("/" + base_path.strip("/")) if base_path.strip("/") else ""
-    store = Store(Path(data_dir) / "qualicraft.sqlite3")
+    store = Store(Path(data_dir) / "qualicraft.sqlite3", backup_dir=backup_dir)
     store.migrate_legacy_demo_projects()
     if not store.list():
         store.create(synthetic_project())
@@ -119,11 +120,12 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         if len(parts) == 3:
                             return self.send(project)
                         if len(parts) == 4 and parts[3] == "backups":
-                            # Snapshots written automatically on every change.
-                            # Listed so the interface can say when the last one
-                            # was taken, rather than leaving the researcher to
-                            # hope that something is looking after the file.
-                            return self.send(store.backups(parts[2]))
+                            # Snapshots written automatically on every change,
+                            # plus whether writing them is still working. The
+                            # count alone would keep looking healthy after the
+                            # backups had stopped.
+                            return self.send({"items": store.backups(parts[2]),
+                                              "status": store.backup_status()})
                         if len(parts) == 4 and parts[3] == "export":
                             fmt = urllib.parse.parse_qs(parsed.query).get("format", ["json"])[0]
                             if fmt in {"csv", "matrix"}:
@@ -252,6 +254,18 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                     project_id, action = parts[2:]
                     if action == "preview":
                         return self.send(analyzer.preview(project_id, body))
+                    if action == "restore-snapshot":
+                        # Handled before the change wrapper, not inside it.
+                        # Restoring creates a new project, and that write cannot
+                        # happen inside the transaction the wrapper has already
+                        # opened on the same database — SQLite refuses the second
+                        # writer and the request dies as a generic 500.
+                        #
+                        # Always a copy: restoring over the project the snapshot
+                        # came from would lose the current state and the recovery
+                        # point in one move.
+                        require(not public_demo, "The public demonstration is read-only")
+                        return self.send(store.restore(project_id, body.get("name", "")))
                     def operation(project):
                         if action == "documents":
                             text = body.get("text")
@@ -312,16 +326,18 @@ def self_check(server, args, public_demo):
     """Print the configuration the process actually came up with.
 
     More than one deployment problem in this project was a setting that looked
-    right in the file and was something else at runtime: a dashboard variable
-    quietly overriding the blueprint, a key file that was never read, a data
-    directory that was not the one being written to. Printing the effective
-    values at startup turns that class of problem from a debugging session into
-    a glance.
+    right in the file and was something else at runtime: a key file that was
+    never read, a data directory that was not the one being written to. Printing
+    the effective values at startup turns that class of problem from a debugging
+    session into a glance.
+
+    It reports only what it can measure. An earlier version ended with a
+    reassuring line about outbound requests that was a string literal — true of
+    the design, but not something this function had checked.
     """
     data_dir = Path(args.data_dir).resolve()
     database = data_dir / "qualicraft.sqlite3"
-    backups = data_dir / "backups"
-    snapshots = len(list(backups.glob("*/*.json"))) if backups.is_dir() else 0
+    status = server.store.backup_status()
 
     lines = [
         "QualiCraft 0.1",
@@ -329,7 +345,7 @@ def self_check(server, args, public_demo):
         f"  bind            {args.host}:{server.server_port}",
         f"  data dir        {data_dir}",
         f"  database        {database} ({'found' if database.exists() else 'will be created'})",
-        f"  backups         {backups} ({snapshots} snapshot{'s' if snapshots != 1 else ''})",
+        f"  backups         {status['dir']} (keeping {status['keep']} per project)",
         f"  public demo     {'ON - every write is refused' if public_demo else 'off'}",
     ]
 
@@ -345,13 +361,12 @@ def self_check(server, args, public_demo):
 
     config = server.analyzer.public_config()
     if config.get("has_key"):
-        lines.append(f"  cloud model     key loaded; endpoint {config.get('base_url')}, "
+        lines.append(f"  cloud model     key loaded; endpoint {endpoint_host(config.get('base_url'))}, "
                      f"model {config.get('model')}")
+        lines.append("  outbound        only to that host, and only after you confirm a preview")
     else:
-        lines.append("  cloud model     no key; AI suggestions cannot run")
-
-    lines.append("  network         no outbound request is made until you confirm "
-                 "an analysis preview")
+        lines.append("  cloud model     no key loaded, so nothing can be sent")
+        lines.append("  outbound        none possible until a key is configured")
     return "\n".join(lines)
 
 
@@ -365,6 +380,10 @@ def main():
     parser.add_argument("--base-path", default=os.getenv("QUALICRAFT_BASE_PATH", ""),
                         help="Serve everything under this prefix, for embedding behind a proxy")
     parser.add_argument("--data-dir", default=str(ROOT / "data"))
+    parser.add_argument("--backup-dir", default=os.getenv("QUALICRAFT_BACKUP_DIR", ""),
+                        help="Where to write project snapshots. Defaults to a backups/ folder "
+                             "beside the database. Do not point this at a synced folder: that "
+                             "would send transcripts off the machine.")
     parser.add_argument("--guide-dir", default=os.getenv("QUALICRAFT_GUIDE", str(ROOT.parent / "Guide")))
     parser.add_argument("--api-key-file", default=os.getenv("QUALICRAFT_API_KEY_FILE", ""), help="Read the provider key from this local file")
     parser.add_argument("--api-base", default=os.getenv("QUALICRAFT_API_BASE", ""), help="OpenAI-compatible API base URL")
@@ -379,7 +398,8 @@ def main():
         os.environ["QUALICRAFT_MODEL"] = args.model
     try:
         server = create_server(args.data_dir, args.guide_dir, args.port, args.base_path, args.host,
-                               public_demo=public_demo)
+                               public_demo=public_demo,
+                               backup_dir=args.backup_dir or None)
     except OSError as exc:
         print(f"Cannot start local service: {exc}", file=sys.stderr)
         return 1

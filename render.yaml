@@ -54,10 +54,14 @@ services:
       # the site proxying to something it could not reach. The public
       # onrender.com address is the one a browser uses and is verifiable.
       #
-      # If the workbench ends up at a different address (Render appends a
-      # suffix when a name is taken), change this one value in the dashboard;
-      # the proxy reads it per request, so no rebuild is needed.
+      # `sync: false` means the Blueprint defines the variable but not its
+      # value: it is set in the dashboard and the Blueprint will not overwrite
+      # it. A literal value here was silently overridden by the dashboard
+      # anyway, so the two could disagree with nothing to say which one won —
+      # the site kept proxying to a host that had been renamed. Declaring it
+      # without a value makes the dashboard the single source of truth, and the
+      # site prints what it actually read at startup.
       - key: QT_WORKBENCH_URL
-        value: https://qualicraft-workbench.onrender.com
+        sync: false
       # No DATABASE_URL: the site falls back to embedded PGlite seeded from the
       # repository, which needs no external service.

@@ -57,16 +57,29 @@ LEVELS = ("code", "theme")      # what a frequency figure counts
 CREDIT_DEFAULTS = {
     "frequency": "Counts passage-code assignments, not participants. Frequency is not importance.",
     "coverage": "Counts passage-code assignments, not participants. Zero means no coding in this interview.",
-    "cooccurrence": "Overlapping code ranges within one interview. Descriptive; not correlation.",
     "hierarchy": "Counts coded extracts per section and subsection, not participants.",
     "accumulation": "Interviews in file-name order, not the order conducted. A plateau is not saturation.",
 }
 
+# Co-occurrence has two definitions and the caption has to follow whichever was
+# used. A single fixed sentence described overlapping ranges even when the
+# figure had been drawn with the same-passage rule, so the caption contradicted
+# the numbers above it.
+CREDIT_COOCCURRENCE = {
+    "overlap": "Codes whose character ranges overlap within one interview. Descriptive; not correlation.",
+    "unit": "Codes applied within the same passage. Descriptive; not correlation.",
+}
+
 # The one figure whose name invites a causal reading gets the caveat in the
 # subtitle as well, because that line is read before the credit is.
-SUBTITLE_DEFAULTS = {
-    "cooccurrence": "Descriptive only: two codes sharing a range, not a correlation.",
+SUBTITLE_COOCCURRENCE = {
+    "overlap": "Descriptive only: two codes sharing a range, not a correlation.",
+    "unit": "Descriptive only: two codes in one passage, not a correlation.",
 }
+
+# Both co-occurrence figures put this on the diagonal's meaning, which is a
+# different unit from the rest of the matrix.
+DIAGONAL_NOTE = "Diagonal counts the units a code appears in, not pairs."
 
 # Okabe–Ito: distinguishable in greyscale and for the common colour-vision
 # deficiencies, which matters when a figure is printed.
@@ -199,9 +212,13 @@ def normalise(options):
         if merged["kind"] == "frequency" and merged["level"] == "theme":
             merged["title"] = "Theme frequency"
     if not merged["subtitle"]:
-        merged["subtitle"] = SUBTITLE_DEFAULTS.get(merged["kind"], "")
+        if merged["kind"] == "cooccurrence":
+            merged["subtitle"] = SUBTITLE_COOCCURRENCE[merged["mode"]]
     if not merged["credit"]:
-        merged["credit"] = CREDIT_DEFAULTS.get(merged["kind"], "")
+        if merged["kind"] == "cooccurrence":
+            merged["credit"] = (CREDIT_COOCCURRENCE[merged["mode"]] + " " + DIAGONAL_NOTE)
+        else:
+            merged["credit"] = CREDIT_DEFAULTS.get(merged["kind"], "")
     return merged
 
 

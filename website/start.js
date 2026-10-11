@@ -15,6 +15,38 @@ const path = require('node:path')
 const nextBin = require.resolve('next/dist/bin/next')
 const port = String(process.env.PORT || 4321)
 const host = process.env.HOST || '0.0.0.0'
+
+/**
+ * The workbench address this deployment will actually proxy to, resolved the
+ * same way the route handler resolves it.
+ *
+ * The Blueprint used to carry a literal value and the dashboard carried
+ * another, with the dashboard winning and nothing saying so — the site kept
+ * proxying to a host that had been renamed. The value is now declared without
+ * one (`sync: false`), which makes the dashboard the single source of truth.
+ * Printing what was read closes the loop: a mismatch is visible at startup
+ * instead of showing up as a 502 later.
+ */
+function workbenchBase() {
+  const raw = (process.env.QT_WORKBENCH_URL || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '')
+  if (/^https?:\/\//i.test(raw)) return raw
+  const authority = raw.split('/')[0]
+  return `https://${authority.includes('.') ? authority : `${authority}.onrender.com`}`
+}
+
+const base = workbenchBase()
+console.log(`QualiCraft site | listening on ${host}:${port}`)
+console.log(`  workbench     ${base}${process.env.QT_WORKBENCH_URL ? '' : '  (default; QT_WORKBENCH_URL is not set)'}`)
+
+// Probe it once, without blocking startup: a free instance may be asleep, so a
+// slow first answer is expected rather than a fault.
+const started = Date.now()
+fetch(`${base}/api/health`)
+  .then((response) => console.log(
+    `  health        ${response.status} in ${Date.now() - started}ms${response.ok ? '' : '  <- check QT_WORKBENCH_URL'}`))
+  .catch((error) => console.log(
+    `  health        unreachable after ${Date.now() - started}ms: ${error.message}`))
+
 const child = spawn(process.execPath, [nextBin, 'start', '-p', port, '-H', host], {
   cwd: __dirname,
   env: process.env,

@@ -237,3 +237,16 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .audit-count{color:var(--accent);font-variant-numeric:tabular-nums}
 .audit-names{display:block;padding:0 0 6px;color:var(--subtle);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .audit-run pre{white-space:pre-wrap;background:#f6f7f9;padding:10px;font-size:9px;max-height:320px;overflow:auto}
+
+/* --- Snapshot indicator and list --------------------------------------------
+   The indicator is a button now: it opens the snapshots, which is the only way
+   a researcher can actually use a backup. A failed snapshot turns it red rather
+   than leaving the count sitting at its ceiling looking healthy. */
+.save-state{border:0;background:transparent;cursor:pointer;font:inherit}
+.save-state:hover{color:var(--accent)}
+.save-state.is-error{color:var(--danger)}
+.save-state.is-error:before{background:var(--danger)}
+.snap-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:11px}
+.snap-row .snap-name{font-family:ui-monospace,Consolas,monospace;font-size:10px;color:#3f485a}
+.snap-row .muted{margin-left:auto}
+.snap-row button{font-size:10px;padding:5px 9px}
