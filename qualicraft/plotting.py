@@ -177,6 +177,10 @@ def normalise(options):
         merged["color"] = DEFAULT_OPTIONS["color"]
     if not merged["title"]:
         merged["title"] = KIND_TITLES[merged["kind"]]
+        # A frequency figure counts either codes or themes, and the default
+        # title names only one of them.
+        if merged["kind"] == "frequency" and merged["level"] == "theme":
+            merged["title"] = "Theme frequency"
     return merged
 
 
@@ -341,7 +345,11 @@ def main():
     if not rows:
         raise SystemExit("figure_data.csv is empty")
     rows = rows[::-1]
-    labels = [wrap(r["code"], 34) for r in rows]
+    # The column is named after what is being counted: `code` or `theme`. Read
+    # the name from the settings rather than assuming, because a frequency
+    # figure can be drawn at either level.
+    key = SETTINGS["level"]
+    labels = [wrap(r[key], 34) for r in rows]
     values = [int(r["count"]) for r in rows]
     height = max(3.0, 0.52 * len(values) + 1.7)
     fig, ax = plt.subplots(figsize=(SETTINGS["figsize"], height))

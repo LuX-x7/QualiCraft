@@ -6903,8 +6903,15 @@ body::before {
 .qtmark__cell--terracotta { background: var(--terracotta); }
 .qtmark__cell--tidal { background: var(--tidal); }
 .qtmark__cell--accent { background: var(--accent); }
-.qtmark--animate .qtmark__cell { animation: qtmark-in 420ms var(--ease) both; }
-@keyframes qtmark-in { from { opacity: 0; transform: translateY(3px) } to { opacity: 1; transform: none } }
+/* The mark is built, not switched on: each block falls into its place, and the
+   delays set in the component lay them down column by column. The easing
+   overshoots slightly so a block reads as landing rather than arriving. */
+.qtmark--animate .qtmark__cell { animation: qtmark-drop 620ms cubic-bezier(.2, 1.5, .5, 1) both; }
+@keyframes qtmark-drop {
+  0%   { opacity: 0; transform: translateY(calc(-1 * var(--drop, 22px))) scale(.78); }
+  55%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 @media (prefers-reduced-motion: reduce) { .qtmark--animate .qtmark__cell { animation: none } }
 
 .blk-hero--qt .hero__grid--stack { grid-template-columns: minmax(0, 1fr); }

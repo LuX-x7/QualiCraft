@@ -49,6 +49,10 @@ export default function QtMark({
 }) {
   const gap = Math.max(1, Math.round(size / 5))
   const at = new Map(CELLS.map(([x, y, tone]) => [`${x},${y}`, tone || 'ink']))
+  // The mark is laid down column by column, bottom of each column first, so it
+  // reads as blocks being stacked rather than a shape fading in. Delay follows
+  // that order, not the order the cells happen to sit in the array.
+  const order = (x: number, y: number) => x * ROWS + (ROWS - 1 - y)
   return (
     <span
       className={`qtmark${animate ? ' qtmark--animate' : ''} ${className}`}
@@ -57,6 +61,8 @@ export default function QtMark({
         gridTemplateColumns: `repeat(${COLUMNS}, ${size}px)`,
         gridTemplateRows: `repeat(${ROWS}, ${size}px)`,
         gap: `${gap}px`,
+        // How far a block falls. Set here so it scales with the mark.
+        ['--drop' as string]: `${Math.round(size * 2.4)}px`,
       }}
       role={label ? 'img' : undefined}
       aria-label={label || undefined}
@@ -71,7 +77,7 @@ export default function QtMark({
           <span
             key={index}
             className={`qtmark__cell qtmark__cell--${tone}`}
-            style={{ animationDelay: animate ? `${index * 22}ms` : undefined }}
+            style={{ animationDelay: animate ? `${order(x, y) * 55}ms` : undefined }}
           />
         )
       })}
