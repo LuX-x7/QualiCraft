@@ -4,8 +4,10 @@
 # Deploy it with the button in the README, or by opening:
 #   https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft
 #
-# The repository is public, and Render supports public repos out of the box, so
-# nobody needs to fork it or install the Render GitHub App first.
+# The repository is private. Render's one-click flow needs access to it, so the
+# deploy button only works for someone who already has it — it is not a public
+# installer, and the README says so. If the repository is ever made public, the
+# button starts working for everyone and this comment should change with it.
 #
 #   • qualicraft-workbench — the read-only workbench demo (Python + SQLite),
 #                            mounted at /w to match the site's proxy.
