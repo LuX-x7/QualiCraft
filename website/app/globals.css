@@ -7416,69 +7416,137 @@ body::before {
   .methods tbody th { width: 34%; }
 }
 
-/* ------------------------- the two methods -------------------------------
-   Thematic analysis against content analysis on the same axes. A table rather
-   than two columns of prose, because the reader's job here is to compare, and
-   comparing means holding the same row in view. The last row is the one that
-   connects the method choice to what the tool does. */
-.methods-wrap { overflow-x: auto; }
-.methods {
-  width: 100%;
-  min-width: 640px;
-  border-collapse: collapse;
-  font-size: .9375rem;
+/* ---------------------- scroll-driven module walkthrough -------------------
+   The reader drives this section by scrolling: whichever module is crossing
+   the middle of the viewport is the one playing on the left. That needs the
+   stage to be sticky, so it can hold its place while the right column moves
+   past it, and it needs the section to be wider than the text column — the
+   clips are 880px, and below about 700px the interface inside them is
+   unreadable. Inactive modules are dimmed rather than hidden, so the column
+   reads as a sequence with one step in focus instead of five blocks of text. */
+.showcase__wrap { max-width: 1400px; }
+.showcase__grid {
+  grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr);
+  gap: 56px;
 }
-.methods th,
-.methods td {
-  padding: 15px 18px;
-  text-align: left;
-  vertical-align: top;
-  border-bottom: 1px solid var(--line);
-  line-height: 1.55;
+.showcase__stage {
+  position: sticky;
+  top: 92px;
 }
-.methods thead th {
-  font-family: var(--font-mono);
-  font-size: .6875rem;
-  font-weight: 500;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--fg-muted);
-  border-bottom: 1px solid var(--line-strong);
-  padding-bottom: 11px;
+.showcase__list { gap: 2px; }
+.showcase__list li {
+  border-radius: 12px;
+  transition: background 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
 }
-.methods tbody th {
-  font-weight: 400;
-  font-size: .8125rem;
-  color: var(--fg-muted);
-  width: 22%;
+.showcase__list li:not(.is-active) { opacity: 0.58; }
+.showcase__list li:not(.is-active):hover { opacity: 0.9; }
+.showcase__list li.is-active {
+  background: var(--bg-raised);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
 }
-.methods tbody td { color: var(--fg-soft); }
-.methods tbody tr:last-child th,
-.methods tbody tr:last-child td { border-bottom: 0; }
-.methods tbody tr:last-child td { color: var(--fg); }
-.methods__axis { width: 22%; }
-.methods__note {
-  margin: 26px 0 0;
-  padding-left: 16px;
-  border-left: 3px solid var(--accent);
-  font-size: .9375rem;
-  line-height: 1.65;
-  color: var(--fg-soft);
-  max-width: 68ch;
-}
-.methods__phases { margin-top: 46px; }
-.methods__phases h3 {
-  margin: 0 0 8px;
-  font-size: 1.0625rem;
-  font-weight: 500;
-}
-.methods__phases > p {
-  margin: 0 0 24px;
-  font-size: .9375rem;
-  line-height: 1.6;
-  color: var(--fg-muted);
-  max-width: 62ch;
+.showcase__list li.is-active button { background: transparent; border-color: transparent; }
+.showcase__how { padding: 0 18px 18px 60px; }
+.showcase__see,
+.showcase__snag { max-width: 46ch; }
+.showcase__list li + li { margin-top: 10px; }
+
+@media (max-width: 1180px) {
+  .showcase__grid { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+  .showcase__stage { position: static; }
+  .showcase__list li:not(.is-active) { opacity: 0.7; }
 }
 @media (max-width: 900px) {
-  .methods tbody th { width: 34%; }
+  .showcase__grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .showcase__how { padding-left: 18px; }
+}
+
+/* ------------------------------- foundations -------------------------------
+   Five stages as one picture, so the shape arrives before the detail. Each card
+   says what it takes in and what it hands on, because that is what makes the
+   chain a chain rather than five unrelated features. */
+.flow {
+  display: flex;
+  align-items: stretch;
+  margin: 0 0 4px;
+}
+.flow__step {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.flow__card {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px 16px 18px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  background: var(--bg-raised);
+}
+.flow__n {
+  font-family: var(--font-mono);
+  font-size: .6875rem;
+  letter-spacing: .08em;
+  color: var(--accent-strong);
+}
+.flow__card strong { font-size: .9375rem; font-weight: 500; }
+.flow__io {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+}
+.flow__io dt {
+  font-family: var(--font-mono);
+  font-size: .5625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  padding-top: 3px;
+}
+.flow__io dd {
+  margin: 0;
+  font-size: .8125rem;
+  line-height: 1.45;
+  color: var(--fg-soft);
+}
+.flow__arrow {
+  flex: 0 0 22px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.flow__step:last-child .flow__arrow { display: none; }
+.flow__shared {
+  margin: 26px 0 0;
+  padding: 16px 18px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-soft);
+  font-size: .84375rem;
+  line-height: 1.6;
+  color: var(--fg-soft);
+  max-width: 76ch;
+}
+.flow__shared-label {
+  display: block;
+  margin-bottom: 5px;
+  font-family: var(--font-mono);
+  font-size: .59375rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+/* Five cards across need more room than a text column: at the normal width each
+   one is about 170px and the in/out lines wrap to three. */
+.blk-foundations .wrap { max-width: 1400px; }
+@media (max-width: 1080px) {
+  .flow { flex-wrap: wrap; gap: 12px; }
+  .flow__step { flex: 1 1 46%; }
+  .flow__arrow { display: none; }
+}
+@media (max-width: 640px) {
+  .flow__step { flex: 1 1 100%; }
 }

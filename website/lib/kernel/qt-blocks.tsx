@@ -262,6 +262,70 @@ registerBlock({
   },
 })
 
+/* ------------------------------ foundations ------------------------------ */
+
+/**
+ * The five moves the tool is built on, as one picture.
+ *
+ * A reader who has just met the product needs the shape before the detail: what
+ * the five stages are, what each one takes in and hands on, and — the part that
+ * is not obvious from a feature list — that the middle three all read the same
+ * table rather than each keeping its own copy. That is why a figure drawn at
+ * stage four cannot disagree with the frequency table at stage three.
+ */
+const FOUNDATIONS: Array<{ n: string; name: string; takes: string; gives: string; shared?: boolean }> = [
+  { n: '01', name: 'Import', takes: 'TXT, DOCX, or another tool’s export', gives: 'Documents, split into passages' },
+  { n: '02', name: 'Code', takes: 'Passages and a codebook', gives: 'Codings — a code anchored to a span', shared: true },
+  { n: '03', name: 'Analyse', takes: 'Codings', gives: 'Frequency, matrix, relationship map', shared: true },
+  { n: '04', name: 'Plot', takes: 'Codings', gives: 'A figure, its counts, and the script', shared: true },
+  { n: '05', name: 'Export', takes: 'Everything above', gives: 'CSV, JSON, and a methods record' },
+]
+
+registerBlock({
+  type: 'qtFoundations',
+  label: 'Foundations diagram',
+  group: 'content',
+  hint: 'The five stages, what each takes and gives, and the table they share.',
+  initial: () => ({
+    label: 'The foundation',
+    title: 'Five moves, and that is the whole tool.',
+    body: 'Everything the workbench does sits on these five. Each one hands its output to the next, and the three in the middle read from a single table rather than keeping copies of their own.',
+  }),
+  fields: [
+    { key: 'label', label: 'Label', type: 'text', span: 1 },
+    { key: 'title', label: 'Heading', type: 'text', span: 2 },
+    { key: 'body', label: 'Intro paragraph', type: 'textarea', span: 2 },
+  ],
+  render: ({ data }) => (
+    <Section className="blk-foundations">
+      <SectionHead label={data.label} title={data.title} body={data.body} />
+      <div className="flow">
+        {FOUNDATIONS.map((step) => (
+          <div className="flow__step" key={step.n}>
+            <div className="flow__card">
+              <span className="flow__n">{step.n}</span>
+              <strong>{step.name}</strong>
+              <dl className="flow__io">
+                <dt>in</dt>
+                <dd>{step.takes}</dd>
+                <dt>out</dt>
+                <dd>{step.gives}</dd>
+              </dl>
+            </div>
+            <span className="flow__arrow" aria-hidden="true">→</span>
+          </div>
+        ))}
+      </div>
+      <p className="flow__shared">
+        <span className="flow__shared-label">One table, not three</span>
+        Coding, analysing and plotting all read the same tidy table — one row per
+        code anchored to a span, with its parent and its text. Nothing is copied
+        between stages, so the figure and the frequency count cannot drift apart.
+      </p>
+    </Section>
+  ),
+})
+
 /* ---------------------------- the two methods ---------------------------- */
 
 /**

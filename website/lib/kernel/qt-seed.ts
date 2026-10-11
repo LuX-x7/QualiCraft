@@ -44,29 +44,11 @@ export const QT_PAGES: Array<{
         },
       },
       {
-        type: 'qtWorkspace',
+        type: 'qtFoundations',
         data: {
-          label: 'How it works',
-          title: 'Three moves, and that is the whole tool.',
-          body: 'We kept the interface small on purpose. There is no new vocabulary to learn — you read, you mark, you look at the shape.',
-          passage:
-            'The participant keeps returning to the toolchain, especially the alignment problem once code is generated. He treats the model as the only source of truth, which is why a change to the architecture forces a full regeneration.',
-          highlight_a: 'keeps returning to the toolchain',
-          highlight_b: 'forces a full regeneration',
-          steps: [
-            {
-              name: 'Select',
-              detail: 'Highlight a passage in the transcript. The coding box opens against the selection, not at the bottom of the page.',
-            },
-            {
-              name: 'Apply',
-              detail: 'Type a keyword and press Enter. An existing code is reused; if nothing matches, the code is created and applied in the same keystroke.',
-            },
-            {
-              name: 'Read the shape',
-              detail: 'Group codes into themes, then read the frequency table or the co-occurrence figure. Both come from the same codings.',
-            },
-          ],
+          label: 'The foundation',
+          title: 'Five moves, and that is the whole tool.',
+          body: 'Everything the workbench does sits on these five. Each hands its output to the next, and the three in the middle read from a single table rather than keeping copies of their own.',
         },
       },
       {
@@ -103,22 +85,22 @@ export const QT_PAGES: Array<{
             {
               name: 'Your data stays here',
               detail:
-                'Transcripts, codings and the codebook live in local files. There is no account, no upload and no cloud copy — which is what ethics review and data protection actually require.',
+                'Local files, no account, no upload. Which is what ethics review asks for anyway.',
             },
             {
               name: 'Every suggestion can be traced',
               detail:
-                'A model proposal is anchored to character offsets, and its quotation has to match the source exactly or it is thrown away. Whether to accept it is your decision, and the decision is recorded.',
+                'A suggestion is anchored to character offsets, and its quotation has to match the source exactly or it is discarded. Accepting it stays your decision, and the decision is recorded.',
             },
             {
               name: 'The method writes itself down',
               detail:
-                'How the codebook changed, where AI helped, what was rejected — exported as Markdown instead of reconstructed from memory two weeks after the analysis finished.',
+                'How the codebook changed, where AI helped, what was rejected — exported as Markdown, not reconstructed from memory a fortnight later.',
             },
             {
               name: 'The interface follows the study',
               detail:
-                'Switch a capability off and it disappears from the interface rather than sitting there greyed out. A content analyst and a grounded theorist should not be looking at the same screen.',
+                'Switch a capability off and it leaves the interface rather than sitting there greyed out. A content analyst and a grounded theorist should not see the same screen.',
             },
           ],
         },
