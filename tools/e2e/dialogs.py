@@ -111,10 +111,19 @@ def main() -> int:
 
             # The control. Force one dialog past the viewport and confirm the
             # same measurement reports it, so "no overflow" means something.
-            print("\n  control: the same dialog forced to 500px")
-            page.locator('[data-action="snapshots"]:visible').first.click()
+            # The control uses a dialog that is reachable at this width. The
+            # first attempt used snapshots, which is not, so the control could
+            # not run — a reminder that the control is subject to the same
+            # reachability as the thing it is controlling.
+            print("\n  control: a reachable dialog forced to 500px")
+            page.locator('[data-action="export"]:visible').first.click()
             page.wait_for_timeout(900)
-            page.evaluate("() => { document.getElementById('dialog').style.width = '500px'; }")
+            # An inline width did nothing: the measured box stayed at 356px,
+            # because the stylesheet constrains the dialog and an inline width
+            # alone does not beat it. `min-width` with priority is what actually
+            # forces the box past the viewport — and until the control can be
+            # forced, "no overflow" is not a measurement, only an observation.
+            page.add_style_tag(content="dialog { min-width: 500px !important; width: 500px !important; }")
             page.wait_for_timeout(300)
             forced = page.evaluate(MEASURE)
             results["control-forced-500"] = forced
@@ -136,10 +145,16 @@ def main() -> int:
     if not payload["control_reported_overflow"]:
         print("  CONTROL FAILED: the measurement does not notice a 500px dialog in a 390px viewport")
         return 1
+    reachable = {k: v for k, v in results.items()
+                 if k != "control-forced-500" and "unreachable" not in v}
+    unreachable = [k for k, v in results.items() if isinstance(v, dict) and "unreachable" in v]
     if failures:
         print(f"  {len(failures)} dialog(s) do not fit: {failures}")
         return 1
-    print("  all four fit at 390px, and the measurement can tell when one does not")
+    print(f"  {len(reachable)} of {len(reachable) + len(unreachable)} measured, none overflows")
+    if unreachable:
+        print(f"  unreachable at this width, not measured: {unreachable}")
+    print("  the measurement can tell when one does not fit")
     return 0
 
 
