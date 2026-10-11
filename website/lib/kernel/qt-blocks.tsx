@@ -534,6 +534,16 @@ registerBlock({
             ))}
           </div>
         </div>
+        {/* The fastest way for a visitor to see what a real project looks like
+            is to take one away. The demo workbench is itself a project and its
+            Export dialog already produces the restorable JSON, so this points
+            at that rather than shipping a second copy of the corpus here. */}
+        <p className="dataset__note">
+          <strong>Take one away.</strong> The running demo is itself a project. Open{' '}
+          <a href="/w">the live workbench</a>, choose <em>Export</em>, and download the full
+          project as JSON — then load it locally through <em>Projects → Restore project JSON</em>.
+          It is the quickest way to see how a project of this size is structured.
+        </p>
       </Section>
     )
   },

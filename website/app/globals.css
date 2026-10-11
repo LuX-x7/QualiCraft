@@ -7032,6 +7032,28 @@ body::before {
 .dataset__licence { margin-top: auto; padding-top: 14px; }
 .dataset__licence span { font-family: var(--font-mono); font-size: .6875rem; color: var(--fg-muted); }
 .dataset__licence em { display: block; margin-top: 4px; font-size: .75rem; font-style: normal; color: var(--fg-muted); }
+.dataset__note {
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: .875rem;
+  line-height: 1.65;
+  color: var(--fg-muted);
+  max-width: 78ch;
+}
+.dataset__note strong { color: var(--fg); font-weight: 500; }
+.dataset__note em { font-style: normal; color: var(--fg-soft); }
+.dataset__note {
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: .875rem;
+  line-height: 1.65;
+  color: var(--fg-muted);
+  max-width: 78ch;
+}
+.dataset__note strong { color: var(--fg); font-weight: 500; }
+.dataset__note em { font-style: normal; color: var(--fg-soft); }
 
 /* Principles */
 .principle-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
