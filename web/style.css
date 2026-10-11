@@ -182,3 +182,22 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .file-picker-button{display:inline-flex;align-items:center;min-height:25px;padding:4px 9px;border:1px solid var(--strong);background:#f8f7f4;color:var(--ink);font-size:10px;font-weight:600}
 .file-picker-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
 .file-picker input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+
+/* --- Sidebar filter and collapsible codebook --------------------------------
+   The sidebar is a fixed 254px column holding a document list and a codebook of
+   whatever size the study produced. At 317 codes the codebook alone was ten
+   thousand pixels of scroll and every name was truncated to fit, so the section
+   collapses by default and the filter box does the finding instead. */
+.side-filter{width:100%;height:28px;margin:4px 0 2px;border:1px solid var(--strong);border-radius:0;background:#fff;padding:0 8px;font-size:11px}
+.side-filter::placeholder{color:#9aa3b2}
+.side-toggle{display:flex;align-items:center;gap:2px;border:0;background:transparent;padding:17px 0 6px;color:#7b8494;font-size:10px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;cursor:pointer}
+.side-toggle:hover{color:var(--accent)}
+.side-toggle .twisty{flex:0 0 12px;width:12px;padding:0;font-size:9px}
+.side-toggle .count{margin-left:4px;letter-spacing:0}
+.side-hits{padding:7px 7px 3px;color:var(--subtle);font-size:9px;letter-spacing:.06em;text-transform:uppercase}
+.code-parent{display:block;color:var(--subtle);font-size:9px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Read-only demo: dimmed rather than `disabled`, because a disabled button
+   takes no pointer events — its tooltip never shows and the click says
+   nothing, which is the silent failure this replaces. */
+[data-locked]{opacity:.5;cursor:not-allowed}
