@@ -255,7 +255,13 @@ def run(args):
                 nav = s.page.evaluate(
                     "() => [...document.querySelectorAll('[data-action=\"view\"]')].map(e => e.dataset.view)")
                 return {"before": before, "clicked": clicked, "nav": nav,
-                        "codebook": s.page.evaluate("!!document.querySelector('.codebook')")}
+                        # There is no `.codebook` element. The codebook is a
+                        # collapsible section: a button with
+                        # data-action="toggle-codebook", and the tree is only
+                        # rendered after it. Asserting on the toggle is the
+                        # closest thing to "the codebook is reachable".
+                        "codebook_toggle": s.page.evaluate(
+                            "!!document.querySelector('[data-action=\"toggle-codebook\"]')")}
 
             def s1():
                 s.goto("/?lang=en")
@@ -269,15 +275,35 @@ def run(args):
                 # how the previous run reported a product defect that was this
                 # harness switching the codebook off.
                 blocks_ok = ("plotting" in blocks["nav"] and "insights" in blocks["nav"]
-                             and blocks["codebook"])
+                             and blocks["codebook_toggle"])
                 name = s.page.evaluate(
                     "document.querySelector('.project-select, .breadcrumb, h1')?.textContent || ''")
+                shape = check_fixture_shape()
                 if not blocks_ok:
                     return False, f"capability blocks did not take effect: {blocks}"
+                if not shape["ok"]:
+                    return False, f"fixture out of shape: {shape}"
                 return "synthetic" in name.lower() or "Smoke" in name, (
                     f"header={name[:44]!r} before={blocks['before']} "
                     f"clicked={blocks['clicked']} nav={blocks['nav']} "
-                    f"codebook={blocks['codebook']}")
+                    f"codebook_toggle={blocks['codebook_toggle']}")
+
+            def check_fixture_shape():
+                """The fixture README promises the harness checks this.
+
+                It did not, which made the README a claim about a check that
+                did not exist. The promise is kept here instead of deleted: a
+                fixture that drifts out of range would quietly stop exercising
+                what the walkthrough assumes.
+                """
+                text = FIXTURE.read_text(encoding="utf-8")
+                words = len(re.findall(r"[A-Za-z']+", text))
+                paras = [l for l in text.split("\n") if l.strip()]
+                labelled = [l for l in paras if re.match(r"(Interviewer|Participant):", l)]
+                marks = text.count("**")
+                return {"words": words, "paragraphs": len(labelled),
+                        "markdown_markers": marks,
+                        "ok": 1000 <= words <= 1400 and 20 <= len(labelled) <= 30 and marks == 0}
 
             # ---- S2 · import ---------------------------------------------
             def s2():
@@ -343,9 +369,30 @@ def run(args):
                 return pills >= 9, f"attempted={made} margin_pills={pills}"
 
             # ---- S5 · a parent code -------------------------------------
+            def expand_codebook():
+                """Open the CODEBOOK section.
+
+                It is collapsed by default (`codebookOpen:false`), and the tree
+                is only rendered when open. Searching for a `.codebook` element
+                therefore found nothing even though codes existed — the whole
+                "codes appear nowhere" finding was this collapsed section, not
+                a rendering defect.
+                """
+                if s.page.evaluate("!!document.querySelector('[data-action=\"toggle-codebook\"][aria-expanded=\"false\"]')"):
+                    s.click('[data-action="toggle-codebook"]')
+                    s.page.wait_for_timeout(700)
+
+            def code_names_on_screen():
+                return s.page.evaluate(
+                    """() => [...document.querySelectorAll('.code-row .side-item .name')]
+                         .map((e) => e.textContent.trim())""")
+
             def s5():
-                # The create dialog offers a name, a definition and a colour —
-                # and no parent selector. Grouping has to happen afterwards.
+                # The create dialog offers a name, definition and colour. A
+                # parent selector appears only from the second code onwards and
+                # only with the hierarchy block on — so the first code has none
+                # by design, which is the opposite of what the first version of
+                # this step claimed.
                 made = []
                 for name in ("Barriers", "Schedule", "Feedback"):
                     s.click('[data-action="code"]')
@@ -354,96 +401,163 @@ def run(args):
                     s.click('[data-action="save-code"]')
                     s.page.wait_for_timeout(800)
                     made.append(name)
-                # Actually check the codes landed somewhere on screen. The
-                # previous version returned True unconditionally, which made
-                # this step a guaranteed pass and therefore worthless.
-                seen = {}
-                for name in made:
-                    seen[name] = s.page.evaluate(
-                        "(n) => (document.body.innerText || '').includes(n)", name)
-                offers_parent = s.page.evaluate("!!document.querySelector('#code-parent')")
-                return all(seen.values()), (f"created={made} visible_on_page={seen} "
-                                            f"parent_selector_in_create_dialog={offers_parent}")
-                depth = s.page.evaluate("""() => {
-                  const t = document.querySelector('.codebook')?.innerText || '';
-                  return { has: t.includes('Barriers') && t.includes('Schedule'), text: t.slice(0, 200) };
-                }""")
-                return depth["has"], f"codebook: {depth['text'][:90]!r}"
+                expand_codebook()
+                listed = code_names_on_screen()
+                seen = {n: any(n == got or got.startswith(n) for got in listed) for n in made}
+                return all(seen.values()), (
+                    f"created={made} codebook_rows={listed} visible={seen}")
 
             # ---- S6 · themes --------------------------------------------
             def s6():
-                # Themes are top-level codes; Barriers/Feedback/Schedule sit beneath.
-                ok = s.page.evaluate("""() => {
-                  const t = document.querySelector('.codebook')?.innerText || '';
-                  return t.includes('Barriers');
-                }""")
-                return ok, "themes are the top-level nodes of the codebook tree"
+                """Actually group: put two codes under a parent and check the tree.
+
+                The previous version only asked whether a string appeared in a
+                container that never existed, so it tested nothing at all.
+                """
+                grouped = []
+                for name in ("Isolation under Barriers", "Feedback under Barriers"):
+                    s.click('[data-action="code"]')
+                    s.page.wait_for_timeout(600)
+                    s.page.fill("#code-name", name)
+                    offers_parent = s.page.evaluate("!!document.querySelector('#code-parent')")
+                    if offers_parent:
+                        s.page.select_option("#code-parent", label="Barriers")
+                    s.click('[data-action="save-code"]')
+                    s.page.wait_for_timeout(800)
+                    grouped.append({"name": name, "parent_offered": offers_parent})
+                expand_codebook()
+                tree = s.page.evaluate("""() => ({
+                  rows: [...document.querySelectorAll('.code-row')].map((r) => ({
+                    depth: (getComputedStyle(r).getPropertyValue('--depth') || '').trim(),
+                    name: (r.querySelector('.name')?.textContent || '').trim(),
+                  })),
+                })""")
+                nested = [r for r in tree["rows"] if r["depth"] not in ("", "0")]
+                ok = len(grouped) == 2 and all(g["parent_offered"] for g in grouped) and len(nested) >= 2
+                return ok, f"grouped={grouped} rows={tree['rows']} nested={len(nested)}"
 
             # ---- S7 · the three analysis views --------------------------
             def s7():
+                """The analysis views, each matched against its own unit sentence.
+
+                The old regex accepted "count" or "unit" anywhere, which any
+                paragraph would satisfy, and it included the coding view, which
+                is not an analysis view. The sentences below are the ones the
+                application actually prints (qualicraft/plotting.py
+                CREDIT_DEFAULTS and the frequency description).
+                """
+                UNITS = {
+                    "insights": "passage-code assignments, not participants",
+                    "plotting": "passage-code assignments, not participants",
+                }
                 found = []
-                for view in ("insights", "plotting", "coding"):
+                for view, sentence in UNITS.items():
                     s.click(f'[data-action="view"][data-view="{view}"]')
-                    s.page.wait_for_timeout(1800)
-                    body = s.page.evaluate("document.querySelector('.view-body')?.innerText || document.body.innerText")
-                    unit = bool(re.search(r"count|unit|passage|assignment|not participants", body, re.I))
-                    found.append(f"{view}:{'unit' if unit else 'NO-UNIT'}")
-                joined = " ".join(found)
-                return all("NO-UNIT" not in f for f in found), joined
+                    s.page.wait_for_timeout(2000)
+                    body = s.page.evaluate(
+                        "document.querySelector('.view-body')?.innerText || document.body.innerText")
+                    hit = sentence.lower() in body.lower()
+                    found.append(f"{view}:{'unit-stated' if hit else 'UNIT-NOT-STATED'}")
+                return all("NOT-STATED" not in f for f in found), "; ".join(found)
 
             # ---- S8 · five figure kinds ---------------------------------
             def s8():
+                """Every figure kind draws, and states its counting unit.
+
+                The control's option values are opaque ids, so the visible label
+                is read alongside them: a log line reading
+                "297d6bb8...:MISSING" tells a reader nothing about which figure
+                failed.
+                """
                 s.click('[data-action="view"][data-view="plotting"]')
-                s.page.wait_for_timeout(2200)
+                s.page.wait_for_timeout(2400)
+                pairs = s.page.evaluate("""() => {
+                  const sel = [...document.querySelectorAll('select')].find(
+                    (x) => [...x.options].some((o) => /coverage|co-occurrence|accumulation/i.test(o.textContent)));
+                  if (!sel) return [];
+                  return [...sel.options].map((o) => ({ value: o.value, label: o.textContent.trim() }));
+                }""")
                 results = []
-                select = s.page.query_selector("select")
-                options = []
-                if select:
-                    options = [o.get_attribute("value") for o in select.query_selector_all("option")]
-                for kind in options[:5]:
-                    s.page.select_option("select", kind)
-                    s.page.wait_for_timeout(2600)
+                for pair in pairs[:5]:
+                    s.page.select_option("select", pair["value"])
+                    s.page.wait_for_timeout(2800)
                     drawn = s.page.evaluate(
                         "!!document.querySelector('.plot-stage svg, .plot-stage img, .plot-preview svg, .plot-preview img')")
                     credit = s.page.evaluate("""() => {
                       const t = document.querySelector('.plot-stage, .plot-preview')?.innerText || '';
-                      return /unit|passage|assignment|participants|descriptive|file-name/i.test(t);
+                      return /not participants|not correlation|not saturation|descriptive/i.test(t);
                     }""")
-                    results.append(f"{kind}:{'drawn' if drawn else 'MISSING'}{'/credit' if credit else '/NO-CREDIT'}")
-                return (len(results) >= 5 and all("MISSING" not in r for r in results)), "; ".join(results) or "no kind control found"
+                    results.append(f"{pair['label']}:{'drawn' if drawn else 'NOT-DRAWN'}"
+                                   f"{'/unit-stated' if credit else '/NO-UNIT-STATEMENT'}")
+                ok = (len(results) >= 5
+                      and all("NOT-DRAWN" not in r for r in results)
+                      and all("NO-UNIT-STATEMENT" not in r for r in results))
+                return ok, "; ".join(results) or "no figure-kind control found"
 
             # ---- S9 · exports -------------------------------------------
             def s9():
-                s.click('[data-action="export"]')
-                s.page.wait_for_timeout(900)
-                got = []
-                for label in ("JSON", "CSV", "Markdown"):
-                    try:
-                        with s.page.expect_download(timeout=15000) as dl:
-                            s.page.click(f"text={label}")
-                        name = dl.value.suggested_filename
-                        path = out / f"export-{name}"
-                        dl.value.save_as(str(path))
-                        got.append(f"{name}={path.stat().st_size}B")
-                    except Exception as exc:
-                        got.append(f"{label}: {type(exc).__name__}")
-                    s.page.wait_for_timeout(400)
-                return all("=" in g for g in got), "; ".join(got)
+                """Export each file, selecting the row by its own attributes.
 
-            # ---- S10 · snapshot and restore -----------------------------
+                The old version clicked `text=CSV`, which is a substring match
+                across the whole page and very likely hit something else — a
+                plausible explanation for the timeout, and one this version
+                settles by recording the element it actually clicked.
+                """
+                s.click('[data-action="export"]')
+                s.page.wait_for_timeout(1000)
+                buttons = s.page.evaluate("""() => [...document.querySelectorAll('#dialog [data-action="download"]')]
+                     .map((b) => ({ html: b.outerHTML.slice(0, 160), text: (b.textContent || '').trim().slice(0, 40) }))""")
+                got = []
+                for index, meta in enumerate(buttons):
+                    try:
+                        with s.page.expect_download(timeout=20000) as dl:
+                            s.page.evaluate(
+                                "(i) => document.querySelectorAll('#dialog [data-action=\"download\"]')[i].click()",
+                                index)
+                        path = out / f"export-{dl.value.suggested_filename}"
+                        dl.value.save_as(str(path))
+                        got.append(f"{meta['text']}={path.stat().st_size}B")
+                    except Exception as exc:
+                        got.append(f"{meta['text']}: {type(exc).__name__}")
+                    s.page.wait_for_timeout(500)
+                ok = bool(buttons) and all("=" in g for g in got)
+                return ok, f"clicked={[b['html'][:70] for b in buttons]} results={got}"
+
             def s10():
-                s.page.keyboard.press("Escape")
-                s.page.wait_for_timeout(400)
+                """Restore a snapshot and check a *new* project exists.
+
+                The old condition was `documents_after >= 1`, which is true the
+                moment S2 imports anything and therefore proved nothing at all.
+                """
+                project_before = s.page.evaluate(
+                    "() => (window.state?.project?.id) || ''")
+                counts_before = s.page.evaluate("""() => ({
+                  documents: (window.state?.project?.documents || []).length,
+                  codes: (window.state?.project?.codes || []).length,
+                  projects: (window.state?.projects || []).length,
+                })""")
                 s.click('[data-action="snapshots"]')
                 s.page.wait_for_timeout(1200)
                 rows = s.page.query_selector_all(".snap-row button")
                 if not rows:
                     return False, "no snapshot rows offered"
-                before = s.page.evaluate("document.querySelectorAll('.snap-row').length")
                 rows[0].click()
-                s.page.wait_for_timeout(2500)
-                after = s.page.evaluate("document.querySelectorAll('.side-item').length")
-                return after >= 1, f"snapshots={before} restore_clicked=1 documents_after={after}"
+                s.page.wait_for_timeout(3000)
+                after = s.page.evaluate("""() => ({
+                  id: window.state?.project?.id || '',
+                  name: window.state?.project?.name || '',
+                  documents: (window.state?.project?.documents || []).length,
+                  codes: (window.state?.project?.codes || []).length,
+                  projects: (window.state?.projects || []).length,
+                  names: (window.state?.projects || []).map((p) => p.name),
+                })""")
+                ok = (after["id"] != project_before
+                      and "restored" in after["name"].lower()
+                      and after["projects"] == counts_before["projects"] + 1)
+                return ok, (f"before id={project_before[:8]} counts={counts_before} | "
+                            f"after id={after['id'][:8]} name={after['name'][:40]!r} "
+                            f"counts={{documents:{after['documents']},codes:{after['codes']},"
+                            f"projects:{after['projects']}}}")
 
             for number, title, body in [
                 (1, "new project", s1), (2, "import transcript", s2),
