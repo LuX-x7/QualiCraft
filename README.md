@@ -39,7 +39,7 @@ QualiCraft is a modular workbench for interview studies and other open-ended mat
 
 ## Try it
 
-- **[Website](https://qualicraft-website.onrender.com/)** — English-first overview, with a language switch and a recorded walkthrough of all five modules.
+- **[Website](https://qualicraft-website.onrender.com/)** — English-first overview, with a language switch and a written walkthrough of all five modules.
 - **[Live workbench](https://qualicraft-workbench.onrender.com/w)** — the real interface, running on the public Bologna corpus. Read-only: no uploads, no edits.
 - **[Deploy your own](#deploy)** — one blueprint puts both services on the internet from this repository.
 - **[Chinese README](#中文)** — jump to the Chinese translation below.
@@ -60,8 +60,8 @@ does that on its free plan and deploys straight from this repository.
 `render.yaml` in the repository root defines both services, so there is nothing
 to configure by hand:
 
-> **Two limits worth knowing before you press the button.** The repository is private, so the
-> button only works for someone who already has access to it — it is not a public installer.
+> **One limit worth knowing before you press the button.** A free instance has an **ephemeral
+> filesystem**
 > And a free instance has an **ephemeral filesystem**: its SQLite database is discarded on every
 > restart. The deployment exists to demonstrate the interface on public data. **Do not put
 > research data in it.** For real work, run it locally, where `data/backups/` is also being
@@ -191,7 +191,7 @@ python -m qualicraft.server --port 8765
 Project data is stored in a local SQLite database under `data/`; this directory is git-ignored.
 
 **Backups are automatic.** Every change also writes a restorable copy of the project to
-`data/backups/<project-id>/`, keeping the most recent twenty. The header shows how many exist.
+`data/backups/<project-id>/`, keeping the most recent thirty. The header shows how many exist.
 To restore one: **Projects → Restore project JSON**, then pick a file from that folder. The
 whole drill takes about a minute, and it is worth doing once *before* you depend on it.
 
@@ -270,7 +270,7 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 
 ## 在线查看
 
-- **[网站](https://qualicraft-website.onrender.com/)** —— 英文为主，可切换语言，含五个模块的真实操作演示。
+- **[网站](https://qualicraft-website.onrender.com/)** —— 英文为主，可切换语言，含五个模块的书面走查。
 - **[在线工作台](https://qualicraft-workbench.onrender.com/w)** —— 真实界面，运行在 Bologna 公开语料上。只读：不能上传、不能修改。
 - **[部署你自己的](#部署)** —— 一份蓝图把这个仓库的两个服务放到公网。
 - **[English README](#english)** —— 跳转至上方英文说明。
@@ -288,7 +288,7 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 
 仓库根目录的 `render.yaml` 已经定义好两个服务，不需要手工配置：
 
-> **按按钮之前要知道两件事。** 本仓库是私有的，所以这个按钮只对已有权限的人有效——它不是公开安装器。
+> **按按钮之前要知道一件事。** 免费实例的**文件系统是临时的**
 > 另外免费实例的**文件系统是临时的**：SQLite 数据库每次重启都会被丢弃。这个部署是为了用公开数据演示界面，
 > **不要把研究数据放进去。** 真正做研究请在本机运行，那里的 `data/backups/` 也在持续写入。
 
@@ -400,7 +400,7 @@ python -m qualicraft.server --port 8765
 
 项目数据保存在 `data/` 下的本机 SQLite 数据库中，该目录已加入 git 忽略。
 
-**备份是自动的。** 每次改动都会把项目的一份可恢复副本写到 `data/backups/<项目 id>/`，保留最近 20 份，
+**备份是自动的。** 每次改动都会把项目的一份可恢复副本写到 `data/backups/<项目 id>/`，保留最近 30 份，
 顶栏会显示当前有多少份。恢复方式：**项目 → 恢复项目 JSON**，从那个目录里挑一份。
 整个演练大约一分钟，值得在真正依赖它**之前**先做一次。
 
