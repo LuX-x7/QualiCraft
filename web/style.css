@@ -201,3 +201,21 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
    takes no pointer events — its tooltip never shows and the click says
    nothing, which is the silent failure this replaces. */
 [data-locked]{opacity:.5;cursor:not-allowed}
+
+/* --- Coding margin, grouped by theme ----------------------------------------
+   A pill on its own ("The gym is not for me") is hard to place once the reader
+   is several screens into a transcript. Each passage's codes are now shown
+   under the theme they belong to, and the theme name filters by it. A code
+   with no parent is its own theme and gets no header, so a flat codebook is
+   unchanged. */
+.margin-group{display:flex;flex-direction:column;gap:5px;min-width:0}
+.margin-group+.margin-group{margin-top:4px;padding-top:5px;border-top:1px solid #eef0f4}
+.margin-theme{display:flex;align-items:center;gap:6px;min-width:0;width:100%;border:0;background:transparent;padding:0;color:#7b8494;font-size:9px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;text-align:left;cursor:pointer}
+.margin-theme:hover{color:var(--accent)}
+.margin-theme .dot{flex:0 0 6px;width:6px;height:6px;margin:0}
+.margin-theme-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:1120px){
+  .margin-group{flex:0 0 auto;max-width:220px}
+  .margin-group+.margin-group{margin-top:0;padding-top:0;border-top:0}
+  .margin-theme{width:auto}
+}

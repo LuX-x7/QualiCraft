@@ -86,6 +86,40 @@ function codePath(code) {
   }
   return parts.reverse().join(' > ');
 }
+// The theme a code ultimately sits under — its topmost ancestor, or the code
+// itself when it has none.
+function themeOf(code) {
+  const byId=new Map(state.project.codes.map(c=>[c.id,c]));
+  let cur=code; const seen=new Set([code.id]);
+  while(cur.parent_id && byId.has(cur.parent_id) && !seen.has(cur.parent_id)) {
+    seen.add(cur.parent_id); cur=byId.get(cur.parent_id);
+  }
+  return cur;
+}
+// The coding margin, grouped by theme. Several screens into a transcript, a pill
+// reading "The gym is not for me" is hard to place; the theme above it is what
+// makes it legible again. A code with no parent is its own theme and gets no
+// header, so a flat codebook looks exactly as it did.
+function marginHtml(matches) {
+  const groups=[];
+  matches.forEach(a=>{
+    const c=codesFor(a); if(!c) return;
+    const theme=themeOf(c);
+    let group=groups.find(g=>g.theme.id===theme.id);
+    if(!group) groups.push(group={theme,items:[]});
+    group.items.push({a,c});
+  });
+  return groups.map(({theme,items})=>{
+    const header=items.some(({c})=>c.id!==theme.id)
+      ? `<button class="margin-theme" data-action="filter-code" data-id="${theme.id}" title="${esc(theme.definition||theme.name)}"><span class="dot" style="background:${esc(theme.color)}"></span><span class="margin-theme-name">${esc(theme.name)}</span></button>`
+      : '';
+    return `<div class="margin-group">${header}${items.map(({a,c})=>`
+      <button class="pill" style="--code-color:${esc(c.color)}" data-action="annotation" data-id="${a.id}">
+        <span class="code-name">${esc(c.name)}</span>
+        <span class="source">${a.source==='manual'?QT('human','HUMAN'):a.source==='researcher_reference'?QT('reference','REFERENCE'):QT('aiReviewed','AI · REVIEWED')}</span>
+      </button>`).join('')}</div>`;
+  }).join('');
+}
 function codeDescendants(id) {
   const out=new Set(); const stack=[id];
   while(stack.length) {
@@ -269,7 +303,7 @@ function readerHtml() {
   const filter=state.codeFilter?`<p class="tiny-label">Filter: ${esc(state.project.codes.find(c=>c.id===state.codeFilter)?.name)} <button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></p>`:'';
   return filter+(paras.map(p=>{
     const matches=annotations.filter(a=>a.start<p.end&&a.end>p.start);
-    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}"><span class="line-no">${String(p.index+1).padStart(2,'0')}</span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="margin-tags">${matches.map(a=>{const c=codesFor(a);return `<button class="pill" style="--code-color:${esc(c.color)}" data-action="annotation" data-id="${a.id}"><span class="code-name">${esc(c.name)}</span><span class="source">${a.source==='manual'?QT('human','HUMAN'):a.source==='researcher_reference'?QT('reference','REFERENCE'):QT('aiReviewed','AI · REVIEWED')}</span></button>`;}).join('')}</div></div>`;
+    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}"><span class="line-no">${String(p.index+1).padStart(2,'0')}</span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="margin-tags">${marginHtml(matches)}</div></div>`;
   }).join('') || `<div class="empty">${QT('noPassages','No passages match your filters.')}<button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></div>`);
 }
 function suggestionsHtml() {
