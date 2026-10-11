@@ -65,6 +65,12 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
    study instead of the study fitting the workspace. */
 .block-off{display:none!important}
 .work-grid.no-review{grid-template-columns:minmax(0,1fr)}
+/* The review pane is always in the DOM, so collapsing the grid alone would
+   push it onto a second row — trading horizontal waste for vertical. When
+   there is nothing to review it leaves the layout entirely and the transcript
+   takes the full width. "Analyze with AI" stays in the document toolbar, so
+   the way to produce suggestions is not lost with the pane. */
+.work-grid.no-review .review-pane{display:none}
 .tools-glyph{flex:0 0 15px;width:15px;margin-right:8px;color:#5c606a;font-size:12px;text-align:center}
 .block-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;border:1px solid var(--line);border-radius:0;overflow:hidden}
 .block-row{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line);cursor:pointer}
