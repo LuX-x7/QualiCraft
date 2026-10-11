@@ -7,87 +7,185 @@ import { useEffect, useState } from 'react'
  * the right.
  *
  * The clips are recorded from the running workbench, step by step, so what a
- * visitor sees here is the operation itself rather than a still of the result. They advance on their own but stop
- * as soon as the visitor picks a step by hand — an auto-rotating panel that
- * fights the reader is worse than a static one.
+ * visitor sees here is the operation itself rather than a still of the result.
+ * They advance on their own but stop as soon as the visitor picks a step by
+ * hand — an auto-rotating panel that fights the reader is worse than a static
+ * one.
+ *
+ * The copy is written as instructions, not as a description of the feature.
+ * Somebody who has never coded an interview should be able to read all five and
+ * know what to do: each one says what it is for, what to click, what appears
+ * afterwards, and where people get stuck. The five "how" lists read in sequence
+ * as one pass through the whole workflow.
  */
 
 type Step = {
   key: string
   image: string
-  zh: { label: string; title: string; body: string }
-  en: { label: string; title: string; body: string }
+  zh: Copy
+  en: Copy
+}
+
+type Copy = {
+  label: string
+  title: string
+  /** What this module is for, in one sentence. */
+  lead: string
+  /** The operations, in order. */
+  how: string[]
+  /** What is on screen once you have done them. */
+  see: string
+  /** Where people get stuck. */
+  snag?: string
 }
 
 const STEPS: Step[] = [
   {
     key: 'ingest',
     image: '/demo/m1.gif',
-    zh: {
-      label: '数据导入',
-      title: '把材料带进来',
-      body: '访谈转录、别人的编码表、QualCoder 项目都能读。五个公开数据集的格式已内置，导入后先给你看解析结果，确认了才落库。',
-    },
     en: {
       label: 'Ingest',
       title: 'Bring the material in',
-      body: 'Transcripts, someone else’s coding table, QualCoder projects. Five public dataset formats are built in, and the parse result is shown for confirmation before anything is stored.',
+      lead: 'Turn a transcript into text you can read and mark, passage by passage.',
+      how: [
+        'Press Import interview, top right.',
+        'Choose a TXT or DOCX file, or paste the transcript straight into the box.',
+        'Check what it parsed. Blank lines decide the segments, and labels like Doctor: or Patient: are read as speakers.',
+        'Confirm, and it is in.',
+      ],
+      see: 'A new entry in the document list on the left. The transcript opens on the right, numbered per segment, with the line number in the margin.',
+      snag: 'DOCX gives you paragraph and table text only. Comments, headers and layout are not carried over.',
+    },
+    zh: {
+      label: '导入',
+      title: '把材料带进来',
+      lead: '把一份访谈稿变成可以逐段阅读、逐段标记的文本。',
+      how: [
+        '点右上角的 Import interview。',
+        '选一个 TXT 或 DOCX 文件，或者直接把访谈稿粘进文本框。',
+        '检查解析结果。空行决定分段，Doctor:、Patient: 这类标签会被读成说话人。',
+        '确认，就进去了。',
+      ],
+      see: '左侧文档列表多出一条。右侧打开正文，按段编号，每段左边有一个行号。',
+      snag: 'DOCX 只取段落和表格文字。批注、页眉、版式不会带过来。',
     },
   },
   {
     key: 'coding',
     image: '/demo/m2.gif',
-    zh: {
-      label: '编码',
-      title: '逐段读，逐段标',
-      body: '选中文字即可打标，编码本支持任意层级。人工编码与模型建议并排出现，每条建议都要你确认才会进入编码本。',
-    },
     en: {
       label: 'Coding',
-      title: 'Read closely, code precisely',
-      body: 'Select text to code it. The codebook nests to any depth. Human coding and model suggestions sit side by side, and a suggestion only enters the codebook once you accept it.',
+      title: 'Mark a passage, and let the codebook grow',
+      lead: 'Attach a label to a passage. The codebook is built out of what you actually read, not out of a template.',
+      how: [
+        'Select a sentence in the transcript with the mouse.',
+        'The coding box opens against the selection, not at the bottom of the page.',
+        'Type a keyword and press Enter. An existing code is reused; if nothing matches, one is created and applied in the same keystroke.',
+        'Repeat. The margin beside each passage shows which codes sit on it, and which theme each code belongs to.',
+      ],
+      see: 'The selected text is marked, a pill appears in the margin, and the code counts in the left-hand codebook go up.',
+      snag: 'One passage can carry several codes. That is also what gives the relationship map something to draw — code every passage exactly once and that view stays empty.',
+    },
+    zh: {
+      label: '编码',
+      title: '标记一段，让编码本自己长出来',
+      lead: '给一段话挂一个标签。编码本是读出来的，不是套模板套出来的。',
+      how: [
+        '用鼠标选中正文里的一句话。',
+        '编码框贴着选区弹出，而不是弹在页面底部。',
+        '输入关键词后回车。已有编码会被复用；没有匹配的就新建一个并同时应用。',
+        '重复。每段右侧的边栏会显示这一段挂了哪些编码，以及每个编码属于哪个主题。',
+      ],
+      see: '选中的文字被标记，边栏出现一个编码标签，左侧编码本的计数跟着往上涨。',
+      snag: '一段话可以同时挂多个编码。这也正是关系图有内容可画的前提——如果每段只编一个码，那张图会一直是空的。',
     },
   },
   {
     key: 'analyze',
     image: '/demo/m3.gif',
-    zh: {
-      label: '分析',
-      title: '一张关系网，看见联系',
-      body: '主题是最大的球，编码次之，文本片段最小。橙色虚线连接在同一份访谈中重叠的编码——这些关系编码本本身并没有记录。点击主题即可只看它这一支，点击编码展开它的原文。',
-    },
     en: {
       label: 'Analyse',
-      title: 'A map of what connects to what',
-      body: 'Themes are the largest nodes, codes next, passages smallest. Dashed edges join codes whose spans overlap in the same interview — relationships the codebook never recorded. Click a theme to isolate its family, click a code to open its passages.',
+      title: 'See what connects to what',
+      lead: 'Stop reading and look at the shape the codings make.',
+      how: [
+        'Open Insights.',
+        'The first panel is code frequency: how often each code was used.',
+        'The second is the document × code matrix: which participant raised what.',
+        'The third is the relationship map. Themes are the largest nodes, codes next, coded passages smallest. The dashed edges join codes whose spans overlap inside one interview.',
+      ],
+      see: 'Charts built from the codings you just made, with nothing to configure first.',
+      snag: 'Frequency counts passage–code links. It is not importance, and it is not a count of participants.',
+    },
+    zh: {
+      label: '分析',
+      title: '看看什么和什么连在一起',
+      lead: '先别读了，看看编码本身构成了什么形状。',
+      how: [
+        '打开 Insights。',
+        '第一块是编码频率：每个编码被用了多少次。',
+        '第二块是文档 × 编码矩阵：哪位受访者谈到了什么。',
+        '第三块是关系网。主题是最大的节点，编码次之，被编码的段落最小。虚线连的是**同一份访谈里区间重叠**的编码。',
+      ],
+      see: '直接由刚才那些编码生成的图，不需要先配置什么。',
+      snag: '频率数的是"引用—编码链接"的条数。它不代表重要性，也不代表受访者人数。',
     },
   },
   {
     key: 'plot',
     image: '/demo/m4.gif',
-    zh: {
-      label: '绘图',
-      title: '预览就是脚本的输出',
-      body: '五类期刊级图表，参数在左侧调节。图上画的，就是导出的那段脚本画的——只有一条渲染路径，两者不可能不一致。',
-    },
     en: {
       label: 'Plot',
-      title: 'The preview is the script’s output',
-      body: 'Five publication-grade figures with the parameters on the left. What you see is drawn by the same script you export — one renderer, so the two cannot drift apart.',
+      title: 'Draw a figure you can put in the paper',
+      lead: 'Five publication figures, drawn by a script rather than by the browser.',
+      how: [
+        'Open Figures.',
+        'Pick a figure type on the left: frequency, coverage, co-occurrence, hierarchy, or accumulation.',
+        'Set the options — what to group by, what to count within, the palette, clustering, how many codes to show.',
+        'The preview on the right redraws. When it looks right, press Download figure + script.',
+      ],
+      see: 'A folder holding the counts as CSV, the script that drew the figure, and the figure as SVG, PDF and 300 dpi PNG.',
+      snag: 'The figure is drawn by a Python script on the server, not in the browser. That is what makes the preview and the exported script agree by construction — and it means matplotlib has to be installed.',
+    },
+    zh: {
+      label: '绘图',
+      title: '画一张能放进论文的图',
+      lead: '五类期刊级图表，由脚本绘制，而不是由浏览器绘制。',
+      how: [
+        '打开 Figures。',
+        '在左侧选图类型：频率、覆盖率、共现、层级，或累积。',
+        '调参数——按什么分组、在什么范围内计数、配色、是否聚类、显示前几个编码。',
+        '右侧预览会重画。满意之后点 Download figure + script。',
+      ],
+      see: '一个文件夹：计数 CSV、画出这张图的脚本，以及 SVG、PDF 和 300 dpi PNG 三种格式的图。',
+      snag: '图是服务器上的 Python 脚本画的，不是浏览器画的。正因如此，预览和导出的脚本产出必然一致——代价是需要装 matplotlib。',
     },
   },
   {
     key: 'export',
     image: '/demo/m5.gif',
-    zh: {
-      label: '导出',
-      title: '交给合作者就能重跑',
-      body: '数据 CSV、复现脚本、SVG / PDF / 300dpi PNG 一起打包。合作者不需要项目和原始数据，打开文件夹跑一次即可得到同一张图。',
-    },
     en: {
       label: 'Export',
-      title: 'A co-author can re-run it',
-      body: 'The data CSV, the reproduction script and SVG / PDF / 300dpi PNG travel together. A co-author needs neither the project nor the raw data to get the same figure back.',
+      title: 'Hand over the process, not just the result',
+      lead: 'Everything you did is already recorded. This is where you take it out.',
+      how: [
+        'Press Export, top right.',
+        'Choose what you need — there are four.',
+        'They land in your browser download folder.',
+      ],
+      see: 'The full project as JSON, restorable later. The codings as CSV, with character offsets and quotations. The document × code matrix as CSV, ready for Excel, R or Python. And a methods record in Markdown, assembled from the audit trail rather than remembered afterwards.',
+      snag: 'The full project export contains the source transcripts. Treat it as research data.',
+    },
+    zh: {
+      label: '导出',
+      title: '交出去的是过程，不只是结果',
+      lead: '你做的每一步都已经记下来了。这里是把它们拿出来的地方。',
+      how: [
+        '点右上角的 Export。',
+        '选你要的——一共四种。',
+        '文件会落到浏览器的下载文件夹。',
+      ],
+      see: '完整项目 JSON，之后可以恢复继续做。编码 CSV，带字符偏移和引文。文档 × 编码矩阵 CSV，可以直接进 Excel、R 或 Python。还有一份 Markdown 方法记录，是从审计轨迹里拼出来的，不是事后回忆的。',
+      snag: '完整项目导出里包含原始访谈稿。请按研究数据对待。',
     },
   },
 ]
@@ -120,6 +218,8 @@ export default function ModuleShowcase({
     setManual(true)
   }
 
+  const activeCopy = zh ? STEPS[active].zh : STEPS[active].en
+
   return (
     <section className="showcase" aria-label={zh ? '五个模块的走查' : 'Walkthrough of the five modules'}>
       <div className="wrap">
@@ -133,15 +233,28 @@ export default function ModuleShowcase({
 
         <div className="showcase__grid">
           <figure className="showcase__stage">
-            {STEPS.map((step, index) => (
-              <img
-                key={step.key}
-                src={step.image}
-                alt={(zh ? step.zh : step.en).title}
-                className={index === active ? 'is-active' : ''}
-                loading={index === 0 ? 'eager' : 'lazy'}
-              />
-            ))}
+            {/* The clip carries the module's own name and number. Without it the
+                left pane was a recording with no label, and the five modules
+                were only ever introduced on the right — so the two sides did
+                not obviously belong to each other. */}
+            <div className="showcase__stage-head">
+              <span className="showcase__stage-n">{String(active + 1).padStart(2, '0')}</span>
+              <div className="showcase__stage-meta">
+                <span className="showcase__stage-label">{activeCopy.label}</span>
+                <span className="showcase__stage-title">{activeCopy.title}</span>
+              </div>
+            </div>
+            <div className="showcase__frames">
+              {STEPS.map((step, index) => (
+                <img
+                  key={step.key}
+                  src={step.image}
+                  alt={(zh ? step.zh : step.en).title}
+                  className={index === active ? 'is-active' : ''}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                />
+              ))}
+            </div>
             <div className="showcase__dots" role="tablist">
               {STEPS.map((step, index) => (
                 <button
@@ -163,15 +276,41 @@ export default function ModuleShowcase({
           <ol className="showcase__list">
             {STEPS.map((step, index) => {
               const copy = zh ? step.zh : step.en
+              const open = index === active
               return (
-                <li key={step.key} className={index === active ? 'is-active' : ''}>
-                  <button type="button" onClick={() => pick(index)} aria-current={index === active}>
+                <li key={step.key} className={open ? 'is-active' : ''}>
+                  <button type="button" onClick={() => pick(index)} aria-current={open}>
                     <span className="showcase__index">{String(index + 1).padStart(2, '0')}</span>
                     <span className="showcase__copy">
                       <strong>{copy.title}</strong>
-                      <span>{copy.body}</span>
+                      <span>{copy.lead}</span>
                     </span>
                   </button>
+                  {/* Only the open step carries the instructions, so the list
+                      stays scannable and the five read as one sequence. */}
+                  {open ? (
+                    <div className="showcase__how">
+                      <ol>
+                        {copy.how.map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ol>
+                      <p className="showcase__see">
+                        <span className="showcase__note-label">
+                          {zh ? '做完你会看到' : 'What you see'}
+                        </span>
+                        {copy.see}
+                      </p>
+                      {copy.snag ? (
+                        <p className="showcase__snag">
+                          <span className="showcase__note-label">
+                            {zh ? '容易卡住' : 'Where people get stuck'}
+                          </span>
+                          {copy.snag}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </li>
               )
             })}

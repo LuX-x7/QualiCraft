@@ -6986,12 +6986,52 @@ body::before {
 .cap--on .cap__state { color: var(--accent); }
 
 /* Datasets */
-.dataset-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.dataset { border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--bg-raised); padding: 20px 22px; }
-.dataset strong { display: block; margin-bottom: 6px; }
+/* Five corpora, scrolled sideways. A grid would either shrink the cards until
+   the summaries are unreadable or wrap into a column that reads like a list;
+   side by side is how they are meant to be compared. The right-hand fade is
+   the affordance — without it a desktop reader never learns there is more. */
+.dataset-scroll {
+  position: relative;
+  margin: 0 -24px;
+  padding: 0 24px;
+}
+.dataset-scroll::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 72px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--bg) 78%);
+}
+.dataset-track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 14px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.dataset {
+  flex: 0 0 320px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-raised);
+  padding: 20px 22px;
+}
+.dataset__top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.dataset__format { font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .04em; color: var(--accent-strong); }
+.dataset__year { font-family: var(--font-mono); font-size: .6875rem; color: var(--fg-muted); }
+.dataset strong { display: block; margin-bottom: 3px; }
+.dataset__by { margin: 0 0 10px !important; font-size: .8125rem; color: var(--fg-muted); }
 .dataset p { margin: 0 0 12px; font-size: .9375rem; color: var(--fg-muted); }
 .dataset__meta { display: flex; flex-wrap: wrap; gap: 8px; }
 .dataset__meta span { font-family: var(--font-mono); font-size: .6875rem; color: var(--fg-muted); border: 1px solid var(--line); padding: 2px 7px; }
+.dataset__licence { margin-top: auto; padding-top: 14px; }
+.dataset__licence span { font-family: var(--font-mono); font-size: .6875rem; color: var(--fg-muted); }
+.dataset__licence em { display: block; margin-top: 4px; font-size: .75rem; font-style: normal; color: var(--fg-muted); }
 
 /* Principles */
 .principle-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
@@ -7008,7 +7048,9 @@ body::before {
   .ws-grid { grid-template-columns: minmax(0, 1fr); }
   .ws-pop { position: static; margin: 0 20px 20px; width: auto; }
   .ws-pane { padding-bottom: 20px; }
-  .phase-grid, .cap-tray, .dataset-grid, .principle-grid { grid-template-columns: 1fr; }
+  .phase-grid, .cap-tray, .principle-grid { grid-template-columns: 1fr; }
+  .dataset-scroll { margin: 0 -16px; padding: 0 16px; }
+  .dataset { flex-basis: 260px; }
 }
 
 /* Accented run inside a headline, e.g. "This one is *yours*". */
@@ -7088,6 +7130,68 @@ body::before {
   background: var(--bg-raised);
   overflow: hidden;
 }
+/* The module's identity, on the pane that shows it. Number and name sit above
+   the clip so the left and right panes are visibly the same module. */
+.showcase__stage-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.showcase__stage-n {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--accent-strong);
+}
+.showcase__stage-meta { display: grid; gap: 3px; min-width: 0; }
+.showcase__stage-label {
+  font-family: var(--font-mono);
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.showcase__stage-title {
+  font-size: .9375rem;
+  line-height: 1.35;
+  color: var(--fg);
+}
+.showcase__frames { background: var(--bg-raised); }
+
+/* The module's identity, on the pane that shows it. Number and name sit above
+   the clip so the left and right panes are visibly the same module. */
+.showcase__stage-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.showcase__stage-n {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--accent-strong);
+}
+.showcase__stage-meta { display: grid; gap: 3px; min-width: 0; }
+.showcase__stage-label {
+  font-family: var(--font-mono);
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.showcase__stage-title {
+  font-size: .9375rem;
+  line-height: 1.35;
+  color: var(--fg);
+}
+.showcase__frames { background: var(--bg-raised); }
+
 .showcase__stage img {
   display: none;
   width: 100%;
@@ -7186,7 +7290,195 @@ body::before {
   color: var(--fg-soft);
 }
 
+/* The instructions that open under the selected module. The five of them read
+   in sequence as one pass through the workflow, so they are numbered and set
+   tighter than the lead line above them. */
+.showcase__how {
+  padding: 0 16px 16px 60px;
+}
+.showcase__how ol {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: how;
+  display: grid;
+  gap: 7px;
+}
+.showcase__how ol li {
+  counter-increment: how;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fg-soft);
+}
+.showcase__how ol li::before {
+  content: counter(how);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  line-height: 1.9;
+  color: var(--fg-muted);
+}
+.showcase__see,
+.showcase__snag {
+  margin: 13px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg-soft);
+}
+.showcase__note-label {
+  display: block;
+  margin-bottom: 3px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.showcase__snag {
+  padding-left: 12px;
+  border-left: 2px solid var(--line-strong);
+}
+@media (max-width: 900px) {
+  .showcase__how { padding-left: 16px; }
+}
+
 @media (max-width: 900px) {
   .showcase { padding: 64px 0; }
   .showcase__grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
+
+/* ------------------------- the two methods -------------------------------
+   Thematic analysis against content analysis on the same axes. A table rather
+   than two columns of prose, because the reader's job here is to compare, and
+   comparing means holding the same row in view. The last row is the one that
+   connects the method choice to what the tool does. */
+.methods-wrap { overflow-x: auto; }
+.methods {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: .9375rem;
+}
+.methods th,
+.methods td {
+  padding: 15px 18px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.55;
+}
+.methods thead th {
+  font-family: var(--font-mono);
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 11px;
+}
+.methods tbody th {
+  font-weight: 400;
+  font-size: .8125rem;
+  color: var(--fg-muted);
+  width: 22%;
+}
+.methods tbody td { color: var(--fg-soft); }
+.methods tbody tr:last-child th,
+.methods tbody tr:last-child td { border-bottom: 0; }
+.methods tbody tr:last-child td { color: var(--fg); }
+.methods__axis { width: 22%; }
+.methods__note {
+  margin: 26px 0 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--accent);
+  font-size: .9375rem;
+  line-height: 1.65;
+  color: var(--fg-soft);
+  max-width: 68ch;
+}
+.methods__phases { margin-top: 46px; }
+.methods__phases h3 {
+  margin: 0 0 8px;
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+.methods__phases > p {
+  margin: 0 0 24px;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--fg-muted);
+  max-width: 62ch;
+}
+@media (max-width: 900px) {
+  .methods tbody th { width: 34%; }
+}
+
+/* ------------------------- the two methods -------------------------------
+   Thematic analysis against content analysis on the same axes. A table rather
+   than two columns of prose, because the reader's job here is to compare, and
+   comparing means holding the same row in view. The last row is the one that
+   connects the method choice to what the tool does. */
+.methods-wrap { overflow-x: auto; }
+.methods {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: .9375rem;
+}
+.methods th,
+.methods td {
+  padding: 15px 18px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.55;
+}
+.methods thead th {
+  font-family: var(--font-mono);
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 11px;
+}
+.methods tbody th {
+  font-weight: 400;
+  font-size: .8125rem;
+  color: var(--fg-muted);
+  width: 22%;
+}
+.methods tbody td { color: var(--fg-soft); }
+.methods tbody tr:last-child th,
+.methods tbody tr:last-child td { border-bottom: 0; }
+.methods tbody tr:last-child td { color: var(--fg); }
+.methods__axis { width: 22%; }
+.methods__note {
+  margin: 26px 0 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--accent);
+  font-size: .9375rem;
+  line-height: 1.65;
+  color: var(--fg-soft);
+  max-width: 68ch;
+}
+.methods__phases { margin-top: 46px; }
+.methods__phases h3 {
+  margin: 0 0 8px;
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+.methods__phases > p {
+  margin: 0 0 24px;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--fg-muted);
+  max-width: 62ch;
+}
+@media (max-width: 900px) {
+  .methods tbody th { width: 34%; }
 }

@@ -262,6 +262,121 @@ registerBlock({
   },
 })
 
+/* ---------------------------- the two methods ---------------------------- */
+
+/**
+ * Thematic analysis against content analysis, on the same axes.
+ *
+ * A first project usually has to choose between these two, and the choice is
+ * made by the research question rather than by preference — so the comparison
+ * is laid out as a table rather than as two descriptions a reader has to hold
+ * in their head at once. The last row is the one that matters for this tool:
+ * both are supported, and the difference shows up in whether the categories
+ * are built first or allowed to emerge.
+ */
+const METHOD_ROWS: Array<[string, string, string]> = [
+  [
+    'The question it answers',
+    'How do people understand this?',
+    'How often does this come up?',
+  ],
+  [
+    'Where the codes come from',
+    'Open coding first, then grouped into themes',
+    'A category list is settled first, then the material is filed into it',
+  ],
+  [
+    'How much the codebook moves',
+    'Revised throughout. Merging, splitting and re-parenting are normal',
+    'Categories settle early and then stay put',
+  ],
+  [
+    'What you end up with',
+    'Themes, each carried by quotations',
+    'Frequencies, and a case-by-code table',
+  ],
+  [
+    'What it looks like here',
+    'The codebook tree, the relationship map, the hierarchy figure',
+    'The frequency figure and the document × code matrix',
+  ],
+]
+
+registerBlock({
+  type: 'qtMethods',
+  label: 'Methods comparison',
+  group: 'content',
+  hint: 'Thematic analysis against content analysis, plus the phases of a thematic analysis.',
+  initial: () => ({
+    label: 'Method',
+    title: 'Two ways to read the same transcript.',
+    body: 'These are the two a first project usually has to choose between, and they are not a right answer and a wrong one — the research question decides. The same comparison, on the same axes.',
+  }),
+  fields: [
+    { key: 'label', label: 'Label', type: 'text', span: 1 },
+    { key: 'title', label: 'Heading', type: 'text', span: 2 },
+    { key: 'body', label: 'Intro paragraph', type: 'textarea', span: 2 },
+  ],
+  render: async ({ data, ctx }) => {
+    const phases = await ctx.get('phases', { limit: 12 })
+    return (
+      <Section className="blk-methods">
+        <SectionHead label={data.label} title={data.title} body={data.body} />
+
+        <div className="methods-wrap">
+          <table className="methods">
+            <thead>
+              <tr>
+                <th scope="col" className="methods__axis">On this axis</th>
+                <th scope="col">Thematic analysis</th>
+                <th scope="col">Content analysis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {METHOD_ROWS.map(([axis, thematic, content]) => (
+                <tr key={axis}>
+                  <th scope="row">{axis}</th>
+                  <td>{thematic}</td>
+                  <td>{content}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="methods__note">
+          You decide which one you are doing before you open the tool, and it comes down to a single
+          question: do you settle the categories first, or do you let them emerge? QualiCraft does not
+          force either. The codebook is the same structure in both cases, which is why the same
+          workspace serves a content analysis and a grounded theory study.
+        </p>
+
+        {phases.length ? (
+          <div className="methods__phases">
+            <h3>If you are doing a thematic analysis</h3>
+            <p>
+              The familiar six phases, and what each one asks of you. The workspace is arranged in
+              this order rather than laying every panel out at once, so it can tell you what to do
+              next instead of leaving you to guess.
+            </p>
+            <div className="phase-grid">
+              {phases.map((phase) => (
+                <article className={`phase phase--${phase.data.supported || 'full'}`} key={phase.id}>
+                  <span className="phase__n">{String(phase.data.number ?? '').padStart(2, '0')}</span>
+                  <strong>{phase.title}</strong>
+                  <p>{phase.data.summary}</p>
+                  {phase.data.supported === 'partial' ? <span className="phase__flag">Partly covered</span> : null}
+                  {phase.data.supported === 'none' ? <span className="phase__flag">Not yet</span> : null}
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </Section>
+    )
+  },
+})
+
 /* ------------------------------ capabilities ----------------------------- */
 
 registerBlock({
@@ -325,18 +440,35 @@ registerBlock({
     return (
       <Section className="blk-datasets">
         <SectionHead label={data.label} title={data.title} body={data.body} />
-        <div className="dataset-grid">
-          {items.map((item) => (
-            <article className="dataset" key={item.id}>
-              <strong>{item.title}</strong>
-              <p>{item.data.summary}</p>
-              <div className="dataset__meta">
-                {item.data.interviews ? <span>{item.data.interviews} interviews</span> : null}
-                {item.data.topic ? <span>{item.data.topic}</span> : null}
-                {item.data.has_reference_codes ? <span>Reference codebook</span> : null}
-              </div>
-            </article>
-          ))}
+        {/* Horizontal rather than a grid: five corpora do not fit across, and
+            the format label is the point of each card, so the cards want to be
+            read side by side. The scroll container carries its own fade so a
+            desktop reader can see there is more to the right. */}
+        <div className="dataset-scroll">
+          <div className="dataset-track">
+            {items.map((item) => (
+              <article className="dataset" key={item.id}>
+                <div className="dataset__top">
+                  <span className="dataset__format">{item.data.format}</span>
+                  {item.data.year ? <span className="dataset__year">{item.data.year}</span> : null}
+                </div>
+                <strong>{item.title}</strong>
+                {item.data.author ? <p className="dataset__by">{item.data.author}</p> : null}
+                <p>{item.data.summary}</p>
+                <div className="dataset__meta">
+                  {item.data.interviews ? <span>{item.data.interviews} interviews</span> : null}
+                  {item.data.codes ? <span>{item.data.codes} codes</span> : null}
+                  {item.data.language ? <span>{item.data.language}</span> : null}
+                </div>
+                <div className="dataset__licence">
+                  <span>{item.data.licence}</span>
+                  {item.data.share_alike ? (
+                    <em>Share-alike: anything derived from it carries the same licence.</em>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </Section>
     )

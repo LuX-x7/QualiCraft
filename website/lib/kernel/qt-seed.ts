@@ -74,15 +74,7 @@ export const QT_PAGES: Array<{
         data: {
           eyebrow: 'How it works',
           headline: 'Five modules, taken as you need them.',
-          body: 'Import, code, analyse, plot, export. Each one stands on its own — nothing forces you through a step you do not want. The clips below are the running workbench, recorded step by step.',
-        },
-      },
-      {
-        type: 'qtPhases',
-        data: {
-          label: 'Method',
-          title: 'It knows which step you are on.',
-          body: 'The workspace follows the six phases of a thematic analysis rather than laying every panel out at once, so the interface tells you what to do next instead of leaving you to guess.',
+          body: 'Import, code, analyse, plot, export. Each panel below shows the operation itself, recorded from the running workbench, and says what to click, what appears afterwards, and where people get stuck. Read all five and you have walked the whole workflow once.',
         },
       },
       {
@@ -91,6 +83,14 @@ export const QT_PAGES: Array<{
           label: 'Capability blocks',
           title: 'Start with three things. Add the rest when you need them.',
           body: 'Documents, codes and codings are always there. Everything else is a block you drop in — and which blocks a study used is stored with the project, so it becomes part of the record.',
+        },
+      },
+      {
+        type: 'qtMethods',
+        data: {
+          label: 'Method',
+          title: 'Two ways to read the same transcript.',
+          body: 'Thematic analysis and content analysis are the two a first project usually has to choose between. They are not a right answer and a wrong one — the research question decides. The same comparison, on the same axes.',
         },
       },
       {
@@ -128,7 +128,7 @@ export const QT_PAGES: Array<{
         data: {
           label: 'Datasets',
           title: 'Try it on public data first.',
-          body: 'You do not need your own transcripts to walk the whole workflow. Both corpora below are published and bundled with the tool.',
+          body: 'You do not need your own transcripts to walk the whole workflow. These five corpora are published, openly licensed, and bundled with the tool — and each one arrives in a different export format, so between them they exercise every import path.',
         },
       },
       {
@@ -235,14 +235,21 @@ export const QT_SETTINGS = {
     description: 'Code interviews, build themes, keep the record. Runs on your own machine.',
   },
   contact: {
-    email: '',
+    // Placeholders. Replace with the real address and handles before launch —
+    // the footer only renders the links that are filled in, so an empty string
+    // hides one rather than shipping a dead link.
+    email: 'hello@example.com',
     phone: '',
     whatsapp: '',
     whatsapp_message: '',
     address: '',
     hours: '',
   },
-  social: { linkedin: '', facebook: '', instagram: '' },
+  social: {
+    linkedin: 'https://www.linkedin.com/in/your-profile',
+    facebook: 'https://www.facebook.com/your-page',
+    instagram: '',
+  },
   theme: { accent: '#4b607c', accent_ink: '#33465c' },
   seo: {
     default_title: 'QualiCraft — a researcher-led qualitative coding workbench',
@@ -353,29 +360,99 @@ export const QT_ENTRIES: Record<string, Array<{ title: string; slug: string; dat
     },
   ],
 
+  // The five corpora the workbench can actually fetch and import. Each entry
+  // names the export format, because that is what decides which import path in
+  // the tool gets exercised — OpenQDA CSV, a QualCoder project, an NVivo
+  // table, an ATLAS.ti workbook, a plain codebook.
   datasets: [
     {
-      title: 'Tian 2021',
-      slug: 'tian-2021',
+      title: 'Open Science interviews',
+      slug: 'open-science',
       data: {
-        name: 'Tian 2021',
-        topic: 'Software architecture',
-        interviews: 8,
-        summary: 'Eight interviews with practising architects. No preset codes, so it is the better one for practising open coding.',
-        has_reference_codes: false,
+        name: 'Open Science interviews',
+        author: 'Elen Le Foll',
+        year: 2025,
+        topic: 'Linguists on open science practice',
+        interviews: 26,
+        codes: 39,
+        language: 'English (25) + German (1)',
+        licence: 'CC BY-SA 4.0',
+        share_alike: true,
+        format: 'OpenQDA · CSV',
+        summary: 'The closest thing to a supervised passage-to-label corpus: 837 coded passages, 39 codes, one file per interview.',
         position: 0,
       },
     },
     {
-      title: 'TU Delft',
-      slug: 'tu-delft',
+      title: 'Arts and humanities interviews',
+      slug: 'bologna',
       data: {
-        name: 'TU Delft',
-        topic: 'Research data management',
-        interviews: 7,
-        summary: 'Seven interviews with a published reference codebook, so you can code blind and then compare against it.',
-        has_reference_codes: true,
+        name: 'Arts and humanities interviews',
+        author: 'Gualandi, Pareschi & Peroni',
+        year: 2022,
+        topic: 'What researchers mean by “data”',
+        interviews: 19,
+        codes: 263,
+        language: 'Italian',
+        licence: 'CC0 1.0',
+        share_alike: false,
+        format: 'QualCoder · .qda',
+        summary: 'The only corpus here that ships transcripts, a three-level codebook and offsets that verify against the text.',
         position: 1,
+      },
+    },
+    {
+      title: 'Reproducible research outputs',
+      slug: 'nvivo',
+      data: {
+        name: 'Reproducible research outputs',
+        author: 'Loffreda & Chiarelli',
+        year: 2021,
+        topic: 'Publishing reproducible research',
+        interviews: null,
+        codes: null,
+        language: 'English',
+        licence: 'CC BY 4.0',
+        share_alike: false,
+        format: 'NVivo · CSV',
+        summary: '1,008 coded extracts under a four-level hierarchy: report section, subsection, thematic code, coded text. Good for the hierarchy figure.',
+        position: 2,
+      },
+    },
+    {
+      title: 'Interview code analysis',
+      slug: 'atlas',
+      data: {
+        name: 'Interview code analysis',
+        author: 'Marie Wosny',
+        year: 2023,
+        topic: 'Healthcare professionals, 52 interviews',
+        interviews: 52,
+        codes: null,
+        language: 'English',
+        licence: 'CC BY 4.0',
+        share_alike: false,
+        format: 'ATLAS.ti · XLSX',
+        summary: 'A frequency report across 73 theme sheets. No transcript is included, so it drives the hierarchy and frequency figures only.',
+        position: 3,
+      },
+    },
+    {
+      title: 'FAIRqual codebook',
+      slug: 'fairqual',
+      data: {
+        name: 'FAIRqual codebook',
+        author: 'FAIRqual project',
+        year: 2024,
+        topic: 'Workshop codebook, small fixture',
+        interviews: null,
+        codes: null,
+        language: 'English',
+        licence: 'CC BY 4.0',
+        share_alike: false,
+        format: 'Codebook · XLSX',
+        summary: 'A category / subcategory / code table, used as a small fixture for the hierarchy and frequency figures.',
+        position: 4,
       },
     },
   ],
