@@ -235,3 +235,137 @@ class CodebookDigestTests(unittest.TestCase):
         before = core.codebook_digest(p)
         child["parent_id"] = None
         self.assertNotEqual(core.codebook_digest(p), before)
+
+
+class SnapshotAtomicityTests(unittest.TestCase):
+    def setUp(self):
+        import shutil, tempfile
+        self._shutil = shutil
+        self.root = Path(tempfile.mkdtemp(prefix="qc-atomic-"))
+        self.store = Store(self.root / "qualicraft.sqlite3")
+        self.project = self.store.create(new_project("Atomic drill"))
+
+    def tearDown(self):
+        self._shutil.rmtree(self.root, ignore_errors=True)
+
+    def snapshots(self):
+        folder = self.store.backup_dir / self.project["id"]
+        return sorted(p.name for p in folder.glob("*.json"))
+
+    def test_a_failed_rename_leaves_the_previous_snapshot_intact(self):
+        """The write is only atomic if a failure before the rename changes nothing.
+
+        Checking that no `.part` file is left behind says nothing about that:
+        the interesting case is a rename that fails, and this makes it fail.
+        """
+        self.store.change(self.project["id"],
+                          lambda p: event(p, "code_create", name="first"))
+        before = self.snapshots()
+        # Two: one from create(), one from the change above. The count is not
+        # the point; that it does not move is.
+        self.assertGreaterEqual(len(before), 1)
+        payload = json.loads((self.store.backup_dir / self.project["id"] / before[0]).read_text(encoding="utf-8"))
+
+        with mock.patch.object(core.os, "replace", side_effect=OSError("rename failed")):
+            self.store.change(self.project["id"],
+                              lambda p: event(p, "code_create", name="second"))
+
+        # The edit itself still committed.
+        saved = self.store.get(self.project["id"])
+        self.assertEqual([a.get("name") for a in saved["audit"]], ["first", "second"])
+        # And the snapshot on disk is still the previous, complete one.
+        after = self.snapshots()
+        self.assertEqual(after, before, "a failed rename must not add or remove a snapshot")
+        reread = json.loads((self.store.backup_dir / self.project["id"] / after[0]).read_text(encoding="utf-8"))
+        self.assertEqual(reread, payload, "the previous snapshot is byte-for-byte unchanged")
+        self.assertTrue(self.store.backup_error, "and the failure is reported")
+
+
+class RestoreNameTests(unittest.TestCase):
+    """T1: the copy's name carries the moment it was taken."""
+
+    def setUp(self):
+        import shutil, tempfile
+        self._shutil = shutil
+        self.root = Path(tempfile.mkdtemp(prefix="qc-name-"))
+        self.store = Store(self.root / "qualicraft.sqlite3")
+        self.project = self.store.create(new_project("Care experiences"))
+
+    def tearDown(self):
+        self._shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_the_restored_copy_is_named_with_its_timestamp(self):
+        self.store.change(self.project["id"], lambda p: event(p, "code_create", name="x"))
+        target = sorted(p.name for p in (self.store.backup_dir / self.project["id"]).glob("*.json"))[0]
+        restored = self.store.restore(self.project["id"], target)
+        # "<original name> (restored YYYY-MM-DD HH:MM)"
+        self.assertRegex(restored["name"],
+                         r"^Care experiences \(restored \d{4}-\d{2}-\d{2} \d{2}:\d{2}\)$")
+        self.assertNotEqual(restored["id"], self.project["id"])
+
+
+class EndpointHostTests(unittest.TestCase):
+    """T2: what leaves the machine must not carry credentials."""
+
+    def test_userinfo_and_query_are_stripped(self):
+        from qualicraft.core import endpoint_host
+        cases = {
+            "https://u:p@host/v1?key=x": "https://host",
+            "https://api.example.com/v1": "https://api.example.com",
+            "http://127.0.0.1:8080/v1?token=abc": "http://127.0.0.1:8080",
+            "https://user:pw@host:8443/v1/chat?key=k#frag": "https://host:8443",
+        }
+        for url, expected in cases.items():
+            with self.subTest(url=url):
+                self.assertEqual(endpoint_host(url), expected)
+        for url in cases:
+            host = endpoint_host(url)
+            for secret in ("u:p", "key=x", "token=abc", "user:pw", "key=k"):
+                self.assertNotIn(secret, host)
+
+
+class MethodsRecordTests(unittest.TestCase):
+    """T3.2: the four counts a reader needs to judge an AI-assisted codebook."""
+
+    def setUp(self):
+        import shutil, tempfile
+        self._shutil = shutil
+        self.root = Path(tempfile.mkdtemp(prefix="qc-methods-"))
+        self.store = Store(self.root / "qualicraft.sqlite3")
+
+    def tearDown(self):
+        self._shutil.rmtree(self.root, ignore_errors=True)
+
+    def build(self):
+        from qualicraft.core import methods_narrative, uid
+        p = new_project("Methods drill")
+        p["documents"].append({"id": "d1", "name": "a.txt", "text": "One. Two. Three.",
+                               "created_at": p["created_at"], "memo": ""})
+        # Two accepted, one rejected, one still pending.
+        for status, name in (("accepted", "A"), ("accepted", "B"), ("rejected", "C"), ("pending", "D")):
+            p["suggestions"].append({"id": uid(), "document_id": "d1", "code_name": name,
+                                     "start": 0, "end": 3, "status": status,
+                                     "reviewed_at": p["created_at"]})
+        # Two suggestions were thrown out before review for failing the quote check.
+        event(p, "analysis_segment", discarded=2, added=2)
+        event(p, "analysis_start", base_url="https://u:p@host/v1?key=secret",
+              model="requested-model", prompt_version=1)
+        self.store.create(p)
+        return methods_narrative(self.store.get(p["id"]))
+
+    def test_all_four_counts_are_reported(self):
+        text = self.build()
+        self.assertIn("Suggestions produced: **4**", text)
+        self.assertRegex(text, r"Accepted: 2 \| Rejected: 1 \| Still pending: 1")
+        self.assertRegex(text, r"Discarded before review.*: 2")
+
+    def test_the_prompt_version_is_reported(self):
+        from qualicraft.ai import PROMPT_VERSION
+        text = self.build()
+        self.assertIn(f"Prompt template version: {PROMPT_VERSION}", text)
+
+    def test_the_recorded_endpoint_is_stripped_of_credentials(self):
+        text = self.build()
+        self.assertNotIn("u:p", text)
+        self.assertNotIn("key=secret", text)
+        self.assertIn("https://host", text)
