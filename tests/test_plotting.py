@@ -164,3 +164,67 @@ class DatasetTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExportedSvgTextTests(unittest.TestCase):
+    """The SVG has to be editable, which means its text has to be text.
+
+    matplotlib's default `svg.fonttype` is `path`: labels are written as glyph
+    outlines that render correctly and cannot be re-lettered in Inkscape or
+    Illustrator. This project promises figures that can be edited, and journals
+    increasingly ask for it, so the export sets `fonttype='none'` for the save.
+    Without that setting these tests fail — the file is still valid, still
+    looks right, and the strings are simply not in it.
+
+    A side effect worth knowing: paths are far larger than text. The same
+    frequency figure is about 9 KB as text and about 98 KB as outlines.
+    """
+
+    def setUp(self):
+        import shutil, tempfile
+        from pathlib import Path
+        self._shutil = shutil
+        self.root = Path(tempfile.mkdtemp(prefix="qc-svgtext-"))
+        from qualicraft.core import Store, new_project, add_code, annotate
+        store = Store(self.root / "q.sqlite3")
+        project = new_project("SVG text")
+        text = (Path(__file__).resolve().parents[1] / "tools" / "e2e" / "fixtures"
+                / "synthetic_interview.txt")
+        body = text.read_text(encoding="utf-8")
+        project["documents"].append({"id": "d1", "name": "a.txt", "text": body,
+                                     "created_at": project["created_at"], "memo": ""})
+        codes = [add_code(project, name) for name in ("Isolation", "Schedule", "Feedback")]
+        annotate(project, "d1", codes[0]["id"], 0, 60, "", "manual")
+        annotate(project, "d1", codes[1]["id"], 30, 90, "", "manual")
+        annotate(project, "d1", codes[2]["id"], 10, 120, "", "manual")
+        store.create(project)
+        self.project = store.get(project["id"])
+
+    def tearDown(self):
+        self._shutil.rmtree(self.root, ignore_errors=True)
+
+    def svg(self, kind):
+        from pathlib import Path
+        from qualicraft import plotting
+        markup, _ = plotting.render(self.project, {"kind": kind})
+        return markup
+
+    def test_every_figure_carries_searchable_text(self):
+        import re
+        for kind in ("frequency", "coverage", "hierarchy", "accumulation", "cooccurrence"):
+            with self.subTest(kind=kind):
+                markup = self.svg(kind)
+                nodes = re.findall(r"<text[^>]*>(.*?)</text>", markup, re.S)
+                self.assertGreater(len(nodes), 0,
+                                   "text is exported as outlines, so the figure cannot be edited")
+
+    def test_the_counting_unit_is_searchable_in_the_svg(self):
+        import re
+        for kind in ("frequency", "coverage", "hierarchy", "accumulation", "cooccurrence"):
+            with self.subTest(kind=kind):
+                markup = self.svg(kind)
+                body = " ".join(re.findall(r"<text[^>]*>(.*?)</text>", markup, re.S))
+                self.assertTrue(
+                    any(phrase in body for phrase in
+                        ("not participants", "not correlation", "not saturation")),
+                    "the figure does not state its counting unit in searchable text")

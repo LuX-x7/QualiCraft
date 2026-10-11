@@ -379,12 +379,19 @@ def finish(fig, title, subtitle, credit, rect=(0, 0.075, 1, 0.88)):
     # A wall-clock stamp would make the same data export different bytes on
     # every run, which breaks "the export reproduces the preview". The key
     # differs per backend: SVG uses Date, PDF uses CreationDate and ModDate.
-    for ext, meta in (("png", None),
-                      ("svg", {"Date": None}),
-                      ("pdf", {"CreationDate": None, "ModDate": None})):
-        fig.savefig(HERE / (SETTINGS["name"] + "." + ext),
-                    dpi=SETTINGS["dpi"], bbox_inches="tight", pad_inches=.2,
-                    metadata=meta)
+    # SVG text is written as <text> elements rather than as glyph outlines.
+    # The default, `path`, produces a file whose labels cannot be re-lettered
+    # in Inkscape or Illustrator, and journals increasingly ask for editable
+    # text — which contradicts what this project promises to export. Scoped to
+    # this save rather than set on rcParams, so importing this module cannot
+    # change how anyone else's figures are written.
+    with plt.rc_context({"svg.fonttype": "none"}):
+        for ext, meta in (("png", None),
+                          ("svg", {"Date": None}),
+                          ("pdf", {"CreationDate": None, "ModDate": None})):
+            fig.savefig(HERE / (SETTINGS["name"] + "." + ext),
+                        dpi=SETTINGS["dpi"], bbox_inches="tight", pad_inches=.2,
+                        metadata=meta)
     plt.close(fig)
 '''
 
