@@ -6497,8 +6497,6 @@ body::before {
 }
 .brand__logo {
   display: block;
-  width: 2.1rem;
-  height: auto;
 }
 .brand__name {
   font-family: var(--font-mono);

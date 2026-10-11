@@ -52,7 +52,16 @@ export default function NavMenu({
     <header className={`site-head${open ? ' is-open' : ''}`}>
       <div className="wrap site-head__inner">
         <Link className="brand" href={locale === 'en' ? '/' : `/${locale}`} aria-label={siteName}>
-          <QtMark className="brand__logo" label={siteName} size={13} />
+          {/*
+            size 4 gives the mark 34x19px, the width the 2.1rem slot asked for.
+            It used to be 13, which draws 109px of grid tracks: the old CSS
+            pinned the box to 34px, so the tracks overflowed and the mark was
+            painted across the wordmark beside it.
+
+            No label: the wordmark is right there, and a label would have the
+            link announce itself twice.
+          */}
+          <QtMark className="brand__logo" label="" size={4} />
           <span className="brand__name">{siteName}</span>
         </Link>
 
