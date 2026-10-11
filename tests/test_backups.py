@@ -187,3 +187,51 @@ class BackupTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CodebookDigestTests(unittest.TestCase):
+    """The digest is what a methods reader compares between two runs."""
+
+    def setUp(self):
+        import shutil, tempfile
+        self._shutil = shutil
+        self.root = Path(tempfile.mkdtemp(prefix="qc-digest-"))
+        self._shutil = shutil
+
+    def tearDown(self):
+        self._shutil.rmtree(self.root, ignore_errors=True)
+
+    def project(self):
+        from qualicraft.core import add_code
+        p = new_project("Digest drill")
+        parent = add_code(p, "Barriers", "Things that get in the way")
+        child = add_code(p, "Cost", "Money", parent_id=parent["id"])
+        add_code(p, "Facilitators", "Things that help")
+        return p, parent, child
+
+    def test_a_colour_change_does_not_move_the_digest(self):
+        p, parent, _ = self.project()
+        before = core.codebook_digest(p)
+        parent["color"] = "#123456"
+        parent["order"] = 99
+        self.assertEqual(core.codebook_digest(p), before,
+                         "presentation is not analysis")
+
+    def test_renaming_a_code_moves_the_digest(self):
+        p, parent, _ = self.project()
+        before = core.codebook_digest(p)
+        parent["name"] = "Obstacles"
+        self.assertNotEqual(core.codebook_digest(p), before,
+                            "renaming a code is a change to the codebook")
+
+    def test_the_digest_ignores_the_order_codes_are_stored_in(self):
+        p, _, _ = self.project()
+        before = core.codebook_digest(p)
+        p["codes"] = list(reversed(p["codes"]))
+        self.assertEqual(core.codebook_digest(p), before)
+
+    def test_reparenting_a_code_moves_the_digest(self):
+        p, parent, child = self.project()
+        before = core.codebook_digest(p)
+        child["parent_id"] = None
+        self.assertNotEqual(core.codebook_digest(p), before)

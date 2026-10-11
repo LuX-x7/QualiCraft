@@ -761,6 +761,43 @@ def endpoint_host(url):
     return f"{parts.scheme}://{parts.hostname}{port}"
 
 
+def codebook_digest(project):
+    """A stable digest of the codebook as an analytical object.
+
+    Sorted by id and reduced to the four fields that carry meaning — the id,
+    the name, its parent, and the theme it rolls up to. Presentation settings
+    (colour, order, icon) are excluded on purpose: recolouring a code does not
+    change the analysis, but renaming one does, and the digest should move with
+    exactly those changes. Renaming is the case that matters, because that is
+    what a reader comparing two methods sections needs to see.
+    """
+    theme_of = {}
+    by_parent = {}
+    for code in project.get("codes", []):
+        by_parent.setdefault(code.get("parent_id"), []).append(code)
+
+    def theme_for(code_id, seen=None):
+        seen = seen or set()
+        if code_id in seen:
+            return ""
+        seen.add(code_id)
+        parent = next((c.get("parent_id") for c in project.get("codes", []) if c.get("id") == code_id), None)
+        if not parent:
+            return next((c.get("name", "") for c in project.get("codes", []) if c.get("id") == code_id), "")
+        return theme_for(parent, seen)
+
+    for code in project.get("codes", []):
+        theme_of[code.get("id")] = theme_for(code.get("id"))
+
+    canonical = [
+        {"id": c.get("id", ""), "name": c.get("name", ""),
+         "parent_code": c.get("parent_id") or "", "theme": theme_of.get(c.get("id"), "")}
+        for c in sorted(project.get("codes", []), key=lambda c: str(c.get("id", "")))
+    ]
+    blob = json.dumps(canonical, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
 def methods_narrative(project):
     """A Markdown account of how the analysis was carried out.
 
@@ -928,6 +965,22 @@ def methods_narrative(project):
             add("- Endpoint: " + (", ".join(endpoints) if endpoints else "_not recorded_"))
             add("- Model: " + (", ".join(models) if models else "_not recorded_"))
             add("- Analysis runs: " + str(len(runs)) + ".")
+            # Which prompt produced the suggestions, and which codebook was in
+            # front of the model. Both are needed to re-run the same request.
+            versions = sorted({str(e.get("prompt_version", "")) for e in runs if e.get("prompt_version")})
+            digests = sorted({str(e.get("codebook_sha256", "")) for e in runs if e.get("codebook_sha256")})
+            seen_models = sorted({str(e.get("model_string", "") or e.get("model", "")) for e in runs
+                                  if e.get("model_string") or e.get("model")})
+            if seen_models:
+                add("- Model reported by the endpoint: " + ", ".join(m for m in seen_models if m))
+            if versions:
+                add("- Prompt template version: " + ", ".join(versions))
+            if digests:
+                add("- Codebook digest (id, name, parent, theme; sorted by id): "
+                    + ", ".join(d[:16] for d in digests))
+        else:
+            add("- Codebook digest (id, name, parent, theme; sorted by id): "
+                + codebook_digest(project)[:16])
             # The preview is the only text the researcher agreed to send, so its
             # hash is recorded on the run's own audit entry. Without it the
             # methods record can only assert that a preview was confirmed, which
