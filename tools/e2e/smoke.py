@@ -79,22 +79,44 @@ class Recorder:
         }
 
 
+# Attributes that put text on screen without being textContent. The Chinese
+# this scan originally missed was a placeholder, so leaving these out made the
+# check report a pass while the string was still visible.
+TEXT_ATTRS = ("placeholder", "title", "aria-label", "aria-description")
+
+
 def scan_non_ascii(page, step):
-    """Everything on screen that is not plain ASCII, split into two lists."""
-    text = page.evaluate("""() => {
+    """Every string a renderer can draw, with the element each one came from.
+
+    Leaf textContent alone is not enough: a placeholder is drawn, is not in
+    textContent, and is exactly where Chinese has appeared before. Options are
+    collected separately because their text is drawn in the dropdown rather
+    than in the page flow.
+    """
+    hits = page.evaluate("""(attrs) => {
       const out = [];
+      const visit = (el, where, text) => {
+        if (!text) return;
+        if (!/[^\\x00-\\x7f]/.test(text)) return;
+        const cs = getComputedStyle(el);
+        out.push({where, text: text.slice(0, 120), tag: el.tagName.toLowerCase(),
+                  cls: (el.className || '').toString().slice(0, 40),
+                  visible: cs.display !== 'none' && cs.visibility !== 'hidden'
+                           && el.getBoundingClientRect().width > 0});
+      };
       document.querySelectorAll('body *').forEach((e) => {
-        if (e.children.length) return;
-        const cs = getComputedStyle(e);
-        if (cs.display === 'none' || cs.visibility === 'hidden') return;
-        const t = (e.textContent || '').trim();
-        if (t) out.push(t);
+        if (!e.children.length) visit(e, 'textContent', (e.textContent || '').trim());
+        attrs.forEach((a) => { if (e.hasAttribute(a)) visit(e, a, e.getAttribute(a)); });
       });
-      return out.join('\\n');
-    }""")
-    cjk = sorted({m for m in CJK.findall(text)})
-    other = sorted({c for c in text if ord(c) > 127 and not CJK.match(c)})
-    return {"step": step, "cjk": cjk, "other": other}
+      document.querySelectorAll('option').forEach((o) => visit(o, 'option', (o.textContent || '').trim()));
+      return out;
+    }""", list(TEXT_ATTRS))
+    cjk_hits = [h for h in hits if CJK.search(h["text"])]
+    other = [h for h in hits if not CJK.search(h["text"])]
+    return {"step": step,
+            "cjk": sorted({m for h in cjk_hits for m in CJK.findall(h["text"])}),
+            "cjk_hits": cjk_hits[:12],
+            "other": sorted({c for h in other for c in h["text"] if ord(c) > 127})}
 
 
 class Session:
@@ -205,20 +227,35 @@ def run(args):
             text = FIXTURE.read_text(encoding="utf-8")
 
             # ---- S1 · a fresh project ------------------------------------
-            def enable_blocks(names):
-                """Turn on the optional blocks this walkthrough needs.
+            def block_state():
+                """Which blocks are on, read from the panel's own class list."""
+                return s.page.evaluate(
+                    """() => Object.fromEntries([...document.querySelectorAll('#dialog [data-block]')]
+                         .map((e) => [e.dataset.block, e.classList.contains('on')]))""")
 
-                They are off by default, so a new user sees no Figures entry and
-                no codebook. Doing this explicitly is part of the workflow, not
-                a workaround: it is what the interface asks of a first-time
-                user, and the friction log records that it is not discoverable.
+            def enable_blocks(names):
+                """Turn the needed blocks on — and only turn them on.
+
+                The first version clicked every named block unconditionally. Most
+                blocks are already on, so that switched them *off*: the codebook
+                disappeared, the codes then appeared nowhere on the page, and the
+                run reported a product defect that was in fact the harness
+                disabling the feature. Read the state first, click only what is
+                off, then assert the result — never assume the click worked.
                 """
                 s.click('[data-action="tools"]')
-                s.page.wait_for_timeout(700)
-                for block in names:
+                s.page.wait_for_timeout(800)
+                before = block_state()
+                clicked = [b for b in names if not before.get(b, True)]
+                for block in clicked:
                     s.page.click(f'[data-block="{block}"]')
                 s.click('[data-action="save-blocks"]')
-                s.page.wait_for_timeout(1800)
+                s.page.wait_for_timeout(2000)
+                after = {}
+                nav = s.page.evaluate(
+                    "() => [...document.querySelectorAll('[data-action=\"view\"]')].map(e => e.dataset.view)")
+                return {"before": before, "clicked": clicked, "nav": nav,
+                        "codebook": s.page.evaluate("!!document.querySelector('.codebook')")}
 
             def s1():
                 s.goto("/?lang=en")
@@ -226,10 +263,21 @@ def run(args):
                 s.page.fill("#new-project-name", "Smoke – synthetic interview")
                 s.click('[data-action="new-project"]')
                 s.page.wait_for_timeout(2500)
-                enable_blocks(["hierarchy", "insights", "plotting"])
+                blocks = enable_blocks(["hierarchy", "insights", "plotting"])
+                # Assert the blocks took effect. Without this, every later step
+                # is tested against a configuration nobody checked — which is
+                # how the previous run reported a product defect that was this
+                # harness switching the codebook off.
+                blocks_ok = ("plotting" in blocks["nav"] and "insights" in blocks["nav"]
+                             and blocks["codebook"])
                 name = s.page.evaluate(
                     "document.querySelector('.project-select, .breadcrumb, h1')?.textContent || ''")
-                return "synthetic" in name.lower() or "Smoke" in name, f"header text: {name[:80]!r}"
+                if not blocks_ok:
+                    return False, f"capability blocks did not take effect: {blocks}"
+                return "synthetic" in name.lower() or "Smoke" in name, (
+                    f"header={name[:44]!r} before={blocks['before']} "
+                    f"clicked={blocks['clicked']} nav={blocks['nav']} "
+                    f"codebook={blocks['codebook']}")
 
             # ---- S2 · import ---------------------------------------------
             def s2():
