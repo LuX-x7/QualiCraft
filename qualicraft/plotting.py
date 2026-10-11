@@ -47,6 +47,14 @@ KIND_TITLES = {
     "accumulation": "Code accumulation curve",
 }
 
+# The title carries the definition, because the two co-occurrence rules count
+# different things and the figure is usually read without the codebook beside
+# it. "Code co-occurrence" alone would let a reader assume the stricter rule.
+TITLES_COOCCURRENCE = {
+    "overlap": "Overlapping-range co-occurrence",
+    "unit": "Same-paragraph co-occurrence",
+}
+
 PALETTES = ("viridis", "YlGnBu", "Blues", "Greens", "magma", "rocket", "mako", "flare", "crest")
 CLUSTER_METHODS = ("ward", "complete", "average", "single")
 LEVELS = ("code", "theme")      # what a frequency figure counts
@@ -211,6 +219,10 @@ def normalise(options):
         # title names only one of them.
         if merged["kind"] == "frequency" and merged["level"] == "theme":
             merged["title"] = "Theme frequency"
+        # Co-occurrence has two definitions; the title says which one was used.
+        if merged["kind"] == "cooccurrence":
+            merged["title"] = TITLES_COOCCURRENCE.get(merged.get("mode"),
+                                                      TITLES_COOCCURRENCE["overlap"])
     if not merged["subtitle"]:
         if merged["kind"] == "cooccurrence":
             merged["subtitle"] = SUBTITLE_COOCCURRENCE[merged["mode"]]
