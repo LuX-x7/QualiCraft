@@ -117,7 +117,7 @@ registerCollection({
   name: 'figures',
   label: 'Figure types',
   singular: 'Figure',
-  hint: 'The publication figures the plotting workbench can draw.',
+  hint: 'The figures the plotting workbench can draw, each with a caption stating what it counts.',
   titleKey: 'name',
   slugKey: 'name',
   columns: ['status', 'position'],

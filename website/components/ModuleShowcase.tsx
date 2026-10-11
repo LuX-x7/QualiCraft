@@ -134,8 +134,8 @@ const STEPS: Step[] = [
     image: '/demo/m4.gif',
     en: {
       label: 'Plot',
-      title: 'Draw a figure you can put in the paper',
-      lead: 'Five publication figures, drawn by a script rather than by the browser.',
+      title: 'Draw a figure that states what it counts',
+      lead: 'Five figures, drawn by a script rather than by the browser, each captioned with the unit it counts.',
       how: [
         'Open Figures.',
         'Pick a figure type: frequency, coverage, co-occurrence, hierarchy, or accumulation.',
@@ -147,8 +147,8 @@ const STEPS: Step[] = [
     },
     zh: {
       label: '绘图',
-      title: '画一张能放进论文的图',
-      lead: '五类期刊级图表，由脚本绘制，而不是由浏览器绘制。',
+      title: '画一张写明它数的是什么',
+      lead: '五类图，由脚本绘制而不是浏览器绘制，每张都写明它数的单位。',
       how: [
         '打开 Figures。',
         '选图类型：频率、覆盖率、共现、层级，或累积。',
