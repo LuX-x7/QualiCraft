@@ -219,3 +219,21 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
   .margin-group+.margin-group{margin-top:0;padding-top:0;border-top:0}
   .margin-theme{width:auto}
 }
+
+/* --- Audit trail, grouped ---------------------------------------------------
+   One entry per action means a study that coded 91 passages produces 91 rows
+   that look identical, and the reader learns nothing from the list. Entries are
+   grouped by day and consecutive runs of the same action collapse into one row,
+   so the shape of a session is visible while every record stays one click away. */
+.audit-summary{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 18px}
+.audit-total{color:var(--muted);font-size:11px;font-weight:600;padding-right:4px}
+.audit-chip{border:1px solid var(--line);background:#f8f7f4;color:var(--muted);font-size:10px;padding:3px 8px}
+.audit-chip b{color:#3f485a;font-variant-numeric:tabular-nums}
+.audit-day{margin-bottom:18px}
+.audit-day__head{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0 7px;border-bottom:1px solid var(--strong);font:600 11px ui-monospace,Consolas,monospace;letter-spacing:.05em}
+.audit-run{border-bottom:1px solid var(--line);font-size:11px}
+.audit-run summary{display:flex;justify-content:space-between;gap:12px;padding:8px 0;cursor:pointer}
+.audit-run summary:hover{color:var(--accent)}
+.audit-count{color:var(--accent);font-variant-numeric:tabular-nums}
+.audit-names{display:block;padding:0 0 6px;color:var(--subtle);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audit-run pre{white-space:pre-wrap;background:#f6f7f9;padding:10px;font-size:9px;max-height:320px;overflow:auto}
