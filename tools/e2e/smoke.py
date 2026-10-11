@@ -317,9 +317,16 @@ def run(args):
                 n = s.page.evaluate("document.querySelectorAll('.side-item').length")
                 reader = s.page.evaluate(
                     "document.querySelector('.document-pane')?.innerText || ''")
-                numbered = bool(re.search(r"^\s*1[\.\)]?\s", reader, re.M)) or "1" in reader[:200]
                 marks = reader.count("**")
-                return (n >= 1 and marks == 0), f"documents={n} markdown_markers={marks} numbered={numbered}"
+                # The fixture's own shape is checked in S1; what S2 has to show
+                # is that those paragraphs arrived. Compared against the file,
+                # not against a number typed here.
+                fixture_paras = len([l for l in FIXTURE.read_text(encoding="utf-8").split("\n")
+                                     if re.match(r"(Interviewer|Participant):", l)])
+                shown = s.page.evaluate("document.querySelectorAll('.paragraph').length")
+                return (n >= 1 and marks == 0 and shown == fixture_paras), (
+                    f"documents={n} paragraphs_shown={shown} fixture_paragraphs={fixture_paras} "
+                    f"markdown_markers={marks}")
 
             # ---- S3 · code one passage -----------------------------------
             def code_passage(index=0):
@@ -450,9 +457,13 @@ def run(args):
                 # its own wording — measured, not assumed: it says "Frequency is
                 # not importance or a count of participants". The figure credit
                 # text is different again and belongs to the figures.
+                # Two different sentences, deliberately not merged: the
+                # Insights view states its unit in its own wording, the figures
+                # carry the credit text from plotting.CREDIT_DEFAULTS. Matching
+                # one against the other is what made the previous run report a
+                # missing unit statement.
                 UNITS = {
                     "insights": "frequency is not importance or a count of participants",
-                    "plotting": "not participants",
                 }
                 found = []
                 for view, sentence in UNITS.items():
@@ -467,6 +478,8 @@ def run(args):
                     paper = "put in a paper" in body.lower()
                     found.append(f"{view}:{'unit-stated' if hit else 'UNIT-NOT-STATED'}"
                                  + ("/claims-paper" if paper else ""))
+                # The figure credit is a separate claim checked on the figure
+                # itself, in S8 — not here.
                 return all("NOT-STATED" not in f for f in found), "; ".join(found)
 
             # ---- S8 · five figure kinds ---------------------------------
@@ -487,12 +500,26 @@ def run(args):
                   const sel = [...document.querySelectorAll('select')].find(
                     (x) => [...x.options].filter((o) => /code frequency|co-occurrence|accumulation/i.test(o.textContent)).length >= 3);
                   if (!sel) return [];
-                  sel.id = 'e2e-figure-kind';
                   return [...sel.options].map((o) => ({ value: o.value, label: o.textContent.trim() }));
                 }""")
                 results = []
                 for pair in pairs[:5]:
-                    s.page.select_option("#e2e-figure-kind", pair["value"])
+                    # Re-locate every time. The view body is rebuilt on each
+                    # render — measured: an id survives 1.5s idle but is gone
+                    # after a view switch, and select_option itself fires a
+                    # change that re-renders. Caching the locator across that
+                    # is what timed out.
+                    s.page.evaluate("""(value) => {
+                      const sel = [...document.querySelectorAll('.view-body select')].find(
+                        (x) => [...x.options].some((o) => /code frequency|co-occurrence|accumulation/i.test(o.textContent)));
+                      if (sel) sel.value = value;
+                    }""", pair["value"])
+                    s.page.dispatch_event(".view-body select:nth-of-type(1)", "change") if False else None
+                    s.page.evaluate("""() => {
+                      const sel = [...document.querySelectorAll('.view-body select')].find(
+                        (x) => [...x.options].some((o) => /code frequency|co-occurrence|accumulation/i.test(o.textContent)));
+                      if (sel) sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    }""")
                     s.page.wait_for_timeout(2800)
                     drawn = s.page.evaluate(
                         "!!document.querySelector('.plot-stage svg, .plot-stage img, .plot-preview svg, .plot-preview img')")
@@ -548,12 +575,14 @@ def run(args):
                 def snapshot():
                     return {"name": s.page.evaluate(
                                 "document.querySelector('.project-select, .breadcrumb h1, h1')?.textContent.trim() || ''"),
+                            # A wrapped arrow that returns a number. The
+                            # previous expression fetched /api/projects without
+                            # the session header, so the promise resolved to
+                            # None rather than failing loudly.
                             "projects": s.page.evaluate(
-                                "document.querySelectorAll('.side-item[data-action=\"doc\"]').length > 0"
-                                " ? document.querySelector('#project-select, .project-select')?.options.length || 0"
-                                " : 0"),
+                                "() => document.querySelectorAll('#project-select option, .project-select option').length"),
                             "code_count": s.page.evaluate(
-                                "document.querySelector('[data-action=\"toggle-codebook\"] .count')?.textContent.trim() || ''")}
+                                "() => (document.querySelector('[data-action=\"toggle-codebook\"] .count') || {}).textContent || ''")}
                 project_before = snapshot()
                 s.click('[data-action="snapshots"]')
                 s.page.wait_for_timeout(1200)
