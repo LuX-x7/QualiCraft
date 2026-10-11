@@ -1,7 +1,7 @@
 <h1 align="center">QualiCraft</h1>
 
 <p align="center">
-  <strong>A researcher-led workbench for qualitative coding, analysis, and publication-ready figures.</strong><br>
+  <strong>A researcher-led workbench for qualitative coding, analysis, and figures that state what they count.</strong><br>
   Local-first by design · English interface by default · 中文可切换
 </p>
 
@@ -125,7 +125,7 @@ These are independent capability blocks, not a mandatory wizard. Enable the modu
 | 1 | **Ingest** | Add TXT/DOCX transcripts or import an existing coding export. The importer recognises QualCoder `.qda` archives, OpenQDA CSV, NVivo CSV, ATLAS.ti XLSX reports, and FAIRqual XLSX codebooks. |
 | 2 | **Coding** | Select source text, apply hierarchical codes, add memos, and keep a provenance trail. Human codings and model suggestions are distinguishable. |
 | 3 | **Analyse** | Inspect code frequency, document × code counts, coverage, co-occurrence, accumulation, and the theme–code–passage relationship map. |
-| 4 | **Plot** | Render publication-oriented figures from the same tidy analysis table. Adjust grouping, palette, font, clustering, and labels beside the preview. |
+| 4 | **Plot** | Render figures from the same tidy analysis table, each captioned with the counting unit. Adjust grouping, palette, font, clustering, and labels beside the preview. |
 | 5 | **Export** | Export the full project JSON, codings CSV, document × code matrix, a methods record, or a figure bundle with CSV, script, SVG, PDF and PNG. |
 
 ### The relationship map
