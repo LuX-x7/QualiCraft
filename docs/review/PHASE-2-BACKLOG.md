@@ -8,7 +8,7 @@ recorded decision, never by a note alone.
 | P2-1 | Co-occurrence empty state explains that the figure needs overlapping ranges | `ad1e5e9` | closed |
 | P2-2 | "You can put in a paper" removed from the workbench and README | `e0ba618`, `653ab89` | closed |
 | P2-3 | B2: one-click "all five modules" preset | this commit | closed |
-| P2-4 | Codebook count as a hint to expand | this commit | closed |
+| P2-4 | Codebook count as a hint to expand | `1209a90` + this commit | closed (wording changed to "show codes", assertion shown to discriminate) |
 | P2-5 | Dialog measurement at 390px | Phase 2 | open |
 | P2-7 | `smoke_mouse.py`, real mouse selection | Phase 2 | open |
 
