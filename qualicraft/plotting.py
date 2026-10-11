@@ -660,6 +660,16 @@ def _prepare(project, options, root):
 
     data = _dataset(rows, options, case_text)
     if len(data.strip().splitlines()) < 2:
+        # One message per figure type where the reason differs. Co-occurrence
+        # is the case that needs it: it can be empty while the project has
+        # codings to spare, because it counts pairs whose character ranges
+        # overlap, and codes on separate passages never form a pair. "Widen the
+        # filter" would send the reader to the wrong control.
+        if options["kind"] == "cooccurrence":
+            raise ValueError(
+                "No overlapping code ranges: this figure counts codes applied to "
+                "overlapping character ranges in the same interview. Two codes on "
+                "separate passages are never a pair.")
         raise ValueError("This figure has no data at this setting; widen the filter.")
 
     (root / "figure_data.csv").write_text(data, encoding="utf-8")

@@ -228,3 +228,47 @@ class ExportedSvgTextTests(unittest.TestCase):
                     any(phrase in body for phrase in
                         ("not participants", "not correlation", "not saturation")),
                     "the figure does not state its counting unit in searchable text")
+
+
+class EmptyFigureMessageTests(unittest.TestCase):
+    """What a reader is told when a figure has nothing to draw.
+
+    Co-occurrence is the one figure that can be empty while the project has
+    codings to spare: it counts pairs of codes whose character ranges overlap
+    inside one interview, and codes placed on separate passages never form a
+    pair. "Widen the filter" is the generic message and it points at the wrong
+    control, so this figure gets its own.
+    """
+
+    def setUp(self):
+        import shutil, tempfile
+        from pathlib import Path
+        self._shutil = shutil
+        self.root = Path(tempfile.mkdtemp(prefix="qc-empty-"))
+        from qualicraft.core import Store, new_project, add_code, annotate
+        store = Store(self.root / "q.sqlite3")
+        project = new_project("Empty figures")
+        project["documents"].append({"id": "d1", "name": "a.txt",
+                                     "text": "One two three four five six seven eight.",
+                                     "created_at": project["created_at"], "memo": ""})
+        left = add_code(project, "Isolation")
+        right = add_code(project, "Schedule")
+        # Two codes, plenty of codings, and deliberately no overlap.
+        annotate(project, "d1", left["id"], 0, 8, "", "manual")
+        annotate(project, "d1", right["id"], 20, 30, "", "manual")
+        store.create(project)
+        self.project = store.get(project["id"])
+
+    def tearDown(self):
+        self._shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_cooccurrence_says_what_is_missing_not_to_widen_a_filter(self):
+        from qualicraft import plotting
+        with self.assertRaises(ValueError) as caught:
+            plotting.render(self.project, {"kind": "cooccurrence", "mode": "overlap"})
+        message = str(caught.exception)
+        self.assertIn("overlapping", message,
+                      "the message must name the requirement this figure has")
+        self.assertNotIn("widen the filter", message,
+                         "the generic hint points at the wrong control here")
+
