@@ -1,0 +1,439 @@
+"""
+End-to-end smoke test: a fresh transcript with no coding history, through all
+five modules.
+
+Phase 1 of the brief — this runs the tool and records what happens. It fixes
+nothing. Every step takes a screenshot, times itself, counts clicks, and watches
+the console and the network; a step whose assertion fails is recorded and the
+run continues, so one broken step does not hide the state of the ones after it.
+The process exits non-zero if any step failed.
+
+Playwright is used only as a driver and lives in tools/, not in the package's
+runtime dependencies. It drives the system Chrome (`channel="chrome"`), so no
+browser download is needed.
+
+    python tools/e2e/smoke.py [--headless false] [--port 8890]
+
+Output: ~/qualicraft-review/e2e/run-<timestamp>/  (screenshots + results.json)
+        ~/qualicraft-review/e2e/friction-log.md   (written by --log, see README)
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import socket
+import sys
+import threading
+import time
+from datetime import datetime
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / "synthetic_interview.txt"
+OUT_ROOT = Path(os.path.expanduser("~/qualicraft-review/e2e"))
+
+sys.path.insert(0, str(REPO))
+
+# Visible text that is not English. The language toggle shows "ZH" on the
+# English site and nothing else may be non-ASCII.
+CJK = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\u3000-\u303f]")
+
+
+def free_port(preferred: int) -> int:
+    with socket.socket() as probe:
+        try:
+            probe.bind(("127.0.0.1", preferred))
+            return preferred
+        except OSError:
+            probe.bind(("127.0.0.1", 0))
+            return probe.getsockname()[1]
+
+
+class Recorder:
+    """One row per step, plus the raw material for the friction log."""
+
+    def __init__(self, out: Path):
+        self.out = out
+        self.rows: list[dict] = []
+        self.non_ascii: list[dict] = []
+
+    def add(self, step, title, ok, detail, seconds, clicks, console, http):
+        self.rows.append({
+            "step": step, "title": title, "pass": bool(ok), "detail": detail,
+            "seconds": round(seconds, 2), "clicks": clicks,
+            "console_errors": console, "http_errors": http,
+            "screenshot": f"S{step:02d}.png",
+        })
+
+    def summary(self):
+        failed = [r for r in self.rows if not r["pass"]]
+        return {
+            "steps": len(self.rows), "passed": len(self.rows) - len(failed),
+            "failed": len(failed), "failed_steps": [r["step"] for r in failed],
+            "seconds": round(sum(r["seconds"] for r in self.rows), 1),
+            "clicks": sum(r["clicks"] for r in self.rows),
+            "console_errors": sum(len(r["console_errors"]) for r in self.rows),
+            "http_errors": sum(len(r["http_errors"]) for r in self.rows),
+        }
+
+
+def scan_non_ascii(page, step):
+    """Everything on screen that is not plain ASCII, split into two lists."""
+    text = page.evaluate("""() => {
+      const out = [];
+      document.querySelectorAll('body *').forEach((e) => {
+        if (e.children.length) return;
+        const cs = getComputedStyle(e);
+        if (cs.display === 'none' || cs.visibility === 'hidden') return;
+        const t = (e.textContent || '').trim();
+        if (t) out.push(t);
+      });
+      return out.join('\\n');
+    }""")
+    cjk = sorted({m for m in CJK.findall(text)})
+    other = sorted({c for c in text if ord(c) > 127 and not CJK.match(c)})
+    return {"step": step, "cjk": cjk, "other": other}
+
+
+class Session:
+    """A page with the console and network listeners the brief asks for."""
+
+    def __init__(self, browser, base, recorder):
+        self.console: list[str] = []
+        self.http: list[str] = []
+        self.clicks = 0
+        self.ctx = browser.new_context(viewport={"width": 1440, "height": 900},
+                                       locale="en-US",
+                                       accept_downloads=True)
+        self.page = self.ctx.new_page()
+        self.page.on("console", lambda m: self.console.append(f"{m.type}: {m.text}")
+                     if m.type in ("error", "warning") else None)
+        self.page.on("pageerror", lambda e: self.console.append(f"pageerror: {e}"))
+        self.page.on("response", lambda r: self.http.append(f"{r.status} {r.url}")
+                     if r.status >= 400 else None)
+        self.base = base
+        self.recorder = recorder
+
+    def goto(self, path="/"):
+        self.page.goto(self.base + path, wait_until="load", timeout=45000)
+        self.page.wait_for_timeout(2500)
+
+    def click(self, selector, **kwargs):
+        self.clicks += 1
+        self.page.click(selector, **kwargs)
+
+    def dismiss_dialog(self):
+        """Close anything left open by the previous step.
+
+        Without this, one failed step cascades: the dialog it opened stays up,
+        its backdrop swallows every later click, and every remaining step fails
+        with a 30s timeout that says nothing about the tool.
+        """
+        for _ in range(3):
+            open_now = self.page.evaluate(
+                "!!document.getElementById('dialog')?.hasAttribute('open')")
+            if not open_now:
+                return True
+            self.page.keyboard.press("Escape")
+            self.page.wait_for_timeout(350)
+        return not self.page.evaluate(
+            "!!document.getElementById('dialog')?.hasAttribute('open')")
+
+    def step(self, number, title, body):
+        carried = self.dismiss_dialog()
+        self.console.clear()
+        self.http.clear()
+        self.clicks = 0
+        if not carried:
+            self.page.screenshot(path=str(self.recorder.out / f"S{number:02d}.png"))
+            self.recorder.add(number, title, False,
+                              "a dialog from the previous step could not be dismissed",
+                              0.0, 0, [], [])
+            print(f"  S{number:<2} FAIL  a dialog blocked this step")
+            return False
+        started = time.monotonic()
+        ok, detail = False, ""
+        try:
+            ok, detail = body()
+        except Exception as exc:                       # a broken step is data
+            detail = f"{type(exc).__name__}: {str(exc)[:220]}"
+        seconds = time.monotonic() - started
+        self.page.screenshot(path=str(self.recorder.out / f"S{number:02d}.png"))
+        self.recorder.non_ascii.append(scan_non_ascii(self.page, number))
+        self.recorder.add(number, title, ok, detail, seconds, self.clicks,
+                          list(self.console), list(self.http))
+        mark = "PASS" if ok else "FAIL"
+        print(f"  S{number:<2} {mark}  {seconds:5.1f}s  {self.clicks:>2} clicks  {title}"
+              + ("" if ok else f"\n        ↳ {detail}"))
+        return ok
+
+    def close(self):
+        self.ctx.close()
+
+
+def build_server(port, data_dir):
+    from qualicraft.server import create_server
+    server = create_server(str(data_dir), str(REPO), port, "", "127.0.0.1", public_demo=False)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server
+
+
+def run(args):
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = OUT_ROOT / f"run-{stamp}"
+    out.mkdir(parents=True, exist_ok=True)
+
+    import tempfile
+    data_dir = Path(tempfile.mkdtemp(prefix="qc-e2e-"))
+    port = free_port(args.port)
+    server = build_server(port, data_dir)
+    # No trailing slash: goto() supplies the path, and doubling it 404s.
+    base = f"http://127.0.0.1:{port}"
+    recorder = Recorder(out)
+    print(f"QualiCraft e2e | {base} | data {data_dir}")
+    print(f"output         | {out}\n")
+
+    from playwright.sync_api import sync_playwright
+
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(channel="chrome", headless=args.headless)
+            s = Session(browser, base, recorder)
+            text = FIXTURE.read_text(encoding="utf-8")
+
+            # ---- S1 · a fresh project ------------------------------------
+            def enable_blocks(names):
+                """Turn on the optional blocks this walkthrough needs.
+
+                They are off by default, so a new user sees no Figures entry and
+                no codebook. Doing this explicitly is part of the workflow, not
+                a workaround: it is what the interface asks of a first-time
+                user, and the friction log records that it is not discoverable.
+                """
+                s.click('[data-action="tools"]')
+                s.page.wait_for_timeout(700)
+                for block in names:
+                    s.page.click(f'[data-block="{block}"]')
+                s.click('[data-action="save-blocks"]')
+                s.page.wait_for_timeout(1800)
+
+            def s1():
+                s.goto("/?lang=en")
+                s.click('[data-action="projects"]')
+                s.page.fill("#new-project-name", "Smoke – synthetic interview")
+                s.click('[data-action="new-project"]')
+                s.page.wait_for_timeout(2500)
+                enable_blocks(["hierarchy", "insights", "plotting"])
+                name = s.page.evaluate(
+                    "document.querySelector('.project-select, .breadcrumb, h1')?.textContent || ''")
+                return "synthetic" in name.lower() or "Smoke" in name, f"header text: {name[:80]!r}"
+
+            # ---- S2 · import ---------------------------------------------
+            def s2():
+                s.click('[data-action="import"]')
+                s.page.wait_for_timeout(600)
+                s.page.set_input_files("#import-file", str(FIXTURE))
+                s.page.wait_for_timeout(900)
+                s.page.fill("#document-name", "Synthetic interview")
+                s.click('[data-action="save-document"]')
+                s.page.wait_for_timeout(3000)
+                n = s.page.evaluate("document.querySelectorAll('.side-item').length")
+                reader = s.page.evaluate(
+                    "document.querySelector('.document-pane')?.innerText || ''")
+                numbered = bool(re.search(r"^\s*1[\.\)]?\s", reader, re.M)) or "1" in reader[:200]
+                marks = reader.count("**")
+                return (n >= 1 and marks == 0), f"documents={n} markdown_markers={marks} numbered={numbered}"
+
+            # ---- S3 · code one passage -----------------------------------
+            def code_passage(index=0):
+                s.page.evaluate("""(i) => {
+                  const ps = [...document.querySelectorAll('.paragraph')]
+                    .filter((x) => x.querySelector('.passage'));
+                  const p = ps[i];
+                  if (p) p.scrollIntoView({ block: 'center' });
+                }""", index)
+                s.page.wait_for_timeout(400)
+                picked = s.page.evaluate("""(i) => {
+                  const ps = [...document.querySelectorAll('.paragraph')]
+                    .filter((x) => x.querySelector('.passage'));
+                  const p = ps[i];
+                  if (!p) return 0;
+                  const holder = p.querySelector('.passage');
+                  const node = [...holder.childNodes]
+                    .find((n) => n.nodeType === 3 && n.textContent.trim().length > 40);
+                  if (!node) return 0;
+                  const r = document.createRange();
+                  r.setStart(node, 0); r.setEnd(node, Math.min(70, node.textContent.length));
+                  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+                  holder.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                  return 1;
+                }""", index)
+                s.page.wait_for_timeout(700)
+                return picked
+
+            def s3():
+                picked = code_passage(0)
+                s.page.fill("#code-search", "Isolation")
+                s.page.keyboard.press("Enter")
+                s.page.wait_for_timeout(1400)
+                pills = s.page.evaluate("document.querySelectorAll('.margin-tags .pill').length")
+                return pills >= 1, f"selection={picked} margin_pills={pills}"
+
+            # ---- S4 · ten passages --------------------------------------
+            def s4():
+                made = 0
+                for i in range(1, 10):
+                    if code_passage(i):
+                        s.page.fill("#code-search", "Isolation")
+                        s.page.keyboard.press("Enter")
+                        s.page.wait_for_timeout(700)
+                        made += 1
+                pills = s.page.evaluate("document.querySelectorAll('.margin-tags .pill').length")
+                return pills >= 9, f"attempted={made} margin_pills={pills}"
+
+            # ---- S5 · a parent code -------------------------------------
+            def s5():
+                # The create dialog offers a name, a definition and a colour —
+                # and no parent selector. Grouping has to happen afterwards.
+                made = []
+                for name in ("Barriers", "Schedule", "Feedback"):
+                    s.click('[data-action="code"]')
+                    s.page.wait_for_timeout(600)
+                    s.page.fill("#code-name", name)
+                    s.click('[data-action="save-code"]')
+                    s.page.wait_for_timeout(800)
+                    made.append(name)
+                # Actually check the codes landed somewhere on screen. The
+                # previous version returned True unconditionally, which made
+                # this step a guaranteed pass and therefore worthless.
+                seen = {}
+                for name in made:
+                    seen[name] = s.page.evaluate(
+                        "(n) => (document.body.innerText || '').includes(n)", name)
+                offers_parent = s.page.evaluate("!!document.querySelector('#code-parent')")
+                return all(seen.values()), (f"created={made} visible_on_page={seen} "
+                                            f"parent_selector_in_create_dialog={offers_parent}")
+                depth = s.page.evaluate("""() => {
+                  const t = document.querySelector('.codebook')?.innerText || '';
+                  return { has: t.includes('Barriers') && t.includes('Schedule'), text: t.slice(0, 200) };
+                }""")
+                return depth["has"], f"codebook: {depth['text'][:90]!r}"
+
+            # ---- S6 · themes --------------------------------------------
+            def s6():
+                # Themes are top-level codes; Barriers/Feedback/Schedule sit beneath.
+                ok = s.page.evaluate("""() => {
+                  const t = document.querySelector('.codebook')?.innerText || '';
+                  return t.includes('Barriers');
+                }""")
+                return ok, "themes are the top-level nodes of the codebook tree"
+
+            # ---- S7 · the three analysis views --------------------------
+            def s7():
+                found = []
+                for view in ("insights", "plotting", "coding"):
+                    s.click(f'[data-action="view"][data-view="{view}"]')
+                    s.page.wait_for_timeout(1800)
+                    body = s.page.evaluate("document.querySelector('.view-body')?.innerText || document.body.innerText")
+                    unit = bool(re.search(r"count|unit|passage|assignment|not participants", body, re.I))
+                    found.append(f"{view}:{'unit' if unit else 'NO-UNIT'}")
+                joined = " ".join(found)
+                return all("NO-UNIT" not in f for f in found), joined
+
+            # ---- S8 · five figure kinds ---------------------------------
+            def s8():
+                s.click('[data-action="view"][data-view="plotting"]')
+                s.page.wait_for_timeout(2200)
+                results = []
+                select = s.page.query_selector("select")
+                options = []
+                if select:
+                    options = [o.get_attribute("value") for o in select.query_selector_all("option")]
+                for kind in options[:5]:
+                    s.page.select_option("select", kind)
+                    s.page.wait_for_timeout(2600)
+                    drawn = s.page.evaluate(
+                        "!!document.querySelector('.plot-stage svg, .plot-stage img, .plot-preview svg, .plot-preview img')")
+                    credit = s.page.evaluate("""() => {
+                      const t = document.querySelector('.plot-stage, .plot-preview')?.innerText || '';
+                      return /unit|passage|assignment|participants|descriptive|file-name/i.test(t);
+                    }""")
+                    results.append(f"{kind}:{'drawn' if drawn else 'MISSING'}{'/credit' if credit else '/NO-CREDIT'}")
+                return (len(results) >= 5 and all("MISSING" not in r for r in results)), "; ".join(results) or "no kind control found"
+
+            # ---- S9 · exports -------------------------------------------
+            def s9():
+                s.click('[data-action="export"]')
+                s.page.wait_for_timeout(900)
+                got = []
+                for label in ("JSON", "CSV", "Markdown"):
+                    try:
+                        with s.page.expect_download(timeout=15000) as dl:
+                            s.page.click(f"text={label}")
+                        name = dl.value.suggested_filename
+                        path = out / f"export-{name}"
+                        dl.value.save_as(str(path))
+                        got.append(f"{name}={path.stat().st_size}B")
+                    except Exception as exc:
+                        got.append(f"{label}: {type(exc).__name__}")
+                    s.page.wait_for_timeout(400)
+                return all("=" in g for g in got), "; ".join(got)
+
+            # ---- S10 · snapshot and restore -----------------------------
+            def s10():
+                s.page.keyboard.press("Escape")
+                s.page.wait_for_timeout(400)
+                s.click('[data-action="snapshots"]')
+                s.page.wait_for_timeout(1200)
+                rows = s.page.query_selector_all(".snap-row button")
+                if not rows:
+                    return False, "no snapshot rows offered"
+                before = s.page.evaluate("document.querySelectorAll('.snap-row').length")
+                rows[0].click()
+                s.page.wait_for_timeout(2500)
+                after = s.page.evaluate("document.querySelectorAll('.side-item').length")
+                return after >= 1, f"snapshots={before} restore_clicked=1 documents_after={after}"
+
+            for number, title, body in [
+                (1, "new project", s1), (2, "import transcript", s2),
+                (3, "code one passage", s3), (4, "code ten passages", s4),
+                (5, "parent code", s5), (6, "themes", s6),
+                (7, "analysis views state their units", s7),
+                (8, "five figure kinds", s8), (9, "exports", s9),
+                (10, "snapshot and restore", s10),
+            ]:
+                s.step(number, title, body)
+
+            s.close()
+            browser.close()
+    finally:
+        server.shutdown()
+
+    payload = {"run": stamp, "base": base, "summary": recorder.summary(),
+               "steps": recorder.rows, "non_ascii": recorder.non_ascii}
+    (out / "results.json").write_text(json.dumps(payload, indent=1, ensure_ascii=False),
+                                      encoding="utf-8")
+    summary = recorder.summary()
+    print(f"\n  {summary['passed']}/{summary['steps']} steps passed, "
+          f"{summary['seconds']}s total, {summary['console_errors']} console errors, "
+          f"{summary['http_errors']} http errors")
+    print(f"  wrote {out}/results.json")
+    cjk_steps = [n["step"] for n in recorder.non_ascii if n["cjk"]]
+    print(f"  steps with CJK on screen: {cjk_steps or 'none'}")
+    return 0 if summary["failed"] == 0 else 1
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--port", type=int, default=8890)
+    ap.add_argument("--headless", default="true")
+    args = ap.parse_args()
+    args.headless = str(args.headless).lower() not in ("false", "0", "no")
+    return run(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
