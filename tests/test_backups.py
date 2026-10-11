@@ -61,14 +61,14 @@ class BackupTests(unittest.TestCase):
         self.assertGreater(after[-1], newest, "the new snapshot must sort last")
         self.assertIn(after[-1], after)
         # And the newest one is the state we just wrote.
-        latest = json.loads((self.store.backup_dir / safe_id(self.project["id"]) / after[-1]).read_text())
+        latest = json.loads((self.store.backup_dir / safe_id(self.project["id"]) / after[-1]).read_text(encoding="utf-8"))
         self.assertIn("code 999", json.dumps(latest["audit"]))
 
     # --- 2. a backup that cannot be written --------------------------------
 
     def test_an_unwritable_backup_does_not_fail_the_edit_and_is_reported(self):
         blocked = self.root / "not-a-directory"
-        blocked.write_text("a file where the backup folder should be")
+        blocked.write_text("a file where the backup folder should be", encoding="utf-8")
         store = Store(self.root / "other.sqlite3", backup_dir=blocked)
         project = store.create(new_project("Blocked"))
 
@@ -104,17 +104,85 @@ class BackupTests(unittest.TestCase):
 
     # --- 4. the id is a directory name ------------------------------------
 
-    def test_a_hostile_project_id_cannot_escape_the_backup_folder(self):
-        self.assertEqual(safe_id("../../etc"), "etc")
-        self.assertEqual(safe_id(""), "project")
+    # --- 7. an id that is not an id ---------------------------------------
+    #
+    # Ids are validated rather than rewritten. Rewriting one would silently
+    # point the snapshot at a different name than the project it belongs to.
 
-        hostile = new_project("Imported")
-        hostile["id"] = "../../escape"
-        self.store.create(hostile)
+    def test_an_illegal_project_id_is_rejected_and_creates_no_directory(self):
+        for bad in ("../../etc/escape", "proj/../x", "a" * 65, "", "sp ace"):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    core.require_valid_id(bad)
+        # And the store refuses to snapshot under one, so nothing is created.
+        before = sorted(p.name for p in self.store.backup_dir.glob("*")) if self.store.backup_dir.exists() else []
+        hostile = dict(self.project, id="../../etc/escape")
+        self.store._snapshot(hostile)
+        after = sorted(p.name for p in self.store.backup_dir.glob("*")) if self.store.backup_dir.exists() else []
+        self.assertEqual(before, after, "no directory may be created for a rejected id")
+        self.assertTrue(self.store.backup_error, "the refusal is reported")
+        self.assertNotIn("escape", " ".join(after))
 
-        written = sorted(p.name for p in self.store.backup_dir.iterdir())
-        self.assertIn("escape", written)
-        self.assertFalse((self.root.parent / "escape").exists())
+    # --- 8. a batch writes one snapshot ------------------------------------
+
+    def test_a_batch_writes_exactly_one_snapshot(self):
+        self.touch(0)
+        before = len(self.snapshots())
+        with self.store.batch(self.project["id"]):
+            for i in range(1, 6):
+                self.touch(i)
+        after = len(self.snapshots())
+        self.assertEqual(after - before, 1,
+                         "five changes in a batch are one snapshot, not five")
+        # The work itself still happened.
+        names = [a.get("name", "") for a in self.store.get(self.project["id"])["audit"]]
+        self.assertEqual(len([n for n in names if n.startswith("code ")]), 6)
+
+    def test_a_batch_leaves_no_partial_file_behind(self):
+        with self.store.batch(self.project["id"]):
+            self.touch(1)
+        folder = self.store.backup_dir / core.require_valid_id(self.project["id"])
+        self.assertEqual(list(folder.glob("*.part")), [],
+                         "the temporary file is renamed into place, not left")
+
+    # --- 9. snapshots are written atomically -------------------------------
+
+    def test_a_snapshot_is_never_left_half_written(self):
+        self.touch(1)
+        folder = self.store.backup_dir / core.require_valid_id(self.project["id"])
+        for name in self.snapshots():
+            # Every file on disk parses. A truncated one would look restorable.
+            json.loads((folder / name).read_text(encoding="utf-8"))
+
+    # --- 10. a serialisation error is not the researcher's problem ---------
+
+    def test_a_serialisation_error_is_reported_and_never_escapes(self):
+        """A TypeError from the snapshot must not reach the caller.
+
+        Note what this does and does not cover. `change()` serialises twice —
+        once for the row it is about to commit, once for the snapshot — and the
+        commit goes first. A serialisation failure therefore cannot be aimed at
+        the snapshot *through* `change()` without also breaking the commit, so
+        the failure is aimed at the snapshot directly here. That the edit
+        survives a failing snapshot is covered by
+        `test_an_unwritable_backup_does_not_fail_the_edit_which_was_reported`
+        above, which fails for a filesystem reason and exercises the same
+        guard.
+        """
+        with mock.patch.object(core.json, "dumps", side_effect=TypeError("not serialisable")):
+            self.store._snapshot(self.project)          # must not raise
+        self.assertTrue(self.store.backup_error, "the failure is recorded")
+        self.assertIn("TypeError", self.store.backup_error["message"])
+
+    def test_a_serialisation_error_during_an_edit_leaves_the_project_intact(self):
+        """The store is usable afterwards; nothing is left half-applied."""
+        with mock.patch.object(core.json, "dumps", side_effect=TypeError("not serialisable")):
+            self.store._snapshot(self.project)
+        self.store.change(self.project["id"],
+                          lambda p: event(p, "code_create", name="after the failure"))
+        saved = self.store.get(self.project["id"])
+        self.assertEqual([a["action"] for a in saved["audit"]], ["code_create"])
+        self.assertIsNone(self.store.backup_error, "a later success clears the flag")
 
 
 if __name__ == "__main__":

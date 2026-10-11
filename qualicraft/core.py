@@ -500,8 +500,21 @@ _ID_SAFE = re.compile(r"[^A-Za-z0-9_-]")
 
 
 def safe_id(value):
+    """A filesystem-safe form of an id. Used for paths, never as a decision."""
     cleaned = _ID_SAFE.sub("", str(value))[:64]
     return cleaned or "project"
+
+
+# An id is an identifier, so it is validated rather than rewritten: an id that
+# silently becomes a different string stops matching the project it refers to,
+# and the mismatch would surface much later as a missing snapshot.
+_ID_OK = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def require_valid_id(value):
+    text = str(value or "")
+    require(bool(_ID_OK.match(text)), "The project id is not valid")
+    return text
 
 
 class Store:
@@ -539,7 +552,7 @@ class Store:
         is recorded rather than swallowed, so the interface can say so.
         """
         try:
-            folder = self.backup_dir / safe_id(project["id"])
+            folder = self.backup_dir / require_valid_id(project["id"])
             folder.mkdir(parents=True, exist_ok=True)
             # A sequence number, not a timestamp. The clock can go backwards
             # (daylight saving ends in October here), and a name derived from it
@@ -582,7 +595,7 @@ class Store:
 
     def backups(self, project_id):
         """What is on disk for this project, newest first."""
-        folder = self.backup_dir / safe_id(project_id)
+        folder = self.backup_dir / require_valid_id(project_id)
         if not folder.is_dir():
             return []
         rows = []
@@ -638,7 +651,7 @@ class Store:
             self._snapshot(self.get(project_id))
         except (ValueError, KeyError, OSError, TypeError):
             pass
-        folder = self.backup_dir / safe_id(project_id)
+        folder = self.backup_dir / require_valid_id(project_id)
         # `Path(name).name` drops any directory part, so a caller cannot walk out
         # of the folder with `../`. Note this is deliberately not `safe_id`:
         # that strips dots, and every snapshot name ends in `.json`.
