@@ -262,6 +262,99 @@ registerBlock({
   },
 })
 
+/* ----------------------------- what we skip ------------------------------- */
+
+/**
+ * The four things this tool deliberately does not do.
+ *
+ * Placed on the home page because it is the clearest statement of what the
+ * product is — a reviewer's first question is usually about the boundary, not
+ * the features. The list stays short on purpose: only positions that follow
+ * from the tool's stance belong here. Everything that is merely effortful is an
+ * optional block instead, and `docs/NOT_BUILDING.md` keeps the longer account.
+ *
+ * One entry records a reason that changed, and says so. A design record that
+ * quietly edits itself is worth less than one that shows its revisions.
+ */
+type Skip = {
+  name: string
+  reason: string
+  /** Set when an earlier published reason for the same decision was replaced. */
+  revised?: string
+  instead?: string
+}
+
+const SKIPPED: Skip[] = [
+  {
+    name: 'One-click automatic coding',
+    reason:
+      'The validity of a qualitative analysis comes from the researcher\u2019s interpretation. A model here proposes; a person decides, and the decision is recorded either way.',
+    instead: 'Coding by hand, with AI suggestions you accept or reject one at a time.',
+  },
+  {
+    name: 'Cloud accounts and a hosted workspace',
+    reason:
+      'Transcripts staying on the machine they were collected on is the premise, not a feature. A hosted version would be a different product with a different ethics application.',
+    instead: 'Shipping it as a local application, and exporting a project file to move it.',
+  },
+  {
+    name: 'Real-time collaboration',
+    reason: 'Multiple coders means a server, accounts, encryption and an audit surface. That is a different product.',
+    instead:
+      'Two researchers coding the same transcript independently, then comparing with the document \u00d7 code matrix.',
+  },
+  {
+    name: 'Semantic (vector) search',
+    reason:
+      'Retrieval here is meant to be exact and enumerable \u2014 every quotation containing a term, checked one by one. Semantic search answers a different question, so it belongs to a different tool.',
+    revised:
+      'Earlier we excluded it on the grounds that vector results are hard to explain. That reason does not hold \u2014 showing the matched passage explains a hit well enough. The boundary is the real reason, and it is the one stated here.',
+    instead: 'Keyword search across the corpus, with the character range of every hit.',
+  },
+]
+
+registerBlock({
+  type: 'qtNotBuilding',
+  label: 'What we do not do',
+  group: 'content',
+  hint: 'The four deliberate omissions, with the reason for each.',
+  initial: () => ({
+    label: 'The boundary',
+    title: 'Four things it does not do.',
+    body: 'A short list, because only decisions that follow from the tool\u2019s stance belong on it. Anything that is merely a lot of work is an optional block you can switch on.',
+  }),
+  fields: [
+    { key: 'label', label: 'Label', type: 'text', span: 1 },
+    { key: 'title', label: 'Heading', type: 'text', span: 2 },
+    { key: 'body', label: 'Intro paragraph', type: 'textarea', span: 2 },
+  ],
+  render: ({ data }) => (
+    <Section className="blk-skip">
+      <SectionHead label={data.label} title={data.title} body={data.body} />
+      <div className="skip-grid">
+        {SKIPPED.map((item) => (
+          <article className="skip" key={item.name}>
+            <strong className="skip__name">{item.name}</strong>
+            <p>{item.reason}</p>
+            {item.revised ? (
+              <p className="skip__revised">
+                <span className="skip__label">Revised</span>
+                {item.revised}
+              </p>
+            ) : null}
+            {item.instead ? (
+              <p className="skip__instead">
+                <span className="skip__label">What it does instead</span>
+                {item.instead}
+              </p>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </Section>
+  ),
+})
+
 /* ------------------------------ foundations ------------------------------ */
 
 /**

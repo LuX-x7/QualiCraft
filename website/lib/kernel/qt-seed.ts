@@ -76,6 +76,22 @@ export const QT_PAGES: Array<{
         },
       },
       {
+        type: 'qtNotBuilding',
+        data: {
+          label: 'The boundary',
+          title: 'Four things it does not do.',
+          body: 'A short list, because only decisions that follow from the tool’s stance belong on it. Anything that is merely a lot of work is an optional block you can switch on.',
+        },
+      },
+      {
+        type: 'qtNotBuilding',
+        data: {
+          label: 'The boundary',
+          title: 'Four things it does not do.',
+          body: 'A short list, because only decisions that follow from the tool’s stance belong on it. Anything that is merely a lot of work is an optional block you can switch on.',
+        },
+      },
+      {
         type: 'qtPrinciples',
         data: {
           label: 'Why it is built this way',

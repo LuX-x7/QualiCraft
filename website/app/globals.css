@@ -7572,3 +7572,73 @@ body::before {
 @media (max-width: 640px) {
   .flow__step { flex: 1 1 100%; }
 }
+
+/* ------------------------------ what we skip -------------------------------
+   Four entries, two columns. Each carries the reason rather than the label
+   alone, because the reason is the part a reader is actually judging. One
+   entry records a superseded reason: showing the revision is more useful than
+   quietly editing the record. */
+.skip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.skip {
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  background: var(--bg-raised);
+  padding: 20px 22px;
+}
+.skip__name { display: block; margin-bottom: 8px; font-size: .9375rem; font-weight: 500; }
+.skip p { margin: 0 0 12px; font-size: .875rem; line-height: 1.6; color: var(--fg-muted); }
+.skip__label {
+  display: block;
+  margin-bottom: 3px;
+  font-family: var(--font-mono);
+  font-size: .5625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.skip__revised {
+  padding-left: 12px;
+  border-left: 2px solid var(--line-strong);
+}
+.skip__instead { margin-bottom: 0 !important; }
+.skip__instead::before { content: ''; }
+@media (max-width: 900px) { .skip-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ------------------------------ what we skip -------------------------------
+   Four entries, two columns. Each carries the reason rather than the label
+   alone, because the reason is the part a reader is actually judging. One
+   entry records a superseded reason: showing the revision is more useful than
+   quietly editing the record. */
+.skip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.skip {
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  background: var(--bg-raised);
+  padding: 20px 22px;
+}
+.skip__name { display: block; margin-bottom: 8px; font-size: .9375rem; font-weight: 500; }
+.skip p { margin: 0 0 12px; font-size: .875rem; line-height: 1.6; color: var(--fg-muted); }
+.skip__label {
+  display: block;
+  margin-bottom: 3px;
+  font-family: var(--font-mono);
+  font-size: .5625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.skip__revised {
+  padding-left: 12px;
+  border-left: 2px solid var(--line-strong);
+}
+.skip__instead { margin-bottom: 0 !important; }
+.skip__instead::before { content: ''; }
+@media (max-width: 900px) { .skip-grid { grid-template-columns: minmax(0, 1fr); } }
