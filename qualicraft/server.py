@@ -136,15 +136,30 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         if len(parts) == 4 and parts[3] in ("plot", "plot-bundle"):
                             query = urllib.parse.parse_qs(parsed.query)
                             options = {key: query[key][0] for key in query if query[key]}
-                            if parts[3] == "plot":
-                                svg, _ = plotting.render(project, options)
-                                return self.send(svg.encode("utf-8"), "image/svg+xml; charset=utf-8")
-                            files, _ = plotting.bundle(project, options)
-                            buffer = io.BytesIO()
-                            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-                                for name, payload in files.items():
-                                    archive.writestr(name, payload)
-                            return self.send(buffer.getvalue(), "application/zip", filename="qualicraft-figure.zip")
+                            # Drawing runs a generated script in a subprocess, so
+                            # it fails in ways the caller cannot see: a missing
+                            # matplotlib, or a script that raised. Let the failure
+                            # out as a message rather than as a dropped connection
+                            # — an escaped exception closes the socket with no
+                            # response at all, and the browser then reports
+                            # "Failed to fetch" instead of the actual reason.
+                            try:
+                                if parts[3] == "plot":
+                                    svg, _ = plotting.render(project, options)
+                                    return self.send(svg.encode("utf-8"), "image/svg+xml; charset=utf-8")
+                                files, _ = plotting.bundle(project, options)
+                                buffer = io.BytesIO()
+                                with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+                                    for name, payload in files.items():
+                                        archive.writestr(name, payload)
+                                return self.send(buffer.getvalue(), "application/zip", filename="qualicraft-figure.zip")
+                            except RuntimeError as exc:
+                                return self.send({"error": str(exc)}, status=500)
+                            except ValueError as exc:
+                                # "Nothing to plot yet", "no data at this setting":
+                                # the reader can act on these, so send the wording
+                                # rather than the generic invalid-request notice.
+                                return self.send({"error": str(exc)}, status=400)
                     return self.send({"error": "The API endpoint does not exist"}, status=404)
                 if path == "/config.js":
                     return self.send(('window.QT_BASE=' + json.dumps(base_path) + ';').encode(),

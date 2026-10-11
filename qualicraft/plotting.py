@@ -49,6 +49,7 @@ KIND_TITLES = {
 
 PALETTES = ("viridis", "YlGnBu", "Blues", "Greens", "magma", "rocket", "mako", "flare", "crest")
 CLUSTER_METHODS = ("ward", "complete", "average", "single")
+LEVELS = ("code", "theme")      # what a frequency figure counts
 
 # Okabe–Ito: distinguishable in greyscale and for the common colour-vision
 # deficiencies, which matters when a figure is printed.
@@ -58,6 +59,10 @@ OKABE_ITO = ("#0072B2", "#D55E00", "#009E73", "#CC79A7",
 DEFAULT_OPTIONS = {
     "kind": "frequency",
     "name": "",
+    # Which column a frequency figure counts. `analyze.frequency` has always
+    # accepted this; the option surface simply never reached it, so "group by
+    # theme" silently drew the code-level chart instead.
+    "level": "code",
     "top": 15,
     # YlGnBu is the conventional sequential ramp for a count heatmap and is
     # what the reviewed examples use; viridis stays available.
@@ -154,6 +159,8 @@ def normalise(options):
         merged["palette"] = DEFAULT_OPTIONS["palette"]
     if merged["method"] not in CLUSTER_METHODS:
         merged["method"] = DEFAULT_OPTIONS["method"]
+    if merged["level"] not in LEVELS:
+        merged["level"] = DEFAULT_OPTIONS["level"]
     if merged["mode"] not in analyze.COOCCURRENCE_MODES:
         merged["mode"] = DEFAULT_OPTIONS["mode"]
 
@@ -186,11 +193,12 @@ def _write_csv(fieldnames, rows):
     return stream.getvalue()
 
 
-def _dataset(rows, options):
+def _dataset(rows, options, case_text=None):
     kind = options["kind"]
     if kind == "frequency":
-        data = analyze.frequency(rows)[:options["top"]]
-        return _write_csv(["code", "count"], [[d["label"], d["count"]] for d in data])
+        data = analyze.frequency(rows, by=options["level"])[:options["top"]]
+        return _write_csv([options["level"], "count"],
+                          [[d["label"], d["count"]] for d in data])
     if kind == "coverage":
         cov = analyze.coverage(rows, top=options["top"])
         out = []
@@ -199,7 +207,8 @@ def _dataset(rows, options):
                 out.append([case, code, count])
         return _write_csv(["case", "code", "count"], out)
     if kind == "cooccurrence":
-        co = analyze.cooccurrence(rows, mode=options["mode"], limit=options["top"])
+        co = analyze.cooccurrence(rows, mode=options["mode"], limit=options["top"],
+                                  case_text=case_text)
         labels = co["labels"]
         out = []
         for i, left in enumerate(labels):
@@ -220,19 +229,21 @@ def _dataset(rows, options):
     return _write_csv(["step", "case", "cumulative", "new"], out)
 
 
-def _result(rows, options):
+def _result(rows, options, case_text=None):
     """The numbers behind the figure, for the caller and for the tests."""
     kind = options["kind"]
     if kind == "frequency":
-        data = analyze.frequency(rows)[:options["top"]]
-        return {"kind": kind, "labels": [d["label"] for d in data],
+        data = analyze.frequency(rows, by=options["level"])[:options["top"]]
+        return {"kind": kind, "level": options["level"],
+                "labels": [d["label"] for d in data],
                 "counts": [d["count"] for d in data], "codings": len(rows)}
     if kind == "coverage":
         cov = analyze.coverage(rows, top=options["top"])
         return {"kind": kind, "labels": cov["codes"], "cases": cov["cases"],
                 "matrix": cov["matrix"], "codings": len(rows)}
     if kind == "cooccurrence":
-        co = analyze.cooccurrence(rows, mode=options["mode"], limit=options["top"])
+        co = analyze.cooccurrence(rows, mode=options["mode"], limit=options["top"],
+                                  case_text=case_text)
         return {"kind": kind, "labels": co["labels"], "matrix": co["matrix"],
                 "mode": co["mode"], "codings": len(rows)}
     if kind == "hierarchy":
@@ -403,15 +414,21 @@ def main():
     if SETTINGS["cluster"] and size > 2:
         try:
             import numpy as np
-            from scipy.cluster.hierarchy import linkage
+            from scipy.cluster.hierarchy import leaves_list, linkage
             from scipy.spatial.distance import squareform
             peak = max(max(row) for row in matrix) or 1
             distance = [[float(peak - matrix[i][j]) for j in range(size)] for i in range(size)]
             condensed = squareform(np.array(distance), checks=False)
-            order = list(linkage(condensed, method=SETTINGS["method"]).argsort())
+            # leaves_list is the leaf ordering. Sorting the linkage matrix
+            # itself does not give one: it is a table of merges, so argsort
+            # returns a row of column indices and the labels cannot be indexed
+            # with it.
+            order = [int(i) for i in leaves_list(linkage(condensed, method=SETTINGS["method"]))]
         except Exception:
             order = None
-    if order:
+    # A partial or repeated ordering would silently drop rows, so anything that
+    # is not a permutation of the labels falls back to the unclustered figure.
+    if order and sorted(order) == list(range(size)):
         labels = [labels[i] for i in order]
         matrix = [[matrix[i][j] for j in order] for i in order]
         size = len(labels)
@@ -571,7 +588,12 @@ def _prepare(project, options, root):
     if not rows:
         raise ValueError("There is nothing to plot yet: code a few passages first.")
 
-    data = _dataset(rows, options)
+    # Co-occurrence by paragraph needs the transcripts; by overlap does not.
+    # Supplying it either way keeps `mode` an honest choice rather than one that
+    # fails on a missing argument.
+    case_text = {d["name"]: d["text"] for d in project.get("documents", [])}
+
+    data = _dataset(rows, options, case_text)
     if len(data.strip().splitlines()) < 2:
         raise ValueError("This figure has no data at this setting; widen the filter.")
 
@@ -592,7 +614,7 @@ def _prepare(project, options, root):
         produced[path.name] = path.read_bytes()
     for name in SIDECAR_FILES:
         produced[name] = (root / name).read_bytes()
-    return produced, _result(rows, options)
+    return produced, _result(rows, options, case_text)
 
 
 def render(project, options=None):
