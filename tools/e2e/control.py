@@ -189,7 +189,8 @@ def main():
                     browser.close()
         finally:
             server.shutdown()
-        result.update(label=label, broken=is_broken, at=datetime.now().isoformat(timespec="seconds"))
+        result.update(label=label, broken=is_broken, base=base,
+                      at=datetime.now().isoformat(timespec="seconds"))
         print(f"    {label:8s} broken={str(is_broken):5s} hint {'PASS' if result['pass'] else 'FAIL'}  "
               f"{result['state']}")
         return result
