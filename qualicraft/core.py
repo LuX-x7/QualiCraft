@@ -486,9 +486,20 @@ def validate_project(project):
     return project
 
 
-# How many snapshots to keep per project. Twenty changes is several sessions of
+# How many snapshots to keep per project. Thirty changes is several sessions of
 # work, which is the distance a mistake usually takes to notice.
-BACKUP_KEEP = 20
+BACKUP_KEEP = 30
+
+# A project id becomes a directory name, so it may not contain separators or
+# anything else that climbs out of the backup directory. Projects created here
+# use hex ids, but an imported project JSON carries whatever id it was saved
+# with — which is the way in.
+_ID_SAFE = re.compile(r"[^A-Za-z0-9_-]")
+
+
+def safe_id(value):
+    cleaned = _ID_SAFE.sub("", str(value))[:64]
+    return cleaned or "project"
 
 
 class Store:
@@ -496,8 +507,15 @@ class Store:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         # Snapshots live beside the database by default. `data/` is ignored by
-        # git, so they never end up in the repository.
+        # git, so they never end up in the repository. `--backup-dir` moves them;
+        # a sync folder is deliberately not suggested, because that would send
+        # transcripts off the machine and break the one promise the tool makes.
         self.backup_dir = Path(backup_dir) if backup_dir else self.path.parent / "backups"
+        # Reported to the interface. A snapshot that stops being written is a
+        # silent failure otherwise: the count stays at its ceiling and the
+        # researcher keeps believing they are covered.
+        self.last_backup = None
+        self.backup_error = None
         with self.connect() as conn:
             conn.execute("CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
 
@@ -511,28 +529,49 @@ class Store:
         same format the Restore dialog already reads, so recovery needs no
         special tooling.
 
-        A failure here must never fail the edit the researcher just made, so
-        every error is swallowed.
+        Callers pass this inside their write transaction, so the file written
+        matches the row that was just committed and two concurrent requests
+        cannot interleave a name with someone else's state.
+
+        A failure here must never fail the edit the researcher just made — but it
+        is recorded rather than swallowed, so the interface can say so.
         """
         try:
-            folder = self.backup_dir / project["id"]
+            folder = self.backup_dir / safe_id(project["id"])
             folder.mkdir(parents=True, exist_ok=True)
-            # To the microsecond: three edits inside the same second are normal
-            # while coding, and a second-resolution name would let them overwrite
-            # each other. The result still sorts lexicographically.
-            stamp = (now().replace("-", "").replace(":", "")
-                     .replace("T", "").replace(".", "")[:20])
-            (folder / (stamp + ".json")).write_text(
+            # A sequence number, not a timestamp. The clock can go backwards
+            # (daylight saving ends in October here), and a name derived from it
+            # would then sort before an older snapshot and be pruned as the
+            # oldest — losing the newest recovery point, silently.
+            existing = sorted(folder.glob("*.json"))
+            number = 1
+            if existing:
+                try:
+                    number = int(existing[-1].stem) + 1
+                except ValueError:
+                    number = len(existing) + 1
+            name = "%06d.json" % number
+            (folder / name).write_text(
                 json.dumps(project, ensure_ascii=False, indent=1), encoding="utf-8")
-            keep = sorted(folder.glob("*.json"))
-            for stale in keep[:-BACKUP_KEEP]:
-                stale.unlink()
-        except OSError:
-            pass
+            # Keep the newest, but always keep the oldest as well. Accepting a
+            # queue of fifty suggestions is fifty changes, and without that floor
+            # the burst would prune away every snapshot from before it started —
+            # the one state a researcher is most likely to want back.
+            ordered = sorted(folder.glob("*.json"))
+            keep = set(ordered[-(BACKUP_KEEP - 1):]) | {ordered[0]}
+            for stale in ordered:
+                if stale not in keep:
+                    stale.unlink()
+            self.last_backup = {"project_id": project["id"], "name": name,
+                                "written_at": now()}
+            self.backup_error = None
+        except Exception as exc:                      # noqa: BLE001 - see docstring
+            self.backup_error = {"project_id": project["id"], "at": now(),
+                                 "message": f"{type(exc).__name__}: {exc}"}
 
     def backups(self, project_id):
         """What is on disk for this project, newest first."""
-        folder = self.backup_dir / project_id
+        folder = self.backup_dir / safe_id(project_id)
         if not folder.is_dir():
             return []
         rows = []
@@ -543,6 +582,33 @@ class Store:
             except OSError:
                 continue
         return rows
+
+    def backup_status(self):
+        """Enough for the interface to say whether protection is actually working."""
+        return {"last": self.last_backup, "error": self.backup_error,
+                "keep": BACKUP_KEEP, "dir": str(self.backup_dir)}
+
+    def restore(self, project_id, name):
+        """Load a snapshot back as a NEW project, leaving the original alone.
+
+        Restoring over the project it came from would make the second mistake
+        worse than the first: the researcher would lose both the current state
+        and the recovery point in one move. A copy is always safe to try.
+        """
+        folder = self.backup_dir / safe_id(project_id)
+        # `Path(name).name` drops any directory part, so a caller cannot walk out
+        # of the folder with `../`. Note this is deliberately not `safe_id`:
+        # that strips dots, and every snapshot name ends in `.json`.
+        candidate = (folder / Path(str(name)).name).resolve()
+        require(candidate.parent == folder.resolve() and candidate.is_file(),
+                "That snapshot does not exist")
+        loaded = json.loads(candidate.read_text(encoding="utf-8"))
+        loaded["id"] = uuid.uuid4().hex
+        loaded["name"] = f"{loaded.get('name', 'Project')} (restored {now()[:16].replace('T', ' ')})"
+        loaded["created_at"] = now()
+        loaded["updated_at"] = now()
+        event(loaded, "project_restore", source="snapshot", snapshot=name)
+        return self.create(loaded)
 
     @contextmanager
     def connect(self):
@@ -567,10 +633,16 @@ class Store:
     def create(self, project):
         with self.connect() as conn:
             conn.execute("INSERT INTO projects VALUES (?,?)", (project["id"], json.dumps(project, ensure_ascii=False)))
-        self._snapshot(project)
+            self._snapshot(project)
         return project
 
-    def change(self, project_id, operation):
+    def change(self, project_id, operation, snapshot=True):
+        """Apply an operation and commit it.
+
+        `snapshot=False` is for the steps of one batch: a single analysis run
+        commits an event per segment, and a snapshot each would push the whole
+        history out of the window in one go. The caller takes one at the end.
+        """
         with self.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
@@ -579,7 +651,8 @@ class Store:
             result = operation(project)
             project["updated_at"] = now()
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
-        self._snapshot(project)
+            if snapshot:
+                self._snapshot(project)
         return result
 
     def migrate_legacy_demo_projects(self):
@@ -609,6 +682,25 @@ class Store:
                 project["provenance"] = "Eight semi-structured practitioner interview documents from Tian et al. (2021) on relationships between software architecture and source code. IP1–IP2 include paired Chinese and English answer passages; IP3–IP8 are in English. Imported from the local Guide as an uncoded workspace. The separate MAXQDA project also contains researcher coding, but it is not imported here as ground truth."
                 project["updated_at"] = now()
                 conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
+
+
+def endpoint_host(url):
+    """An endpoint reduced to scheme and host.
+
+    A base URL is whatever the researcher typed. It can carry a key in its query
+    string, or a user:password pair. This value is printed at startup, shown in
+    settings, and written into the methods record — all three get screenshotted
+    and pasted into issues, so none of them may carry a credential.
+    """
+    import urllib.parse
+    try:
+        parts = urllib.parse.urlsplit(str(url))
+    except ValueError:
+        return "(unparseable endpoint)"
+    if not parts.hostname:
+        return "(no host)"
+    port = f":{parts.port}" if parts.port else ""
+    return f"{parts.scheme}://{parts.hostname}{port}"
 
 
 def methods_narrative(project):
@@ -675,8 +767,7 @@ def methods_narrative(project):
         # to wonder whether the section was dropped by accident.
         add("### Reading notes")
         add("")
-        add("_No familiarisation notes were recorded on any document. If the study expects "
-            "them, this is the place to say why not._")
+        add("_No familiarisation memos were recorded in this project file._")
         add("")
 
     add("## 2. Coding")
@@ -758,8 +849,14 @@ def methods_narrative(project):
         accepted = len([s for s in suggestions if s["status"] == "accepted"])
         rejected = len([s for s in suggestions if s["status"] == "rejected"])
         pending = len([s for s in suggestions if s["status"] == "pending"])
+        discarded = sum(int(e.get("discarded", 0) or 0) for e in audit
+                        if e.get("action") == "analysis_segment")
         add("- Suggestions produced: **" + str(len(suggestions)) + "**")
         add("- Accepted: " + str(accepted) + " | Rejected: " + str(rejected) + " | Still pending: " + str(pending))
+        # Without this denominator an acceptance rate is misleading: suggestions
+        # thrown out for failing the quotation check never reach the count.
+        add("- Discarded before review (quotation could not be located in the source): "
+            + str(discarded))
         add("- Every suggestion had to be accepted by hand before it entered the codebook; "
             "suggestions whose quotation could not be located in the source were discarded on arrival.")
         # A reader reviewing the methods needs to know what was asked of which
@@ -768,12 +865,21 @@ def methods_narrative(project):
         # rather than remembered here.
         runs = [e for e in audit if e.get("action") == "analysis_start"]
         if runs:
-            endpoints = sorted({str(e.get("base_url", "")) for e in runs if e.get("base_url")})
+            endpoints = sorted({endpoint_host(e.get("base_url")) for e in runs if e.get("base_url")})
             models = sorted({str(e.get("model", "")) for e in runs if e.get("model")})
             add("- Endpoint: " + (", ".join(endpoints) if endpoints else "_not recorded_"))
             add("- Model: " + (", ".join(models) if models else "_not recorded_"))
-            add("- Analysis runs: " + str(len(runs)) + ", each sent only after the researcher "
-                "confirmed a preview of the exact text to be transmitted.")
+            add("- Analysis runs: " + str(len(runs)) + ".")
+            # The preview is the only text the researcher agreed to send, so its
+            # hash is recorded on the run's own audit entry. Without it the
+            # methods record can only assert that a preview was confirmed, which
+            # is not something a reader can check.
+            hashes = sorted({str(e.get("payload_sha256", "")) for e in runs if e.get("payload_sha256")})
+            if hashes:
+                add("- Payload digest (SHA-256 of the previewed text): "
+                    + ", ".join(h[:16] + "..." for h in hashes))
+            else:
+                add("- Payload digest: _not recorded for these runs_")
     add("")
 
     add("## 6. Integrity")
