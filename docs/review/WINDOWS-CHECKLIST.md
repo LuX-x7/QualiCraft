@@ -10,11 +10,11 @@
 
 | 项 | 要求 | 说明 |
 |:--|:--|:--|
-| Python | ≥ 3.11（`pyproject.toml` 的 `requires-python`） | 用 `python --version` 确认；低于 3.11 直接停 |
+| Python | ≥ 3.11（`pyproject.toml` 的 `requires-python`） | 用 `python --version` 确认；低于 3.11 直接停。若 `python` 打开的是 Microsoft Store 而不是解释器，说明装了 App execution alias 却没装 Python——改用 python.org 安装包或 `py -3`（此条为 Windows 常识，非本仓库可验事项） |
 | 虚拟环境 | `python -m venv .venv` 然后 `.venv\Scripts\activate` | 不要用系统 Python 直接装包 |
 | 依赖 | `pip install -r requirements.txt` | 装的是 matplotlib / pandas / numpy。**裸解释器跑测试会得到 11 个 error、退出码 1**——那是缺依赖的真实失败，不是产品失败 |
 | Playwright | `pip install playwright` | e2e 脚本只用它当驱动；**不需要** `playwright install` |
-| Chrome | 本机装有 Chrome | 所有 e2e 脚本用 `channel="chrome"` 驱动系统 Chrome（7 个脚本一致，已 grep 核实）；headless 运行不需要显示器 |
+| Chrome | 本机装有 Chrome | 所有 e2e 脚本用 `channel="chrome"` 驱动系统 Chrome（**6 个脚本**一致：control / dialogs / preset / projects_a11y / smoke / smoke_mouse，已 grep 核实；control.py 内有两次 launch）；headless 运行不需要显示器 |
 
 可选：Node（只为 `node --check web/app.js` 语法检查）。
 
@@ -38,8 +38,14 @@ Ran 114 tests in ...
 OK (skipped=3)
 ```
 
-三个 skip 是两条本地数据集缺席（Guide / TU Delft 参考项目）加一条绘图栈在位时的自跳；
-若 skip 数不同，报告差异，不要当作失败。若出现 `errors=11`，说明第 0 步的依赖没装对，回到环境准备。
+macOS 上的三个 skip：两条本地数据集缺席（`tests/test_core.py:122,130` 检查 `E:/Software/Guide/...` 是否存在——已核实的硬编码路径，共 5 处引用）+ 一条绘图栈在位时的自跳。
+
+**Windows 上的 skip 数会不同，这是已核实的源码事实，不是异常**：那两条数据集测试只有在该机器真有 `E:\Software\Guide\...`（本仓库作者的那台 Windows）时才跑，否则跳过。于是：
+
+- 作者本人的 Windows 机（E 盘数据在）：两条会**真的跑起来**，预期 `OK (skipped=1)`。它们若 FAIL，是 Windows 上导入器的真实发现（DOCX 解析、UTF-8 路径、中文文件名），保留原始输出，不要放过；
+- 干净的 Windows 机（数据不在）：`OK (skipped=3)`，与 macOS 相同。
+
+若出现 `errors=11`，说明第 0 步的依赖没装对，回到环境准备——那是缺依赖，不是 Windows 缺陷。
 
 ### 步骤 1 · smoke.py（十个步骤全流程）
 
@@ -98,13 +104,13 @@ python tools/e2e/control.py
 
 ## 2. Windows 特有注意
 
-- **脚本本身没有平台分支**：`grep -rn "darwin\|platform\|os.name\|/Users" tools/e2e/*.py` 无匹配（已核实）。没有 macOS 专属逻辑需要绕开。
+- **脚本本身没有平台分支**：`grep -rn "darwin\|platform\|os.name\|/Users" tools/e2e/*.py` 无匹配（已核实，exit 1）。没有 macOS 专属逻辑需要绕开。包内同样干净：`grep -rn 'E:/' qualicraft/*.py tools/e2e/*.py` 无匹配；硬编码绝对路径只出现在 `tests/test_core.py`（5 处 `E:/Software/Guide`），影响见步骤 0 的 skip 说明。
 - **默认编码**：Windows 控制台/文件默认 ANSI 代码页，正是 `tests/test_encoding.py` 钉的场景——包内所有读写都显式 `encoding="utf-8"`。步骤 0 的编码测试就是 Windows 上的行为校验。注意该静态扫描只覆盖 `qualicraft/` 与 `tests/`，不含 `tools/`。
 - **产物路径**：`~/qualicraft-review/...` 在 Windows 上展开为 `%USERPROFILE%\qualicraft-review\...`。
-- **端口**：脚本用 `free_port()` 动态取端口（优先指定值，被占则换随机端口），冲突概率极低；若报端口错误，报告原始输出。
-- **退出码获取**：PowerShell 里 `python ... > out.txt 2>&1` 之后用 `echo $LASTEXITCODE`；cmd 里用 `echo %ERRORLEVEL%`。管道到 `Tee-Object` 再取 `$LASTEXITCODE` 在 Windows PowerShell 5.1 下不可靠，不要那样做。
+- **端口**：`smoke.py` 首选 8890（`--port` 可改）、`smoke_mouse.py` 首选 8891，被占则回退随机端口（源码 `free_port(preferred)`，已核实）；其余四个脚本（control / dialogs / preset / projects_a11y）的 `free_port()` 直接绑 `127.0.0.1:0` 取随机空闲端口。若报端口错误，报告原始输出。
+- **退出码与输出获取**：cmd.exe 最稳——`cmd /c "python tools\e2e\smoke.py > out.txt 2>&1"` 然后 `echo %ERRORLEVEL%`。PowerShell 里直接 `>` 加 `2>&1` 在 Windows PowerShell 5.1 下对原生命令的 stderr 有已知毛病，`$LASTEXITCODE` 配 `Tee-Object` 管道的可靠性也有公开报告的问题；**这两条 PowerShell 注意事项未在本门禁的 Windows 机器上验证过**（编写环境是 macOS），所以首选 cmd；若输出残缺，换 cmd 重跑同一条命令即可。
 - **`run.ps1` 不要用于门禁**：它硬编码了 `E:\Software\...` 路径（Guide 目录、API key 文件），是本机启动器。要人工看一眼界面，用 `python run.py` 或 `python run_demo.py`，属可选项，不产生回传物。
-- **每个脚本 1–3 分钟**，全部跑完约 10 分钟；smoke.py 最慢。
+- **耗时（估计值，未实测，等 Windows 首跑登记）**：各脚本分钟量级，smoke.py 最慢。首跑后把每步实测耗时填进回传包，替换本行——估计不是证据。
 
 ## 3. 回传模板
 
