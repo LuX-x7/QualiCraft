@@ -13,7 +13,7 @@ recorded decision, never by a note alone.
 | P2-8 | Snapshots has **no visible entry at 390px** | decided: desktop-only **for the restore entry only** — the `.save-state` button and the Snapshots dialog it opens; automatic snapshots (written server-side per change) still run on phones — recorded in docs/NOT_BUILDING.md §6 | closed |
 | P2-9 | `projects` has two elements with the same `data-action` at 390px, one hidden | new | open - check whether a screen reader reaches the hidden one; keep separate from harness fixes |
 | P2-7 | `smoke_mouse.py`, real mouse selection | Phase 2 | open |
-| Close-out | A test that tools/e2e/preset.py exists and imports, so forgetting to run it is noticed | Phase 2 | open (director) |
+| Close-out | A test that tools/e2e/preset.py exists and imports, so forgetting to run it is noticed | `tests/test_e2e_harness.py` | closed |
 | Constraint | Every `measure()` action in `tools/e2e/dialogs.py` must exist as `data-action="..."` in `web/app.js`, and its opener must click the same action — enforced by `tests/test_e2e_harness.py` | this commit | closed |
 
 ---

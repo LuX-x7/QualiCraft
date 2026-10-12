@@ -32,7 +32,9 @@ What this covers, and what it does not:
 This test reads files. It starts no browser, and Playwright stays outside the
 package's runtime dependencies.
 """
+import importlib.util
 import re
+import sys
 import unittest
 from pathlib import Path
 
@@ -138,6 +140,53 @@ class TheCheckerCanFail(unittest.TestCase):
         empty = "# every measure() call was refactored away\n"
         _, problems = check_actions(empty, "<button data-action=\"code\"></button>")
         self.assertTrue(problems)
+
+
+class PresetScriptTests(unittest.TestCase):
+    """The close-out item: preset.py must stay there, and stay importable.
+
+    preset.py is the only check of the one-click "all five modules" preset
+    (P2-3), and it is not part of the unittest suite — it is run by hand.
+    A script nobody runs is a script nobody notices the absence of, so the
+    suite asserts the file exists and still imports.
+
+    Importing is the point, and it is also the danger: an e2e script without
+    the `__main__` guard would execute its whole run on import — server,
+    browser, everything. So the two facts that make an import safe are
+    checked statically first, and only then is the module actually loaded.
+    """
+
+    PRESET = REPO / "tools" / "e2e" / "preset.py"
+
+    def test_preset_py_exists(self):
+        self.assertTrue(
+            self.PRESET.is_file(),
+            "tools/e2e/preset.py is gone — the preset check for P2-3 is "
+            "no longer runnable at all")
+
+    def test_preset_py_imports_and_exposes_main(self):
+        source = self.PRESET.read_text(encoding="utf-8")
+        # Static first: a missing guard means importing would RUN it.
+        self.assertIn(
+            'if __name__ == "__main__"', source,
+            "preset.py lost its __main__ guard; importing it from a test "
+            "would start a server and a browser")
+        # The e2e convention: the driver stays in tools/, so importing the
+        # script must not drag Playwright in with it.
+        head = source[:source.index("def main")]
+        self.assertNotIn("playwright", head,
+                         "preset.py imports Playwright at module level; keep "
+                         "it inside main()")
+        import importlib.util
+        before = list(sys.path)
+        try:
+            spec = importlib.util.spec_from_file_location("qc_e2e_preset", self.PRESET)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+        finally:
+            sys.path[:] = before
+        self.assertTrue(callable(getattr(module, "main", None)),
+                        "preset.py must expose main()")
 
 
 if __name__ == "__main__":
