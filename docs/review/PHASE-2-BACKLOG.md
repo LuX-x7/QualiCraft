@@ -47,3 +47,25 @@ way.
 already applied elsewhere, and re-run the repository-wide sweep for
 `publication-grade|publication-ready|publication-oriented|put in a paper|期刊`
 to confirm nothing else survives in `website/`.
+
+---
+
+## Windows 门禁（试用前置，不随 Phase 2 关闭）
+
+清单：`docs/review/WINDOWS-CHECKLIST.md`（建立于 `46f12fc`，现行文本 `680e109`）。必跑四项脚本
+（`tools/e2e/smoke.py`、`smoke_mouse.py`、`preset.py`、`dialogs.py`）加
+`python -m unittest discover -s tests`，由人在 Windows 机器上执行，附原始输出与退出码回传。
+
+| 项 | 状态 |
+|:--|:--|
+| Windows 验证（四项脚本 + unittest） | open — 未开始，登记后引用首次运行的日期与版本 |
+
+macOS 参考值（2026-10-12，作对照不作承诺）：unittest `Ran 114 tests` / `OK (skipped=3)`；
+smoke.py `10/10 steps passed`；smoke_mouse `7/7 passed`；preset `5/5 passed`；
+dialogs 退出码 0、`measured 3 of 4`、`unreachable: ['Snapshots']`、`control reported overflow: True`。
+
+unittest 的 skip 数随机器而变（已在清单步骤 0 核实并写明）：`tests/test_core.py:122,130` 两条
+数据集测试只在 `E:/Software/Guide/...` 真实存在时才跑——作者本人的 Windows 机上会真的跑，
+预期 `OK (skipped=1)`，FAIL 即 Windows 导入器的真实发现；其他机器 `OK (skipped=3)`。
+
+**顺序**：Windows 结果通过 → 本行改 closed → 总监才决定推送授权与试用开放。
