@@ -217,6 +217,8 @@ node --check web/app.js
 
 The suite covers Unicode and CRLF offsets, overlapping codings, importers against real datasets, CSV formula injection, SQLite rollback, request authentication and read-only public-demo behavior, project restoration, and the model request/confirmation contract.
 
+The suite requires the packages declared in `requirements.txt`; install them first with `pip install -r requirements.txt`. Without them the figure tests fail and the suite exits non-zero — a missing dependency is a failed run, not a smaller one.
+
 ## Project layout
 
 ```text
@@ -425,6 +427,8 @@ node --check web/app.js
 ```
 
 测试涵盖 Unicode 与 CRLF 偏移、重叠编码、真实数据集导入、CSV 公式注入、SQLite 回滚、请求鉴权与公开演示只读限制、项目恢复，以及模型请求确认流程。
+
+测试需要 `requirements.txt` 中声明的依赖，请先执行 `pip install -r requirements.txt`。缺少依赖时图表相关测试会失败，套件以非零码退出——缺依赖是一次失败的运行，而不是一次缩水的运行。
 
 ## 目录结构
 
