@@ -11,7 +11,7 @@ recorded decision, never by a note alone.
 | P2-4 | Codebook count as a hint to expand | `1209a90` + this commit | closed (wording changed to "show codes", assertion shown to discriminate) |
 | P2-5 | Dialog measurement at 390px | Import, Create and Export measured at 356px, no overflow; control forces 500px and is detected | closed |
 | P2-8 | Snapshots has **no visible entry at 390px** | decided: desktop-only **for the restore entry only** — the `.save-state` button and the Snapshots dialog it opens; automatic snapshots (written server-side per change) still run on phones — recorded in docs/NOT_BUILDING.md §6 | closed |
-| P2-9 | `projects` has two elements with the same `data-action` at 390px, one hidden | new | open - check whether a screen reader reaches the hidden one; keep separate from harness fixes |
+| P2-9 | `projects` has two elements with the same `data-action` at 390px, one hidden | measured by `tools/e2e/projects_a11y.py` (`projects-a11y.json` @ `2026-10-12T14:05:48`): the hidden duplicate is `display:none`, not focusable, and **absent from Chromium's AX tree** at both widths; only the visible substitute is exposed. No defect | closed |
 | P2-7 | `smoke_mouse.py`, real mouse selection | Phase 2 | open |
 | Close-out | A test that tools/e2e/preset.py exists and imports, so forgetting to run it is noticed | `tests/test_e2e_harness.py` | closed |
 | Constraint | Every `measure()` action in `tools/e2e/dialogs.py` must exist as `data-action="..."` in `web/app.js`, and its opener must click the same action — enforced by `tests/test_e2e_harness.py` | this commit | closed |
