@@ -338,7 +338,7 @@ export const QT_ENTRIES: Record<string, Array<{ title: string; slug: string; dat
         name: 'Plotting workbench',
         group: 'heavy',
         summary:
-          'Publication figures drawn by an exported Python script, so a co-author can re-run them. Needs matplotlib; scipy adds clustering.',
+          'Figures drawn by an exported Python script, so a co-author can re-run them. Needs matplotlib; scipy adds clustering.',
         default_on: false,
         position: 6,
         icon: 'image',
