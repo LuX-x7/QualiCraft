@@ -1,0 +1,80 @@
+{
+ "source": "qualicraft/datasets.py",
+ "cards": [
+  {
+   "id": "A",
+   "file": "open_science.csv",
+   "title": "Semi-structured interviews with linguists about Open Science",
+   "author": "Elen Le Foll",
+   "year": 2025,
+   "doi": "10.5281/zenodo.17588655",
+   "licence": "CC BY-SA 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+   "share_alike": true,
+   "language": "English (25 files) + German (1)",
+   "sha256_short": "e4c5774b3703",
+   "sha256_verified": true,
+   "purpose": "Coded passages without transcripts — exercises the importer and the figure benchmarks."
+  },
+  {
+   "id": "B",
+   "file": "bologna_qda.zip",
+   "title": "What do we mean by 'data' in the arts and humanities? Interview transcripts (University of Bologna)",
+   "author": "Gualandi, Bianca; Pareschi, Luca; Peroni, Silvio",
+   "year": 2022,
+   "doi": "10.5281/zenodo.6123290",
+   "licence": "CC0 1.0",
+   "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "share_alike": false,
+   "language": "Italian",
+   "sha256_short": "b41044d9801b",
+   "sha256_verified": true,
+   "purpose": "Transcripts, a three-level codebook and offsets that verify — the corpus behind the demo and the worked example."
+  },
+  {
+   "id": "C",
+   "file": "nvivo.csv",
+   "title": "Publishing Reproducible Research Outputs — thematic coding",
+   "author": "Lucia Loffreda & Andrea Chiarelli",
+   "year": 2021,
+   "doi": "10.5281/zenodo.5512420",
+   "licence": "CC BY 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+   "share_alike": false,
+   "language": "English",
+   "sha256_short": "120362320931",
+   "sha256_verified": true,
+   "purpose": "A second coding table in a different exporter's shape — the importer has to survive it."
+  },
+  {
+   "id": "D",
+   "file": "atlas_report.xlsx",
+   "title": "Interview Code Analysis (healthcare professionals)",
+   "author": "Wosny, Marie",
+   "year": 2023,
+   "doi": "10.5281/zenodo.10116088",
+   "licence": "CC BY 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+   "share_alike": false,
+   "language": "English",
+   "sha256_short": "51811fd65fae",
+   "sha256_verified": true,
+   "purpose": "A frequency report across many theme sheets, no transcript — hierarchy and frequency figures only."
+  },
+  {
+   "id": "E",
+   "file": "fairqual_codebook.xlsx",
+   "title": "FAIRqual workshop codebook",
+   "author": "FAIRqual project",
+   "year": 2024,
+   "doi": "github.com/fairqual/dataitd24",
+   "licence": "CC BY 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+   "share_alike": false,
+   "language": "English",
+   "sha256_short": "34cde62787d3",
+   "sha256_verified": true,
+   "purpose": "A small category and subcategory table — a fixture for the hierarchy figure."
+  }
+ ]
+}

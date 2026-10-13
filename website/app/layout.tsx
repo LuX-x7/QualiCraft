@@ -1,26 +1,36 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
-import { getSettings } from '@/lib/kernel/content'
+import { SEO } from '@/lib/site/content'
 import './globals.css'
+import './t7.css'
 
-export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSettings()
-  const title = settings.seo.default_title || settings.identity.site_name
-  const description = settings.seo.default_description || settings.identity.description
-  return {
-    title: { default: title, template: `%s · ${settings.identity.site_name}` },
-    description,
-    metadataBase: new URL(process.env.SITE_URL || 'https://internationalstudycouncil.com'),
-    openGraph: { title, description, type: 'website', siteName: settings.identity.site_name },
-    twitter: { card: 'summary_large_image', title, description },
-    icons: { icon: '/icon.svg' },
-  }
+/**
+ * The document shell. Metadata is static and comes from the site module —
+ * no settings are read at request time, so a page never waits on a database
+ * to learn its own title. metadataBase is set only when a site URL is
+ * configured; without one, Open Graph URLs stay relative rather than
+ * inventing a domain.
+ */
+export const metadata: Metadata = {
+  title: { default: SEO.title, template: `%s · ${SEO.siteName}` },
+  description: SEO.description,
+  ...(process.env.SITE_URL ? { metadataBase: new URL(process.env.SITE_URL) } : {}),
+  openGraph: {
+    title: SEO.title,
+    description: SEO.description,
+    type: 'website',
+    siteName: SEO.siteName,
+  },
+  twitter: { card: 'summary_large_image', title: SEO.title, description: SEO.description },
+  icons: { icon: '/icon.svg' },
 }
 
 /**
  * The middleware resolves the locale and passes it down as a request header, so
- * the document element can carry the right `lang` and `dir` — Arabic needs RTL
- * from the very first paint, not after hydration.
+ * the document element can carry the right `lang` and `dir` from the first
+ * paint. The public site renders the English copy, so the value is `en` in
+ * practice; the header is still honoured rather than hard-coded, because the
+ * workbench proxy shares this document shell.
  */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const head = await headers()
@@ -30,12 +40,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} dir={dir}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap"
-        />
+        {/* The site's two families are self-hosted and subset — see
+            public/fonts and tools/site/prepare_fonts.py. No request to a font
+            CDN is made at runtime, so a page never depends on a third party
+            to render its own type. */}
       </head>
       <body>{children}</body>
     </html>

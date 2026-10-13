@@ -1,8 +1,8 @@
-import PageBody from '@/components/PageBody'
+import HomeView from '@/components/site/HomeView'
+import { SEO } from '@/lib/site/content'
 
-export const dynamic = 'force-dynamic'
+export const metadata = { title: SEO.title, description: SEO.description }
 
-export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params
-  return <PageBody slug="home" locale={locale} />
+export default function HomePage() {
+  return <HomeView />
 }

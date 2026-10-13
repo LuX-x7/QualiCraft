@@ -50,9 +50,21 @@ export function middleware(request: NextRequest) {
   headers.set('x-isc-locale', locale)
   headers.set('x-isc-dir', RTL.has(locale) ? 'rtl' : 'ltr')
 
-  // Already prefixed: let Next route it normally, only the headers are ours.
-  if (hasLocale) {
+  // Already prefixed with the default locale: let Next route it normally,
+  // only the headers are ours.
+  if (hasLocale && locale === 'en') {
     return NextResponse.next({ request: { headers } })
+  }
+
+  // A prefixed path in the other locale serves the same document as its /en
+  // twin: the public site renders one English copy, so /zh/report is rewritten
+  // rather than left to render English under a Chinese lang attribute. The
+  // workbench has its own language switch and is excluded above.
+  if (hasLocale) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/' + pathname.split('/').filter(Boolean).slice(1).join('/')
+    url.pathname = url.pathname === '/' ? '/en' : '/en' + url.pathname
+    return NextResponse.rewrite(url, { request: { headers } })
   }
 
   // Unprefixed: serve the default locale without changing the visible URL.

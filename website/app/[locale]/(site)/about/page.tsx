@@ -1,23 +1,26 @@
-import PageBody, { pageMetadata } from '@/components/PageBody'
+import { ABOUT, SEO } from '@/lib/site/content'
 
-export const dynamic = 'force-dynamic'
+export const metadata = { title: SEO.about.title, description: SEO.about.description }
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params
-  return pageMetadata('about', locale, 'About')
-}
-
-export default async function Page({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ locale: string }>
-  searchParams: Promise<Record<string, string | string[]>>
-}) {
-  const { locale } = await params
-  const raw = (await searchParams) || {}
-  const search = Object.fromEntries(
-    Object.entries(raw).map(([key, value]) => [key, Array.isArray(value) ? value[0] : String(value)]),
+/** About, from the same static module as the homepage. */
+export default function AboutPage() {
+  return (
+    <section className="section about" aria-labelledby="about-title">
+      <div className="wrap">
+        <div className="sec-head">
+          <span className="sec-no">About</span>
+          <h1 id="about-title">{ABOUT.title}</h1>
+          <p>{ABOUT.body}</p>
+        </div>
+        <ul className="principles">
+          {ABOUT.principles.map((principle) => (
+            <li key={principle.name} className="principles__item">
+              <h2>{principle.name}</h2>
+              <p>{principle.detail}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   )
-  return <PageBody slug="about" locale={locale} search={search} />
 }
