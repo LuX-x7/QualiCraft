@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { SEO } from '@/lib/site/content'
-import './globals.css'
 import './t7.css'
 
 /**

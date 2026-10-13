@@ -11,9 +11,8 @@ import type { NextConfig } from 'next'
  * site at a different workbench needs no rebuild.
  */
 const nextConfig: NextConfig = {
-  // The kernel talks to Postgres directly; keep the drivers out of the bundler.
-  serverExternalPackages: ['@electric-sql/pglite', 'pg'],
-  experimental: { serverActions: { bodySizeLimit: '8mb' } },
+  // No server actions and no database drivers: the public pages render from
+  // committed files, and the workbench is a separate process behind /w.
 }
 
 export default nextConfig
