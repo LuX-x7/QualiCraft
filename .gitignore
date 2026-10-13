@@ -45,3 +45,7 @@ website/.next/
 website/out/
 website/.data/
 website/.env.local
+
+# Next build output, including the stale copy a killed build leaves behind
+.next
+.next-stale-*
