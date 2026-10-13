@@ -1,4 +1,5 @@
 import QtMark from '@/components/QtMark'
+import ModuleWalkthrough from '@/components/site/ModuleWalkthrough'
 import cards from '@/lib/site/data-cards.json'
 import {
   DATA_SECTION,
@@ -58,7 +59,8 @@ export default function HomeView() {
         </div>
       </section>
 
-      {/* 02 · five modules — the walkthrough section lands next commit */}
+      {/* 02 · five modules --------------------------------------------- */}
+      <ModuleWalkthrough />
 
       {/* 03 · the two methods ------------------------------------------- */}
       <section className="section" id="method" aria-labelledby="method-title">

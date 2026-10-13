@@ -745,3 +745,311 @@ table.methods td { color: var(--ink-soft); }
 .notfound .label { color: var(--ink-muted); letter-spacing: 0.2em; }
 .notfound .h1 { font-size: clamp(26px, 4vw, 40px); margin: 0; }
 .notfound .lede { color: var(--ink-soft); max-width: var(--measure); }
+
+/* ==========================================================================
+   the five-module walkthrough (T7-04)
+   -------------------------------------------------------------------------- */
+.walk__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: var(--s5);
+  align-items: start;
+}
+
+.walk__panel {
+  position: sticky;
+  top: 88px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  padding: var(--s3);
+}
+
+.walk__panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: var(--s2);
+  margin-bottom: var(--s2);
+}
+
+.walk__panel-no {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.walk__panel-title {
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.walk__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper-sunken);
+}
+
+/* The placeholder the brief asks for: a frame that says what will be here,
+   never a stand-in screenshot. */
+.walk__placeholder {
+  aspect-ratio: 16 / 10;
+  background: var(--paper-sunken);
+  border: 1px dashed var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  text-align: center;
+  padding: var(--s3);
+}
+
+.walk__placeholder-no {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--ink-muted);
+}
+
+.walk__placeholder-text {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.walk__placeholder-note {
+  font-size: 13px;
+  color: var(--ink-muted);
+  max-width: 34ch;
+}
+
+.walk__panel-see {
+  margin: var(--s2) 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--rule);
+  padding-top: var(--s2);
+}
+
+.walk__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s5);
+}
+
+.walk__step {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--s2);
+}
+
+.walk__step.is-current {
+  border-top-color: var(--accent);
+}
+
+.walk__step-button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s2);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink-muted);
+  text-align: left;
+}
+
+.walk__step.is-current .walk__step-button {
+  color: var(--ink);
+}
+
+.walk__step-no {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.walk__step-title {
+  font-size: 21px;
+  font-weight: 650;
+}
+
+.walk__step-goal {
+  margin: var(--s1) 0 var(--s1);
+  color: var(--ink-soft);
+}
+
+.walk__step-ops {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 4px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+/* Phone: the panel sits above the list and still follows the active step. */
+@media (max-width: 800px) {
+  .walk__grid { grid-template-columns: 1fr; gap: var(--s4); }
+  .walk__panel { position: static; }
+}
+
+/* Reduced motion: no sticky following — every step in full, in order. */
+.walk__grid--static .walk__panel { display: none; }
+
+.walk__grid--static .walk__step-ops { font-size: 15.5px; }
+
+/* ==========================================================================
+   the five-module walkthrough (T7-04)
+   -------------------------------------------------------------------------- */
+.walk__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: var(--s5);
+  align-items: start;
+}
+
+.walk__panel {
+  position: sticky;
+  top: 88px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  padding: var(--s3);
+}
+
+.walk__panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: var(--s2);
+  margin-bottom: var(--s2);
+}
+
+.walk__panel-no {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.walk__panel-title {
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.walk__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper-sunken);
+}
+
+/* The placeholder the brief asks for: a frame that says what will be here,
+   never a stand-in screenshot. */
+.walk__placeholder {
+  aspect-ratio: 16 / 10;
+  background: var(--paper-sunken);
+  border: 1px dashed var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  text-align: center;
+  padding: var(--s3);
+}
+
+.walk__placeholder-no {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--ink-muted);
+}
+
+.walk__placeholder-text {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.walk__placeholder-note {
+  font-size: 13px;
+  color: var(--ink-muted);
+  max-width: 34ch;
+}
+
+.walk__panel-see {
+  margin: var(--s2) 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--rule);
+  padding-top: var(--s2);
+}
+
+.walk__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s5);
+}
+
+.walk__step {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--s2);
+}
+
+.walk__step.is-current {
+  border-top-color: var(--accent);
+}
+
+.walk__step-button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s2);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink-muted);
+  text-align: left;
+}
+
+.walk__step.is-current .walk__step-button {
+  color: var(--ink);
+}
+
+.walk__step-no {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.walk__step-title {
+  font-size: 21px;
+  font-weight: 650;
+}
+
+.walk__step-goal {
+  margin: var(--s1) 0 var(--s1);
+  color: var(--ink-soft);
+}
+
+.walk__step-ops {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 4px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+/* Phone: the panel sits above the list and still follows the active step. */
+@media (max-width: 800px) {
+  .walk__grid { grid-template-columns: 1fr; gap: var(--s4); }
+  .walk__panel { position: static; }
+}
+
+/* Reduced motion: no sticky following — every step in full, in order. */
+.walk__grid--static .walk__panel { display: none; }
+
+.walk__grid--static .walk__step-ops { font-size: 15.5px; }
