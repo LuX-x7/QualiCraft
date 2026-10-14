@@ -5,6 +5,8 @@ import time
 import unittest
 import urllib.error
 import urllib.request
+import urllib.parse
+from unittest.mock import patch
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from qualicraft.server import create_server
@@ -58,6 +60,26 @@ class HTTPTests(unittest.TestCase):
         for headers in [{"Content-Type": "application/json"}, {"X-QualiCraft-Token": self.token, "Content-Type": "application/json", "Origin": "https://evil.example"}]:
             with self.assertRaises(urllib.error.HTTPError):
                 self.request("/api/projects", {"name": "blocked"}, headers)
+
+    def test_plot_path_errors_are_400_including_public_demo(self):
+        p = self.request('/api/projects', {'kind': 'demo'})
+        public = create_server(self.tmp.name, self.tmp.name, port=0, public_demo=True)
+        thread = threading.Thread(target=public.serve_forever, daemon=True)
+        thread.start()
+        try:
+            for base in (self.base, f'http://127.0.0.1:{public.server_port}'):
+                for endpoint in ('plot', 'plot-bundle'):
+                    for name in ('../escape', '/tmp/escape', 'C:\\escape', 'CON', 'a' * 81):
+                        with self.subTest(base=base, endpoint=endpoint, name=name), patch('qualicraft.plotting.subprocess.run') as run:
+                            url = base + '/api/projects/' + p['id'] + '/' + endpoint + '?' + urllib.parse.urlencode({'name': name})
+                            with self.assertRaises(urllib.error.HTTPError) as caught:
+                                urllib.request.urlopen(url, timeout=3)
+                            self.assertEqual(caught.exception.code, 400)
+                            run.assert_not_called()
+        finally:
+            public.shutdown()
+            public.server_close()
+            thread.join()
 
     def test_http_roundtrip_review_export_restore(self):
         p = self.request("/api/projects", {"kind": "demo"})

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import csv
 import importlib.util
+import inspect
 import io
 import pprint
 import subprocess
@@ -123,6 +124,33 @@ DEFAULT_OPTIONS = {
 SIDECAR_FILES = ("figure_data.csv", "figure.py")
 FIGURE_EXTENSIONS = ("png", "svg", "pdf")
 
+
+def _validate_output_name(name):
+    """One portable filename stem, without rewriting the user's choice."""
+    import unicodedata
+    if (not isinstance(name, str) or not 1 <= len(name) <= 80
+            or name in (".", "..") or name.endswith((" ", "."))
+            or any(c in '/\\:<>"|?*' or unicodedata.category(c) == "Cc" for c in name)):
+        raise ValueError("Figure name must be a single filename of at most 80 characters, without paths or control characters.")
+    stem = name.split(".", 1)[0].rstrip(" ").upper()
+    reserved = {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+    reserved.update(prefix + digit for prefix in ("COM", "LPT") for digit in "123456789¹²³")
+    if stem in reserved:
+        raise ValueError("Figure name is reserved by Windows; choose another filename.")
+    return name
+
+
+def _output_path(root, filename):
+    """Check containment again at every write/read, including symlinks."""
+    root = Path(root).resolve()
+    try:
+        path = (root / filename).resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ValueError("Figure output path cannot be resolved safely.") from exc
+    if path.parent != root:
+        raise ValueError("Figure output must stay directly inside its output folder.")
+    return path
+
 # Fonts with CJK coverage, in preference order. Resolved at render time so a
 # Chinese codebook does not come out as a row of empty boxes.
 CJK_FONTS = ("PingFang SC", "Hiragino Sans GB", "Heiti SC", "Songti SC",
@@ -184,7 +212,8 @@ def normalise(options):
 
     Query strings arrive as text, so booleans and numbers are parsed rather
     than trusted; anything unrecognised falls back to the default instead of
-    raising, because a bad URL should not break the preview.
+    raising, because a bad URL should not break the preview. Output names are
+    the exception: unsafe filenames are rejected rather than rewritten.
     """
     merged = dict(DEFAULT_OPTIONS)
     for key, value in (options or {}).items():
@@ -208,7 +237,8 @@ def normalise(options):
     merged["fontsize"] = _as_int(merged["fontsize"], DEFAULT_OPTIONS["fontsize"], 5, 20)
     merged["figsize"] = _as_float(merged["figsize"], DEFAULT_OPTIONS["figsize"], 3.0, 24.0)
     merged["dpi"] = _as_int(merged["dpi"], DEFAULT_OPTIONS["dpi"], 72, 1200)
-    merged["name"] = str(merged["name"] or ("figure_" + merged["kind"]))[:80]
+    name = merged["name"]
+    merged["name"] = _validate_output_name("figure_" + merged["kind"] if name == "" else str(name))
     for field in ("title", "subtitle", "credit", "color", "font"):
         merged[field] = str(merged[field] or "")[:400]
     if not merged["color"].startswith("#"):
@@ -363,7 +393,7 @@ def wrap(text, width=34):
 
 
 def read_data():
-    with open(HERE / "figure_data.csv", encoding="utf-8", newline="") as handle:
+    with open(_output_path(HERE, "figure_data.csv"), encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle))
 
 
@@ -389,7 +419,7 @@ def finish(fig, title, subtitle, credit, rect=(0, 0.075, 1, 0.88)):
         for ext, meta in (("png", None),
                           ("svg", {"Date": None}),
                           ("pdf", {"CreationDate": None, "ModDate": None})):
-            fig.savefig(HERE / (SETTINGS["name"] + "." + ext),
+            fig.savefig(_output_path(HERE, SETTINGS["name"] + "." + ext),
                         dpi=SETTINGS["dpi"], bbox_inches="tight", pad_inches=.2,
                         metadata=meta)
     plt.close(fig)
@@ -596,6 +626,10 @@ def build_script(options=None):
     settings["font"] = settings["font"] or available_font()
     return (_SCRIPT_PRELUDE
             + pprint.pformat(settings, indent=4, width=88, sort_dicts=True)
+            + "\n\n" + inspect.getsource(_validate_output_name)
+            + "\n" + inspect.getsource(_output_path)
+            + '\n_validate_output_name(SETTINGS["name"])\n'
+            + 'for _ext in ("png", "svg", "pdf"):\n    _output_path(HERE, SETTINGS["name"] + "." + _ext)\n'
             + _SCRIPT_HELPERS
             + _BODIES[settings["kind"]])
 
@@ -649,6 +683,8 @@ def _prepare(project, options, root):
     same file. Returns the produced files keyed by filename.
     """
     options = normalise(options)
+    for filename in (*SIDECAR_FILES, *(options["name"] + "." + ext for ext in FIGURE_EXTENSIONS)):
+        _output_path(root, filename)
     rows = analyze.tidy(project)
     if not rows:
         raise ValueError("There is nothing to plot yet: code a few passages first.")
@@ -672,10 +708,10 @@ def _prepare(project, options, root):
                 "separate passages are never a pair.")
         raise ValueError("This figure has no data at this setting; widen the filter.")
 
-    (root / "figure_data.csv").write_text(data, encoding="utf-8")
-    (root / "figure.py").write_text(build_script(options), encoding="utf-8")
+    _output_path(root, "figure_data.csv").write_text(data, encoding="utf-8")
+    _output_path(root, "figure.py").write_text(build_script(options), encoding="utf-8")
 
-    finished = subprocess.run([sys.executable, str(root / "figure.py")],
+    finished = subprocess.run([sys.executable, str(_output_path(root, "figure.py"))],
                               capture_output=True, text=True, timeout=300, cwd=str(root))
     if finished.returncode != 0:
         tail = (finished.stderr or "").strip().splitlines()
@@ -683,17 +719,18 @@ def _prepare(project, options, root):
 
     produced = {}
     for ext in FIGURE_EXTENSIONS:
-        path = root / ("%s.%s" % (options["name"], ext))
+        path = _output_path(root, "%s.%s" % (options["name"], ext))
         if not path.exists():
             raise RuntimeError("The figure script produced no %s output." % ext)
         produced[path.name] = path.read_bytes()
     for name in SIDECAR_FILES:
-        produced[name] = (root / name).read_bytes()
+        produced[name] = _output_path(root, name).read_bytes()
     return produced, _result(rows, options, case_text)
 
 
 def render(project, options=None):
     """The preview: the figure that the exported script produces."""
+    options = normalise(options)
     _require_stack()
     with tempfile.TemporaryDirectory(prefix="qualicraft-plot-") as workdir:
         root = Path(workdir)
@@ -704,6 +741,7 @@ def render(project, options=None):
 
 def bundle(project, options=None):
     """The export: data, script and finished figures, ready for a co-author."""
+    options = normalise(options)
     _require_stack()
     with tempfile.TemporaryDirectory(prefix="qualicraft-plot-") as workdir:
         root = Path(workdir)
