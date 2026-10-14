@@ -1,12 +1,4 @@
-/* ==========================================================================
-   /report — layout and motion
-   Layout from the measured reference: the contents column takes about a
-   third of the viewport, the content column starts a little further in and
-   runs a little over half the width. Motion is the measured set and nothing
-   more: the indicator travels 240 ms on the measured easing, a figure fades
-   in once over 240 ms ease-out, hover is immediate, scrolling is native.
-   ========================================================================== */
-
+/* Report-only layout. The site tokens, SVGs and counting units stay shared. */
 .report-head {
   padding: 72px 24px 40px;
   max-width: 1180px;
@@ -43,44 +35,57 @@
 .report-facts dt {
   color: var(--ink-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
   font-size: 11px;
 }
 
 .report-facts dd {
   margin: 0;
-  color: var(--ink);
 }
 
-/* --------------------------------------------------------------------------
-   the two columns
-   -------------------------------------------------------------------------- */
+.report-start {
+  display: inline-block;
+  font-size: 12px;
+  margin-top: 24px;
+}
 
 .report {
+  --report-anchor-offset: 112px;
   display: grid;
-  grid-template-columns: 35% 1fr;
+  grid-template-columns: 240px minmax(0, 1fr);
   max-width: 1180px;
   margin: 0 auto;
   padding: 0 24px 96px;
-  gap: 0 48px;
+  gap: 0 56px;
 }
 
 .report-toc {
   position: relative;
+  min-width: 0;
 }
 
 .report-toc-inner {
   position: sticky;
-  top: 96px;
-  padding: 24px 0 0;
+  top: 88px;
+  padding: 24px 8px 16px 4px;
+  max-height: calc(100dvh - 104px);
+  overflow-y: auto;
+}
+
+.report-toc-summary {
+  display: none;
 }
 
 .toc-kicker {
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: 10px;
+  letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--ink-muted);
   margin: 0 0 16px;
+}
+
+.toc-list-wrap {
+  position: relative;
 }
 
 .toc-list {
@@ -92,7 +97,7 @@
 
 .toc-item {
   position: relative;
-  padding: 10px 0 10px 20px;
+  padding: 10px 0 10px 16px;
 }
 
 .toc-item + .toc-item {
@@ -110,7 +115,7 @@
 .toc-no {
   font-size: 11.5px;
   color: var(--ink-muted);
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
 }
 
 .toc-title {
@@ -126,69 +131,81 @@
 }
 
 .toc-item.is-current .toc-title {
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .toc-subs {
   list-style: none;
   margin: 6px 0 0;
-  padding: 0 0 0 23px;
-  display: grid;
-  gap: 2px;
+  padding: 0 0 0 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
 }
 
 .toc-sub {
-  font-size: 11.5px;
+  font-size: 10px;
   color: var(--ink-muted);
   text-decoration: none;
-  letter-spacing: 0.02em;
 }
 
 .toc-sub:hover {
   color: var(--accent);
 }
 
-/* the indicator: a thin rule with a dot, travelling to the current chapter */
 .toc-indicator {
   position: absolute;
   left: 0;
-  width: 14px;
+  width: 10px;
   height: 1px;
   background: var(--accent);
-  transition: top 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition: top 240ms cubic-bezier(.22,.61,.36,1);
   pointer-events: none;
 }
 
 .toc-indicator::after {
   content: '';
   position: absolute;
-  left: -3px;
-  top: -2.5px;
-  width: 6px;
-  height: 6px;
+  left: -2px;
+  top: -2px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--accent);
 }
 
-/* --------------------------------------------------------------------------
-   the content column
-   -------------------------------------------------------------------------- */
-
 .report-body {
   min-width: 0;
-  padding-top: 24px;
 }
 
 .report-section {
-  padding: 40px 0 8px;
-  scroll-margin-top: 88px;
+  padding: 48px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.report-section:first-child {
+  padding-top: 24px;
 }
 
 .report-section h2 {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.report [id] {
+  scroll-margin-top: var(--report-anchor-offset);
+}
+
+.report-step {
+  font-size: 10.5px;
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--ink-muted);
+  margin: 0 0 12px;
+  font-weight: 500;
 }
 
 .report-prose p {
@@ -196,43 +213,41 @@
   color: var(--ink-soft);
 }
 
+.report-prose p.report-lead {
+  font-size: 21px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
 .report-prose em {
   color: var(--ink);
-  font-style: italic;
+}
+
+.report-prose a {
+  text-decoration-style: dotted;
 }
 
 .report-fig-section {
-  padding: 24px 0 40px;
-  scroll-margin-top: 88px;
+  padding: 12px 0 24px;
+  transition: opacity 240ms ease-out;
 }
 
-/* --------------------------------------------------------------------------
-   figures: one fade-in on first entry, 240 ms ease-out, nothing else.
-   The pending class goes on the section the observer watches, so the
-   transition belongs there too.
-   -------------------------------------------------------------------------- */
-
-figure.fig img {
+.report .fig img {
   transition: none;
 }
 
-.report-fig-section {
-  transition: opacity 240ms ease-out;
+.report .fig figcaption {
+  max-width: none;
+  font-size: 13px;
+  padding-top: 12px;
+}
+
+.report .fig-source {
+  font-size: 10.5px;
 }
 
 .fig-pending {
   opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fig-pending {
-    opacity: 1;
-  }
-
-  .report-fig-section,
-  .toc-indicator {
-    transition: none;
-  }
 }
 
 .fig-absent {
@@ -246,71 +261,164 @@ figure.fig img {
   color: var(--ink-soft);
 }
 
-/* the table toggle: immediate, no animation */
-.fig-table-wrap {
-  margin-top: 16px;
+.report-counts {
+  border: 1px solid var(--rule);
+  padding: 16px;
+}
+
+.report-counts-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.report-counts-head h3 {
+  margin: 0;
+}
+
+.report-counts-head a {
+  font-size: 11px;
 }
 
 .fig-toggle {
-  background: none;
-  border: 1px solid var(--rule-strong);
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--ink-soft);
+  padding: 8px 4px;
+  font-size: 11px;
+  color: var(--accent);
   cursor: pointer;
 }
 
-.fig-toggle:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+.fig-toggle span:first-child {
+  margin-right: 12px;
 }
 
-.fig-table-wrap .table-scroll {
+.table-row-count {
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.report .table-scroll {
   margin-top: 16px;
-  max-height: 420px;
+  max-height: 380px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
-/* --------------------------------------------------------------------------
-   narrow: the contents fold to a bar above the content
-   -------------------------------------------------------------------------- */
-
-@media (max-width: 900px) {
-  .report {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
-  .report-toc-inner {
-    position: static;
-    padding: 24px 0;
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .toc-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 20px;
-  }
-
-  .toc-item {
-    padding: 4px 0 4px 16px;
-  }
-
-  .toc-item + .toc-item {
-    border-top: 0;
-  }
-
-  .toc-subs {
-    display: none;
-  }
-
-  .toc-indicator {
-    display: none;
-  }
+.report table.data {
+  font-size: 13px;
 }
 
-/* the failed-verification block: loud, and the only red on the page */
+.report table.data caption {
+  font-size: 10px;
+}
+
+.report table.data th, .report table.data td {
+  padding: 10px 8px;
+  overflow-wrap: anywhere;
+}
+
+.report table.data td.num {
+  text-align: right;
+}
+
+.report-reading {
+  margin-top: 28px;
+  padding-left: 20px;
+  border-left: 2px solid var(--rule-strong);
+}
+
+.report-reading p:last-child {
+  margin-bottom: 0;
+}
+
+.report-data-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.report-data-card h3 {
+  font-size: 20px;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.report-data-card .report-card-meta, .report-data-card .report-card-hash {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.report-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.report-data-card .report-card-hash {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-rules {
+  margin: 24px 0 32px;
+}
+
+.report-rules div {
+  border-top: 1px solid var(--rule);
+  padding: 16px 0;
+}
+
+.report-rules dt {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.report-rules dd {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.report-export-record {
+  padding: 24px;
+  background: var(--paper-sunken);
+  margin-bottom: 24px;
+}
+
+.report-export-record h3 {
+  margin-bottom: 16px;
+}
+
+.report-provenance {
+  margin: 0 0 16px;
+}
+
+.report-provenance div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.report-provenance dt {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.report-provenance dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.report-export-record > a {
+  font-size: 11px;
+}
+
 .report-problems {
   margin: var(--s3) 0 0;
   padding-left: 1.2em;
@@ -318,4 +426,158 @@ figure.fig img {
   gap: 6px;
   font-size: 12.5px;
   color: var(--rust);
+}
+
+@media (max-width: 900px) {
+  .report {
+    --report-anchor-offset: 152px;
+    display: block;
+  }
+
+  .report-toc {
+    position: sticky;
+    top: 66px;
+    z-index: 15;
+    background: var(--paper);
+    border-block: 1px solid var(--rule-strong);
+  }
+
+  .report-toc-inner {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .report-toc-summary {
+    display: block;
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 32px 14px 0;
+    position: relative;
+  }
+
+  .report-toc-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .report-toc-summary > .mono {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    letter-spacing: .1em;
+  }
+
+  .report-toc-summary::after {
+    content: '+';
+    position: absolute;
+    right: 4px;
+    top: 20px;
+    color: var(--accent);
+    font-family: var(--mono);
+  }
+
+  .report-toc-inner[open] > .report-toc-summary::after {
+    content: '−';
+  }
+
+  .toc-current {
+    display: block;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+
+  .toc-kicker, .toc-indicator {
+    display: none;
+  }
+
+  .toc-list-wrap {
+    position: absolute;
+    top: 100%;
+    left: -1px;
+    right: -1px;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+    padding: 8px 16px 12px;
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+  }
+
+  .toc-item {
+    padding: 8px 4px;
+  }
+
+  .toc-subs {
+    margin-top: 8px;
+  }
+
+  .report-section {
+    padding-block: 32px;
+  }
+
+}
+
+@media (max-width: 480px) {
+  .report-head {
+    padding-top: 40px;
+  }
+
+  .report-head, .report {
+    padding-inline: 20px;
+  }
+
+  .report-facts {
+    gap: 8px 20px;
+  }
+
+  .report-facts div:first-child {
+    flex-basis: 100%;
+  }
+
+  .report-section h2 {
+    font-size: 27px;
+  }
+
+  .report-prose p.report-lead {
+    font-size: 20px;
+  }
+
+  .report-data-card, .report-export-record {
+    padding: 16px;
+  }
+
+  .report-counts {
+    padding: 12px;
+  }
+
+  .fig-toggle {
+    font-size: 10px;
+  }
+
+  .report table.data {
+    font-size: 12px;
+  }
+
+  .report table.data th {
+    font-size: 10px;
+  }
+
+  .report-provenance div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fig-pending {
+    opacity: 1;
+  }
+
+  .report-fig-section, .toc-indicator {
+    transition: none;
+  }
+
 }
