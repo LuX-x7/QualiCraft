@@ -299,6 +299,8 @@ def merge_codes(project, source_id, target_id):
     require(source_id != target_id, "Choose two different codes")
     source = find(project["codes"], source_id)
     target = find(project["codes"], target_id)
+    require(target_id not in descendants(project["codes"], source_id),
+            "A code cannot be merged into one of its own descendants")
     kept, moved, collapsed = [], 0, 0
     known = {(a["document_id"], a["code_id"], a["start"], a["end"])
              for a in project["annotations"] if a["code_id"] != source_id}

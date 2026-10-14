@@ -726,11 +726,13 @@ function showCodeDeleteAsk(id) {
 }
 function showMergeAsk(id) {
   const src=state.project.codes.find(x=>x.id===id); if(!src) return;
-  const others=state.project.codes.filter(x=>x.id!==id);
+  const excluded=codeDescendants(id); excluded.add(id);
+  const others=state.project.codes.filter(x=>!excluded.has(x.id));
   modal(QT('mergeCode','Merge code'), `<p>Move every coding from <b>${esc(src.name)}</b> into another code, then remove it.</p>
-    <label class="field">Merge into<select id="merge-target">${others.map(o=>`<option value="${o.id}">${esc(codePath(o))}</option>`).join('')}</select></label>
+    <label class="field">Merge into<select id="merge-target"${others.length?'':' disabled'}>${others.map(o=>`<option value="${o.id}">${esc(codePath(o))}</option>`).join('')}</select></label>
+    ${others.length?'':'<p class="notice">No eligible target: choose a code outside this branch.</p>'}
     <div class="notice">Sub-codes of <b>${esc(src.name)}</b> are re-parented to the target. A coding that would duplicate an existing target coding on the same passage is collapsed rather than copied.</div>`,
-    `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="code-merge" data-id="${id}">Merge</button>`);
+    `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="code-merge" data-id="${id}"${others.length?'':' disabled'}>Merge</button>`);
 }
 function showAnnotation() {
   if(!state.selection||state.selection.document_id!==state.docId) throw new Error('Select a passage in the transcript first.');
