@@ -1054,6 +1054,27 @@ table.methods td { color: var(--ink-soft); }
 
 .walk__grid--static .walk__step-ops { font-size: 15.5px; }
 
+/* Accepted recordings share a real result frame with the static alternative. */
+.walk__recording { margin: 0; }
+.walk__recording figcaption { margin-top: var(--s2); font-size: 14px; color: var(--ink-soft); }
+.walk__recording figcaption p { margin: 0 0 var(--s1); }
+.walk__recording-meta { display: block; color: var(--ink-muted); font-size: 12px; }
+.walk__media-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.walk__media-actions a, .walk__media-toggle { font-size: 13px; }
+.walk__media-toggle {
+  padding: 8px 12px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+.walk__grid--inline { grid-template-columns: minmax(0, 1fr); }
+.walk__inline { margin-top: var(--s3); }
+.walk__step { scroll-margin-top: 88px; min-width: 0; }
+.walk__grid--inline .walk__step-button { min-height: 44px; }
+
 /* --------------------------------------------------------------------------
    the pixel mark, assembled block by block (moved here from the old
    globals.css, which the cleanup removed — without it the mark rendered

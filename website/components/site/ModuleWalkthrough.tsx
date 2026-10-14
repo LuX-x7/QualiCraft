@@ -5,8 +5,8 @@
  *
  * Desktop: the demonstration panel is sticky on the left while the five
  * numbered steps scroll past on the right; an IntersectionObserver picks the
- * step the reader is in and the panel shows that step's media. Phone: the
- * panel sits above the list and shows the same active step.
+ * step the reader is in and the panel shows that step's media. Phone and
+ * reduced motion: media appears with each step, in reading order.
  *
  * Scrolling stays the browser's own — nothing here smooth-scrolls or
  * intercepts the wheel; the observer only reports which step is current, and
@@ -15,24 +15,70 @@
  * Media: each step carries a short clip recorded from the running workbench.
  * Until a clip has passed the acceptance checks the panel shows the
  * placeholder the brief asks for — a frame that says "clip pending" — and no
- * substituted screenshot. Adding an accepted clip is one entry in CLIPS.
+ * substituted screenshot. Accepted media and recorded stills live in CLIPS.
  *
  * prefers-reduced-motion: the sticky following and the observer are off, and
  * every step is laid out in full, in order, as a static page.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MODULES } from '@/lib/site/content'
+import { CLIPS, PENDING_CLIPS } from '@/lib/site/clips'
 
-/** Steps whose clip is accepted and present under /clips/. Empty by design. */
-const CLIPS: Record<string, string> = {}
+type Module = (typeof MODULES)[number]
 
-const reducedMotion = () =>
-  typeof window !== 'undefined' &&
-  Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+function ModuleMedia({ item, reduced }: { item: Module; reduced: boolean }) {
+  const clip = CLIPS[item.key]
+  const [still, setStill] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const captionId = `clip-caption-${item.key}`
+
+  if (!clip) return (
+    <div className="walk__placeholder">
+      <span className="walk__placeholder-no mono">{item.no}</span>
+      <span className="walk__placeholder-text mono">clip pending</span>
+      <span className="walk__placeholder-note">{PENDING_CLIPS[item.key]}</span>
+    </div>
+  )
+
+  const showStill = reduced || still || failed
+  return (
+    <figure className="walk__recording">
+      {showStill ? (
+        // These are unaltered decoded recording frames, not substituted UI.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="walk__media" src={clip.poster} width={clip.width}
+          height={clip.height} alt={clip.description} loading="lazy" />
+      ) : (
+        <video className="walk__media" src={clip.src} poster={clip.poster}
+          width={clip.width} height={clip.height} controls muted playsInline
+          preload="metadata" aria-label={`${item.title} workbench recording`}
+          aria-describedby={captionId} onError={() => setFailed(true)}>
+          <a href={clip.poster}>View the recorded still image</a>
+        </video>
+      )}
+      <figcaption id={captionId}>
+        <p>{clip.description} <span className="walk__recording-meta">3 seconds · CC0 sample · No audio.</span></p>
+        {failed && <p role="status">The recording could not load. The recorded still image is shown.</p>}
+        <div className="walk__media-actions">
+          {!reduced && !failed && (
+            <button type="button" className="walk__media-toggle"
+              aria-label={`${still ? 'Watch recording' : 'Show still image'}: ${item.title}`}
+              onClick={() => setStill(!still)}>
+              {still ? 'Watch recording' : 'Show still image'}
+            </button>
+          )}
+          <a href={clip.poster} target="_blank" rel="noreferrer">Open full-size still (new tab)</a>
+        </div>
+      </figcaption>
+    </figure>
+  )
+}
 
 export default function ModuleWalkthrough() {
   const [active, setActive] = useState(0)
   const [reduced, setReduced] = useState(false)
+  const [compact, setCompact] = useState(false)
+  const inlineMedia = reduced || compact
   const stepRefs = useRef<Array<HTMLLIElement | null>>([])
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([])
   /* Activating a step scrolls it into view, and the observer then reports
@@ -56,12 +102,19 @@ export default function ModuleWalkthrough() {
   }, [])
 
   useEffect(() => {
-    const query = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    if (!query) return
-    setReduced(query.matches)
-    const onChange = () => setReduced(query.matches)
-    query.addEventListener('change', onChange)
-    return () => query.removeEventListener('change', onChange)
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const phone = window.matchMedia('(max-width: 800px)')
+    const onChange = () => {
+      setReduced(motion.matches)
+      setCompact(phone.matches)
+    }
+    onChange()
+    motion.addEventListener('change', onChange)
+    phone.addEventListener('change', onChange)
+    return () => {
+      motion.removeEventListener('change', onChange)
+      phone.removeEventListener('change', onChange)
+    }
   }, [])
 
   /* The observer follows the reader. A hairline band across the middle of the
@@ -103,9 +156,9 @@ export default function ModuleWalkthrough() {
     setActive(bounded)
     holdRef.current = performance.now() + 900
     const node = stepRefs.current[bounded]
-    if (node) node.scrollIntoView({ block: 'center' })
-    if (focus) buttonRefs.current[bounded]?.focus()
-  }, [])
+    if (node) node.scrollIntoView({ block: inlineMedia ? 'start' : 'center' })
+    if (focus) buttonRefs.current[bounded]?.focus({ preventScroll: true })
+  }, [inlineMedia])
 
   /* Keyboard: up and down walk the steps. The panel follows; the page scroll
      only when the reader asks for it. */
@@ -126,7 +179,6 @@ export default function ModuleWalkthrough() {
   }
 
   const module = MODULES[active]
-  const clip = CLIPS[module.key]
 
   return (
     <section className="section walk" id="modules" aria-labelledby="modules-title">
@@ -136,38 +188,22 @@ export default function ModuleWalkthrough() {
           <h2 id="modules-title">Five modules, taken as you need them.</h2>
           <p>
             Import, code, analyse, plot, export. Each step says what to do and what you
-            should see; scroll the list and the panel follows. Every module is off by
+            should see. Play a recorded Bologna example or open its still image.
+            Import and export recordings are being replaced. Every module is off by
             default except the three at the core — turn one on and it stays on for that
             study.
           </p>
         </div>
 
-        <div className={`walk__grid${reduced ? ' walk__grid--static' : ''}`}>
-          <div className="walk__panel" aria-live="polite">
+        <div className={`walk__grid${inlineMedia ? ' walk__grid--inline' : ''}`}>
+          {!inlineMedia && <div className="walk__panel" id="module-demo" aria-live="polite">
             <div className="walk__panel-head">
               <span className="walk__panel-no mono">{module.no}</span>
               <span className="walk__panel-title">{module.title}</span>
             </div>
-            {clip ? (
-              <video
-                className="walk__media"
-                src={clip}
-                controls
-                playsInline
-                preload="metadata"
-              />
-            ) : (
-              <div className="walk__placeholder">
-                <span className="walk__placeholder-no mono">{module.no}</span>
-                <span className="walk__placeholder-text mono">clip pending</span>
-                <span className="walk__placeholder-note">
-                  A {module.title.toLowerCase()} clip, recorded from the running workbench,
-                  lands here once it passes the acceptance checks.
-                </span>
-              </div>
-            )}
+            <ModuleMedia key={module.key} item={module} reduced={reduced} />
             <p className="walk__panel-see">{module.see}</p>
-          </div>
+          </div>}
 
           <ol className="walk__steps">
             {MODULES.map((item, index) => {
@@ -188,6 +224,7 @@ export default function ModuleWalkthrough() {
                     }}
                     className="walk__step-button"
                     aria-current={current ? 'step' : undefined}
+                    aria-controls={inlineMedia ? `module-demo-${item.key}` : 'module-demo'}
                     onClick={() => goTo(index)}
                     onKeyDown={(event) => onKeyDown(event, index)}
                   >
@@ -200,6 +237,10 @@ export default function ModuleWalkthrough() {
                       <li key={step}>{step}</li>
                     ))}
                   </ul>
+                  {inlineMedia && <div className="walk__inline" id={`module-demo-${item.key}`}>
+                    <ModuleMedia item={item} reduced={reduced} />
+                    <p className="walk__panel-see">{item.see}</p>
+                  </div>}
                 </li>
               )
             })}
