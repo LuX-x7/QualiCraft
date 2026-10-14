@@ -250,8 +250,11 @@ def fit_motion(times: list[float], positions: list[float],
         return {"duration_ms": None, "reason": "the indicator did not travel"}
     progress = (p - p0) / span
     best = None
-    for duration in np.arange(search_ms * 0.4, float(search_ms), 0.5):
-        for start in np.arange(t[0] - FRAME_MS, t[0] + 2 * FRAME_MS, FRAME_MS / 4):
+    # The grid has to be wider than the answer: an earlier version searched
+    # 180-450 ms, and a 240 ms transition then reported 180 ms because the
+    # optimum sat on the grid's own lower edge.
+    for duration in np.arange(40.0, 600.0, 0.5):
+        for start in np.arange(t[0] - 4 * FRAME_MS, t[0] + 4 * FRAME_MS, FRAME_MS / 4):
             expected = np.array([ease(max(0.0, min(1.0, (ti - start) / (duration / 1000.0))), curve)
                                  for ti in t])
             residual = float(np.sqrt(((expected - progress) ** 2).mean()))
@@ -296,7 +299,7 @@ def fit_fade(trace: list[tuple[float, float]], curve) -> dict:
     falling = float(np.mean(v[: max(2, len(v) // 6)])) > float(np.mean(v[-max(2, len(v) // 6):]))
     opacity = np.clip(((v1 - v) if falling else (v - v0)) / (v1 - v0), 0, 1)
     best = None
-    for duration in np.arange(80.0, 600.0, 0.5):
+    for duration in np.arange(40.0, 600.0, 0.5):
         for start in np.arange(t[0] - 0.1, t[0] + 0.15, FRAME_MS / 4 / 1000.0):
             expected = np.array([ease(max(0.0, min(1.0, (ti - start) / (duration / 1000.0))), curve)
                                  for ti in t])
@@ -410,9 +413,15 @@ def measure_indicator(page, out: Path) -> dict:
     x0, x1 = layout["strip"]
     target = layout["last_id"].lstrip("#")
     dom_before = page.evaluate(
-        "() => ({ top: document.querySelector('.toc-indicator').style.top,"
-        " rect: document.querySelector('.toc-indicator').getBoundingClientRect().top,"
-        " current: document.querySelector('.toc-item.is-current .toc-title')?.textContent })")
+        "() => { const ind = document.querySelector('.toc-indicator');"
+        " window.__motion = { start: null, end: null };"
+        " ind.addEventListener('transitionstart', () => {"
+        "   if (window.__motion.start === null) window.__motion.start = performance.now(); },"
+        "   { once: true });"
+        " ind.addEventListener('transitionend', () => { window.__motion.end = performance.now(); },"
+        "   { once: true });"
+        " return { top: ind.style.top, rect: ind.getBoundingClientRect().top,"
+        "          current: document.querySelector('.toc-item.is-current .toc-title')?.textContent }; }")
     with Screencast(page) as cap:
         page.wait_for_timeout(700)
         scrolled_at = time.monotonic()
@@ -420,9 +429,11 @@ def measure_indicator(page, out: Path) -> dict:
         page.wait_for_timeout(900)
     frames = list(cap.frames)
     dom_after = page.evaluate(
-        "() => ({ top: document.querySelector('.toc-indicator').style.top,"
-        " rect: document.querySelector('.toc-indicator').getBoundingClientRect().top,"
-        " current: document.querySelector('.toc-item.is-current .toc-title')?.textContent })")
+        "() => { const ind = document.querySelector('.toc-indicator');"
+        " const m = window.__motion || {};"
+        " return { top: ind.style.top, rect: ind.getBoundingClientRect().top,"
+        "          current: document.querySelector('.toc-item.is-current .toc-title')?.textContent,"
+        "          transition_ms: (m.start !== null && m.end !== null) ? m.end - m.start : null }; }")
     times: list[float] = []
     positions: list[float] = []
     near = None
@@ -450,6 +461,7 @@ def measure_indicator(page, out: Path) -> dict:
         "expected_travel_px": round(layout["travel_expect"], 1),
         "dom_before": dom_before,
         "dom_after": dom_after,
+        "transition_ms": (dom_after or {}).get("transition_ms"),
     })
     for label, index in (("first", 0), ("mid", len(frames) // 2), ("last", len(frames) - 1)):
         save(frames[index][2], out / f"indicator-{label}.jpg")
@@ -571,6 +583,17 @@ def measure_hero(page, out: Path) -> tuple[dict, dict]:
         save(frames[min(first + 2, len(frames) - 1)][2], out / "hero-mark-early.jpg")
         save(frames[-1][2], out / "hero-mark-done.jpg")
 
+    # The element's transform, read over a longer window than the frames can
+    # cover: see the printer for why both readings are kept.
+    transform = page.evaluate(
+        "async () => { const g = document.querySelector('.hero__ground');"
+        " if (!g) return null;"
+        " const read = () => new DOMMatrixReadOnly(getComputedStyle(g).transform).m41;"
+        " const a = read(); const t0 = performance.now();"
+        " await new Promise(r => setTimeout(r, 4000));"
+        " const b = read(); const t1 = performance.now();"
+        " return { rate_px_per_s: (b - a) / ((t1 - t0) / 1000), window_s: (t1 - t0) / 1000 }; }")
+
     ground_box = (1000, 120, 400, 300)
     shifts = drift_shift(drifting, ground_box)
     if len(shifts) >= 4:
@@ -591,6 +614,8 @@ def measure_hero(page, out: Path) -> tuple[dict, dict]:
             "rate_x_px_per_s": round(rate_x, 3),
             "rate_y_px_per_s": round(rate_y, 3),
             "rate_px_per_s": round((rate_x + rate_y) / 2, 3),
+            "transform_rate_px_per_s": round((transform or {}).get("rate_px_per_s") or 0.0, 3),
+            "transform_window_s": round((transform or {}).get("window_s") or 0.0, 1),
             "linearity_resid_px": round(max(resid_x, resid_y), 3),
             "seconds_measured": round(float(ts[-1] - ts[0]), 2),
             "frames": len(shifts),
@@ -627,11 +652,24 @@ def print_table(rows: list[dict]) -> None:
             print(f"{row['name']:<16}{'—':<22}{row['reason']:<24}{'—':<14}EXPLAIN")
             continue
         if row["name"] == "indicator":
+            # Three readings of one transition. The fit is the curve-shape
+            # check and is the noisiest of the three (its optimum runs along a
+            # flat valley: a slightly longer duration starting slightly later
+            # fits almost as well); the page's own transitionstart/end pair is
+            # exact; the frames' observed travel is what a person sees. The
+            # verdict uses the page's reading and prints the other two beside
+            # it, so the spread is visible rather than smoothed over.
+            exact = row.get("transition_ms")
             measured = (f"{row['duration_ms']:.0f} ms fit, "
-                        f"{row.get('rise_10_90_ms', 0):.0f} ms 10–90%")
-            difference = f"{row['duration_ms'] - row['reference_ms']:+.0f} ms"
-            ok = verdict(row["duration_ms"], row["reference_ms"],
-                         TOLERANCE_MS, TOLERANCE_FRACTION)
+                        f"{row.get('observed_travel_ms', 0):.0f} ms travel, "
+                        f"{(f'{exact:.0f} ms page' if exact else 'page n/a')}")
+            if exact:
+                difference = f"{exact - row['reference_ms']:+.0f} ms"
+                ok = verdict(exact, row["reference_ms"], TOLERANCE_MS, TOLERANCE_FRACTION)
+            else:
+                difference = f"{row['duration_ms'] - row['reference_ms']:+.0f} ms"
+                ok = verdict(row["duration_ms"], row["reference_ms"],
+                             TOLERANCE_MS, TOLERANCE_FRACTION)
         elif row["name"] == "figure_fade":
             measured = (f"{row['duration_ms']:.0f} ms fit, "
                         f"{row.get('rise_10_90_ms', 0):.0f} ms 10–90%")
@@ -648,12 +686,21 @@ def print_table(rows: list[dict]) -> None:
                 ok = "PASS" if window[0] <= row["measured_ms"] <= window[1] else "EXPLAIN"
                 difference = f"{row['measured_ms'] - row['reference_ms']:+.0f} ms"
         else:  # hero_ground
-            measured = (f"{row['rate_px_per_s']:.2f} px/s, "
+            # Two readings, because they disagree and the disagreement is the
+            # pixel method's, not the page's: the pattern is faint and
+            # periodic, and a couple of seconds of drift is under two pixels,
+            # which is at the edge of what whole-pixel correlation can
+            # resolve. The element's transform is read over a longer window
+            # and is the reading the verdict uses; the pixel rate is printed
+            # beside it as the method's error bar.
+            rate = row.get("transform_rate_px_per_s") or 0.0
+            measured = (f"transform {rate:.3f} px/s, pixels "
+                        f"{row['rate_px_per_s']:.2f} px/s, "
                         f"linear ±{row['linearity_resid_px']:.2f} px")
             reference = row["reference_px_per_s"]
-            ok = ("PASS" if abs(row["rate_px_per_s"] - reference) <= 0.3
+            ok = ("PASS" if abs(rate - reference) <= max(0.2, reference * 0.1)
                   and row["linearity_resid_px"] <= 0.5 else "EXPLAIN")
-            difference = f"{row['rate_px_per_s'] - reference:+.2f} px/s"
+            difference = f"{rate - reference:+.3f} px/s"
         reference = (round(row.get('reference_ms', 0)) if 'reference_ms' in row
                      else round(row.get('reference_px_per_s', 0), 2))
         print(f"{row['name']:<16}{str(reference):<22}"
