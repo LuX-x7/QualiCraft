@@ -69,3 +69,27 @@ unittest 的 skip 数随机器而变（已在清单步骤 0 核实并写明）�
 预期 `OK (skipped=1)`，FAIL 即 Windows 导入器的真实发现；其他机器 `OK (skipped=3)`。
 
 **顺序**：Windows 结果通过 → 本行改 closed → 总监才决定推送授权与试用开放。
+
+---
+
+## T6+T7 · 网站改版（分支 t7-site，本地）
+
+以 `lib/site/` 静态内容模块重建前台：`/`（六区块首页 + 五模块演示区）、`/report`（Bologna 示例报告）、`/about`；`/w` 工作台代理与 `/api/health` 不动。CMS 内核、admin（32 个文件，以 find 为准）、globals.css 与 PGlite/pg 依赖已全删。数据卡片由 `tools/site/build_data_cards.py` 从 `qualicraft/datasets.py` 生成（哈希不符即拒写）；`/report` 图表由 `tools/report/build_assets.py` 走工作台导出路径生成，页面每次渲染重新校验 manifest 哈希，不符即拒出图。
+
+| 工作流 | 提交 | 内容 |
+|:--|:--|:--|
+| T7-01 | `41d1d2c` | 设计系统与自托管子集化字体（T7.css + OFL） |
+| T7-02 | `f88ce8d` | build_assets.py：报告资产来自工作台导出路径 |
+| T7-03 | `11ae432` `6e854a9` `6b1c421` | 静态内容模块 + 首页六区块 + about；前台不再引用内核 |
+| T7-04 | `ebba578` | 五模块演示区（sticky + IntersectionObserver + 键盘 + reduced-motion） |
+| T7-05 | `10fc4b6` | /report 页 + manifest 哈希校验接线 |
+| T7-06 prep | `96a44e4` | qt-seed:341 "Publication figures" 句替换 |
+| T7-06 | `535debc` | 删 admin/内核/旧组件/globals.css + db 依赖；README 重写 |
+| T7-07 | `7da89cf` | 动效规格 + tools/motion/measure.py 逐帧测量；修两处真 bug |
+| T7-08 | `acb9e1d` | tools/site/acceptance.py 验收；键盘 hold 修复 |
+
+- 验收（原始输出在 `~/qualicraft-review/site-t7/acceptance.txt`）：1440 与 390 两宽下四个页面 overflow=+0、console=0、http=0、无禁用词；键盘走查导航/五步骤/报告目录/表格切换全部通过；manifest 哈希校验不拒出图。
+- 动效（`~/qualicraft-review/motion/`）：三轮全 PASS——指示器 240ms±(+2/+8)、图淡入 220–238ms、像素标志 1383–1384ms（窗 1200–1500）、首屏地面 0.96–1.00 px/s（参考 0.92，线性 ±0.17px）。
+- `grep -rniE "publication-grade|publication-ready|publication-oriented|put in a paper|期刊" website/` 退出码 1、无匹配。
+- 未完成：① 五段演示 WebM 未录（占位框 "clip pending"，待 tools/e2e 录屏流程与总监验收：无汉字、结果可见、无灰罩）；② 反馈邮箱缺失（留空，qt-seed 占位符未用）；③ 下载按钮仍 disabled（Windows 门禁未过）；④ metadataBase 未设（无真实域名，未编造）；⑤ /zh 重写至英文版（前台只渲染一份英文文案）。
+- 待总监裁决：下载按钮的落地地址（无公开发布物）、站点域名、反馈邮箱。
