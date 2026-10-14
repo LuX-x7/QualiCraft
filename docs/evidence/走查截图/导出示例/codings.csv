@@ -1,0 +1,9 @@
+﻿document,code,start,end,quote,memo,source
+IP6 · System Architect interview,Model-driven code generation,2081,2166,UML diagrams or class diagrams are the most used models and transformed into the code,Architect works model-first: the class diagram is the source of truth and code is generated from it.,manual
+IP6 · System Architect interview,Architecture-code traceability,3392,3474,We generated traceability file using some tools that link the architecture to code,"Traceability is produced by tooling, not maintained by hand.",manual
+IP6 · System Architect interview,Consistency verification,3479,3561,"Then manually inspect architecture, code and their links to ensure the consistency",Verification is manual: the architect reads both artefacts side by side.,manual
+IP6 · System Architect interview,Code readability and comprehension,4075,4155,"if the code is very readable, it will also easily to understand the architecture",Readability of code is treated as a route into the architecture.,manual
+IP6 · System Architect interview,Change propagation,2711,2750,It has to be recompiled and regenerated,"Architectural change forces regeneration, so the model stays authoritative.",manual
+IP6 · System Architect interview,Tooling and automation,2214,2277,It is an automatic process supported with Code Generator Wizard,Names a concrete generator tool; the step is automated.,manual
+IP6 · System Architect interview,Model-driven code generation,3787,3875,"If you design some architectural part which is extensible, definitely the generated code",Architectural quality choices propagate into generated code.,manual
+IP6 · System Architect interview,Model-driven code generation,2081,2170,UML diagrams or class diagrams are the most used models and transformed into the code (e.,The participant describes generating code from architectural models rather than writing it by hand.,ai_reviewed

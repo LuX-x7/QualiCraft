@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QualiCraft 全流程操作走查</title>
+<style>
+:root{--ink:#172033;--muted:#667085;--subtle:#98a2b3;--line:#dfe3ea;--strong:#cbd1dc;--panel:#f7f8fa;--accent:#4656a6;--accent-dark:#354388;--ok:#23836f;--warn:#8a6d1f;--danger:#ad4b4b;--sans:"Inter","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--panel);color:var(--ink);font:15px/1.7 var(--sans)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 80px}
+header.top{background:#fff;border-bottom:1px solid var(--strong);padding:34px 0 30px;margin-bottom:34px}
+header.top .wrap{padding-bottom:0}
+h1{font-size:27px;margin:0 0 10px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+.meta{display:flex;flex-wrap:wrap;gap:10px;font-size:12px}
+.meta span{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:5px 10px;color:#48536b}
+h2{font-size:19px;margin:46px 0 6px;padding-top:20px;border-top:2px solid var(--ink);display:inline-block}
+.phase-note{color:var(--muted);font-size:13.5px;margin:10px 0 26px}
+.step{background:#fff;border:1px solid var(--line);border-radius:6px;margin:0 0 22px;overflow:hidden}
+.step-head{display:flex;gap:14px;align-items:flex-start;padding:18px 22px 14px}
+.num{flex:0 0 30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:600;margin-top:2px}
+.step-head h3{margin:0 0 5px;font-size:16px}
+.step-head p{margin:0;color:var(--muted);font-size:13.5px}
+.shot{padding:0 22px 20px}
+.shot img{width:100%;display:block;border:1px solid var(--strong);border-radius:4px;background:#fff}
+.cap{color:var(--subtle);font-size:12px;margin:8px 0 0}
+.callout{margin:0 22px 20px;padding:11px 14px;border-left:3px solid var(--accent);background:#f5f6fb;font-size:13.5px;color:#39435c;border-radius:0 3px 3px 0}
+.callout.fix{border-left-color:var(--ok);background:#eff8f4;color:#1d5b4b}
+.callout.warn{border-left-color:#bb9b3f;background:#fff8df;color:#6b5a24}
+.callout b{font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin:14px 0 8px;background:#fff}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#f2f4f7;font-weight:600;font-size:13px}
+code{font:12.5px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;background:#f2f4f7;padding:1px 5px;border-radius:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:20px 22px}
+.card h3{margin:0 0 10px;font-size:15px}
+.card ul{margin:0;padding-left:20px;color:#48536b;font-size:13.5px}
+.card li{margin:5px 0}
+footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--strong);color:var(--subtle);font-size:12.5px}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+<h1>QualiCraft 全流程操作走查</h1>
+<p class="sub">从零开始：新建项目 → 导入转录稿 → 建立码表 → 人工编码 → AI 辅助编码 → 分析 → 导出。全程使用真实数据与真实界面操作。</p>
+<div class="meta">
+<span>操作日期 2026-09-27</span>
+<span>仓库提交 1de32e3 + 本次编码修复</span>
+<span>转录稿 Tian 2021 · IP6（真实 DOCX）</span>
+<span>界面语言 英文（项目当前版本）</span>
+<span>共 23 张截图</span>
+</div>
+</div></header>
+
+<div class="wrap">
+
+<div class="callout warn" style="margin:0 0 30px">
+<b>关于本次走查中「AI 模型」的说明（请务必先读）：</b><br>
+本次演示把模型端点指向了一个<b>本地桩程序</b>（<code>http://127.0.0.1:9111/v1</code>，模型名 <code>local-stub-model</code>），它按关键词规则从原文中挑选真实子串作为引文并返回编码建议，<b>内部不含任何语言模型</b>。这样做是为了在不需要 API key、不产生费用、不把数据发出本机的前提下，完整演示「请求预览 → 确认发送 → 建议审核 → 采纳/拒绝」这条链路。<br>
+界面与流程与接真实模型（云端 Qwen 或本地 Ollama/vLLM）<b>完全一致</b>，只是返回内容的质量不同。截图中的 <code>local-stub-model</code> 字样即为此意。
+</div>
+
+<h2>阶段一 · 建立项目并导入转录稿</h2>
+<p class="phase-note">平台是一个本地 Web 应用。打开 <code>http://127.0.0.1:8765</code> 即可，无需安装任何依赖。</p>
+
+<div class="step">
+<div class="step-head"><div class="num">1</div><div>
+<h3>打开平台</h3>
+<p>启动后会自动打开<b>最近使用的项目</b>（此处为内置的虚构演示项目，含示例编码与待审建议）。左侧是项目/文档/码表导航，中间是阅读与编码区，右侧是 AI 建议审核区。左下角常驻提示 <b>“Local workspace · Cloud only when requested”</b>。</p>
+</div></div>
+<div class="shot"><img src="走查截图/01_打开平台.png" alt="打开平台"><p class="cap">启动后的默认界面（演示项目）。左侧项目下拉框可切换到其他项目</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">2</div><div>
+<h3>新建项目</h3>
+<p>点左侧 <b>“+ New / import project”</b>，弹窗里输入项目名并创建。同一个弹窗里还可以导入 TU Delft 盲测集 / 参考集、Tian 2021 数据集，或恢复项目 JSON 备份。</p>
+</div></div>
+<div class="shot"><img src="走查截图/02_新建项目对话框.png" alt="新建项目对话框"><p class="cap">项目对话框：新建、切换、导入基准数据集、恢复备份</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">3</div><div>
+<h3>填写项目名</h3>
+<p>本次使用「走查演示 · 架构与代码关系」。</p>
+</div></div>
+<div class="shot"><img src="走查截图/03_填写项目名.png" alt="填写项目名"><p class="cap">输入项目名称</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">4</div><div>
+<h3>项目已创建（空工作区）</h3>
+<p>新项目是干净的：0 文档、0 编码、0 待审核。中间会提示可以从导入一份访谈开始。</p>
+</div></div>
+<div class="shot"><img src="走查截图/04_空工作区.png" alt="空工作区"><p class="cap">空项目状态</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">5</div><div>
+<h3>导入转录稿</h3>
+<p>点 <b>“Import interview”</b>。支持 <b>TXT / DOCX</b>，也可以直接粘贴文本。下方提示了说话人标签的写法（<code>Doctor:/Patient:</code>、<code>Interviewer:/Participant:</code>、<code>IQ.../IP1:</code>），中文标签如 <code>医生：/患者：</code> 同样支持。</p>
+</div></div>
+<div class="shot"><img src="走查截图/05_导入转录稿对话框.png" alt="导入对话框"><p class="cap">导入对话框：选文件 / 命名 / 或直接粘贴</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">6</div><div>
+<h3>选择 DOCX 文件</h3>
+<p>本次选的是真实研究数据 <code>Interview Transcript_IP6.docx</code>（25,125 字节）。文件选中后文档名会自动填充。</p>
+</div></div>
+<div class="shot"><img src="走查截图/06_选择DOCX文件.png" alt="选择文件"><p class="cap">已选中 DOCX，文件名自动填入</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">7</div><div>
+<h3>转录稿导入完成</h3>
+<p>DOCX 被解析成 <b>10,159 字符 / 72 段</b>。可以看到 DOCX 里的访谈提纲、人口学问题、<code>IQ1.1:</code> 提问与 <code>Answer:</code> 回答都被正确还原，<b>提问被识别为斜体</b>（说话人区分生效）。</p>
+</div></div>
+<div class="shot"><img src="走查截图/07_转录稿导入完成.png" alt="导入完成"><p class="cap">转录稿已加载，右侧显示 10,159 字符 · 72 segments · 0 codings</p></div>
+<div class="callout">导入时会计算文档的 <b>SHA-256 校验和</b>并写入审计轨迹，后续每次校验都能确认原文未被篡改。</div>
+</div>
+
+<h2>阶段二 · 建立码表</h2>
+<p class="phase-note">码表是定性研究的核心工具。每个编码有名称、定义、颜色。本次针对这篇访谈建立了 6 个编码。</p>
+
+<div class="step">
+<div class="step-head"><div class="num">8</div><div>
+<h3>新建编码</h3>
+<p>点 <b>“+ New code”</b>，填写编码名、定义与颜色。定义栏的提示语是「Describe when to use this code and when to exclude it」，即要求写明纳入与排除标准。</p>
+</div></div>
+<div class="shot"><img src="走查截图/08_新建编码对话框.png" alt="新建编码"><p class="cap">新建编码：名称 / 定义与纳入标准 / 颜色</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">9</div><div>
+<h3>码表建立完成</h3>
+<p>6 个编码全部就位，左侧码表显示各自的色块与当前引用计数（此时均为 0）。</p>
+</div></div>
+<div class="shot"><img src="走查截图/09_码表建立完成.png" alt="码表"><p class="cap">码表：Model-driven code generation、Architecture-code traceability、Consistency verification、Code readability and comprehension、Change propagation、Tooling and automation</p></div>
+</div>
+
+<h2>阶段三 · 人工编码（核心步骤）</h2>
+<p class="phase-note">这是本次走查的重点，也是之前被 Bug 卡住的环节。</p>
+
+<div class="step">
+<div class="step-head"><div class="num">10</div><div>
+<h3>划选文本 → 出现打标工具条</h3>
+<p>在正文里拖选一段文字，<b>阅读区底部立即出现工具条</b>：「Selected 85 characters / Apply code / Analyze selection」。被选中的文字有蓝色高亮。</p>
+</div></div>
+<div class="shot"><img src="走查截图/10_划选文本出现打标工具条.png" alt="划选文本"><p class="cap">选中 85 个字符，底部出现 Apply code 工具条</p></div>
+<div class="callout fix"><b>这里就是之前修复的 Bug。</b>修复前，这个工具条被 CSS 的 <code>position:sticky</code> 困在一个只有自身高度的容器里，导致它停留在 15,055 像素高滚动内容的<b>绝对底部</b>——当你选中文档中部的文字时，按钮在可视区下方约 14,676 像素处，所以「看不到添加编码的界面」。修复方式是让 sticky 的约束容器变成真正的滚动容器。</div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">11</div><div>
+<h3>打标对话框</h3>
+<p>点 <b>“Apply code”</b>。弹窗顶部回显你选中的原文，下面是编码下拉框与研究备忘录输入框。</p>
+</div></div>
+<div class="shot"><img src="走查截图/11_打标对话框.png" alt="打标对话框"><p class="cap">回显引文 + 选择编码 + 写备忘录</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">12</div><div>
+<h3>打标成功：高亮 + Margin 胶囊标签</h3>
+<p>保存后，正文对应片段出现<b>黄色高亮</b>，右侧边缘栏出现<b>胶囊标签</b>，标注编码名与来源 <code>HUMAN</code>。左侧码表计数同步 +1。</p>
+</div></div>
+<div class="shot"><img src="走查截图/12_打标成功_高亮与Margin标签.png" alt="打标成功"><p class="cap">高亮 + Margin 标签（HUMAN = 人工编码）</p></div>
+<div class="callout">来源标识共有四种：<code>HUMAN</code>（人工）、<code>AI · REVIEWED</code>（AI 建议经人工采纳）、<code>REFERENCE</code>（导入的参考标注）、以及 AI 建议的待审状态。这让「哪些是机器提的、哪些是人定的」在界面上永远可辨。</div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">13</div><div>
+<h3>继续编码：多条编码并存</h3>
+<p>重复上述操作，对多个片段打上不同编码。可以看到一段文字可以同时承载多个编码（第 25 段同时有 Model-driven code generation 与 Tooling and automation 两个标签）。</p>
+</div></div>
+<div class="shot"><img src="走查截图/13_多条编码与Margin标签.png" alt="多条编码"><p class="cap">7 条编码分布在不同段落，左侧码表计数实时更新</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">14</div><div>
+<h3>点标签查看引文与备忘录</h3>
+<p>点任意胶囊标签，可以查看该编码的原文引文、字符区间、来源，并<b>编辑研究备忘录</b>，也可以删除这条编码（删除记录会保留在审计轨迹里）。</p>
+</div></div>
+<div class="shot"><img src="走查截图/14_点击标签查看引文与备忘录.png" alt="查看引文"><p class="cap">编码详情：引文 + 来源区间 + 备忘录编辑 + 删除</p></div>
+</div>
+
+<h2>阶段四 · AI 辅助编码</h2>
+<p class="phase-note">QualiCraft 的 AI 不是「自动编码」，而是「提出建议、由研究者裁决」。整条链路有强制的数据出境确认。</p>
+
+<div class="step">
+<div class="step-head"><div class="num">15</div><div>
+<h3>设置模型端点</h3>
+<p>点右上角 <b>“Model”</b>。可填任意 OpenAI 兼容端点。<b>关键点：填 <code>http://127.0.0.1:...</code> 即接入本地模型，无需 API key，数据不出本机。</b>本次指向本地桩程序。</p>
+</div></div>
+<div class="shot"><img src="走查截图/15_模型设置_指向本地端点.png" alt="模型设置"><p class="cap">端点 / 模型名 / API Key 三项设置</p></div>
+<div class="callout">界面上明确写着：Manual coding is free and works offline. Cloud analysis runs only after confirmation and may incur provider charges. 另外，<b>API key 只保存在服务端内存</b>，不会进入项目文件、浏览器存储、请求预览或任何导出。</div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">16</div><div>
+<h3>发起 AI 分析</h3>
+<p>点 <b>“Analyze with AI”</b>。可选编码方法（<b>演绎</b>：只允许使用已有编码 / <b>归纳</b>：允许提出新编码）与分析范围（仅受访者发言 / 全部段落 / 当前选区）。勾选是否附带上一轮提问作为上下文。</p>
+</div></div>
+<div class="shot"><img src="走查截图/16_AI分析设置.png" alt="AI 分析设置"><p class="cap">编码方法 + 分析范围 + 上下文开关</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">17</div><div>
+<h3>发送前的请求预览（强制确认）</h3>
+<p>这一步是 QualiCraft 相对商业工具最值得保留的设计。发送前必须点 <b>“Preview requests”</b>，弹窗列出：<b>目标端点、模型名、请求数量、目标字符数</b>，并可展开查看<b>每一个请求的完整 JSON 正文</b>。</p>
+</div></div>
+<div class="shot"><img src="走查截图/17_发送前请求预览与确认.png" alt="请求预览"><p class="cap">本次：http://127.0.0.1:9111/v1 · 31 requests · 4,765 target characters</p></div>
+<div class="callout">这里展示的是本次真实的预览内容：31 个请求、4,765 个目标字符。经检查，预览中<b>不包含 API key</b>（已做程序化校验）。发送按钮在勾选「I have reviewed the content」之前是禁用状态。</div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">18</div><div>
+<h3>勾选确认，按钮激活</h3>
+<p>必须显式勾选「这些文本已去标识化，且允许发送给该服务商」，发送按钮才会从禁用变为可用。</p>
+</div></div>
+<div class="shot"><img src="走查截图/18_勾选确认后按钮激活.png" alt="勾选确认"><p class="cap">确认后才可发送</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">19</div><div>
+<h3>分析完成：建议进入审核队列</h3>
+<p>31 段全部处理完毕，产出 <b>13 条待审建议</b>。每条建议卡片包含：<b>编码名、编码定义、原文引文、字符区间 <code>[2081, 2179)</code>、可点击的 Locate 溯源链接、以及提出该建议的理由</b>。</p>
+</div></div>
+<div class="shot"><img src="走查截图/19_分析完成_建议队列.png" alt="建议队列"><p class="cap">顶部进度条：Analysis complete · 31/31 segments · 13 new suggestions</p></div>
+<div class="callout"><b>反幻觉机制：</b>服务端会校验模型返回的引文必须是原文中<b>精确且唯一可定位</b>的子串，否则该建议直接丢弃、不进入队列。点 <b>“Locate ↗”</b> 会让中间阅读区平滑滚动并闪烁对应文本，实现 100% 溯源。<b>建议不会自动变成正式编码</b>，必须由研究者逐条采纳。</div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">20</div><div>
+<h3>采纳建议 → 转为正式编码</h3>
+<p>点 <b>“Accept coding”</b> 后，该建议变成一条正式编码，来源标记为 <code>ai_reviewed</code>，并自动定位到原文。也可以点 <b>“Reject”</b> 拒绝，拒绝记录同样留在审计轨迹中。</p>
+</div></div>
+<div class="shot"><img src="走查截图/20_采纳建议后转为正式编码.png" alt="采纳建议"><p class="cap">采纳后编码数 7 → 8，其中 ai_reviewed 1 条；待审 13 → 12</p></div>
+<div class="callout">本次走查演示了两种裁决：采纳 1 条、拒绝 1 条。拒绝的编码不会进入码表，但决策被记录，便于日后复核。</div>
+</div>
+
+<h2>阶段五 · 分析、溯源与导出</h2>
+
+<div class="step">
+<div class="step-head"><div class="num">21</div><div>
+<h3>Insights：编码频次与文档×编码矩阵</h3>
+<p>左侧导航 <b>“Insights”</b>。上方是各编码的引用频次条形图，下方是文档 × 编码计数矩阵。</p>
+</div></div>
+<div class="shot"><img src="走查截图/21_Insights_频次与矩阵.png" alt="Insights"><p class="cap">编码频次 + 文档 × 编码矩阵</p></div>
+<div class="callout warn"><b>这里也是当前能力的天花板。</b>Insights 只有频次条形图与计数矩阵，<b>没有共现热力图、没有桑基图、没有混合研究气泡图、没有参数化绘图控件</b>——PRD 中定义为「核心杀手锏」的绘图工作台尚未实现。此外这里只有原始计数，没有百分比，也没有交叉表与信度。</div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">22</div><div>
+<h3>审计轨迹</h3>
+<p>左侧 <b>“Audit trail”</b>。每一次导入、建码、打标、AI 分析、建议裁决都被完整记录并带时间戳，随项目一起导出。</p>
+</div></div>
+<div class="shot"><img src="走查截图/22_审计轨迹.png" alt="审计轨迹"><p class="cap">完整活动日志（可展开查看每条记录的完整 JSON）</p></div>
+</div>
+
+<div class="step">
+<div class="step-head"><div class="num">23</div><div>
+<h3>导出</h3>
+<p>点右上角 <b>“Export”</b>，三种格式：<b>完整项目 JSON</b>（可恢复继续）、<b>编码明细 CSV</b>（含引文与字符偏移）、<b>文档×编码矩阵 CSV</b>（可直接进 Excel / R / Python）。</p>
+</div></div>
+<div class="shot"><img src="走查截图/23_导出选项.png" alt="导出"><p class="cap">三种导出格式</p></div>
+</div>
+
+<h2>导出结果实测</h2>
+<p class="phase-note">走查中实际下载了三种导出文件，内容核对如下。</p>
+<div class="two">
+<div class="card">
+<h3>编码明细 CSV</h3>
+<p style="font-size:13px;color:var(--muted);margin:0 0 8px">1,906 字节 · 含引文与字符区间</p>
+<table style="font-size:12px"><tr><th>字段</th><th>示例</th></tr>
+<tr><td>document</td><td>IP6 · System Architect interview</td></tr>
+<tr><td>code</td><td>Model-driven code generation</td></tr>
+<tr><td>start / end</td><td>2081 / 2166</td></tr>
+<tr><td>quote</td><td>UML diagrams or class diagrams are the most used models…</td></tr>
+<tr><td>memo</td><td>Architect works model-first…</td></tr>
+<tr><td>source</td><td>manual</td></tr>
+</table>
+</div>
+<div class="card">
+<h3>文档 × 编码矩阵 CSV</h3>
+<p style="font-size:13px;color:var(--muted);margin:0 0 8px">222 字节 · 可直接进 Excel / R</p>
+<table style="font-size:12px"><tr><th>编码</th><th>计数</th></tr>
+<tr><td>Model-driven code generation</td><td>3</td></tr>
+<tr><td>Architecture-code traceability</td><td>1</td></tr>
+<tr><td>Consistency verification</td><td>1</td></tr>
+<tr><td>Code readability and comprehension</td><td>1</td></tr>
+<tr><td>Change propagation</td><td>1</td></tr>
+<tr><td>Tooling and automation</td><td>1</td></tr>
+</table>
+</div>
+</div>
+
+<h2>走查结论</h2>
+<div class="two">
+<div class="card">
+<h3>已经跑通的部分</h3>
+<ul>
+<li>新建项目、项目切换、备份恢复</li>
+<li>真实 DOCX 导入并正确还原结构与说话人</li>
+<li>码表建立（名称 / 定义 / 颜色）</li>
+<li>划选打标、高亮、Margin 胶囊标签、备忘录</li>
+<li>编码来源区分（人工 / AI 采纳 / 参考）</li>
+<li>AI 请求预览与强制确认、引文反幻觉校验</li>
+<li>建议审核队列（采纳 / 拒绝）</li>
+<li>频次统计、文档×编码矩阵</li>
+<li>完整审计轨迹</li>
+<li>三种格式导出</li>
+</ul>
+</div>
+<div class="card">
+<h3>走查中确认缺失的部分</h3>
+<ul>
+<li>编码<b>不能改名、删除、合并</b>；文档不能删除</li>
+<li>码表<b>没有层级</b>（编码无法归组成主题）</li>
+<li>编码只有单一 definition 字段，<b>没有锚例 / 纳入 / 排除标准</b>的独立字段</li>
+<li>文档<b>没有属性字段</b>，无法做交叉表</li>
+<li>无多编码者概念，<b>无编码者间信度</b></li>
+<li>无共现矩阵、无主题地图、<b>无参数化绘图工作台</b></li>
+<li>频次只有原始计数，无百分比</li>
+<li>无音频转写、无 PDF 导入、无 REFI-QDA 互通</li>
+</ul>
+</div>
+</div>
+
+<footer>
+本走查基于仓库提交 <code>1de32e3</code> 加上本次的编码功能修复，使用真实数据（Tian 2021 IP6）在 <code>http://127.0.0.1:8765</code> 上实际点击完成，共 23 张截图，未使用任何模拟界面。<br>
+AI 环节的模型为本地桩程序，界面与真实模型一致，仅返回内容不同——详见文档开头的说明。<br>
+生成日期 2026-09-27。
+</footer>
+
+</div>
+</body>
+</html>

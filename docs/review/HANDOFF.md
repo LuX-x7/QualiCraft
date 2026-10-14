@@ -75,13 +75,14 @@ python tools/site/prepare_fonts.py            # 字体从上游重取（需联�
 
 ## 5. 没做完的（交接时的真实缺口）
 
-1. **五段演示 WebM 未接入网站**。素材**已经录好**，在仓库外的
-   `../录屏样例/`（`seg1-import` … `seg5-export`，各含 `.webm` 131–284 KB、
-   `.png` 首帧、`.trace.json`）。缺的是：确认它们过总监验收标准（无汉字、
-   结果可见、无灰罩）→ 放进 `website/public/clips/` → 在
+1. **五段演示 WebM 未接入网站**。素材**已经录好并在仓库里**：
+   `tools/e2e/recordings/`（`seg1-import` … `seg5-export`，各含 `.webm`
+   131–284 KB、`.png` 首帧、`.trace.json`；同目录 `_deprecated/` 下两个标了
+   "勿交付"的文件，不要用）。缺的是：确认它们过总监验收标准（无汉字、
+   结果可见、无灰罩）→ 复制进 `website/public/clips/` → 在
    `components/site/ModuleWalkthrough.tsx` 的 `CLIPS` 常量里登记（一行一个）。
-   注意仓库里**没有录制脚本**：那套流程在仓库外，若要重录需先把它移进
-   `tools/e2e/`，否则只能沿用现有五段。
+   注意仓库里**没有录制脚本**：那套流程没有随录制结果一起进来，若要重录需先
+   补一个 `tools/e2e/` 下的录制器，否则只能沿用现有五段。
 2. **反馈邮箱缺失**。`lib/site/content.ts` 的 `FOOTER.feedback` 故意留空，
    页脚该行不渲染。不得编造地址。
 3. **下载按钮仍 disabled**（"Windows check in progress"）。Windows 门禁由人工执行，
@@ -126,25 +127,28 @@ python tools/site/prepare_fonts.py            # 字体从上游重取（需联�
 - 颜色相近时用色相判别：TOC 的 "Contents" 灰（`#6b7280`）在容差内会被当成 accent
   （`#4b607c`），加 `b - g > 15` 才分得开。
 
-## 8. 仓库外还有哪些材料（Codex 看不到，需要时移进来）
+## 8. 材料都在哪（原先散落在仓库外，现已归档进仓库）
 
-工作区根目录（`../`，即仓库的上一级）里有总监的评审与规范文档，**都不在版本库里**：
+移交时把散在工作区根目录（仓库的上一级）里的文档与素材全部归档了，位置如下：
 
-| 文件 | 是什么 |
+| 位置 | 内容 |
 |:--|:--|
-| `QualiCraft_开发流程规范.md` | 开发流程规范（提交格式、证据纪律）——接手前应读 |
-| `QualiCraft-项目全景（供审核）.md` | 项目全景 |
-| `QualiCraft-第二轮审核材料.md` | 第二轮审核材料 |
-| `QualiCraft-网站结构方案.md` | 网站结构方案（T7 的上一版方案） |
-| `QualiCraft-界面与工具评审.md` | 界面与工具评审 |
-| `QualiCraft_方法论支持评估与设计方案.md` | 方法论支持评估 |
-| `QualiCraft_编码工作流差距分析.md` | 编码工作流差距分析 |
-| `QualiCraft_设计理念与下一步方向.md` | 设计理念与下一步方向 |
-| `QualiCraft_GitHub权限排查结论.md` | GitHub 权限排查（为何写操作要用经典 PAT） |
-| `QualiCraft_推送指引与PR描述.md` | 推送指引与 PR 描述 |
-| `QualiCraft_Patch1..4_*.patch` | 早期补丁 |
-| `录屏样例/` | 五段演示录屏（见第 5 节第 1 条） |
-| `ISC参考/`、`Guide/`、`.tmp_ref/` | 参考材料 |
+| `docs/review/` | 评审、方案、规范、排查：`QualiCraft_开发流程规范.md`（提交格式与证据纪律，**接手前应读**）、`QualiCraft-项目全景（供审核）.md`、`QualiCraft-第二轮审核材料.md`、`QualiCraft-网站结构方案.md`、`QualiCraft-界面与工具评审.md`、`QualiCraft_方法论支持评估与设计方案.md`、`QualiCraft_编码工作流差距分析.md`、`QualiCraft_设计理念与下一步方向.md`、`QualiCraft_GitHub权限排查结论.md`、`QualiCraft_推送指引与PR描述.md`、`QualiCraft_全流程操作走查.html` |
+| `docs/review/deliveries/` | 交付报告与原始输出附录（T1–T6 各版本） |
+| `docs/review/prompts/` | 给 Claude 的审核 Prompt（第一、二轮） |
+| `docs/patches/` | 早期补丁 Patch1–4 |
+| `docs/reference/` | `isc-home-01.png`（旧站首页参考）、`pi.dev/`（版式参考材料） |
+| `docs/evidence/` | 评估证据、评审截图、走查截图（117 张，约 20 MB）、运行日志 |
+| `tools/e2e/recordings/` | 五段演示录屏（见第 5 节第 1 条） |
+| 仓库根 | `启动QualiCraft.sh`、`启动公开演示.sh`（macOS 一键启停，与 `run.ps1` 对应） |
+
+**刻意没有搬进来的**（都有理由，不要随手加进来）：
+
+- `../Guide/` — 第三方已发表访谈材料（Tian 2021、TU Delft）。它是外部研究素材，
+  有许可问题，且任务单规定仓库里不使用真实访谈文本。需要时按 `run.py --guide-dir` 指过去。
+- `../data/qualicraft.sqlite3` — 本地运行状态，`.gitignore` 按设计忽略 `*.sqlite3`。
+- `../.tmp_ref/` — 早期临时图与对照脚本（4.2 MB），已被 `tools/report/build_assets.py` 取代。
+- `../.workbuddy-ai/` — 上一个 AI 会话的本地记忆与运行时，与项目无关。
 
 仓库外的验收证据（按任务单要求**不进仓库**）：
 

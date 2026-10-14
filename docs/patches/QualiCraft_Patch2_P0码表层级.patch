@@ -1,0 +1,761 @@
+From 6760578713e498725c5298a9b9a71d6ebc9e8f1e Mon Sep 17 00:00:00 2001
+From: Che Haijun <chehaijun@ChedeMacBook-Pro.local>
+Date: Sun, 27 Sep 2026 12:50:16 +0300
+Subject: [PATCH] feat(codebook): hierarchical codebook with code-level
+ maintenance
+
+Projects move to schema v2. A code gains parent_id, memo, inclusion,
+exclusion, anchor_examples, status and order; a document gains attributes.
+migrate() upgrades v1 projects in place on first read, so existing codebooks,
+codings and character offsets are preserved.
+
+New operations: rename, redefine, recolour, re-parent, merge and delete a code.
+The code tree is validated on every write (no self-parent, no missing parent,
+no cycles). Merging collapses codings that would duplicate the target.
+
+The sidebar renders the codebook as a tree with rolled-up counts and collapsible
+branches, and the codings CSV gains a code_path column.
+---
+ README.md            |   3 +
+ docs/ARCHITECTURE.md |  17 +++-
+ qualicraft/core.py   | 212 +++++++++++++++++++++++++++++++++++++++++--
+ qualicraft/server.py |  10 +-
+ tests/test_core.py   |  97 +++++++++++++++++++-
+ tests/test_http.py   |  29 ++++++
+ web/app.js           | 139 ++++++++++++++++++++++++++--
+ web/style.css        |  17 ++++
+ 8 files changed, 504 insertions(+), 20 deletions(-)
+
+diff --git a/README.md b/README.md
+index 3f6a75e..cd7093e 100644
+--- a/README.md
++++ b/README.md
+@@ -8,6 +8,9 @@ The current release is a practical MVP. It is not a hosted multi-user service, a
+ 
+ - Read-only transcript view with Unicode-safe character offsets.
+ - Manual coding by selecting a source passage, applying a code, and recording a memo.
++- A hierarchical codebook: group codes under themes, collapse branches, and read rolled-up counts.
++- Full codebook maintenance: rename, redefine, recolour, re-parent, merge or delete a code.
++- Methodological fields per code: definition, memo, inclusion and exclusion criteria, anchor examples, and a status (emergent / provisional / final).
+ - TXT and DOCX import without third-party Python packages.
+ - Deductive and inductive AI-assisted coding through an OpenAI-compatible chat endpoint.
+ - Qwen3.8-Flash defaults for Alibaba Cloud Model Studio (Beijing); other compatible endpoints can be configured.
+diff --git a/docs/ARCHITECTURE.md b/docs/ARCHITECTURE.md
+index 4b0c503..24e713c 100644
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -41,8 +41,21 @@ The local MVP is suitable for a single researcher or a controlled local network.
+ 
+ GitHub Pages can host documentation and a static product tour, but it cannot run the Python service or safely store private projects. Until the hosted architecture is reviewed, the supported public artifact is the source repository and local application.
+ 
++## Project format
++
++A project is a single JSON document stored in one SQLite row. The format is versioned.
++
++`schema_version: 2` added the codebook hierarchy and the fields the analysis workflows need:
++
++- a code gains `parent_id` (its place in the code tree), `memo`, `inclusion`, `exclusion`, `anchor_examples`, `status` and `order`;
++- a document gains `attributes`, reserved for case-level metadata.
++
++`migrate()` upgrades a v1 project in place the first time it is read. Every added value is a neutral default, so an existing codebook, its codings and all character offsets are preserved untouched. Migration is idempotent and runs inside `Store.get` and `Store.change`.
++
++The code tree is validated on every write: a code may not be its own parent, may not point at a missing parent, and may not be moved beneath one of its own descendants.
++
+ ## Planned phases
+ 
+-1. MVP: local project store, manual coding, review queue, Qwen-compatible API, exports, and benchmark tooling.
+-2. Research tooling: richer code hierarchies, co-occurrence tables, reproducible plots, REFI-QDA export, and stronger evaluation reports.
++1. MVP: local project store, manual coding, review queue, Qwen-compatible API, exports, and benchmark tooling. **Complete.**
++2. Research tooling: codebook hierarchy, code-level maintenance (rename, re-parent, merge, delete) and the methodological code fields are **complete**. Still to come: document attributes and cross-tabulation, inter-coder reliability, co-occurrence tables, reproducible plots, and REFI-QDA export.
+ 3. Hosted edition: authenticated accounts, isolated encrypted storage, provider abstraction, and deployment-specific privacy controls.
+diff --git a/qualicraft/core.py b/qualicraft/core.py
+index 60a3a79..d1e89bd 100644
+--- a/qualicraft/core.py
++++ b/qualicraft/core.py
+@@ -16,6 +16,10 @@ from xml.etree import ElementTree as ET
+ 
+ COLORS = ["#427d77", "#ba8650", "#7b77b5", "#5c85b0", "#ba6e85", "#778c51"]
+ 
++SCHEMA_VERSION = 2
++
++CODE_STATUSES = ("emergent", "provisional", "final")
++
+ 
+ def uid():
+     return uuid.uuid4().hex
+@@ -45,8 +49,66 @@ def event(project, action, **details):
+     project["audit"].append({"id": uid(), "time": now(), "action": action, **details})
+ 
+ 
++def migrate(project):
++    """Upgrade an older project in place to the current schema. Idempotent.
++
++    v1 -> v2 adds the codebook hierarchy and the methodological fields that the
++    analysis workflows need: codes gain parent_id / memo / anchor examples /
++    inclusion and exclusion criteria / status, and documents gain attributes.
++    Every added value is a neutral default, so an existing project keeps its
++    codes, annotations and offsets untouched.
++    """
++    if project.get("schema_version") == SCHEMA_VERSION:
++        return project
++    for code in project.get("codes", []):
++        code.setdefault("parent_id", None)
++        code.setdefault("memo", "")
++        code.setdefault("anchor_examples", [])
++        code.setdefault("inclusion", "")
++        code.setdefault("exclusion", "")
++        code.setdefault("status", "final")
++        code.setdefault("order", 0)
++    for document in project.get("documents", []):
++        document.setdefault("attributes", {})
++    project["schema_version"] = SCHEMA_VERSION
++    return project
++
++
++def descendants(codes, code_id):
++    """Every code id below code_id, at any depth."""
++    out, stack = set(), [code_id]
++    while stack:
++        current = stack.pop()
++        for code in codes:
++            if code.get("parent_id") == current and code["id"] not in out:
++                out.add(code["id"])
++                stack.append(code["id"])
++    return out
++
++
++def code_depth(codes, code_id):
++    by_id = {c["id"]: c for c in codes}
++    depth, seen, current = 0, set(), by_id.get(code_id)
++    while current and current.get("parent_id") and current["id"] not in seen:
++        seen.add(current["id"])
++        current = by_id.get(current["parent_id"])
++        depth += 1
++    return depth
++
++
++def code_path(codes, code):
++    """'Parent > Child' label, for exports and reports."""
++    by_id = {c["id"]: c for c in codes}
++    parts, seen, current = [code["name"]], {code["id"]}, code
++    while current.get("parent_id") and current["parent_id"] in by_id and current["parent_id"] not in seen:
++        current = by_id[current["parent_id"]]
++        seen.add(current["id"])
++        parts.append(current["name"])
++    return " > ".join(reversed(parts))
++
++
+ def new_project(name):
+-    return {"schema_version": 1, "id": uid(), "name": string(name, "Project name", 160),
++    return {"schema_version": SCHEMA_VERSION, "id": uid(), "name": string(name, "Project name", 160),
+             "created_at": now(), "updated_at": now(), "documents": [], "codes": [],
+             "annotations": [], "suggestions": [], "audit": [], "provenance": ""}
+ 
+@@ -80,18 +142,122 @@ def add_document(project, name, text):
+     return doc
+ 
+ 
+-def add_code(project, name, definition="", color=None):
++def add_code(project, name, definition="", color=None, parent_id=None):
+     name = string(name, "Code name", 160)
+     require(not any(c["name"].casefold() == name.casefold() for c in project["codes"]), "A code with this name already exists")
+     require(isinstance(definition, str) and len(definition) <= 5000, "The definition is too long")
++    require(parent_id is None or any(c["id"] == parent_id for c in project["codes"]), "The parent code does not exist")
+     color = color or COLORS[len(project["codes"]) % len(COLORS)]
+     require(bool(re.fullmatch(r"#[0-9a-fA-F]{6}", color)), "The color must be a six-digit hexadecimal value")
+-    code = {"id": uid(), "name": name, "definition": definition, "color": color}
++    code = {"id": uid(), "name": name, "definition": definition, "color": color, "parent_id": parent_id,
++            "memo": "", "anchor_examples": [], "inclusion": "", "exclusion": "", "status": "final",
++            "order": len([c for c in project["codes"] if c.get("parent_id") == parent_id])}
+     project["codes"].append(code)
+-    event(project, "code_create", code_id=code["id"], name=name)
++    event(project, "code_create", code_id=code["id"], name=name, parent_id=parent_id)
++    return code
++
++
++def update_code(project, code_id, changes):
++    """Rename, redefine, recolour, re-parent or annotate a single code."""
++    require(isinstance(changes, dict), "The code changes are invalid")
++    code = find(project["codes"], code_id)
++    if "name" in changes:
++        name = string(changes["name"], "Code name", 160)
++        require(not any(c["id"] != code_id and c["name"].casefold() == name.casefold() for c in project["codes"]),
++                "A code with this name already exists")
++        code["name"] = name
++    if "definition" in changes:
++        value = changes["definition"]
++        require(isinstance(value, str) and len(value) <= 5000, "The definition is too long")
++        code["definition"] = value
++    if "color" in changes:
++        require(isinstance(changes["color"], str) and bool(re.fullmatch(r"#[0-9a-fA-F]{6}", changes["color"])),
++                "The color must be a six-digit hexadecimal value")
++        code["color"] = changes["color"]
++    if "memo" in changes:
++        value = changes["memo"]
++        require(isinstance(value, str) and len(value) <= 20000, "The memo is too long")
++        code["memo"] = value
++    if "inclusion" in changes:
++        value = changes["inclusion"]
++        require(isinstance(value, str) and len(value) <= 5000, "The inclusion criteria are too long")
++        code["inclusion"] = value
++    if "exclusion" in changes:
++        value = changes["exclusion"]
++        require(isinstance(value, str) and len(value) <= 5000, "The exclusion criteria are too long")
++        code["exclusion"] = value
++    if "anchor_examples" in changes:
++        value = changes["anchor_examples"]
++        require(isinstance(value, list) and len(value) <= 20, "At most 20 anchor examples are supported")
++        require(all(isinstance(x, str) and len(x) <= 5000 for x in value), "An anchor example is invalid")
++        code["anchor_examples"] = [x.strip() for x in value if x.strip()]
++    if "status" in changes:
++        require(changes["status"] in CODE_STATUSES, "The code status is invalid")
++        code["status"] = changes["status"]
++    if "parent_id" in changes:
++        parent_id = changes["parent_id"]
++        if parent_id is not None:
++            require(parent_id != code_id, "A code cannot be its own parent")
++            require(any(c["id"] == parent_id for c in project["codes"]), "The parent code does not exist")
++            require(parent_id not in descendants(project["codes"], code_id),
++                    "A code cannot be moved under one of its own descendants")
++        code["parent_id"] = parent_id
++    event(project, "code_update", code_id=code_id, fields=sorted(changes))
+     return code
+ 
+ 
++def delete_code(project, code_id):
++    """Remove a code. Children move up to its parent; its codings are removed.
++
++    Returns a summary so the caller can report what was affected. Nothing is
++    silently lost: the counts land in the audit trail.
++    """
++    code = find(project["codes"], code_id)
++    parent_id = code.get("parent_id")
++    children = [c for c in project["codes"] if c.get("parent_id") == code_id]
++    for child in children:
++        child["parent_id"] = parent_id
++    removed_annotations = [a for a in project["annotations"] if a["code_id"] == code_id]
++    project["annotations"] = [a for a in project["annotations"] if a["code_id"] != code_id]
++    project["codes"] = [c for c in project["codes"] if c["id"] != code_id]
++    summary = {"id": code_id, "name": code["name"], "codings_removed": len(removed_annotations),
++               "children_reparented": len(children)}
++    event(project, "code_delete", **summary)
++    return summary
++
++
++def merge_codes(project, source_id, target_id):
++    """Fold source into target: codings move across, duplicates collapse."""
++    require(source_id != target_id, "Choose two different codes")
++    source = find(project["codes"], source_id)
++    target = find(project["codes"], target_id)
++    kept, moved, collapsed = [], 0, 0
++    known = {(a["document_id"], a["code_id"], a["start"], a["end"])
++             for a in project["annotations"] if a["code_id"] != source_id}
++    for annotation in project["annotations"]:
++        if annotation["code_id"] != source_id:
++            kept.append(annotation)
++            continue
++        signature = (annotation["document_id"], target_id, annotation["start"], annotation["end"])
++        if signature in known:
++            collapsed += 1
++            continue
++        known.add(signature)
++        annotation["code_id"] = target_id
++        annotation["merged_from"] = source["name"]
++        moved += 1
++        kept.append(annotation)
++    project["annotations"] = kept
++    for child in project["codes"]:
++        if child.get("parent_id") == source_id:
++            child["parent_id"] = target_id
++    project["codes"] = [c for c in project["codes"] if c["id"] != source_id]
++    summary = {"source": source["name"], "target": target["name"], "codings_moved": moved,
++               "duplicates_collapsed": collapsed}
++    event(project, "code_merge", **summary)
++    return summary
++
++
+ def validate_span(doc, start, end, quote=None):
+     require(type(start) is int and type(end) is int and 0 <= start < end <= len(doc["text"]), "The quotation range is invalid")
+     require(quote is None or doc["text"][start:end] == quote, "The quotation does not match the source text")
+@@ -192,7 +358,9 @@ def grounded_theory_examples_project(guide):
+ 
+ 
+ def validate_project(project):
+-    require(isinstance(project, dict) and project.get("schema_version") == 1, "This project format is not supported")
++    require(isinstance(project, dict) and project.get("schema_version") in (1, SCHEMA_VERSION),
++            "This project format is not supported")
++    migrate(project)
+     string(project.get("name"), "Project name", 160)
+     for key, limit in [("documents", 100), ("codes", 2000), ("annotations", 50000), ("suggestions", 50000), ("audit", 100000)]:
+         require(isinstance(project.get(key), list) and len(project[key]) <= limit, f"{key} has an invalid format or item count")
+@@ -203,6 +371,13 @@ def validate_project(project):
+         string(d.get("name"), "Document name", 200)
+         require(isinstance(d.get("text"), str) and 0 < len(d["text"]) <= 500000, "The document text is invalid")
+         require(d.get("sha256") == hashlib.sha256(d["text"].encode()).hexdigest(), "Document integrity validation failed")
++        attributes = d.get("attributes", {})
++        require(isinstance(attributes, dict) and len(attributes) <= 50, "The document attributes are invalid")
++        for key, value in attributes.items():
++            require(isinstance(key, str) and 0 < len(key) <= 60, "A document attribute name is invalid")
++            require(value is None or isinstance(value, (str, int, float)) and not isinstance(value, bool),
++                    "A document attribute value is invalid")
++            require(not isinstance(value, str) or len(value) <= 500, "A document attribute value is too long")
+     names = set()
+     for c in project["codes"]:
+         name = string(c.get("name"), "Code name", 160).casefold()
+@@ -210,6 +385,22 @@ def validate_project(project):
+         names.add(name)
+         require(isinstance(c.get("color"), str) and bool(re.fullmatch(r"#[0-9a-fA-F]{6}", c["color"])), "The code color is invalid")
+         require(isinstance(c.get("definition"), str) and len(c["definition"]) <= 5000, "The code definition is invalid")
++        require(c.get("status") in CODE_STATUSES, "The code status is invalid")
++        for field, limit in (("memo", 20000), ("inclusion", 5000), ("exclusion", 5000)):
++            require(isinstance(c.get(field, ""), str) and len(c[field]) <= limit, f"The code {field} is invalid")
++        examples = c.get("anchor_examples", [])
++        require(isinstance(examples, list) and len(examples) <= 20, "The anchor examples are invalid")
++        require(all(isinstance(x, str) and len(x) <= 5000 for x in examples), "An anchor example is invalid")
++    by_id = {c["id"]: c for c in project["codes"]}
++    for c in project["codes"]:
++        parent_id = c.get("parent_id")
++        require(parent_id is None or parent_id in by_id, "A code references a missing parent")
++        require(parent_id != c["id"], "A code cannot be its own parent")
++        walked, current = set(), c
++        while current.get("parent_id"):
++            require(current["id"] not in walked, "The code hierarchy contains a cycle")
++            walked.add(current["id"])
++            current = by_id[current["parent_id"]]
+     for a in project["annotations"] + project["suggestions"]:
+         require(isinstance(a.get("quote"), str), "The source quotation is missing")
+         validate_span(find(project["documents"], a.get("document_id")), a.get("start"), a.get("end"), a.get("quote"))
+@@ -246,7 +437,7 @@ class Store:
+         with self.connect() as conn:
+             row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
+         require(row is not None, "The project does not exist")
+-        return json.loads(row[0])
++        return migrate(json.loads(row[0]))
+ 
+     def create(self, project):
+         with self.connect() as conn:
+@@ -258,7 +449,7 @@ class Store:
+             conn.execute("BEGIN IMMEDIATE")
+             row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
+             require(row is not None, "The project does not exist")
+-            project = json.loads(row[0])
++            project = migrate(json.loads(row[0]))
+             result = operation(project)
+             project["updated_at"] = now()
+             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
+@@ -305,7 +496,10 @@ def csv_export(project, matrix=False):
+         for d in project["documents"]:
+             writer.writerow([safe(d["name"])] + [counts[d["id"], c["id"]] for c in project["codes"]])
+     else:
+-        writer.writerow(["document", "code", "start", "end", "quote", "memo", "source"])
++        writer.writerow(["document", "code", "code_path", "start", "end", "quote", "memo", "source"])
+         for a in project["annotations"]:
+-            writer.writerow([safe(find(project["documents"], a["document_id"])["name"]), safe(find(project["codes"], a["code_id"])["name"]), a["start"], a["end"], safe(a["quote"]), safe(a.get("memo", "")), safe(a["source"])])
++            code = find(project["codes"], a["code_id"])
++            writer.writerow([safe(find(project["documents"], a["document_id"])["name"]), safe(code["name"]),
++                             safe(code_path(project["codes"], code)), a["start"], a["end"], safe(a["quote"]),
++                             safe(a.get("memo", "")), safe(a["source"])])
+     return ("\ufeff" + stream.getvalue()).encode("utf-8")
+diff --git a/qualicraft/server.py b/qualicraft/server.py
+index 945bb15..6836974 100644
+--- a/qualicraft/server.py
++++ b/qualicraft/server.py
+@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ from pathlib import Path
+ 
+ from .ai import Analyzer
+-from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, event, find, grounded_theory_examples_project, new_project, now, read_docx, require, review, synthetic_project, uid, validate_project
++from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, new_project, now, read_docx, require, review, synthetic_project, uid, update_code, validate_project
+ 
+ ROOT = Path(__file__).resolve().parent.parent
+ 
+@@ -139,7 +139,13 @@ def create_server(data_dir, guide_dir, port=8765):
+                                     raise ValueError("The DOCX file could not be parsed. Use a valid Word document under 8 MB.") from None
+                             return add_document(project, body.get("name"), text)
+                         if action == "codes":
+-                            return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"))
++                            return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"))
++                        if action == "code-update":
++                            return update_code(project, body.get("id"), body.get("changes"))
++                        if action == "code-delete":
++                            return delete_code(project, body.get("id"))
++                        if action == "code-merge":
++                            return merge_codes(project, body.get("source_id"), body.get("target_id"))
+                         if action == "annotations":
+                             return annotate(project, body.get("document_id"), body.get("code_id"), body.get("start"), body.get("end"), body.get("memo", ""))
+                         if action == "remove-annotation":
+diff --git a/tests/test_core.py b/tests/test_core.py
+index 1cd1291..f037258 100644
+--- a/tests/test_core.py
++++ b/tests/test_core.py
+@@ -6,7 +6,7 @@ import zipfile
+ from pathlib import Path
+ 
+ from qualicraft.ai import grounded_suggestions, make_payload, validate_config, Analyzer
+-from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, csv_export, grounded_theory_examples_project, new_project, paragraphs, read_docx, review, synthetic_project, validate_project
++from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, validate_project
+ from qualicraft.evaluate import evaluate, from_project
+ 
+ 
+@@ -139,6 +139,101 @@ class CoreTests(unittest.TestCase):
+         self.assertEqual(interview_answer["speaker"], "patient")
+         validate_project(p)
+ 
++    def test_schema_v1_migrates_to_v2_without_data_loss(self):
++        p = new_project("Legacy")
++        quote = "the doctor explained things clearly and I felt heard."
++        d = add_document(p, "I1", "Patient: " + quote)
++        c = add_code(p, "Legacy code", "old definition")
++        start = d["text"].index(quote)
++        annotate(p, d["id"], c["id"], start, start + len(quote))
++        for code in p["codes"]:
++            for key in ("parent_id", "memo", "anchor_examples", "inclusion", "exclusion", "status", "order"):
++                code.pop(key, None)
++        for document in p["documents"]:
++            document.pop("attributes", None)
++        p["schema_version"] = 1
++        validate_project(p)
++        self.assertEqual(p["schema_version"], 2)
++        self.assertEqual(len(p["annotations"]), 1)
++        self.assertEqual(p["annotations"][0]["quote"], quote)
++        self.assertIsNone(p["codes"][0]["parent_id"])
++        self.assertEqual(p["codes"][0]["status"], "final")
++        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 2)
++
++    def test_code_hierarchy_and_paths(self):
++        p = new_project("Hierarchy")
++        theme = add_code(p, "Experience with RDM")
++        researcher = add_code(p, "Experience with RDM [R]", parent_id=theme["id"])
++        policy = add_code(p, "Experience with RDM [PM/SP]", parent_id=theme["id"])
++        self.assertIsNone(theme["parent_id"])
++        self.assertEqual(researcher["parent_id"], theme["id"])
++        self.assertEqual(code_path(p["codes"], researcher), "Experience with RDM > Experience with RDM [R]")
++        with self.assertRaises(ValueError):
++            add_code(p, "Orphan", parent_id="missing")
++        validate_project(p)
++
++    def test_update_code_rejects_cycles_duplicates_and_bad_status(self):
++        p = new_project("Update")
++        theme = add_code(p, "Theme")
++        child = add_code(p, "Child", parent_id=theme["id"])
++        update_code(p, child["id"], {"name": "Renamed child", "memo": "note", "inclusion": "when x",
++                                     "exclusion": "when y", "anchor_examples": ["a quote"], "status": "provisional"})
++        self.assertEqual(child["name"], "Renamed child")
++        self.assertEqual(child["status"], "provisional")
++        self.assertEqual(child["anchor_examples"], ["a quote"])
++        with self.assertRaises(ValueError):
++            update_code(p, child["id"], {"name": "Theme"})
++        with self.assertRaises(ValueError):
++            update_code(p, theme["id"], {"parent_id": child["id"]})
++        with self.assertRaises(ValueError):
++            update_code(p, theme["id"], {"parent_id": theme["id"]})
++        with self.assertRaises(ValueError):
++            update_code(p, theme["id"], {"status": "invented"})
++        validate_project(p)
++
++    def test_delete_code_reparents_children_and_removes_codings(self):
++        p = new_project("Delete")
++        d = add_document(p, "I1", "Patient: " + "Some analysable content here. " * 6)
++        top = add_code(p, "Top")
++        middle = add_code(p, "Middle", parent_id=top["id"])
++        leaf = add_code(p, "Leaf", parent_id=middle["id"])
++        annotate(p, d["id"], middle["id"], 9, 40)
++        annotate(p, d["id"], leaf["id"], 45, 70)
++        result = delete_code(p, middle["id"])
++        self.assertEqual(result["codings_removed"], 1)
++        self.assertEqual(result["children_reparented"], 1)
++        self.assertEqual(next(c for c in p["codes"] if c["id"] == leaf["id"])["parent_id"], top["id"])
++        self.assertEqual(len(p["annotations"]), 1)
++        self.assertTrue(any(a["action"] == "code_delete" for a in p["audit"]))
++        validate_project(p)
++
++    def test_merge_codes_moves_codings_and_collapses_duplicates(self):
++        p = new_project("Merge")
++        d = add_document(p, "I1", "Patient: " + "Some analysable content here. " * 6)
++        source = add_code(p, "Source")
++        target = add_code(p, "Target")
++        annotate(p, d["id"], source["id"], 9, 40)
++        annotate(p, d["id"], source["id"], 45, 70)
++        annotate(p, d["id"], target["id"], 9, 40)   # same span as the first source coding
++        result = merge_codes(p, source["id"], target["id"])
++        self.assertEqual(result["codings_moved"], 1)
++        self.assertEqual(result["duplicates_collapsed"], 1)
++        self.assertEqual(len(p["annotations"]), 2)
++        self.assertTrue(all(c["id"] != source["id"] for c in p["codes"]))
++        with self.assertRaises(ValueError):
++            merge_codes(p, target["id"], target["id"])
++        validate_project(p)
++
++    def test_codings_csv_carries_the_code_path(self):
++        p = new_project("Export")
++        d = add_document(p, "I1", "Patient: " + "Some analysable content here. " * 6)
++        theme = add_code(p, "Theme")
++        child = add_code(p, "Child", parent_id=theme["id"])
++        annotate(p, d["id"], child["id"], 9, 40)
++        text = csv_export(p).decode("utf-8-sig")
++        self.assertIn("code_path", text.splitlines()[0])
++        self.assertIn("Theme > Child", text)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests/test_http.py b/tests/test_http.py
+index ccf54c8..42575aa 100644
+--- a/tests/test_http.py
++++ b/tests/test_http.py
+@@ -90,6 +90,35 @@ class HTTPTests(unittest.TestCase):
+             model.server_close()
+             thread.join()
+ 
++    def test_http_codebook_hierarchy_and_maintenance(self):
++        p = self.request("/api/projects", {"kind": "demo"})
++        root = "/api/projects/" + p["id"]
++        parent, other = p["codes"][0], p["codes"][1]
++
++        child = self.request(root + "/codes", {"name": "Sub-code", "definition": "", "parent_id": parent["id"]})
++        self.assertEqual(child["parent_id"], parent["id"])
++
++        updated = self.request(root + "/code-update", {"id": child["id"],
++                                                       "changes": {"name": "Renamed sub-code", "memo": "a note"}})
++        self.assertEqual(updated["name"], "Renamed sub-code")
++        self.assertEqual(updated["memo"], "a note")
++
++        # A code may not be moved beneath its own descendant.
++        with self.assertRaises(urllib.error.HTTPError):
++            self.request(root + "/code-update", {"id": parent["id"], "changes": {"parent_id": child["id"]}})
++
++        merged = self.request(root + "/code-merge", {"source_id": child["id"], "target_id": other["id"]})
++        self.assertEqual(merged["source"], "Renamed sub-code")
++        self.assertEqual(merged["target"], other["name"])
++
++        deleted = self.request(root + "/code-delete", {"id": other["id"]})
++        self.assertIn("codings_removed", deleted)
++
++        project = self.request(root)
++        self.assertEqual(project["schema_version"], 2)
++        self.assertNotIn(other["id"], [c["id"] for c in project["codes"]])
++        self.assertTrue(any(a["action"] == "code_delete" for a in project["audit"]))
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/web/app.js b/web/app.js
+index b748953..e2fef82 100644
+--- a/web/app.js
++++ b/web/app.js
+@@ -3,7 +3,7 @@ const $ = (s, root = document) => root.querySelector(s);
+ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const cp = s => Array.from(s);
+ const cut = (s, a, b) => cp(s).slice(a, b).join('');
+-const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[]};
++const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[], collapsed:new Set()};
+ const icons = {
+   grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+   chart:'<path d="M4 3v17h17M8 16v-5m5 5V6m5 10v-8"/>',
+@@ -24,6 +24,68 @@ async function api(path, body) {
+ const projectUrl = action => `/api/projects/${state.project.id}${action?'/'+action:''}`;
+ const doc = () => state.project?.documents.find(d=>d.id===state.docId);
+ const codesFor = a => state.project.codes.find(c=>c.id===a.code_id);
++function codePath(code) {
++  const byId=new Map(state.project.codes.map(c=>[c.id,c]));
++  const parts=[code.name]; let cur=code; const seen=new Set([code.id]);
++  while(cur.parent_id && byId.has(cur.parent_id) && !seen.has(cur.parent_id)) {
++    cur=byId.get(cur.parent_id); seen.add(cur.id); parts.push(cur.name);
++  }
++  return parts.reverse().join(' > ');
++}
++function codeDescendants(id) {
++  const out=new Set(); const stack=[id];
++  while(stack.length) {
++    const cur=stack.pop();
++    state.project.codes.forEach(c=>{ if(c.parent_id===cur && !out.has(c.id)) { out.add(c.id); stack.push(c.id); } });
++  }
++  return out;
++}
++function codeTree() {
++  const byParent=new Map();
++  state.project.codes.forEach(c=>{ const k=c.parent_id||null; if(!byParent.has(k)) byParent.set(k,[]); byParent.get(k).push(c); });
++  byParent.forEach(list=>list.sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name)));
++  const rows=[];
++  (function walk(parentId,depth){
++    (byParent.get(parentId)||[]).forEach(c=>{
++      const kids=byParent.get(c.id)||[];
++      rows.push({code:c, depth, childCount:kids.length});
++      if(kids.length && !state.collapsed.has(c.id)) walk(c.id, depth+1);
++    });
++  })(null,0);
++  return rows;
++}
++function codeCounts() {
++  const byId=new Map(state.project.codes.map(c=>[c.id,c]));
++  const own=new Map(state.project.codes.map(c=>[c.id,0]));
++  state.project.annotations.forEach(a=>{ if(own.has(a.code_id)) own.set(a.code_id, own.get(a.code_id)+1); });
++  const total=new Map(own);
++  state.project.codes.forEach(c=>{
++    let cur=c.parent_id; const seen=new Set([c.id]);
++    while(cur && byId.has(cur) && !seen.has(cur)) {
++      seen.add(cur.id);
++      total.set(cur, (total.get(cur)||0) + (own.get(c.id)||0));
++      cur=byId.get(cur).parent_id;
++    }
++  });
++  return {own, total};
++}
++function codebookHtml() {
++  const p=state.project;
++  if(!p.codes.length) return '<div class="empty">No codes yet. Add one to start coding.</div>';
++  const {own,total}=codeCounts();
++  return codeTree().map(({code:c,depth,childCount})=>{
++    const open=!state.collapsed.has(c.id);
++    return `<div class="code-row" style="--depth:${depth}">
++      <button class="twisty${childCount?'':' leaf'}" data-action="toggle-code" data-id="${c.id}" title="${childCount?(open?'Collapse':'Expand'):''}" aria-label="Toggle">${childCount?(open?'▾':'▸'):''}</button>
++      <button class="side-item${state.codeFilter===c.id?' selected':''}" data-action="filter-code" data-id="${c.id}" title="${esc(c.definition||c.name)}">
++        <span class="dot" style="background:${esc(c.color)}"></span>
++        <span class="name">${esc(c.name)}${c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}</span>
++        <span class="count" title="${own.get(c.id)||0} direct · ${total.get(c.id)||0} including sub-codes">${total.get(c.id)||0}</span>
++      </button>
++      <button class="edit-code" data-action="code-edit" data-id="${c.id}" title="Edit, re-parent, merge or delete" aria-label="Edit code">⋯</button>
++    </div>`;
++  }).join('') || '<div class="empty">No codes to show.</div>';
++}
+ function segments(text) {
+   let speaker='unknown';
+   return [...text.matchAll(/[^\r\n]+/gu)].filter(m=>m[0].trim()).map((m,i)=>{
+@@ -50,7 +112,6 @@ function errorDisplay(error) { if($('#dialog').open && $('#modal-error')) { $('#
+ function render() {
+   const p=state.project; if(!p) return;
+   const pending=p.suggestions.filter(s=>s.status==='pending').length;
+-  const count=new Map(p.codes.map(c=>[c.id,p.annotations.filter(a=>a.code_id===c.id).length]));
+   const titles={coding:'Coding workspace',insights:'Insights',audit:'Audit trail'};
+   $('#app').innerHTML=`<div class="shell">
+     <aside class="sidebar"><div class="brand"><span class="brand-icon">Q</span><span class="brand-name">QualiCraft</span><span class="version">ALPHA</span></div>
+@@ -60,7 +121,7 @@ function render() {
+     <div class="sidebar-scroll"><div class="side-title"><div class="section-label">DOCUMENTS <span class="count">${p.documents.length}</span></div><button class="link" data-action="import" aria-label="Import interview">＋</button></div>
+     ${p.documents.map(d=>`<button class="side-item ${d.id===state.docId?'selected':''}" data-action="doc" data-id="${d.id}" title="${esc(d.name)}">${icon('doc')}<span class="name">${esc(d.name)}</span></button>`).join('') || '<div class="empty">Import your first interview</div>'}
+     <div class="side-title"><div class="section-label">CODEBOOK <span class="count">${p.codes.length}</span></div><button class="link" data-action="code" aria-label="New code">＋</button></div>
+-    ${p.codes.map(c=>`<button class="side-item ${state.codeFilter===c.id?'selected':''}" data-action="filter-code" data-id="${c.id}" title="${esc(c.definition || c.name)}"><span class="dot" style="background:${esc(c.color)}"></span><span class="name">${esc(c.name)}</span><span class="count">${count.get(c.id)}</span></button>`).join('')}
++    ${codebookHtml()}
+     </div><div class="local-note"><span class="status-dot"></span><div><strong>Local workspace</strong><span>Cloud only when requested</span></div></div></aside>
+     <main class="workspace"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions"><span class="save-state">Saved locally</span><button data-action="settings">${icon('setting')}Model</button><button data-action="export">${icon('down')}Export</button><span class="avatar">QC</span></div></header>
+     <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> to review</span></div></div><button class="primary" data-action="import">${icon('upload')}Import interview</button></section>
+@@ -127,8 +188,47 @@ function locate(start) {
+ function showImport() {
+   modal('Import interview',`<p>Import UTF-8 TXT or DOCX, or paste a transcript. Original line breaks define segments. Use Doctor:/Patient:, Interviewer:/Participant:, or IQ.../IP1: speaker labels. Chinese labels are also supported.</p><label class="field">Choose a file<input id="import-file" type="file" accept=".txt,.docx"><small>DOCX imports paragraph and table text; layout, comments, and headers are not retained.</small></label><label class="field">Document name<input id="document-name" placeholder="e.g. P02 · Care experience" maxlength="200"></label><label class="field">Or paste a transcript<textarea id="document-text" rows="9" placeholder="Doctor: How did the conversation feel?&#10;Patient: ..."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-document">Import locally</button>');
+ }
+-function showCode() {
+-  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label><label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
++function showCode(parentId=null) {
++  const parents=state.project.codes;
++  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label>${parents.length?`<label class="field">Group under (optional)<select id="code-parent"><option value="">— top level —</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.</small></label>`:''}<label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
++}
++function showCodeEdit(id) {
++  const c=state.project.codes.find(x=>x.id===id); if(!c) return;
++  const blocked=codeDescendants(id);
++  const {own,total}=codeCounts();
++  const others=state.project.codes.filter(x=>x.id!==id);
++  modal('Edit code', `
++    <label class="field">Name<input id="ec-name" maxlength="160" value="${esc(c.name)}"></label>
++    <label class="field">Definition<textarea id="ec-definition" rows="3" placeholder="What this code means.">${esc(c.definition)}</textarea></label>
++    <div class="form-row">
++      <label class="field">Group under<select id="ec-parent"><option value="">— top level —</option>${others.map(o=>`<option value="${o.id}"${c.parent_id===o.id?' selected':''}${blocked.has(o.id)?' disabled':''}>${esc(codePath(o))}${blocked.has(o.id)?' — its own sub-code':''}</option>`).join('')}</select></label>
++      <label class="field">Status<select id="ec-status">${[['emergent','Emergent'],['provisional','Provisional'],['final','Final']].map(([v,t])=>`<option value="${v}"${c.status===v?' selected':''}>${t}</option>`).join('')}</select></label>
++    </div>
++    <label class="field">Code / theme memo<textarea id="ec-memo" rows="3" placeholder="How is this code or theme developing?">${esc(c.memo||'')}</textarea></label>
++    <div class="form-row">
++      <label class="field">Inclusion criteria<textarea id="ec-inclusion" rows="2" placeholder="Use this code when…">${esc(c.inclusion||'')}</textarea></label>
++      <label class="field">Exclusion criteria<textarea id="ec-exclusion" rows="2" placeholder="Do not use it when…">${esc(c.exclusion||'')}</textarea></label>
++    </div>
++    <label class="field">Anchor examples (one per line)<textarea id="ec-anchors" rows="3" placeholder="Typical quotations that illustrate this code.">${esc((c.anchor_examples||[]).join('\n'))}</textarea></label>
++    <label class="field">Colour<input id="ec-color" type="color" value="${esc(c.color)}"></label>
++    <div class="notice">${own.get(id)||0} direct coding(s) · ${total.get(id)||0} including sub-codes · ${blocked.size} sub-code(s).</div>`,
++    `<button class="danger" data-action="code-delete-ask" data-id="${id}">Delete</button>${others.length?`<button data-action="code-merge-ask" data-id="${id}">Merge into…</button>`:''}<button data-action="close">Cancel</button><button class="primary" data-action="code-save" data-id="${id}">Save changes</button>`);
++}
++function showCodeDeleteAsk(id) {
++  const c=state.project.codes.find(x=>x.id===id); if(!c) return;
++  const {own}=codeCounts();
++  const kids=codeDescendants(id).size;
++  modal('Delete code', `<p>Delete <b>${esc(c.name)}</b>?</p>
++    <div class="notice">${own.get(id)||0} coding(s) will be removed from the transcript.${kids?` ${kids} sub-code(s) will move up to the level above.`:''} The removal is written to the audit trail but cannot be undone from the interface.</div>`,
++    `<button data-action="close">Cancel</button><button class="danger" data-action="code-delete" data-id="${id}">Delete code</button>`);
++}
++function showMergeAsk(id) {
++  const src=state.project.codes.find(x=>x.id===id); if(!src) return;
++  const others=state.project.codes.filter(x=>x.id!==id);
++  modal('Merge code', `<p>Move every coding from <b>${esc(src.name)}</b> into another code, then remove it.</p>
++    <label class="field">Merge into<select id="merge-target">${others.map(o=>`<option value="${o.id}">${esc(codePath(o))}</option>`).join('')}</select></label>
++    <div class="notice">Sub-codes of <b>${esc(src.name)}</b> are re-parented to the target. A coding that would duplicate an existing target coding on the same passage is collapsed rather than copied.</div>`,
++    `<button data-action="close">Cancel</button><button class="primary" data-action="code-merge" data-id="${id}">Merge</button>`);
+ }
+ function showAnnotation() {
+   if(!state.selection||state.selection.document_id!==state.docId) throw new Error('Select a passage in the transcript first.');
+@@ -165,6 +265,10 @@ async function action(button) {
+   if(a==='view'){state.view=button.dataset.view;state.selection=null;render();return;}
+   if(a==='doc'){state.docId=button.dataset.id;state.selection=null;state.search='';state.codeFilter=null;state.view='coding';render();return;}
+   if(a==='filter-code'){state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();return;}
++  if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);render();return;}
++  if(a==='code-edit')return showCodeEdit(button.dataset.id);
++  if(a==='code-delete-ask')return showCodeDeleteAsk(button.dataset.id);
++  if(a==='code-merge-ask')return showMergeAsk(button.dataset.id);
+   if(a==='clear-filter'){state.codeFilter=null;state.search='';render();return;}
+   if(a==='import')return showImport();
+   if(a==='code')return showCode();
+@@ -181,7 +285,30 @@ async function action(button) {
+     if(file){if(file.size>8_000_000)throw new Error('File exceeds 8 MB.'); if(/\.docx$/i.test(file.name)){const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));body.docx_base64=btoa(binary);delete body.text;}else if(/\.txt$/i.test(file.name)){body.text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());}else throw new Error('Choose a TXT or DOCX file.');}
+     const d=await api(projectUrl('documents'),body);state.docId=d.id;state.selection=null;closeModal();await refresh();toast('Interview imported.');return;
+   }
+-  if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value});closeModal();await refresh();toast('Code saved.');return;}
++  if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null});closeModal();await refresh();toast('Code saved.');return;}
++  if(a==='code-save'){
++    const id=button.dataset.id;
++    await api(projectUrl('code-update'),{id,changes:{
++      name:$('#ec-name').value, definition:$('#ec-definition').value, color:$('#ec-color').value,
++      parent_id:$('#ec-parent').value||null, status:$('#ec-status').value, memo:$('#ec-memo').value,
++      inclusion:$('#ec-inclusion').value, exclusion:$('#ec-exclusion').value,
++      anchor_examples:$('#ec-anchors').value.split('\n').map(x=>x.trim()).filter(Boolean)}});
++    closeModal();await refresh();toast('Code updated.');return;
++  }
++  if(a==='code-delete'){
++    const id=button.dataset.id;
++    const result=await api(projectUrl('code-delete'),{id});
++    if(state.codeFilter===id)state.codeFilter=null;
++    closeModal();await refresh();
++    toast(`Deleted “${result.name}” · ${result.codings_removed} coding(s) removed${result.children_reparented?` · ${result.children_reparented} sub-code(s) moved up`:''}.`);return;
++  }
++  if(a==='code-merge'){
++    const id=button.dataset.id, target=$('#merge-target').value;
++    const result=await api(projectUrl('code-merge'),{source_id:id,target_id:target});
++    if(state.codeFilter===id)state.codeFilter=null;
++    closeModal();await refresh();
++    toast(`Merged “${result.source}” into “${result.target}” · ${result.codings_moved} coding(s) moved${result.duplicates_collapsed?` · ${result.duplicates_collapsed} duplicate(s) collapsed`:''}.`);return;
++  }
+   if(a==='save-annotation'){await api(projectUrl('annotations'),{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();await refresh();toast('Passage coded.');return;}
+   if(a==='review'){const start=state.project.suggestions.find(s=>s.id===button.dataset.id)?.start;await api(projectUrl('review'),{id:button.dataset.id,action:button.dataset.decision});await refresh();locate(start);toast(button.dataset.decision==='accept'?'Accepted and added to your codings.':'Rejected; review decision saved.');return;}
+   if(a==='annotation'){
+diff --git a/web/style.css b/web/style.css
+index 7d5b2e0..2ab1573 100644
+--- a/web/style.css
++++ b/web/style.css
+@@ -18,3 +18,20 @@
+ #selection-slot{position:sticky;bottom:0;z-index:6;pointer-events:none}
+ #selection-slot:empty{display:none}
+ #selection-slot>*{pointer-events:auto}
++
++
++/* --- Codebook hierarchy (schema v2) -----------------------------------------
++   The codebook became a tree so codes can be grouped into themes. Each row is
++   indented by its depth, parents show a twisty and a rolled-up count, and the
++   per-row edit affordance stays out of the way until hover. */
++.code-row{display:flex;align-items:center;gap:1px;padding-left:calc(var(--depth,0) * 13px)}
++.code-row .side-item{flex:1;min-width:0}
++.twisty{flex:0 0 16px;width:16px;border:0;background:transparent;padding:3px 0;color:#8a93a3;font-size:9px;line-height:1;text-align:center;cursor:pointer}
++.twisty:hover{color:#4656a6}
++.twisty.leaf{cursor:default;pointer-events:none}
++.edit-code{flex:0 0 18px;width:18px;border:0;background:transparent;padding:3px 0;color:#9aa3b2;font-size:13px;line-height:1;opacity:0}
++.code-row:hover .edit-code,.code-row:focus-within .edit-code{opacity:1}
++.edit-code:hover{color:var(--accent)}
++.status-flag{font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:#8a6d1f;background:#fdf4d8;border-radius:2px;padding:1px 3px;margin-left:4px;vertical-align:1px}
++button.danger{border-color:#d8b4b4;background:#fff;color:var(--danger)}
++button.danger:hover{border-color:var(--danger);background:#fdf3f3}
+-- 
+2.39.5 (Apple Git-154)
+

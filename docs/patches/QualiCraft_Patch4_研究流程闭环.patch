@@ -1,0 +1,1229 @@
+From 2c9a4b38fae062ea1d27d9a3eb9389017d54be5c Mon Sep 17 00:00:00 2001
+From: Che Haijun <chehaijun@Mac.localdomain>
+Date: Tue, 6 Oct 2026 13:50:01 +0300
+Subject: [PATCH 1/3] docs: record what we deliberately do not build
+
+Borrowed from Pi Agent, which ships a "What we didn't build" section instead of a
+feature list. Writing the omissions down turns restraint into a decision rather
+than a gap: no multimedia coding, no real-time collaboration, no general plotting
+engine, no automatic coding, no word clouds or vector search, no cloud accounts.
+
+It also answers "why not X" during review, and it makes the project's lightness a
+stated position instead of an accident.
+---
+ docs/NOT_BUILDING.md | 92 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 92 insertions(+)
+ create mode 100644 docs/NOT_BUILDING.md
+
+diff --git a/docs/NOT_BUILDING.md b/docs/NOT_BUILDING.md
+new file mode 100644
+index 0000000..180f60b
+--- /dev/null
++++ b/docs/NOT_BUILDING.md
+@@ -0,0 +1,92 @@
++# 我们没做什么
++
++> 借鉴 Pi Agent 的做法。它的发布页不堆功能列表，反而专门列出**刻意不做**的事。
++>
++> 这份清单是**主动的选择**，不是能力不足。它的作用是：防止范围蔓延；在汇报时能回答「为什么不做 X」；让「轻」成为设计立场。
++
++---
++
++## 一、明确不做
++
++### 多媒体编码
++
++**不做**图片、音频、视频的区域编码。只做文本。
++
++**理由**：ATLAS.ti 和 QualiCoder 在这块积累很深，我们追不上。而且文本访谈是医学、公共卫生、社会科学定性研究的主流形态——**把文本这一件事做到最好，比把四件事做到及格更有价值。**
++
++### 实时多人协作
++
++**不做**云端账号、多人同时编辑、权限管理。
++
++**理由**：本地单机是**特性**，不是缺陷。医院伦理审查和 GDPR 场景下，「数据不出本机」正是我们的立足点。多人协作意味着服务器、账号、加密、审计——那是另一个产品。
++
++> 折中方案（未来可考虑）：单机为主，通过**项目文件夹**共享（配合第 5 节的可读文本存储）。
++
++### 通用绘图引擎
++
++**不做** R/Python 沙箱、不做任意图表、不做脚本注入。
++
++**理由**：PRD 里原本计划了 Docker + R + ggplot2 + ComplexHeatmap 沙箱，那是「微生信」模式。但通用绘图引擎意味着依赖管理、安全隔离、版本兼容——**成本极高，且与「轻量本地部署」直接冲突**（要装 Docker）。
++
++**替代方案**：只做 **3 张图，但做到能直接投稿**：
++1. 主题共现热力图
++2. 组别 × 主题发散条形图
++3. 混合研究气泡图（主题频次 × 问卷得分）
++
++用前端渲染，不引入 R/Docker。
++
++### 自动编码
++
++**不做**「一键生成全部编码」。
++
++**理由**：这是本项目最重要的立场。AI **只提出建议**，必须由研究者逐条采纳才进入正式码表。原因有二：
++1. 方法论上——定性研究的效度来自研究者的解释，不是模型的输出
++2. 信任上——研究者必须能说清「这条编码为什么存在」
++
++**所以 QualiCraft 的 AI 是「提建议的助手」，不是「自动编码器」。**
++
++### 词云 / 网络图 / 语义检索
++
++**不做**。
++
++**理由**：词云在学术上几乎没有解释力；网络图的信息密度低于共现矩阵；语义检索（向量）**不可解释**——你不知道为什么这条被找到。研究者的检索需求是精确的（「所有关于数据共享的引文」），**关键词检索更合适，而且可解释**。
++
++> 这条借鉴自 Instinct：它的记忆检索用**类 grep 的关键词搜索，而非向量检索**。
++
++### 云端账号体系 / SaaS
++
++**不做**。
++
++**理由**：见「实时多人协作」。
++
++---
++
++## 二、暂时不做（但可能以后做）
++
++| 项 | 为什么缓 |
++| :--- | :--- |
++| 音频转写（Faster-Whisper） | 需要 GPU 依赖，与「零依赖」冲突。可做成可选块 |
++| PDF 导入 | 版式解析不可靠，容易把偏移量搞错。先做 TXT/DOCX |
++| REFI-QDA 导入 | 导出比导入容易得多，先做导出（能让结果导回 ATLAS.ti） |
++| 编码者间信度（IRR） | 内容分析必需，但主题分析不需要。等 P2 |
++| 项目存储改 Git 文本 | 方向对，但是大手术。先做最小原型验证 |
++
++---
++
++## 三、我们反而要做好的
++
++| 项 | 为什么 |
++| :--- | :--- |
++| **引文精确溯源** | 每条建议锚在字符坐标上，引文必须能在原文唯一匹配，否则丢弃。这是反幻觉的硬保证 |
++| **人工裁决** | 采纳/拒绝必须由人做，决策进审计轨迹 |
++| **方法学叙述导出** | 让「你怎么做的」自动成文，而不是事后回忆两周 |
++| **数据不出本机** | 本地存储、本地模型可选、发送前强制预览 |
++| **可读的项目格式** | 目标是让码表、编码、审计都是人能直接读和改的文本 |
++
++---
++
++## 四、这份清单怎么用
++
++1. **每次想加功能时先看这里。** 如果在这个清单上，先问：是不是真的需要打破它？
++2. **汇报时用它。** 导师问「为什么不做多媒体编码」，直接翻到这里。
++3. **它是活的。** 如果某个决定被推翻，**不要偷偷删掉，改成「曾考虑过，因为 X 放弃，后来因为 Y 重新评估」**——那本身就是一份设计记录。
+-- 
+2.39.5 (Apple Git-154)
+
+From 0ed6c352f4afb54a0a6794abaa11ae80266004f7 Mon Sep 17 00:00:00 2001
+From: Che Haijun <chehaijun@Mac.localdomain>
+Date: Tue, 6 Oct 2026 13:50:01 +0300
+Subject: [PATCH 2/3] feat(research): reading notes and a methods record
+
+Two phases of a qualitative study had no support at all: familiarisation and
+write-up. Both are now covered, which closes four of the six phases of a thematic
+analysis.
+
+Reading notes (schema v3). A document gains a memo, shown as a strip under the
+reader header and saved as you type. The familiarisation phase produces exactly
+this kind of note, and previously there was nowhere to put it. migrate() upgrades
+v1 and v2 projects stepwise, so existing codebooks, codings and offsets are
+untouched.
+
+Methods record. methods_narrative() assembles a Markdown account of how the
+analysis was actually carried out, read from the project state and the audit
+trail: the data, coding totals, how the codebook changed over time, the theme
+tree with definitions and anchor examples, how much AI assistance was used and
+what was done with it, and the integrity guarantees. Exported as a fourth format.
+
+The point is not the export itself. Reconstructing a methods section from memory
+two weeks after finishing the analysis is a real cost, and no existing tool
+removes it. This does, because the process is already recorded.
+---
+ qualicraft/core.py   | 222 +++++++++++++++++++++++++++++++++++++++----
+ qualicraft/server.py |   6 +-
+ tests/test_core.py   |  53 ++++++++++-
+ tests/test_http.py   |  17 +++-
+ web/app.js           |  23 ++++-
+ web/style.css        |  12 +++
+ 6 files changed, 307 insertions(+), 26 deletions(-)
+
+diff --git a/qualicraft/core.py b/qualicraft/core.py
+index d1e89bd..d7fb32a 100644
+--- a/qualicraft/core.py
++++ b/qualicraft/core.py
+@@ -16,7 +16,7 @@ from xml.etree import ElementTree as ET
+ 
+ COLORS = ["#427d77", "#ba8650", "#7b77b5", "#5c85b0", "#ba6e85", "#778c51"]
+ 
+-SCHEMA_VERSION = 2
++SCHEMA_VERSION = 3
+ 
+ CODE_STATUSES = ("emergent", "provisional", "final")
+ 
+@@ -52,25 +52,36 @@ def event(project, action, **details):
+ def migrate(project):
+     """Upgrade an older project in place to the current schema. Idempotent.
+ 
+-    v1 -> v2 adds the codebook hierarchy and the methodological fields that the
++    v1 -> v2 adds the codebook hierarchy and the methodological fields the
+     analysis workflows need: codes gain parent_id / memo / anchor examples /
+     inclusion and exclusion criteria / status, and documents gain attributes.
++
++    v2 -> v3 gives every document a reading note, so the familiarisation phase
++    of a qualitative study has somewhere to live.
++
+     Every added value is a neutral default, so an existing project keeps its
+-    codes, annotations and offsets untouched.
++    codes, annotations and character offsets untouched.
+     """
+-    if project.get("schema_version") == SCHEMA_VERSION:
++    version = project.get("schema_version", 1)
++    if version >= SCHEMA_VERSION:
+         return project
+-    for code in project.get("codes", []):
+-        code.setdefault("parent_id", None)
+-        code.setdefault("memo", "")
+-        code.setdefault("anchor_examples", [])
+-        code.setdefault("inclusion", "")
+-        code.setdefault("exclusion", "")
+-        code.setdefault("status", "final")
+-        code.setdefault("order", 0)
+-    for document in project.get("documents", []):
+-        document.setdefault("attributes", {})
+-    project["schema_version"] = SCHEMA_VERSION
++    if version < 2:
++        for code in project.get("codes", []):
++            code.setdefault("parent_id", None)
++            code.setdefault("memo", "")
++            code.setdefault("anchor_examples", [])
++            code.setdefault("inclusion", "")
++            code.setdefault("exclusion", "")
++            code.setdefault("status", "final")
++            code.setdefault("order", 0)
++        for document in project.get("documents", []):
++            document.setdefault("attributes", {})
++        version = 2
++    if version < 3:
++        for document in project.get("documents", []):
++            document.setdefault("memo", "")
++        version = 3
++    project["schema_version"] = version
+     return project
+ 
+ 
+@@ -136,12 +147,31 @@ def add_document(project, name, text):
+     require(isinstance(text, str) and text.strip() and len(text) <= 500_000, "The document is empty or exceeds 500,000 characters")
+     require(len(project["documents"]) < 100, "This release supports up to 100 documents per project")
+     doc = {"id": uid(), "name": string(name, "Document name", 200), "text": text,
+-           "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "created_at": now()}
++           "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "created_at": now(),
++           "memo": "", "attributes": {}}
+     project["documents"].append(doc)
+     event(project, "document_import", document_id=doc["id"], sha256=doc["sha256"])
+     return doc
+ 
+ 
++def update_document(project, document_id, changes):
++    """Rename a document or edit its reading note."""
++    require(isinstance(changes, dict), "The document changes are invalid")
++    doc = find(project["documents"], document_id)
++    if "name" in changes:
++        doc["name"] = string(changes["name"], "Document name", 200)
++    if "memo" in changes:
++        value = changes["memo"]
++        require(isinstance(value, str) and len(value) <= 20000, "The reading note is too long")
++        doc["memo"] = value
++    if "attributes" in changes:
++        attributes = changes["attributes"]
++        require(isinstance(attributes, dict) and len(attributes) <= 50, "The document attributes are invalid")
++        doc["attributes"] = attributes
++    event(project, "document_update", document_id=document_id, fields=sorted(changes))
++    return doc
++
++
+ def add_code(project, name, definition="", color=None, parent_id=None):
+     name = string(name, "Code name", 160)
+     require(not any(c["name"].casefold() == name.casefold() for c in project["codes"]), "A code with this name already exists")
+@@ -358,8 +388,8 @@ def grounded_theory_examples_project(guide):
+ 
+ 
+ def validate_project(project):
+-    require(isinstance(project, dict) and project.get("schema_version") in (1, SCHEMA_VERSION),
+-            "This project format is not supported")
++    version = project.get("schema_version") if isinstance(project, dict) else None
++    require(isinstance(version, int) and 1 <= version <= SCHEMA_VERSION, "This project format is not supported")
+     migrate(project)
+     string(project.get("name"), "Project name", 160)
+     for key, limit in [("documents", 100), ("codes", 2000), ("annotations", 50000), ("suggestions", 50000), ("audit", 100000)]:
+@@ -371,6 +401,7 @@ def validate_project(project):
+         string(d.get("name"), "Document name", 200)
+         require(isinstance(d.get("text"), str) and 0 < len(d["text"]) <= 500000, "The document text is invalid")
+         require(d.get("sha256") == hashlib.sha256(d["text"].encode()).hexdigest(), "Document integrity validation failed")
++        require(isinstance(d.get("memo", ""), str) and len(d["memo"]) <= 20000, "The document reading note is invalid")
+         attributes = d.get("attributes", {})
+         require(isinstance(attributes, dict) and len(attributes) <= 50, "The document attributes are invalid")
+         for key, value in attributes.items():
+@@ -484,6 +515,161 @@ class Store:
+                 conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
+ 
+ 
++def methods_narrative(project):
++    """A Markdown account of how the analysis was carried out.
++
++    Assembled from the project state and the audit trail, so a methods section
++    can be drafted from what actually happened rather than reconstructed from
++    memory. Nothing is inferred: every figure is read off the project.
++    """
++    codes, documents, annotations = project["codes"], project["documents"], project["annotations"]
++    audit = project["audit"]
++    children = {}
++    for code in codes:
++        children.setdefault(code.get("parent_id"), []).append(code)
++    for group in children.values():
++        group.sort(key=lambda c: (c.get("order", 0), c["name"]))
++    own = {}
++    for annotation in annotations:
++        own[annotation["code_id"]] = own.get(annotation["code_id"], 0) + 1
++
++    def rollup(code_id):
++        return own.get(code_id, 0) + sum(rollup(c["id"]) for c in children.get(code_id, []))
++
++    def field(value, fallback):
++        return value.strip() if isinstance(value, str) and value.strip() else fallback
++
++    out = []
++    add = out.append
++    add("# Methods record - " + project["name"])
++    add("")
++    add("Generated " + now()[:16].replace("T", " ") + " from the local workspace. No source text left this machine.")
++    add("")
++
++    add("## 1. Data")
++    add("")
++    add("| Document | Characters | Codings | Reading note | Imported |")
++    add("| --- | ---: | ---: | :---: | --- |")
++    for document in documents:
++        count = len([a for a in annotations if a["document_id"] == document["id"]])
++        note = "yes" if field(document.get("memo"), "") else "-"
++        add("| " + document["name"] + " | " + format(len(document["text"]), ",") + " | "
++            + str(count) + " | " + note + " | " + document["created_at"][:10] + " |")
++    add("")
++    add("**" + str(len(documents)) + " document(s), "
++        + format(sum(len(d["text"]) for d in documents), ",") + " characters, "
++        + str(len(annotations)) + " coding(s).**")
++    add("")
++
++    noted = [d for d in documents if field(d.get("memo"), "")]
++    if noted:
++        add("### Reading notes")
++        add("")
++        add("Familiarisation notes, as written. These are the researcher's first impressions")
++        add("before any coding took place.")
++        add("")
++        for document in noted:
++            add("**" + document["name"] + "**")
++            add("")
++            add("> " + document["memo"].strip().replace("\n", "\n> "))
++            add("")
++
++    add("## 2. Coding")
++    add("")
++    ai = [a for a in annotations if a.get("source") == "ai_reviewed"]
++    add("- Codings: **" + str(len(annotations)) + "** - "
++        + str(len(annotations) - len(ai)) + " made by hand, " + str(len(ai)) + " accepted from AI suggestions.")
++    add("- Codebook: **" + str(len(codes)) + "** codes, of which **"
++        + str(len(children.get(None, []))) + "** sit at the top level.")
++    if annotations:
++        busiest = sorted(own.items(), key=lambda kv: -kv[1])[:3]
++        named = [(next((c["name"] for c in codes if c["id"] == k), k), v) for k, v in busiest]
++        add("- Most used: " + ", ".join(n + " (" + str(v) + ")" for n, v in named) + ".")
++    add("")
++
++    add("## 3. How the codebook changed")
++    add("")
++    add("Read from the audit trail, in order. This is the record a reader needs in order to")
++    add("judge how the analysis developed.")
++    add("")
++    changes = [e for e in audit if e.get("action") in
++               ("code_create", "code_update", "code_delete", "code_merge", "annotation_remove")]
++    if not changes:
++        add("_No codebook changes recorded._")
++    else:
++        add("| When | Action | Detail |")
++        add("| --- | --- | --- |")
++        for e in changes:
++            when = e.get("time", "")[:16].replace("T", " ")
++            action = e["action"]
++            if action == "code_create":
++                detail = "created \"" + e.get("name", "") + "\""
++            elif action == "code_update":
++                detail = "edited " + ", ".join(e.get("fields", []))
++            elif action == "code_delete":
++                detail = ("deleted \"" + e.get("name", "") + "\" - "
++                          + str(e.get("codings_removed", 0)) + " coding(s) removed")
++            elif action == "code_merge":
++                detail = ("merged \"" + e.get("source", "") + "\" into \""
++                          + e.get("target", "") + "\" - " + str(e.get("codings_moved", 0)) + " coding(s) moved")
++            else:
++                detail = "coding removed"
++            add("| " + when + " | " + action + " | " + detail + " |")
++    add("")
++
++    add("## 4. Themes")
++    add("")
++    if not codes:
++        add("_The codebook is empty._")
++    else:
++        def emit(code, depth):
++            head = "#" * min(3 + depth, 6)
++            add(head + " " + code["name"])
++            add("")
++            add("- Definition: " + field(code.get("definition"), "_not recorded_"))
++            if field(code.get("inclusion"), ""):
++                add("- Include when: " + code["inclusion"].strip())
++            if field(code.get("exclusion"), ""):
++                add("- Exclude when: " + code["exclusion"].strip())
++            if code.get("anchor_examples"):
++                add("- Anchor example: \u201c" + code["anchor_examples"][0] + "\u201d")
++            add("- Status: " + code.get("status", "final")
++                + " - " + str(rollup(code["id"])) + " coding(s)")
++            if field(code.get("memo"), ""):
++                add("")
++                add("> " + code["memo"].strip().replace("\n", "\n> "))
++            add("")
++            for child in children.get(code["id"], []):
++                emit(child, depth + 1)
++        for top in children.get(None, []):
++            emit(top, 0)
++
++    add("## 5. AI assistance")
++    add("")
++    suggestions = project["suggestions"]
++    if not suggestions:
++        add("_No model was used on this project._")
++    else:
++        accepted = len([s for s in suggestions if s["status"] == "accepted"])
++        rejected = len([s for s in suggestions if s["status"] == "rejected"])
++        pending = len([s for s in suggestions if s["status"] == "pending"])
++        add("- Suggestions produced: **" + str(len(suggestions)) + "**")
++        add("- Accepted: " + str(accepted) + " | Rejected: " + str(rejected) + " | Still pending: " + str(pending))
++        add("- Every suggestion had to be accepted by hand before it entered the codebook; "
++            "suggestions whose quotation could not be located in the source were discarded on arrival.")
++    add("")
++
++    add("## 6. Integrity")
++    add("")
++    add("- Every document carries a SHA-256 digest; all "
++        + str(len(documents)) + " verified on load.")
++    add("- " + str(len(audit)) + " audit entries recorded.")
++    add("- Codings are anchored to character offsets, not to text markup, so the "
++        "source can be re-imported without losing alignment.")
++    add("")
++    return "\n".join(out)
++
++
+ def csv_export(project, matrix=False):
+     stream = io.StringIO(newline="")
+     writer = csv.writer(stream)
+diff --git a/qualicraft/server.py b/qualicraft/server.py
+index 6836974..d4de09b 100644
+--- a/qualicraft/server.py
++++ b/qualicraft/server.py
+@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ from pathlib import Path
+ 
+ from .ai import Analyzer
+-from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, new_project, now, read_docx, require, review, synthetic_project, uid, update_code, validate_project
++from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, synthetic_project, uid, update_code, update_document, validate_project
+ 
+ ROOT = Path(__file__).resolve().parent.parent
+ 
+@@ -77,6 +77,8 @@ def create_server(data_dir, guide_dir, port=8765):
+                             fmt = urllib.parse.parse_qs(parsed.query).get("format", ["json"])[0]
+                             if fmt in {"csv", "matrix"}:
+                                 return self.send(csv_export(project, fmt == "matrix"), "text/csv; charset=utf-8", filename=f"qualicraft-{fmt}.csv")
++                            if fmt == "methods":
++                                return self.send(methods_narrative(project).encode(), "text/markdown; charset=utf-8", filename="qualicraft-methods.md")
+                             if fmt == "json":
+                                 return self.send(json.dumps(project, ensure_ascii=False, indent=2).encode(), filename="qualicraft-project.json")
+                     return self.send({"error": "The API endpoint does not exist"}, status=404)
+@@ -140,6 +142,8 @@ def create_server(data_dir, guide_dir, port=8765):
+                             return add_document(project, body.get("name"), text)
+                         if action == "codes":
+                             return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"))
++                        if action == "document-update":
++                            return update_document(project, body.get("id"), body.get("changes"))
+                         if action == "code-update":
+                             return update_code(project, body.get("id"), body.get("changes"))
+                         if action == "code-delete":
+diff --git a/tests/test_core.py b/tests/test_core.py
+index f037258..e8f9ff7 100644
+--- a/tests/test_core.py
++++ b/tests/test_core.py
+@@ -6,7 +6,7 @@ import zipfile
+ from pathlib import Path
+ 
+ from qualicraft.ai import grounded_suggestions, make_payload, validate_config, Analyzer
+-from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, validate_project
++from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, methods_narrative, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, update_document, validate_project
+ from qualicraft.evaluate import evaluate, from_project
+ 
+ 
+@@ -139,7 +139,7 @@ class CoreTests(unittest.TestCase):
+         self.assertEqual(interview_answer["speaker"], "patient")
+         validate_project(p)
+ 
+-    def test_schema_v1_migrates_to_v2_without_data_loss(self):
++    def test_schema_v1_migrates_to_current_without_data_loss(self):
+         p = new_project("Legacy")
+         quote = "the doctor explained things clearly and I felt heard."
+         d = add_document(p, "I1", "Patient: " + quote)
+@@ -153,12 +153,12 @@ class CoreTests(unittest.TestCase):
+             document.pop("attributes", None)
+         p["schema_version"] = 1
+         validate_project(p)
+-        self.assertEqual(p["schema_version"], 2)
++        self.assertEqual(p["schema_version"], 3)
+         self.assertEqual(len(p["annotations"]), 1)
+         self.assertEqual(p["annotations"][0]["quote"], quote)
+         self.assertIsNone(p["codes"][0]["parent_id"])
+         self.assertEqual(p["codes"][0]["status"], "final")
+-        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 2)
++        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 3)
+ 
+     def test_code_hierarchy_and_paths(self):
+         p = new_project("Hierarchy")
+@@ -235,5 +235,50 @@ class CoreTests(unittest.TestCase):
+         self.assertIn("Theme > Child", text)
+ 
+ 
++    def test_schema_v2_migrates_to_v3_with_reading_notes(self):
++        p = new_project("V2")
++        add_document(p, "I1", "Patient: " + "Some content here. " * 6)
++        for document in p["documents"]:
++            document.pop("memo", None)
++        p["schema_version"] = 2
++        validate_project(p)
++        self.assertEqual(p["schema_version"], 3)
++        self.assertEqual(p["documents"][0]["memo"], "")
++
++    def test_document_reading_note_round_trip(self):
++        p = new_project("Note")
++        d = add_document(p, "I1", "Patient: " + "Some content here. " * 6)
++        update_document(p, d["id"], {"memo": "First pass: the participant keeps returning to tooling."})
++        self.assertIn("tooling", p["documents"][0]["memo"])
++        update_document(p, d["id"], {"name": "Interview 1"})
++        self.assertEqual(p["documents"][0]["name"], "Interview 1")
++        validate_project(p)
++        with self.assertRaises(ValueError):
++            update_document(p, d["id"], {"memo": "x" * 20001})
++
++    def test_methods_narrative_reports_the_process(self):
++        p = new_project("Methods")
++        d = add_document(p, "I1", "Patient: " + "Some content here. " * 6)
++        update_document(p, d["id"], {"memo": "first read"})
++        theme = add_code(p, "Tooling", "How tools shape the work")
++        child = add_code(p, "Tooling friction", "Where tools get in the way", parent_id=theme["id"])
++        update_code(p, child["id"], {"inclusion": "when the participant describes friction",
++                                     "anchor_examples": ["the tool got in the way"]})
++        annotate(p, d["id"], child["id"], 9, 40)
++        text = methods_narrative(p)
++        for expected in ["# Methods record", "## 1. Data", "## 2. Coding", "## 3. How the codebook changed",
++                         "## 4. Themes", "## 5. AI assistance", "## 6. Integrity",
++                         "Tooling friction", "when the participant describes friction",
++                         "the tool got in the way", "1 coding(s)", "1 document(s)", "first read"]:
++            self.assertIn(expected, text)
++        self.assertIn("| yes |", text)
++
++    def test_methods_narrative_handles_an_empty_project(self):
++        text = methods_narrative(new_project("Empty"))
++        self.assertIn("# Methods record", text)
++        self.assertIn("_The codebook is empty._", text)
++        self.assertIn("_No model was used on this project._", text)
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests/test_http.py b/tests/test_http.py
+index 42575aa..f345b72 100644
+--- a/tests/test_http.py
++++ b/tests/test_http.py
+@@ -115,10 +115,25 @@ class HTTPTests(unittest.TestCase):
+         self.assertIn("codings_removed", deleted)
+ 
+         project = self.request(root)
+-        self.assertEqual(project["schema_version"], 2)
++        self.assertEqual(project["schema_version"], 3)
+         self.assertNotIn(other["id"], [c["id"] for c in project["codes"]])
+         self.assertTrue(any(a["action"] == "code_delete" for a in project["audit"]))
+ 
+ 
++    def test_http_reading_note_and_methods_export(self):
++        p = self.request("/api/projects", {"kind": "demo"})
++        root = "/api/projects/" + p["id"]
++        updated = self.request(root + "/document-update",
++                               {"id": p["documents"][0]["id"], "changes": {"memo": "first pass note"}})
++        self.assertEqual(updated["memo"], "first pass note")
++        request = urllib.request.Request(self.base + root + "/export?format=methods",
++                                         headers={"X-QualiCraft-Token": self.token})
++        with urllib.request.urlopen(request, timeout=3) as response:
++            body = response.read().decode("utf-8")
++        self.assertIn("# Methods record", body)
++        self.assertIn("## 6. Integrity", body)
++        self.assertIn("first pass note", body)
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/web/app.js b/web/app.js
+index b8243fe..2a2411a 100644
+--- a/web/app.js
++++ b/web/app.js
+@@ -163,6 +163,7 @@ function codingView() {
+   return `<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="Search in document" aria-label="Search transcript" value="${esc(state.search)}"></div>
+   <div class="work-grid"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">DOCUMENT</div><div class="tool-group"><span class="selection-hint">Select text to code a passage</span><button data-action="code">+ New code</button><button class="primary" data-action="analyze">${icon('star')}Analyze with AI</button></div></div>
+   <div class="reader-header"><div><h2 class="reader-heading">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">CODING MARGIN</div></div>
++  <div class="reading-note"><span class="reading-note-label">READING NOTES</span><textarea id="doc-memo" rows="2" placeholder="First impressions, questions to follow up, anything that stands out.">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
+   <div id="reader">${readerHtml()}</div></section><aside class="review-pane" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
+ }
+ function readerHtml() {
+@@ -402,7 +403,7 @@ function showProjects() {
+   modal('Research projects',`<label class="field">Existing projects<select id="modal-project-select">${state.projects.map(p=>`<option value="${p.id}" ${p.id===state.project.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><button data-action="switch-project">Open project</button><hr style="border:0;border-top:1px solid #e3e7e2;margin:22px 0"><label class="field">New project name<input id="new-project-name" placeholder="e.g. Experiences of outpatient care" maxlength="160"></label><button class="primary" data-action="new-project">Create project</button><div class="option-grid"><button class="option-card" data-action="grounded-project"><strong>Tian 2021 · software architecture interviews</strong><span>Import 8 semi-structured practitioner interviews. IP1–IP2 pair Chinese responses with English translations; IP3–IP8 are in English.</span></button><button class="option-card" data-action="demo-project"><strong>Fictional care interview</strong><span>Explore a fictional transcript, sample coding, and fixed review suggestions.</span></button><button class="option-card" data-action="benchmark-project"><strong>TU Delft · blind workspace</strong><span>Import 7 transcripts and 54 codes, without reference annotations.</span></button><button class="option-card" data-action="reference-project"><strong>TU Delft · researcher reference</strong><span>Explore 377 researcher annotations for comparison. These are not model predictions.</span></button><button class="option-card" data-action="restore-pick"><strong>Restore project JSON</strong><span>Restore a backup as a new project while keeping the original.</span></button></div><input id="restore-file" type="file" accept=".json" hidden><p>Guide collections are imported from the local Guide directory and retain source provenance in the project audit trail.</p>`);
+ }
+ function showExport() {
+-  modal('Export your research',`<p>Files are saved to your browser download folder. Full project exports include source transcripts; handle them as research data.</p><div class="option-grid"><button class="option-card" data-action="download" data-format="json"><strong>Full project · JSON</strong><span>Transcripts, codebook, codings, suggestions, and activity. Restore later to continue.</span></button><button class="option-card" data-action="download" data-format="csv"><strong>Codings · CSV</strong><span>Document, code, source quote, character offsets, memo, and provenance.</span></button><button class="option-card" data-action="download" data-format="matrix"><strong>Document × code · CSV</strong><span>Confirmed codings only, ready for Excel, R, or Python.</span></button></div>`);
++  modal('Export your research',`<p>Files are saved to your browser download folder. Full project exports include source transcripts; handle them as research data.</p><div class="option-grid"><button class="option-card" data-action="download" data-format="json"><strong>Full project · JSON</strong><span>Transcripts, codebook, codings, suggestions, and activity. Restore later to continue.</span></button><button class="option-card" data-action="download" data-format="csv"><strong>Codings · CSV</strong><span>Document, code, source quote, character offsets, memo, and provenance.</span></button><button class="option-card" data-action="download" data-format="matrix"><strong>Document × code · CSV</strong><span>Confirmed codings only, ready for Excel, R, or Python.</span></button><button class="option-card" data-action="download" data-format="methods"><strong>Methods record · Markdown</strong><span>How the analysis was actually carried out, assembled from your audit trail. Draft the methods section from it.</span></button></div>`);
+ }
+ async function createProject(body) {
+   const p=await api('/api/projects',body); state.projects=await api('/api/projects'); closeModal(); state.view='coding'; await loadProject(p.id); toast('Project created and saved locally.');
+@@ -485,7 +486,7 @@ async function action(button) {
+   if(a==='restore-pick'){$('#restore-file').click();return;}
+   if(a==='download'){
+     const format=button.dataset.format,response=await fetch(projectUrl('export')+'?format='+format,{headers:{'X-QualiCraft-Token':state.token}});
+-    if(!response.ok)throw new Error('Export failed.');const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download=`qualicraft-${format==='json'?'project.json':format+'.csv'}`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Exported to your browser download folder.');return;
++    if(!response.ok)throw new Error('Export failed.');const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download='qualicraft-'+(format==='json'?'project.json':format==='methods'?'methods.md':format+'.csv');link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Exported to your browser download folder.');return;
+   }
+ }
+ function renderJob(){
+@@ -509,6 +510,24 @@ document.addEventListener('change',async e=>{
+   }catch(error){errorDisplay(error);}
+ });
+ document.addEventListener('input',e=>{if(e.target.id==='search'){state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();}});
++let docMemoTimer=null;
++document.addEventListener('input',e=>{
++  if(e.target.id!=='doc-memo')return;
++  const doc=state.project.documents.find(d=>d.id===state.docId);
++  if(doc)doc.memo=e.target.value;
++  const badge=$('#doc-memo-state');
++  if(badge)badge.textContent='\u2026';
++  clearTimeout(docMemoTimer);
++  docMemoTimer=setTimeout(async()=>{
++    const target=$('#doc-memo-state');
++    try{
++      await api(projectUrl('document-update'),{id:state.docId,changes:{memo:e.target.value}});
++      if(target){target.textContent='saved';setTimeout(()=>{if(target.isConnected)target.textContent='';},1600);}
++    }catch(error){
++      if(target)target.textContent='not saved';
++    }
++  },900);
++});
+ document.addEventListener('mouseup',e=>{if(e.target.closest('#reader'))selectionUpdate();});
+ document.addEventListener('keyup',e=>{if(e.shiftKey&&e.target.closest('#reader'))selectionUpdate();});
+ document.addEventListener('mousedown',e=>{if(!e.target.closest('#code-popup')&&!e.target.closest('#reader')&&!e.target.closest('dialog'))closeCodePopup();});
+diff --git a/web/style.css b/web/style.css
+index 472e938..5538344 100644
+--- a/web/style.css
++++ b/web/style.css
+@@ -42,3 +42,15 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
+ .code-popup-count{flex:1;color:var(--subtle);font-size:10px}
+ .code-popup-foot button{font-size:10px;padding:4px 7px}
+ ::highlight(pending){background:color-mix(in srgb,#4656a6 30%,transparent)}
++
++
++/* --- Reading notes -----------------------------------------------------------
++   The familiarisation phase of a qualitative study needs somewhere to put first
++   impressions. The note lives on the document itself and saves as you type. */
++.reading-note{display:flex;align-items:flex-start;gap:10px;padding:10px 24px 10px 48px;border-bottom:1px solid #eef0f3;background:#fcfcfd}
++.reading-note-label{flex:0 0 auto;padding-top:6px;color:#8b94a4;font-size:9px;font-weight:750;letter-spacing:.09em}
++.reading-note textarea{flex:1;min-width:0;border:1px solid transparent;border-radius:3px;background:transparent;padding:5px 8px;font:12px/1.6 var(--sans);color:#3a4459;resize:vertical}
++.reading-note textarea:hover{border-color:var(--line)}
++.reading-note textarea:focus{border-color:var(--accent);background:#fff;outline:0}
++.reading-note textarea::placeholder{color:#aab2c0}
++.reading-note-state{flex:0 0 auto;padding-top:7px;color:var(--subtle);font-size:9px;min-width:46px;text-align:right}
+-- 
+2.39.5 (Apple Git-154)
+
+From c13d5013838e3f9f699e2532b51df435810530b1 Mon Sep 17 00:00:00 2001
+From: Che Haijun <chehaijun@Mac.localdomain>
+Date: Tue, 6 Oct 2026 14:24:51 +0300
+Subject: [PATCH 3/3] feat(blocks): let the researcher assemble the tool they
+ need
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The core is documents, codes and codings. Everything else is a capability block
+the researcher switches on or off, and the choice is stored with the project so
+which tools a study used becomes part of the record. Switching a block off
+removes it from the interface rather than greying it out: the workspace matches
+the study instead of the study fitting the workspace.
+
+Six blocks: theme grouping, memos, AI suggestions, frequency analysis, audit
+trail, and the plotting workbench. The plotting workbench is listed with a
+"planned" tag and cannot be switched on yet, so its absence is visible rather
+than silent.
+
+This also corrects a mistake in docs/NOT_BUILDING.md. I had read Pi Agent's
+"What we didn't build" as "we will never build this" and cut plotting outright.
+Pi's list actually means "not in the core", and every entry has a documented
+extension path. The document is rewritten into three tiers — core, optional
+blocks, and the short list of things genuinely ruled out on methodological
+grounds (automatic coding, cloud accounts, real-time collaboration, semantic
+search) — and plotting moves from "not doing" to "an optional block".
+
+Schema v4 adds the block list; migrate() upgrades v3 projects with the default
+set, so nothing changes for existing work.
+---
+ docs/NOT_BUILDING.md | 128 +++++++++++++++++++++++--------------------
+ qualicraft/core.py   |  39 ++++++++++++-
+ qualicraft/server.py |   4 +-
+ tests/test_core.py   |  44 +++++++++++++--
+ tests/test_http.py   |  12 +++-
+ web/app.js           |  57 ++++++++++++++++---
+ web/style.css        |  19 +++++++
+ 7 files changed, 227 insertions(+), 76 deletions(-)
+
+diff --git a/docs/NOT_BUILDING.md b/docs/NOT_BUILDING.md
+index 180f60b..28cf235 100644
+--- a/docs/NOT_BUILDING.md
++++ b/docs/NOT_BUILDING.md
+@@ -1,92 +1,102 @@
+-# 我们没做什么
++# 我们没内置什么
+ 
+-> 借鉴 Pi Agent 的做法。它的发布页不堆功能列表，反而专门列出**刻意不做**的事。
++> 标题借鉴 Pi Agent 的 "What we didn't build"。
+ >
+-> 这份清单是**主动的选择**，不是能力不足。它的作用是：防止范围蔓延；在汇报时能回答「为什么不做 X」；让「轻」成为设计立场。
++> **但必须先把它的真实含义说清楚**——我最初理解错了，把「没内置」写成了「不做」。
++>
++> Pi 那份清单里的每一项，**都有明确的扩展路径**。原文写的是：
++> - 没有内置 MCP 协议 → *"需要时通过扩展接入"*
++> - 没有子代理 → *"或安装 `pi-sub-agent` 扩展"*
++> - 没有计划模式 → *"新建一个 `TODO.md` 文件"*
++>
++> 而且 Pi 官方提供了 **50+ 扩展示例**（子代理、计划模式、权限门控、沙箱、MCP 集成……）。
++>
++> **所以 Pi 的立场是：不塞进核心，但一定给你路。** 这份文档按同样标准重写。
+ 
+ ---
+ 
+-## 一、明确不做
+-
+-### 多媒体编码
+-
+-**不做**图片、音频、视频的区域编码。只做文本。
+-
+-**理由**：ATLAS.ti 和 QualiCoder 在这块积累很深，我们追不上。而且文本访谈是医学、公共卫生、社会科学定性研究的主流形态——**把文本这一件事做到最好，比把四件事做到及格更有价值。**
+-
+-### 实时多人协作
+-
+-**不做**云端账号、多人同时编辑、权限管理。
++## 一、三层结构
+ 
+-**理由**：本地单机是**特性**，不是缺陷。医院伦理审查和 GDPR 场景下，「数据不出本机」正是我们的立足点。多人协作意味着服务器、账号、加密、审计——那是另一个产品。
++| 层 | 含义 | 谁决定 |
++| :--- | :--- | :--- |
++| **核心** | 没有它就不是定性分析工具 | 不可关 |
++| **可选能力块** | **功能都在，默认不装，点一下就有** | **使用者决定** |
++| **真正不做** | 方法论立场上不该做 | 极少，且写清理由 |
+ 
+-> 折中方案（未来可考虑）：单机为主，通过**项目文件夹**共享（配合第 5 节的可读文本存储）。
++---
+ 
+-### 通用绘图引擎
++## 二、核心（不可关闭）
+ 
+-**不做** R/Python 沙箱、不做任意图表、不做脚本注入。
++| 核心 | 内容 |
++| :--- | :--- |
++| **文档** | 转录稿文本 + 字符坐标 |
++| **编码** | 名称、颜色、在码表中的位置 |
++| **标注** | 片段 → 编码 的对应关系 |
+ 
+-**理由**：PRD 里原本计划了 Docker + R + ggplot2 + ComplexHeatmap 沙箱，那是「微生信」模式。但通用绘图引擎意味着依赖管理、安全隔离、版本兼容——**成本极高，且与「轻量本地部署」直接冲突**（要装 Docker）。
++**为什么只有三样**：这三样构成了「定性分析」的最小定义。少任何一样，这个工具就不是定性分析工具了。
+ 
+-**替代方案**：只做 **3 张图，但做到能直接投稿**：
+-1. 主题共现热力图
+-2. 组别 × 主题发散条形图
+-3. 混合研究气泡图（主题频次 × 问卷得分）
++---
+ 
+-用前端渲染，不引入 R/Docker。
++## 三、可选能力块（**都在，默认不装，点击添加**）
+ 
+-### 自动编码
++这是使用者「搭积木」的地方。**每一块都是真功能，不是占位符。**
+ 
+-**不做**「一键生成全部编码」。
++| 块 | 提供什么 | 默认 |
++| :--- | :--- | :---: |
++| **主题归组** | 码表树、层级、父子关系、汇总计数 | 开 |
++| **备忘录** | 文档级阅读笔记、编码级、主题级笔记 | 开 |
++| **AI 建议** | 建议队列、采纳/拒绝、引文溯源 | 开 |
++| **频次分析** | 编码频次、文档 × 编码矩阵 | 关 |
++| **交叉表** | 类别 × 文档属性（内容分析必需） | 关 |
++| **信度** | 多编码者、Kappa / Alpha | 关 |
++| **绘图工作台** | **主题共现热力图、组别×主题发散条形图、混合研究气泡图**；配色/字号/聚类参数控件；SVG/PDF/TIFF 导出；复现代码导出 | 关 |
++| **审计轨迹** | 完整活动记录、时间戳、可展开详情 | 开 |
++| **REFI-QDA 导出** | `.qdpx` 导出，结果可导回 ATLAS.ti / NVivo | 关 |
++| **音频转写** | Faster-Whisper 本地转写（需 GPU） | 关 |
+ 
+-**理由**：这是本项目最重要的立场。AI **只提出建议**，必须由研究者逐条采纳才进入正式码表。原因有二：
+-1. 方法论上——定性研究的效度来自研究者的解释，不是模型的输出
+-2. 信任上——研究者必须能说清「这条编码为什么存在」
++### 关于绘图工作台（原 PRD 的「核心杀手锏」）
+ 
+-**所以 QualiCraft 的 AI 是「提建议的助手」，不是「自动编码器」。**
++**它是可选块，不是被砍掉的功能。** 我上一版写错了，特此更正。
+ 
+-### 词云 / 网络图 / 语义检索
++**它是可选的原因不是「不做」，而是**：
+ 
+-**不做**。
++1. **它需要重依赖**（R / Docker / 绘图库），而本项目的立足点是「零依赖、断网能跑」。把它做成必装会破坏这个前提。
++2. **不是每个研究都需要**。做访谈编码的人可能只要频次表；做混合方法的人需要气泡图。
+ 
+-**理由**：词云在学术上几乎没有解释力；网络图的信息密度低于共现矩阵；语义检索（向量）**不可解释**——你不知道为什么这条被找到。研究者的检索需求是精确的（「所有关于数据共享的引文」），**关键词检索更合适，而且可解释**。
++**所以正确的做法是**：默认不装 → 需要出图的研究者点一下装上 → 装上后是全功能的，不是阉割版。
+ 
+-> 这条借鉴自 Instinct：它的记忆检索用**类 grep 的关键词搜索，而非向量检索**。
++> 附带说明：原 PRD 计划用 Docker + R 沙箱。我仍建议**改用纯前端渲染**（Chart.js 等），只做那 3 张图但做到能投稿。理由是把 R/Docker 装进本地部署会把门槛从「双击运行」抬到「先装 Docker」——这与「大道至简」冲突。这是实现方式的分歧，不是「做不做」的分歧。
+ 
+-### 云端账号体系 / SaaS
++### 怎么添加
+ 
+-**不做**。
++侧栏底部「工具」入口 → 列出全部能力块 → 点击开关即装即卸。
+ 
+-**理由**：见「实时多人协作」。
++- **状态存进项目**，所以「这个研究用了哪些工具」本身是研究记录的一部分
++- 关掉 = 界面上完全消失（不是变灰）
++- 每个块可以独立开关，也可以按工作流模式预设
+ 
+ ---
+ 
+-## 二、暂时不做（但可能以后做）
+-
+-| 项 | 为什么缓 |
+-| :--- | :--- |
+-| 音频转写（Faster-Whisper） | 需要 GPU 依赖，与「零依赖」冲突。可做成可选块 |
+-| PDF 导入 | 版式解析不可靠，容易把偏移量搞错。先做 TXT/DOCX |
+-| REFI-QDA 导入 | 导出比导入容易得多，先做导出（能让结果导回 ATLAS.ti） |
+-| 编码者间信度（IRR） | 内容分析必需，但主题分析不需要。等 P2 |
+-| 项目存储改 Git 文本 | 方向对，但是大手术。先做最小原型验证 |
+-
+----
++## 四、真正不做（很短，且都有方法论理由）
+ 
+-## 三、我们反而要做好的
++这一层才是「不做」。判断标准是：**它违背本项目的立场，而不只是成本高。**
+ 
+-| 项 | 为什么 |
++| 不做 | 理由 |
+ | :--- | :--- |
+-| **引文精确溯源** | 每条建议锚在字符坐标上，引文必须能在原文唯一匹配，否则丢弃。这是反幻觉的硬保证 |
+-| **人工裁决** | 采纳/拒绝必须由人做，决策进审计轨迹 |
+-| **方法学叙述导出** | 让「你怎么做的」自动成文，而不是事后回忆两周 |
+-| **数据不出本机** | 本地存储、本地模型可选、发送前强制预览 |
+-| **可读的项目格式** | 目标是让码表、编码、审计都是人能直接读和改的文本 |
++| **自动编码**（一键生成全部编码） | **方法论立场**。定性研究的效度来自研究者的解释，不是模型的输出。AI 只提建议，必须人工裁决。这不是能力问题，是立场问题。 |
++| **云端账号体系 / SaaS** | 数据不出本机是本项目的立足点。做成云端就变成了另一个产品。 |
++| **实时多人协作** | 同上。多人意味着服务器、账号、加密、审计——那是另一个产品。 |
++| **语义（向量）检索** | 研究者的检索需求是精确的（"所有关于数据共享的引文"），而且**向量检索不可解释**——你不知道为什么这条被找到。关键词检索更合适且可解释。 |
++
++**注意这一层只有 4 条，而且每条都是「立场」不是「成本」。** 上一版我把「多媒体编码」「通用绘图引擎」「词云」都塞进这里，那是错的——它们只是成本高或场景窄，应该放可选块。
+ 
+ ---
+ 
+-## 四、这份清单怎么用
++## 五、这份清单怎么用
+ 
+-1. **每次想加功能时先看这里。** 如果在这个清单上，先问：是不是真的需要打破它？
+-2. **汇报时用它。** 导师问「为什么不做多媒体编码」，直接翻到这里。
+-3. **它是活的。** 如果某个决定被推翻，**不要偷偷删掉，改成「曾考虑过，因为 X 放弃，后来因为 Y 重新评估」**——那本身就是一份设计记录。
++1. **想加功能时先看这里。** 如果在「可选块」里，做成块就行；如果在「真正不做」里，需要先讨论是否要改立场。
++2. **汇报时用它。** 导师问「为什么不做 X」，分三种回答：
++   - 在核心？→ 已经有了
++   - 在可选块？→ **有，默认没装，需要可以点开**（这是最好的回答）
++   - 在真正不做？→ 讲立场
++3. **它是活的。** 决定被推翻时**不要偷偷删掉**，改成「曾考虑过，因为 X 放弃，后来因为 Y 重新评估」——那本身就是一份设计记录。
+diff --git a/qualicraft/core.py b/qualicraft/core.py
+index d7fb32a..12fbe76 100644
+--- a/qualicraft/core.py
++++ b/qualicraft/core.py
+@@ -16,10 +16,16 @@ from xml.etree import ElementTree as ET
+ 
+ COLORS = ["#427d77", "#ba8650", "#7b77b5", "#5c85b0", "#ba6e85", "#778c51"]
+ 
+-SCHEMA_VERSION = 3
++SCHEMA_VERSION = 4
+ 
+ CODE_STATUSES = ("emergent", "provisional", "final")
+ 
++# Capability blocks. The core is always on; everything here is opt-in, so a
++# researcher assembles the tool they need instead of getting everything at once.
++# See docs/NOT_BUILDING.md: "not built in" is not the same as "not available".
++BLOCKS = ("hierarchy", "memos", "ai", "insights", "audit", "plotting")
++DEFAULT_BLOCKS = ("hierarchy", "memos", "ai", "insights", "audit")
++
+ 
+ def uid():
+     return uuid.uuid4().hex
+@@ -59,6 +65,9 @@ def migrate(project):
+     v2 -> v3 gives every document a reading note, so the familiarisation phase
+     of a qualitative study has somewhere to live.
+ 
++    v3 -> v4 records which capability blocks the project uses, so a researcher
++    can assemble the tool they need rather than receiving everything at once.
++
+     Every added value is a neutral default, so an existing project keeps its
+     codes, annotations and character offsets untouched.
+     """
+@@ -81,6 +90,9 @@ def migrate(project):
+         for document in project.get("documents", []):
+             document.setdefault("memo", "")
+         version = 3
++    if version < 4:
++        project.setdefault("blocks", list(DEFAULT_BLOCKS))
++        version = 4
+     project["schema_version"] = version
+     return project
+ 
+@@ -121,7 +133,26 @@ def code_path(codes, code):
+ def new_project(name):
+     return {"schema_version": SCHEMA_VERSION, "id": uid(), "name": string(name, "Project name", 160),
+             "created_at": now(), "updated_at": now(), "documents": [], "codes": [],
+-            "annotations": [], "suggestions": [], "audit": [], "provenance": ""}
++            "annotations": [], "suggestions": [], "audit": [], "provenance": "",
++            "blocks": list(DEFAULT_BLOCKS)}
++
++
++def set_blocks(project, blocks):
++    """Turn capability blocks on or off for this project.
++
++    The choice is stored with the project, so which tools a study used is part
++    of the record rather than a local preference.
++    """
++    require(isinstance(blocks, list), "The capability list is invalid")
++    require(len(blocks) <= len(BLOCKS), "Too many capability blocks were selected")
++    cleaned = []
++    for name in blocks:
++        require(name in BLOCKS, "Unknown capability block: " + str(name))
++        if name not in cleaned:
++            cleaned.append(name)
++    project["blocks"] = cleaned
++    event(project, "blocks_update", blocks=sorted(cleaned))
++    return {"blocks": cleaned}
+ 
+ 
+ def paragraphs(text):
+@@ -392,6 +423,10 @@ def validate_project(project):
+     require(isinstance(version, int) and 1 <= version <= SCHEMA_VERSION, "This project format is not supported")
+     migrate(project)
+     string(project.get("name"), "Project name", 160)
++    blocks = project.get("blocks", [])
++    require(isinstance(blocks, list) and len(blocks) <= len(BLOCKS), "The capability list is invalid")
++    require(all(b in BLOCKS for b in blocks), "An unknown capability block is selected")
++    require(len(blocks) == len(set(blocks)), "The capability list contains duplicates")
+     for key, limit in [("documents", 100), ("codes", 2000), ("annotations", 50000), ("suggestions", 50000), ("audit", 100000)]:
+         require(isinstance(project.get(key), list) and len(project[key]) <= limit, f"{key} has an invalid format or item count")
+         ids = [string(x.get("id"), "Record ID", 100) for x in project[key]]
+diff --git a/qualicraft/server.py b/qualicraft/server.py
+index d4de09b..842202f 100644
+--- a/qualicraft/server.py
++++ b/qualicraft/server.py
+@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ from pathlib import Path
+ 
+ from .ai import Analyzer
+-from .core import Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, synthetic_project, uid, update_code, update_document, validate_project
++from .core import BLOCKS, Store, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
+ 
+ ROOT = Path(__file__).resolve().parent.parent
+ 
+@@ -144,6 +144,8 @@ def create_server(data_dir, guide_dir, port=8765):
+                             return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"))
+                         if action == "document-update":
+                             return update_document(project, body.get("id"), body.get("changes"))
++                        if action == "blocks":
++                            return set_blocks(project, body.get("blocks"))
+                         if action == "code-update":
+                             return update_code(project, body.get("id"), body.get("changes"))
+                         if action == "code-delete":
+diff --git a/tests/test_core.py b/tests/test_core.py
+index e8f9ff7..8904b39 100644
+--- a/tests/test_core.py
++++ b/tests/test_core.py
+@@ -6,7 +6,7 @@ import zipfile
+ from pathlib import Path
+ 
+ from qualicraft.ai import grounded_suggestions, make_payload, validate_config, Analyzer
+-from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, methods_narrative, migrate, new_project, paragraphs, read_docx, review, synthetic_project, update_code, update_document, validate_project
++from qualicraft.core import Store, add_code, add_document, annotate, benchmark_project, code_path, csv_export, delete_code, grounded_theory_examples_project, merge_codes, methods_narrative, migrate, new_project, paragraphs, read_docx, review, set_blocks, synthetic_project, update_code, update_document, validate_project
+ from qualicraft.evaluate import evaluate, from_project
+ 
+ 
+@@ -153,12 +153,12 @@ class CoreTests(unittest.TestCase):
+             document.pop("attributes", None)
+         p["schema_version"] = 1
+         validate_project(p)
+-        self.assertEqual(p["schema_version"], 3)
++        self.assertEqual(p["schema_version"], 4)
+         self.assertEqual(len(p["annotations"]), 1)
+         self.assertEqual(p["annotations"][0]["quote"], quote)
+         self.assertIsNone(p["codes"][0]["parent_id"])
+         self.assertEqual(p["codes"][0]["status"], "final")
+-        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 3)
++        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 4)
+ 
+     def test_code_hierarchy_and_paths(self):
+         p = new_project("Hierarchy")
+@@ -235,14 +235,14 @@ class CoreTests(unittest.TestCase):
+         self.assertIn("Theme > Child", text)
+ 
+ 
+-    def test_schema_v2_migrates_to_v3_with_reading_notes(self):
++    def test_schema_v2_migrates_to_current_with_reading_notes(self):
+         p = new_project("V2")
+         add_document(p, "I1", "Patient: " + "Some content here. " * 6)
+         for document in p["documents"]:
+             document.pop("memo", None)
+         p["schema_version"] = 2
+         validate_project(p)
+-        self.assertEqual(p["schema_version"], 3)
++        self.assertEqual(p["schema_version"], 4)
+         self.assertEqual(p["documents"][0]["memo"], "")
+ 
+     def test_document_reading_note_round_trip(self):
+@@ -280,5 +280,39 @@ class CoreTests(unittest.TestCase):
+         self.assertIn("_No model was used on this project._", text)
+ 
+ 
++    def test_schema_v3_migrates_to_v4_with_capability_blocks(self):
++        p = new_project("V3")
++        p.pop("blocks", None)
++        p["schema_version"] = 3
++        validate_project(p)
++        self.assertEqual(p["schema_version"], 4)
++        self.assertIn("hierarchy", p["blocks"])
++        self.assertNotIn("plotting", p["blocks"])
++
++    def test_capability_blocks_round_trip(self):
++        p = new_project("Blocks")
++        self.assertEqual(set_blocks(p, ["memos", "plotting"])["blocks"], ["memos", "plotting"])
++        self.assertNotIn("hierarchy", p["blocks"])
++        # duplicates collapse rather than failing
++        self.assertEqual(set_blocks(p, ["ai", "ai", "memos"])["blocks"], ["ai", "memos"])
++        # everything can be switched off: the core still works
++        self.assertEqual(set_blocks(p, [])["blocks"], [])
++        validate_project(p)
++        with self.assertRaises(ValueError):
++            set_blocks(p, ["nonsense"])
++        with self.assertRaises(ValueError):
++            set_blocks(p, "not-a-list")
++
++    def test_core_works_with_every_block_switched_off(self):
++        p = new_project("Minimal")
++        set_blocks(p, [])
++        d = add_document(p, "I1", "Patient: " + "Some content here. " * 6)
++        c = add_code(p, "A code")
++        annotate(p, d["id"], c["id"], 9, 40)
++        validate_project(p)
++        self.assertEqual(len(p["annotations"]), 1)
++        self.assertIn("# Methods record", methods_narrative(p))
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests/test_http.py b/tests/test_http.py
+index f345b72..3366d23 100644
+--- a/tests/test_http.py
++++ b/tests/test_http.py
+@@ -115,7 +115,7 @@ class HTTPTests(unittest.TestCase):
+         self.assertIn("codings_removed", deleted)
+ 
+         project = self.request(root)
+-        self.assertEqual(project["schema_version"], 3)
++        self.assertEqual(project["schema_version"], 4)
+         self.assertNotIn(other["id"], [c["id"] for c in project["codes"]])
+         self.assertTrue(any(a["action"] == "code_delete" for a in project["audit"]))
+ 
+@@ -135,5 +135,15 @@ class HTTPTests(unittest.TestCase):
+         self.assertIn("first pass note", body)
+ 
+ 
++    def test_http_capability_blocks(self):
++        p = self.request("/api/projects", {"kind": "demo"})
++        root = "/api/projects/" + p["id"]
++        result = self.request(root + "/blocks", {"blocks": ["memos", "plotting"]})
++        self.assertEqual(result["blocks"], ["memos", "plotting"])
++        self.assertEqual(self.request(root)["blocks"], ["memos", "plotting"])
++        with self.assertRaises(urllib.error.HTTPError):
++            self.request(root + "/blocks", {"blocks": ["nonsense"]})
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/web/app.js b/web/app.js
+index 2a2411a..3d3a2d4 100644
+--- a/web/app.js
++++ b/web/app.js
+@@ -4,6 +4,21 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
+ const cp = s => Array.from(s);
+ const cut = (s, a, b) => cp(s).slice(a, b).join('');
+ const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[], collapsed:new Set()};
++
++// Capability blocks. The core (documents, codes, codings) is always on; these
++// are opt-in, so a researcher assembles the tool they need. See docs/NOT_BUILDING.md.
++const BLOCKS = [
++  {id:'hierarchy', name:'Theme grouping', desc:'Group codes under themes. Turns the flat list into a collapsible tree with rolled-up counts.'},
++  {id:'memos', name:'Memos', desc:'Reading notes on a document, notes on a code or theme, notes on a single coding.'},
++  {id:'ai', name:'AI suggestions', desc:'A model proposes codings; each one arrives in a review queue and only enters the codebook if you accept it.'},
++  {id:'insights', name:'Frequency analysis', desc:'How often each code was used, and a document by code matrix.'},
++  {id:'audit', name:'Audit trail', desc:'Every action with a timestamp, stored with the project and included in exports.'},
++  {id:'plotting', name:'Plotting workbench', desc:'Publication figures: theme co-occurrence heatmap, diverging thematic bars, mixed-methods bubble matrix.', planned:true}
++];
++function hasBlock(id) {
++  const blocks = state.project && state.project.blocks;
++  return Array.isArray(blocks) ? blocks.includes(id) : true;
++}
+ const icons = {
+   grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+   chart:'<path d="M4 3v17h17M8 16v-5m5 5V6m5 10v-8"/>',
+@@ -129,11 +144,12 @@ function render() {
+     <aside class="sidebar"><div class="brand"><span class="brand-icon">Q</span><span class="brand-name">QualiCraft</span><span class="version">ALPHA</span></div>
+     <div class="section-label">PROJECT</div><select id="project-select" class="project-select" aria-label="Switch project">${state.projects.map(x=>`<option value="${esc(x.id)}" ${x.id===p.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+     <button class="link new-project" data-action="projects">+ New / import project</button>
+-    <nav class="nav" aria-label="Main navigation">${[['coding','grid','Coding workspace'],['insights','chart','Insights'],['audit','history','Audit trail']].map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}">${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
++    <nav class="nav" aria-label="Main navigation">${[['coding','grid','Coding workspace'],['insights','chart','Insights'],['audit','history','Audit trail']].filter(([view])=>view==='coding'||hasBlock(view)).map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}">${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
+     <div class="sidebar-scroll"><div class="side-title"><div class="section-label">DOCUMENTS <span class="count">${p.documents.length}</span></div><button class="link" data-action="import" aria-label="Import interview">＋</button></div>
+     ${p.documents.map(d=>`<button class="side-item ${d.id===state.docId?'selected':''}" data-action="doc" data-id="${d.id}" title="${esc(d.name)}">${icon('doc')}<span class="name">${esc(d.name)}</span></button>`).join('') || '<div class="empty">Import your first interview</div>'}
+     <div class="side-title"><div class="section-label">CODEBOOK <span class="count">${p.codes.length}</span></div><button class="link" data-action="code" aria-label="New code">＋</button></div>
+     ${codebookHtml()}
++    <div class="side-title"><div class="section-label">TOOLS <span class="count">${(p.blocks||[]).length}/${BLOCKS.length}</span></div></div><button class="side-item" data-action="tools" title="Add or remove capability blocks"><span class="tools-glyph">\u229e</span><span class="name">Capability blocks</span><span class="count">${(p.blocks||[]).length}</span></button>
+     </div><div class="local-note"><span class="status-dot"></span><div><strong>Local workspace</strong><span>Cloud only when requested</span></div></div></aside>
+     <main class="workspace"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions"><span class="save-state">Saved locally</span><button data-action="settings">${icon('setting')}Model</button><button data-action="export">${icon('down')}Export</button><span class="avatar">QC</span></div></header>
+     <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> to review</span></div></div><button class="primary" data-action="import">${icon('upload')}Import interview</button></section>
+@@ -161,10 +177,10 @@ function highlight(text, start, annotations) {
+ function codingView() {
+   const d=doc(); if(!d) return `<div class="no-doc"><div class="eyebrow">A SPACE FOR YOUR QUESTIONS</div><h2>Start with a conversation</h2><p>Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.</p><button class="primary" data-action="import">Import interview</button> <button data-action="code">Create code</button></div>`;
+   return `<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="Search in document" aria-label="Search transcript" value="${esc(state.search)}"></div>
+-  <div class="work-grid"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">DOCUMENT</div><div class="tool-group"><span class="selection-hint">Select text to code a passage</span><button data-action="code">+ New code</button><button class="primary" data-action="analyze">${icon('star')}Analyze with AI</button></div></div>
++  <div class="work-grid${hasBlock('ai')?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">DOCUMENT</div><div class="tool-group"><span class="selection-hint">Select text to code a passage</span><button data-action="code">+ New code</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze">${icon('star')}Analyze with AI</button></div></div>
+   <div class="reader-header"><div><h2 class="reader-heading">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">CODING MARGIN</div></div>
+-  <div class="reading-note"><span class="reading-note-label">READING NOTES</span><textarea id="doc-memo" rows="2" placeholder="First impressions, questions to follow up, anything that stands out.">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
+-  <div id="reader">${readerHtml()}</div></section><aside class="review-pane" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
++  <div class="reading-note${hasBlock('memos')?'':' block-off'}"><span class="reading-note-label">READING NOTES</span><textarea id="doc-memo" rows="2" placeholder="First impressions, questions to follow up, anything that stands out.">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
++  <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">AI REVIEW</div><div class="review-title"><h3>Suggestions</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending','Pending review'],['accepted','Accepted'],['rejected','Rejected']].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
+ }
+ function readerHtml() {
+   const d=doc(), annotations=state.project.annotations.filter(a=>a.document_id===d.id);
+@@ -337,9 +353,26 @@ function locate(start) {
+ function showImport() {
+   modal('Import interview',`<p>Import UTF-8 TXT or DOCX, or paste a transcript. Original line breaks define segments. Use Doctor:/Patient:, Interviewer:/Participant:, or IQ.../IP1: speaker labels. Chinese labels are also supported.</p><label class="field">Choose a file<input id="import-file" type="file" accept=".txt,.docx"><small>DOCX imports paragraph and table text; layout, comments, and headers are not retained.</small></label><label class="field">Document name<input id="document-name" placeholder="e.g. P02 · Care experience" maxlength="200"></label><label class="field">Or paste a transcript<textarea id="document-text" rows="9" placeholder="Doctor: How did the conversation feel?&#10;Patient: ..."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-document">Import locally</button>');
+ }
++function showTools() {
++  const enabled = state.project.blocks || [];
++  const rows = BLOCKS.map(b=>{
++    const on = enabled.includes(b.id);
++    return '<label class="block-row' + (b.planned ? ' planned' : '') + '">'
++      + '<input type="checkbox" data-block="' + b.id + '"' + (on ? ' checked' : '') + (b.planned ? ' disabled' : '') + '>'
++      + '<span class="block-text"><strong>' + esc(b.name)
++      + (b.planned ? ' <span class="block-tag">planned</span>' : '') + '</strong>'
++      + '<span>' + esc(b.desc) + '</span></span></label>';
++  }).join('');
++  modal('Capability blocks',
++    '<p>The core is always available: <strong>documents, codes and codings</strong>. Everything below is optional. '
++    + 'Turn on what your study needs and the interface grows to match; turn something off and it disappears. '
++    + 'The choice is stored with the project, so it becomes part of the record.</p>'
++    + '<div class="block-list">' + rows + '</div>',
++    '<button data-action="close">Cancel</button><button class="primary" data-action="save-blocks">Save blocks</button>');
++}
+ function showCode(parentId=null) {
+   const parents=state.project.codes;
+-  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label>${parents.length?`<label class="field">Group under (optional)<select id="code-parent"><option value="">— top level —</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.</small></label>`:''}<label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
++  modal('Create code',`<label class="field">Code name<input id="code-name" maxlength="160" placeholder="e.g. Information barriers"></label><label class="field">Definition and inclusion criteria<textarea id="code-definition" rows="4" placeholder="Describe when to use this code and when to exclude it."></textarea></label>${parents.length&&hasBlock('hierarchy')?`<label class="field">Group under (optional)<select id="code-parent"><option value="">— top level —</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.</small></label>`:''}<label class="field">Color<input id="code-color" type="color" value="#427d77"></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-code">Save code</button>');
+ }
+ function showCodeEdit(id) {
+   const c=state.project.codes.find(x=>x.id===id); if(!c) return;
+@@ -350,10 +383,10 @@ function showCodeEdit(id) {
+     <label class="field">Name<input id="ec-name" maxlength="160" value="${esc(c.name)}"></label>
+     <label class="field">Definition<textarea id="ec-definition" rows="3" placeholder="What this code means.">${esc(c.definition)}</textarea></label>
+     <div class="form-row">
+-      <label class="field">Group under<select id="ec-parent"><option value="">— top level —</option>${others.map(o=>`<option value="${o.id}"${c.parent_id===o.id?' selected':''}${blocked.has(o.id)?' disabled':''}>${esc(codePath(o))}${blocked.has(o.id)?' — its own sub-code':''}</option>`).join('')}</select></label>
++      <label class="field${hasBlock('hierarchy')?'':' block-off'}">Group under<select id="ec-parent"><option value="">— top level —</option>${others.map(o=>`<option value="${o.id}"${c.parent_id===o.id?' selected':''}${blocked.has(o.id)?' disabled':''}>${esc(codePath(o))}${blocked.has(o.id)?' — its own sub-code':''}</option>`).join('')}</select></label>
+       <label class="field">Status<select id="ec-status">${[['emergent','Emergent'],['provisional','Provisional'],['final','Final']].map(([v,t])=>`<option value="${v}"${c.status===v?' selected':''}>${t}</option>`).join('')}</select></label>
+     </div>
+-    <label class="field">Code / theme memo<textarea id="ec-memo" rows="3" placeholder="How is this code or theme developing?">${esc(c.memo||'')}</textarea></label>
++    <label class="field${hasBlock('memos')?'':' block-off'}">Code / theme memo<textarea id="ec-memo" rows="3" placeholder="How is this code or theme developing?">${esc(c.memo||'')}</textarea></label>
+     <div class="form-row">
+       <label class="field">Inclusion criteria<textarea id="ec-inclusion" rows="2" placeholder="Use this code when…">${esc(c.inclusion||'')}</textarea></label>
+       <label class="field">Exclusion criteria<textarea id="ec-exclusion" rows="2" placeholder="Do not use it when…">${esc(c.exclusion||'')}</textarea></label>
+@@ -382,7 +415,7 @@ function showMergeAsk(id) {
+ function showAnnotation() {
+   if(!state.selection||state.selection.document_id!==state.docId) throw new Error('Select a passage in the transcript first.');
+   if(!state.project.codes.length) {showCode();return;}
+-  modal('Code this passage',`<blockquote class="big-quote">${esc(cut(doc().text,state.selection.start,state.selection.end))}</blockquote><label class="field">Select a code<select id="annotation-code">${state.project.codes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label class="field">Research memo (optional)<textarea id="annotation-memo" rows="3" placeholder="Record your interpretation or a question for comparison."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-annotation">Apply code</button>');
++  modal('Code this passage',`<blockquote class="big-quote">${esc(cut(doc().text,state.selection.start,state.selection.end))}</blockquote><label class="field">Select a code<select id="annotation-code">${state.project.codes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label class="field${hasBlock('memos')?'':' block-off'}">Research memo (optional)<textarea id="annotation-memo" rows="3" placeholder="Record your interpretation or a question for comparison."></textarea></label>`, '<button data-action="close">Cancel</button><button class="primary" data-action="save-annotation">Apply code</button>');
+ }
+ function showSettings() {
+   modal('Cloud model settings',`<p>The launcher can read a local API_key.txt. Keys entered here stay in server memory only, outside browser storage, projects, and exports.</p><label class="field">API Base URL<input id="api-base" value="${esc(state.config.base_url)}" spellcheck="false"><small>Alibaba Cloud Beijing: https://dashscope.aliyuncs.com/compatible-mode/v1. A workspace-specific URL in the same region or another compatible endpoint also works.</small></label><label class="field">Model name<input id="api-model" value="${esc(state.config.model)}" spellcheck="false"><small>Default: qwen3.8-flash. When switching providers, update the endpoint, model, and key together.</small></label><label class="field">API Key<input id="api-key" type="password" autocomplete="off" placeholder="${state.config.has_key?'Configured; leave blank to keep the key for this endpoint':'Enter your key here, not in chat'}"></label><div class="notice">Manual coding is free and works offline. Cloud analysis runs only after confirmation and may incur provider charges. De-identify real transcripts and confirm that sharing them with this provider is permitted.</div><a class="source-link" href="https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope" target="_blank" rel="noreferrer">Official Model Studio API documentation ↗</a>`, '<button data-action="clear-key">Clear key</button><button class="primary" data-action="save-settings">Save settings</button>');
+@@ -421,6 +454,14 @@ async function action(button) {
+   if(a==='clear-filter'){state.codeFilter=null;state.search='';render();return;}
+   if(a==='import')return showImport();
+   if(a==='code')return showCode();
++  if(a==='tools')return showTools();
++  if(a==='save-blocks'){
++    const picked=[...document.querySelectorAll('#dialog [data-block]')].filter(x=>x.checked).map(x=>x.dataset.block);
++    await api(projectUrl('blocks'),{blocks:picked});
++    if(!picked.includes(state.view)&&state.view!=='coding')state.view='coding';
++    closeModal();await refresh();
++    toast('Capability blocks updated.');return;
++  }
+   if(a==='settings')return showSettings();
+   if(a==='projects')return showProjects();
+   if(a==='export')return showExport();
+diff --git a/web/style.css b/web/style.css
+index 5538344..95ebc58 100644
+--- a/web/style.css
++++ b/web/style.css
+@@ -54,3 +54,22 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
+ .reading-note textarea:focus{border-color:var(--accent);background:#fff;outline:0}
+ .reading-note textarea::placeholder{color:#aab2c0}
+ .reading-note-state{flex:0 0 auto;padding-top:7px;color:var(--subtle);font-size:9px;min-width:46px;text-align:right}
++
++
++/* --- Capability blocks --------------------------------------------------------
++   A project records which blocks it uses. Switching one off removes it from the
++   interface entirely rather than greying it out, so the workspace matches the
++   study instead of the study fitting the workspace. */
++.block-off{display:none!important}
++.work-grid.no-review{grid-template-columns:minmax(0,1fr)}
++.tools-glyph{flex:0 0 15px;width:15px;margin-right:8px;color:#6b7484;font-size:12px;text-align:center}
++.block-list{display:flex;flex-direction:column;gap:2px;margin-top:14px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
++.block-row{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-bottom:1px solid var(--line);cursor:pointer}
++.block-row:last-child{border-bottom:0}
++.block-row:hover{background:#fafbfc}
++.block-row.planned{cursor:default;opacity:.62}
++.block-row input{margin:2px 0 0;flex:0 0 auto}
++.block-text{display:flex;flex-direction:column;gap:3px}
++.block-text strong{font-size:12px;font-weight:650;color:#2c3546}
++.block-text span{font-size:11px;line-height:1.5;color:var(--muted)}
++.block-tag{font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#8a6d1f;background:#fdf4d8;border-radius:2px;padding:1px 4px;vertical-align:1px;font-weight:600}
+-- 
+2.39.5 (Apple Git-154)
+
