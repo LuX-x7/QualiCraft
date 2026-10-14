@@ -1,3 +1,9 @@
 matplotlib
 pandas
 numpy
+# Added by the site's tools: the acceptance run and the motion measurement.
+# tools/site/acceptance.py and tools/motion/measure.py also need playwright
+# with a real Chrome (the scripts launch channel="chrome"), installed with
+# `playwright install chrome`.
+pillow
+playwright
