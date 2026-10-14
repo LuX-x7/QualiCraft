@@ -57,7 +57,7 @@ export const MODULES = [
       'Name the document.',
       'Watch the paragraphs arrive.',
     ],
-    see: 'Numbered paragraphs, speaker turns kept, no Markdown left behind.',
+    see: 'Numbered paragraphs with the original text preserved, ready for coding.',
   },
   {
     no: '02',

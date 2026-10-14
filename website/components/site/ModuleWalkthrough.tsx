@@ -22,7 +22,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MODULES } from '@/lib/site/content'
-import { CLIPS, PENDING_CLIPS } from '@/lib/site/clips'
+import { CLIPS } from '@/lib/site/clips'
 
 type Module = (typeof MODULES)[number]
 
@@ -36,7 +36,7 @@ function ModuleMedia({ item, reduced }: { item: Module; reduced: boolean }) {
     <div className="walk__placeholder">
       <span className="walk__placeholder-no mono">{item.no}</span>
       <span className="walk__placeholder-text mono">clip pending</span>
-      <span className="walk__placeholder-note">{PENDING_CLIPS[item.key]}</span>
+      <span className="walk__placeholder-note">A {item.title.toLowerCase()} recording will appear here after review.</span>
     </div>
   )
 
@@ -51,7 +51,7 @@ function ModuleMedia({ item, reduced }: { item: Module; reduced: boolean }) {
       ) : (
         <video className="walk__media" src={clip.src} poster={clip.poster}
           width={clip.width} height={clip.height} controls muted playsInline
-          preload="metadata" aria-label={`${item.title} workbench recording`}
+          preload="metadata" aria-label={clip.label || `${item.title} workbench recording`}
           aria-describedby={captionId} onError={() => setFailed(true)}>
           <a href={clip.poster}>View the recorded still image</a>
         </video>
@@ -156,7 +156,7 @@ export default function ModuleWalkthrough() {
     setActive(bounded)
     holdRef.current = performance.now() + 900
     const node = stepRefs.current[bounded]
-    if (node) node.scrollIntoView({ block: inlineMedia ? 'start' : 'center' })
+    if (node) node.scrollIntoView({ block: inlineMedia || bounded === 0 ? 'start' : 'center' })
     if (focus) buttonRefs.current[bounded]?.focus({ preventScroll: true })
   }, [inlineMedia])
 
@@ -189,7 +189,7 @@ export default function ModuleWalkthrough() {
           <p>
             Import, code, analyse, plot, export. Each step says what to do and what you
             should see. Play a recorded Bologna example or open its still image.
-            Import and export recordings are being replaced. Every module is off by
+            Every module is off by
             default except the three at the core — turn one on and it stays on for that
             study.
           </p>

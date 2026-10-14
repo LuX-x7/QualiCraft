@@ -1,11 +1,19 @@
-/** Accepted excerpts from tools/e2e/recordings; provenance in T7-10-CLIPS.md. */
+/** Accepted recordings; provenance in T7-10-CLIPS.md and T7-11-COMPLETION.md. */
 export const CLIPS: Partial<Record<string, {
   src: string
   poster: string
   width: number
   height: number
   description: string
+  label?: string
 }>> = {
+  import: {
+    src: '/clips/import.webm',
+    poster: '/clips/import.png',
+    width: 946,
+    height: 741,
+    description: 'Bologna’s interview02.txt after import: the document and 31 numbered segments.',
+  },
   coding: {
     src: '/clips/coding.webm',
     poster: '/clips/coding.png',
@@ -27,9 +35,12 @@ export const CLIPS: Partial<Record<string, {
     height: 1566,
     description: 'A rendered code frequency figure, its controls and the download option in the Bologna sample.',
   },
-}
-
-export const PENDING_CLIPS: Record<string, string> = {
-  import: 'A new recording will show the imported document and its paragraphs.',
-  export: 'A new recording will show the exported files after the download.',
+  export: {
+    src: '/clips/export.webm',
+    poster: '/clips/export.png',
+    width: 720,
+    height: 420,
+    description: 'Completed Bologna exports—project JSON, two CSV files and methods Markdown—shown in a local file listing.',
+    label: 'Export completed files recording',
+  },
 }
