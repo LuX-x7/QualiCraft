@@ -35,6 +35,25 @@ export default function ModuleWalkthrough() {
   const [reduced, setReduced] = useState(false)
   const stepRefs = useRef<Array<HTMLLIElement | null>>([])
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([])
+  /* Activating a step scrolls it into view, and the observer then reports
+     whatever step the reader's line falls in — which after a keyboard jump
+     can be a different one, and the panel flickers away from the step the
+     reader just chose. The activation therefore holds the observer off for a
+     moment; a real wheel or touch clears the hold immediately, so scrolling
+     by hand is never delayed. */
+  const holdRef = useRef(0)
+
+  useEffect(() => {
+    const clear = () => {
+      holdRef.current = 0
+    }
+    window.addEventListener('wheel', clear, { passive: true })
+    window.addEventListener('touchmove', clear, { passive: true })
+    return () => {
+      window.removeEventListener('wheel', clear)
+      window.removeEventListener('touchmove', clear)
+    }
+  }, [])
 
   useEffect(() => {
     const query = window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -67,6 +86,7 @@ export default function ModuleWalkthrough() {
     }
     const observer = new IntersectionObserver(
       () => {
+        if (performance.now() < holdRef.current) return
         const id = pick()
         if (!id) return
         const index = MODULES.findIndex((module) => `module-${module.key}` === id)
@@ -81,8 +101,9 @@ export default function ModuleWalkthrough() {
   const goTo = useCallback((index: number, focus = false) => {
     const bounded = Math.max(0, Math.min(MODULES.length - 1, index))
     setActive(bounded)
+    holdRef.current = performance.now() + 900
     const node = stepRefs.current[bounded]
-    if (node) node.scrollIntoView({ block: 'nearest' })
+    if (node) node.scrollIntoView({ block: 'center' })
     if (focus) buttonRefs.current[bounded]?.focus()
   }, [])
 
