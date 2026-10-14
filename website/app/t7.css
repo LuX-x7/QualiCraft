@@ -1053,3 +1053,41 @@ table.methods td { color: var(--ink-soft); }
 .walk__grid--static .walk__panel { display: none; }
 
 .walk__grid--static .walk__step-ops { font-size: 15.5px; }
+
+/* --------------------------------------------------------------------------
+   the pixel mark, assembled block by block (moved here from the old
+   globals.css, which the cleanup removed — without it the mark rendered
+   instantly and the motion measurement caught it)
+   -------------------------------------------------------------------------- */
+.qtmark { display: inline-grid; line-height: 0; }
+.qtmark__cell { display: block; border-radius: 1px; background: var(--ink); }
+
+.qtmark--animate .qtmark__cell { animation: qtmark-drop 620ms cubic-bezier(.2, 1.5, .5, 1) both; }
+@keyframes qtmark-drop {
+  0%   { opacity: 0; transform: translateY(calc(-1 * var(--drop, 22px))) scale(.78); }
+  55%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qtmark--animate .qtmark__cell { animation: none; }
+}
+
+/* --------------------------------------------------------------------------
+   the pixel mark, assembled block by block (moved here from the old
+   globals.css, which the cleanup removed — without it the mark rendered
+   instantly and the motion measurement caught it)
+   -------------------------------------------------------------------------- */
+.qtmark { display: inline-grid; line-height: 0; }
+.qtmark__cell { display: block; border-radius: 1px; background: var(--ink); }
+
+.qtmark--animate .qtmark__cell { animation: qtmark-drop 620ms cubic-bezier(.2, 1.5, .5, 1) both; }
+@keyframes qtmark-drop {
+  0%   { opacity: 0; transform: translateY(calc(-1 * var(--drop, 22px))) scale(.78); }
+  55%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qtmark--animate .qtmark__cell { animation: none; }
+}

@@ -78,14 +78,21 @@ export default function ReportView({
 
   /* The indicator travels to the current chapter: a thin rule and a dot,
      positioned at the active link's centre. The travel itself is the CSS
-     transition on `top`, so its duration and easing live in one place. */
+     transition on `top`, so its duration and easing live in one place.
+
+     The centre is measured against the list, not against the link's
+     offsetParent: every chapter link sits inside a positioned `.toc-item`,
+     so `link.offsetTop` is a few pixels for every chapter alike and the
+     rule would never leave the first one. Two rects taken at the same
+     moment have no offsetParent to argue about. */
   useEffect(() => {
     const list = listRef.current
     if (!list) return
     const link = list.querySelector(`a[href="#${current}"]`) as HTMLElement | null
     if (!link) return
-    const top = link.offsetTop + link.offsetHeight / 2
-    setIndicatorTop(top)
+    const listRect = list.getBoundingClientRect()
+    const linkRect = link.getBoundingClientRect()
+    setIndicatorTop(linkRect.top - listRect.top + linkRect.height / 2)
   }, [current, sections])
 
   /* A figure fades in once, on first entry. Elements start visible; the

@@ -51,7 +51,19 @@ export default function QtMark({
   const at = new Map(CELLS.map(([x, y, tone]) => [`${x},${y}`, tone || 'ink']))
   // The mark is laid down column by column, bottom of each column first, so it
   // reads as blocks being stacked rather than a shape fading in. Delay follows
-  // that order, not the order the cells happen to sit in the array.
+  // that order, not the order the cells happen to sit in the array. Fifty
+  // milliseconds a cell: fourteen cells at fifty-five, plus the 620 ms drop,
+  // measured 1516 ms — outside the 1.2–1.5 s window the brief asks for — and
+  // fifty lands the whole assembly near 1350 ms, inside it. Measured, not
+  // guessed: tools/motion/measure.py. Fifty
+  // milliseconds a cell: fourteen cells at fifty-five, plus the 620 ms drop,
+  // measured 1516 ms — outside the 1.2–1.5 s window the brief asks for — and
+  // fifty lands the whole assembly near 1350 ms, inside it. Measured, not
+  // guessed: tools/motion/measure.py. Fifty
+  // milliseconds a cell, because fourteen cells at fifty-five plus the 620 ms
+  // drop measured 1516 ms — outside the 1.2–1.5 s the brief asks for — and
+  // fifty lands the whole assembly near 1350 ms, inside it (measured by
+  // tools/motion/measure.py).
   const order = (x: number, y: number) => x * ROWS + (ROWS - 1 - y)
   return (
     <span
@@ -77,7 +89,7 @@ export default function QtMark({
           <span
             key={index}
             className={`qtmark__cell qtmark__cell--${tone}`}
-            style={{ animationDelay: animate ? `${order(x, y) * 55}ms` : undefined }}
+            style={{ animationDelay: animate ? `${order(x, y) * 50}ms` : undefined }}
           />
         )
       })}
