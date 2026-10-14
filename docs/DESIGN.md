@@ -52,18 +52,26 @@
 |:--|:--|:--|:--|
 | `case` | str | `document.name` | 一份访谈 / 一个案例 |
 | `code` | str | `code.name` | 编码名 |
-| `parent_code` | str | 父级 `code.name`，无父级时为空串 | 用于层级与主题聚合 |
-| `theme` | str | 顶层祖先 `code.name`，无则等于 `code` | 由 `parent_code` 链推出，绘图直接用 |
+| `parent_code` | str | 父级 `code.name`，无父级时为空串 | 原始名称，供显示 |
+| `theme` | str | 顶层祖先 `code.name`，无则等于 `code` | 原始主题名称，供显示 |
 | `start` | int | `annotation.start` | Unicode 码点，闭开区间 |
 | `end` | int | `annotation.end` | 同上 |
 | `text` | str | `annotation.quote` | 该编码覆盖的原文片段 |
 | `source` | str | `annotation.source` | `manual` / `ai_reviewed` |
+| `code_id` | str | `annotation.code_id` | 稳定编码身份，所有编码聚合与去重使用此列 |
+| `theme_id` | str | 顶层祖先 `code.id` | 稳定主题身份，主题聚合使用此列 |
+| `code_label` | str | 完整编码表生成的显示标签 | 普通编码用原名；重名用完整路径；路径文本仍冲突时追加完整编码 ID |
+
+前八列的含义与顺序保留，后三列追加。项目仍保存 schema v4，不重命名编码，
+不进行数据库迁移。计数 CSV 保留原列结构，名称列使用可区分的显示标签。
+网络节点使用 `code:<code_id>` / `theme:<theme_id>`，编码与片段节点携带
+`code_id`、`theme_id`，主题节点携带 `theme_id`，定位及连线均以 ID 为准。
 
 派生表（同样由 M3 产出，供 M4 直接消费）：
 
 - `frequency`：`code`、`count`，按 count 降序
-- `cooccurrence`：方阵 + 标签，两种口径（见 §4）
-- `coverage`：`case × code` 计数矩阵
+- `cooccurrence`：方阵 + 标签 + 对应的 `code_ids`，两种口径（见 §4）
+- `coverage`：`case × code` 计数矩阵 + 对应的 `code_ids`
 - `accumulation`：按 `case` 顺序的累计去重编码数
 
 ---

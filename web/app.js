@@ -1012,11 +1012,11 @@ function seedNetwork() {
     return [a + Math.cos(angle) * radius, b + Math.sin(angle) * radius];
   };
   NET.nodes.filter((n) => n.kind === 'code').forEach((code) => {
-    const [x, y] = scatter(NET.index.get('theme:' + code.theme), 120);
+    const [x, y] = scatter(NET.index.get('theme:' + code.theme_id), 120);
     code.x = x; code.y = y;
   });
   NET.nodes.filter((n) => n.kind === 'passage').forEach((p) => {
-    const [x, y] = scatter(NET.index.get('code:' + p.code), 70);
+    const [x, y] = scatter(NET.index.get('code:' + p.code_id), 70);
     p.x = x; p.y = y;
   });
 }

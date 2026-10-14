@@ -124,13 +124,14 @@ class NetworkTests(unittest.TestCase):
         themes = {n["id"]: n["weight"] for n in graph["nodes"] if n["kind"] == "theme"}
         codes = {n["id"]: n for n in graph["nodes"] if n["kind"] == "code"}
         for node in codes.values():
-            self.assertGreaterEqual(themes["theme:" + node["theme"]], node["weight"])
+            self.assertGreaterEqual(themes["theme:" + node["theme_id"]], node["weight"])
 
     def test_overlapping_codes_are_linked(self):
         # Child (0-10) and Other (6-16) overlap in I1, so they must be joined.
         graph = analyze.network(analyze.tidy(build()))
         pairs = {(l["source"], l["target"]) for l in graph["links"] if l["kind"] == "cooccurrence"}
-        self.assertIn(("code:Child", "code:Other"), pairs)
+        ids = {n["label"]: n["id"] for n in graph["nodes"] if n["kind"] == "code"}
+        self.assertTrue(any(set(pair) == {ids["Child"], ids["Other"]} for pair in pairs))
 
     def test_every_link_points_at_a_real_node(self):
         graph = analyze.network(analyze.tidy(build()))

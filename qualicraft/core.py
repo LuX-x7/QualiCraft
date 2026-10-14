@@ -1030,7 +1030,9 @@ def csv_export(project, matrix=False):
         value = str(value)
         return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) or value.startswith(("\t", "\r", "\n")) else value
     if matrix:
-        writer.writerow(["document"] + [safe(c["name"]) for c in project["codes"]])
+        from .analyze import code_labels
+        labels = code_labels(project["codes"])
+        writer.writerow(["document"] + [safe(labels[c["id"]]) for c in project["codes"]])
         counts = Counter((a["document_id"], a["code_id"]) for a in project["annotations"])
         for d in project["documents"]:
             writer.writerow([safe(d["name"])] + [counts[d["id"], c["id"]] for c in project["codes"]])

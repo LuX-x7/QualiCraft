@@ -5,7 +5,8 @@ new traversal. That is the whole reason this module exists; before it, each
 chart walked the project on its own and the counting rules drifted apart.
 
 The table has one row per coding (passage-code assignment), with columns
-`case, code, parent_code, theme, start, end, text, source`. Counts are counts
+`case, code, parent_code, theme, start, end, text, source, code_id, theme_id,
+code_label`. Identity is carried by IDs; labels are only for display. Counts are counts
 of these rows. That unit is stated on every figure, because "code X appears 40
 times" is a very different claim from "40 participants mentioned X", and only
 the first one is what the data supports.
@@ -18,7 +19,8 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 
-COLUMNS = ("case", "code", "parent_code", "theme", "start", "end", "text", "source")
+COLUMNS = ("case", "code", "parent_code", "theme", "start", "end", "text", "source",
+           "code_id", "theme_id", "code_label")
 
 # Two defensible definitions of co-occurrence, and they give different numbers.
 # `overlap` is the stricter one: the two codings must actually share characters.
@@ -31,20 +33,58 @@ def _code_index(codes):
     return {c["id"]: c for c in codes}
 
 
-def _ancestor_name(by_id, code_id):
-    """Name of the top-level ancestor; the code's own name when it has none."""
-    seen, current = set(), by_id.get(code_id)
-    while current and current.get("parent_id") and current["parent_id"] in by_id:
-        if current["id"] in seen:
-            break
+def _code_chain(by_id, code_id):
+    """Root-to-leaf codes, guarded against already-damaged parent chains."""
+    chain, seen = [], set()
+    current = by_id.get(code_id)
+    while current and current["id"] not in seen:
         seen.add(current["id"])
-        current = by_id[current["parent_id"]]
-    return current["name"] if current else ""
+        chain.append(current)
+        current = by_id.get(current.get("parent_id"))
+    return chain[::-1]
+
+
+def _unique_labels(labels):
+    labels = dict(labels)
+    while True:
+        counts = Counter(label.casefold() for label in labels.values())
+        collisions = [key for key, label in labels.items() if counts[label.casefold()] > 1]
+        if not collisions:
+            return labels
+        for key in collisions:
+            labels[key] += " [%s]" % key
+
+
+def code_labels(codes):
+    """Unique display labels across the whole codebook, without renaming it."""
+    by_id = _code_index(codes)
+    names = Counter(c["name"].casefold() for c in codes)
+    return _unique_labels({c["id"]: (
+        " > ".join(item["name"] for item in _code_chain(by_id, c["id"]))
+        if names[c["name"].casefold()] > 1 else c["name"])
+        for c in codes})
+
+
+def _identity(row, by="code"):
+    return row[by + "_id"] if by in ("code", "theme") else row[by]
+
+
+def _label_index(rows, by="code"):
+    field = "code_label" if by == "code" else by
+    return _unique_labels({_identity(r, by): r[field] for r in rows})
+
+
+def _frequency_items(rows, by="code"):
+    labels = _label_index(rows, by)
+    counts = Counter(_identity(r, by) for r in rows if r.get(by))
+    return [(key, labels[key], count) for key, count in
+            sorted(counts.items(), key=lambda item: (-item[1], labels[item[0]], item[0]))]
 
 
 def tidy(project):
     """Flatten a project into the tidy table. One dict per coding."""
     by_id = _code_index(project.get("codes", []))
+    labels = code_labels(project.get("codes", []))
     doc_name = {d["id"]: d["name"] for d in project.get("documents", [])}
     rows = []
     for a in project.get("annotations", []):
@@ -53,15 +93,19 @@ def tidy(project):
             # A coding whose code was deleted mid-edit; skip rather than crash.
             continue
         parent = by_id.get(code.get("parent_id") or "")
+        theme = _code_chain(by_id, code["id"])[0]
         rows.append({
             "case": doc_name.get(a["document_id"], ""),
             "code": code["name"],
             "parent_code": parent["name"] if parent else "",
-            "theme": _ancestor_name(by_id, code["id"]),
+            "theme": theme["name"],
             "start": int(a["start"]),
             "end": int(a["end"]),
             "text": a.get("quote", ""),
             "source": a.get("source", "manual"),
+            "code_id": code["id"],
+            "theme_id": theme["id"],
+            "code_label": labels[code["id"]],
         })
     return rows
 
@@ -73,10 +117,8 @@ def to_frame(rows):
 
 
 def frequency(rows, by="code"):
-    """Counts per label, descending. Ties broken by name so runs are stable."""
-    counts = Counter(r[by] for r in rows if r.get(by))
-    return [{"label": k, "count": v}
-            for k, v in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+    """Counts per identity, descending, with stable display-label ordering."""
+    return [{"label": label, "count": count} for _, label, count in _frequency_items(rows, by)]
 
 
 def _paragraph_ranges(text):
@@ -105,10 +147,12 @@ def cooccurrence(rows, mode="overlap", case_text=None, limit=None):
 
     # Frequency order, not alphabetical: a reader scans a co-occurrence matrix
     # for the busiest codes first, and the reference figures order it this way.
-    labels = [f["label"] for f in frequency(rows)]
+    items = _frequency_items(rows)
     if limit is not None:
-        labels = labels[:limit]
-    index = {name: i for i, name in enumerate(labels)}
+        items = items[:limit]
+    ids = [key for key, _, _ in items]
+    labels = [label for _, label, _ in items]
+    index = {key: i for i, key in enumerate(ids)}
     size = len(labels)
     matrix = [[0] * size for _ in range(size)]
     diagonal = [0] * size
@@ -116,24 +160,24 @@ def cooccurrence(rows, mode="overlap", case_text=None, limit=None):
     if mode == "overlap":
         by_case = defaultdict(list)
         for r in rows:
-            if r["code"] in index:
+            if r["code_id"] in index:
                 by_case[r["case"]].append(r)
         for _case, group in by_case.items():
             for i, a in enumerate(group):
-                diagonal[index[a["code"]]] += 1
+                diagonal[index[a["code_id"]]] += 1
                 for b in group[i + 1:]:
-                    if a["code"] != b["code"] and a["start"] < b["end"] and b["start"] < a["end"]:
-                        matrix[index[a["code"]]][index[b["code"]]] += 1
-                        matrix[index[b["code"]]][index[a["code"]]] += 1
+                    if a["code_id"] != b["code_id"] and a["start"] < b["end"] and b["start"] < a["end"]:
+                        matrix[index[a["code_id"]]][index[b["code_id"]]] += 1
+                        matrix[index[b["code_id"]]][index[a["code_id"]]] += 1
     else:
         if case_text is None:
             raise ValueError("mode='unit' needs case_text: {case: transcript}")
         for case, text in case_text.items():
-            group = [r for r in rows if r["case"] == case and r["code"] in index]
+            group = [r for r in rows if r["case"] == case and r["code_id"] in index]
             if not group:
                 continue
             for start, end in _paragraph_ranges(text):
-                present = {r["code"] for r in group if r["end"] > start and r["start"] < end}
+                present = {r["code_id"] for r in group if r["end"] > start and r["start"] < end}
                 for name in present:
                     diagonal[index[name]] += 1
                 for left in present:
@@ -143,19 +187,19 @@ def cooccurrence(rows, mode="overlap", case_text=None, limit=None):
     for i in range(size):
         matrix[i][i] = diagonal[i]
 
-    return {"labels": labels, "matrix": matrix, "mode": mode}
+    return {"labels": labels, "matrix": matrix, "mode": mode, "code_ids": ids}
 
 
 def coverage(rows, top=None):
     """Case × code counts, codes ordered by overall frequency."""
     cases = sorted({r["case"] for r in rows})
-    order = [f["label"] for f in frequency(rows)]
+    items = _frequency_items(rows)
     if top:
-        order = order[:top]
-    index = {name: i for i, name in enumerate(order)}
-    counts = Counter((r["case"], r["code"]) for r in rows)
-    matrix = [[counts[(case, code)] for code in order] for case in cases]
-    return {"cases": cases, "codes": order, "matrix": matrix}
+        items = items[:top]
+    ids = [key for key, _, _ in items]
+    counts = Counter((r["case"], r["code_id"]) for r in rows)
+    matrix = [[counts[(case, key)] for key in ids] for case in cases]
+    return {"cases": cases, "codes": [label for _, label, _ in items], "matrix": matrix, "code_ids": ids}
 
 
 def accumulation(rows, order=None):
@@ -169,7 +213,7 @@ def accumulation(rows, order=None):
     seen, cumulative, added = set(), [], []
     by_case = defaultdict(set)
     for r in rows:
-        by_case[r["case"]].add(r["code"])
+        by_case[r["case"]].add(r["code_id"])
     for case in cases:
         before = len(seen)
         seen |= by_case[case]
@@ -185,11 +229,13 @@ def hierarchy(rows):
     structure, so the same figure works for both shapes of codebook.
     """
     sections = defaultdict(Counter)
+    themes, codes = _label_index(rows, "theme"), _label_index(rows)
     for r in rows:
-        section = r.get("theme") or r["code"]
-        subsection = r["code"]
+        section = r["theme_id"]
+        subsection = r["code_id"]
         sections[section][subsection] += 1
-    return {section: dict(counts) for section, counts in sections.items()}
+    return {themes[section]: {codes[key]: count for key, count in counts.items()}
+            for section, counts in sections.items()}
 
 
 def network(rows, passages=True):
@@ -217,24 +263,26 @@ def network(rows, passages=True):
     # keying by label silently merges them.
     nodes = {}
     links = []
-    code_id = lambda name: "code:" + name
-    theme_id = lambda name: "theme:" + name
+    code_id = lambda key: "code:" + key
+    theme_id = lambda key: "theme:" + key
+    code_labels_by_id = _label_index(rows)
+    theme_labels = _label_index(rows, "theme")
 
-    counts = Counter(r["code"] for r in rows)
+    counts = Counter(r["code_id"] for r in rows)
     theme_weight = Counter()
     code_theme = {}
     for row in rows:
-        code, theme = row["code"], row["theme"] or row["code"]
+        code, theme = row["code_id"], row["theme_id"]
         code_theme[code] = theme
         theme_weight[theme] += 1
 
     for theme, weight in theme_weight.items():
-        nodes[theme_id(theme)] = {"id": theme_id(theme), "kind": "theme", "label": theme,
-                                  "weight": weight, "theme": theme}
+        nodes[theme_id(theme)] = {"id": theme_id(theme), "kind": "theme", "label": theme_labels[theme],
+                                  "weight": weight, "theme": theme_labels[theme], "theme_id": theme}
     for code, weight in counts.items():
         theme = code_theme[code]
-        nodes[code_id(code)] = {"id": code_id(code), "kind": "code", "label": code,
-                                "weight": weight, "theme": theme}
+        nodes[code_id(code)] = {"id": code_id(code), "kind": "code", "label": code_labels_by_id[code],
+                                "weight": weight, "theme": theme_labels[theme], "theme_id": theme, "code_id": code}
         # A code that is its own theme has no hierarchy edge to draw.
         if theme_id(theme) != code_id(code) and theme_id(theme) in nodes:
             links.append({"source": theme_id(theme), "target": code_id(code),
@@ -246,8 +294,8 @@ def network(rows, passages=True):
             pid = "p:%d" % index
             nodes[pid] = {"id": pid, "kind": "passage", "label": row["text"][:80],
                           "weight": 1, "theme": row["theme"], "case": row["case"],
-                          "code": row["code"]}
-            links.append({"source": code_id(row["code"]), "target": pid,
+                          "code": row["code"], "code_id": row["code_id"], "theme_id": row["theme_id"]}
+            links.append({"source": code_id(row["code_id"]), "target": pid,
                           "kind": "coding", "weight": 1})
 
     # Co-occurrence: codes whose spans actually overlap in one interview. This
@@ -260,8 +308,8 @@ def network(rows, passages=True):
     for group in by_case.values():
         for i, a in enumerate(group):
             for b in group[i + 1:]:
-                if a["code"] != b["code"] and a["start"] < b["end"] and b["start"] < a["end"]:
-                    pairs[tuple(sorted((a["code"], b["code"])))] += 1
+                if a["code_id"] != b["code_id"] and a["start"] < b["end"] and b["start"] < a["end"]:
+                    pairs[tuple(sorted((a["code_id"], b["code_id"])))] += 1
     for (left, right), weight in pairs.items():
         links.append({"source": code_id(left), "target": code_id(right),
                       "kind": "cooccurrence", "weight": weight})
@@ -283,7 +331,7 @@ def summary(project, rows=None):
     rows = tidy(project) if rows is None else rows
     return {
         "cases": len({r["case"] for r in rows}),
-        "codes": len({r["code"] for r in rows}),
+        "codes": len({r["code_id"] for r in rows}),
         "codings": len(rows),
-        "themes": len({r["theme"] for r in rows if r["theme"]}),
+        "themes": len({r["theme_id"] for r in rows if r["theme_id"]}),
     }
