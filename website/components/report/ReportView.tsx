@@ -3,6 +3,8 @@
 /** Native anchors and disclosures keep the reading path usable without JS.
  *  Scroll tracking adds a current chapter; figures retain the T7 one-time fade. */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import FigureReader from './FigureReader'
+import type { HitMap } from '@/lib/report/hit-map'
 
 export type FigureData = {
   kind: string
@@ -13,6 +15,7 @@ export type FigureData = {
   commit: string
   numbers: Record<string, unknown>
   error?: string
+  hitMap?: HitMap
 }
 export type CsvTable = { head: string[]; rows: string[][] }
 export type Section = {
@@ -32,12 +35,38 @@ export default function ReportView({ sections, figures, csvs }: {
 }) {
   const [current, setCurrent] = useState(sections[0]?.id ?? '')
   const [tables, setTables] = useState<Record<string, boolean>>({})
+  const [selected, setSelected] = useState<Record<string, number | undefined>>({})
+  const [pendingRow, setPendingRow] = useState<string>()
   const [narrow, setNarrow] = useState(false)
   const [contentsOpen, setContentsOpen] = useState(false)
   const [indicatorTop, setIndicatorTop] = useState(0)
   const reportRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLOListElement>(null)
   const figureRefs = useRef<Map<string, HTMLElement>>(new Map())
+
+  const selectRow = (kind: string, row: number | undefined, open = false) => {
+    setSelected(prev => ({ ...prev, [kind]: row }))
+    if (open) setTables(prev => ({ ...prev, [kind]: true }))
+  }
+  // Keep selection visible inside an already open table without moving the
+  // page. Only the explicit row button moves reading position and focus.
+  useEffect(() => {
+    for (const [kind, index] of Object.entries(selected)) {
+      if (index === undefined || !tables[kind]) continue
+      const row = document.getElementById(`row-${kind}-${index}`)
+      const scroller = row?.closest<HTMLElement>('.table-scroll')
+      if (row && scroller) {
+        const r = row.getBoundingClientRect(), s = scroller.getBoundingClientRect()
+        if (r.top < s.top || r.bottom > s.bottom) scroller.scrollTop += r.top - s.top
+      }
+    }
+    if (pendingRow) {
+      const row = document.getElementById(pendingRow)
+      row?.focus({ preventScroll: true })
+      row?.scrollIntoView({ block: 'start', behavior: 'instant' })
+      setPendingRow(undefined)
+    }
+  }, [selected, tables, pendingRow])
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 900px)')
@@ -169,6 +198,7 @@ export default function ReportView({ sections, figures, csvs }: {
           const figureIndex = figures.findIndex(figure => figure.kind === section.figureKind)
           const figure = figures[figureIndex]
           const table = figure && csvs[figure.kind]
+          const readable = table && ['frequency', 'accumulation'].includes(figure.kind)
           const number = String(figureIndex + 1).padStart(2, '0')
           return (
             <section key={section.id} className="report-section" id={section.id} tabIndex={-1} aria-labelledby={`${section.id}-title`}>
@@ -180,7 +210,14 @@ export default function ReportView({ sections, figures, csvs }: {
                   <div className="report-fig-section" id={`fig-${figure.kind}`} tabIndex={-1}
                     ref={el => setFigureRef(figure.kind, el)}>
                     <figure className="fig">
-                      {figure.error ? <div className="fig-absent"><strong>Figure not drawn.</strong><p>{figure.error}</p></div> : (
+                      {figure.error ? <div className="fig-absent"><strong>Figure not drawn.</strong><p>{figure.error}</p></div> : readable ? (
+                        <FigureReader figure={figure} table={table} selected={selected[figure.kind]}
+                          onSelect={(row, open) => selectRow(figure.kind, row, open)}
+                          onLocate={row => {
+                            selectRow(figure.kind, row, true)
+                            setPendingRow(`row-${figure.kind}-${row}`)
+                          }} />
+                      ) : (
                         <img src={`/report/${figure.svg}`} alt={`${figure.label}. The caption states what the figure counts.`}
                           width={960} height={540} loading="lazy" />
                       )}
@@ -211,14 +248,24 @@ export default function ReportView({ sections, figures, csvs }: {
                             <caption className="mono">TABLE.{number} · {figure.label} — exported values behind FIG.{number}</caption>
                             <thead><tr>{table.head.map(cell => <th key={cell} scope="col">{cell}</th>)}</tr></thead>
                             <tbody>{table.rows.map((row, rowIndex) => (
-                              <tr key={rowIndex}>{row.map((cell, cellIndex) => (
-                                <td key={cellIndex} className={numericColumns.has(table.head[cellIndex]) ? 'num' : undefined}>{cell}</td>
+                              <tr key={rowIndex} id={readable ? `row-${figure.kind}-${rowIndex}` : undefined}
+                                tabIndex={readable ? -1 : undefined}
+                                className={readable && selected[figure.kind] === rowIndex ? 'is-selected' : undefined}
+                                aria-current={readable && selected[figure.kind] === rowIndex ? 'true' : undefined}>
+                                {row.map((cell, cellIndex) => (
+                                <td key={cellIndex} className={numericColumns.has(table.head[cellIndex]) ? 'num' : undefined}>
+                                  {readable && cellIndex === 0 ? <button type="button" className="reader-row-button"
+                                    aria-label={`Read ${figure.kind === 'frequency' ? cell : `step ${cell}: ${row[1]}`}`}
+                                    aria-pressed={selected[figure.kind] === rowIndex}
+                                    onClick={() => selectRow(figure.kind, rowIndex)}>{cell}</button> : cell}
+                                </td>
                               ))}</tr>
                             ))}</tbody>
                           </table>
                         </div>
                       </details>
                     ) : <p className="report-prose">No count table was exported for this figure.</p>}
+                    {readable && <a className="reader-return mono" href={`#fig-${figure.kind}`}>Return to the figure ↑</a>}
                   </div>
                   <div className="report-reading">
                     <h3 className="report-step mono">Reading &amp; limits</h3>

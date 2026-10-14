@@ -3,6 +3,9 @@ import Link from 'next/link'
 import ReportView, { type CsvTable, type FigureData, type Section } from '@/components/report/ReportView'
 import { readCsv, readManifest, verifyManifest, type Manifest } from '@/lib/report/read'
 import dataCards from '@/lib/site/data-cards.json'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+import { readHitMap } from '@/lib/report/hit-map'
 import '../t7-report.css'
 
 export const metadata: Metadata = {
@@ -159,6 +162,11 @@ export default async function ReportPage() {
     if (!figure.error && figure.csv) {
       const rows = await readCsv(figure.csv)
       csvs[figure.kind] = { head: rows[0] ?? [], rows: rows.slice(1) }
+      if (['frequency', 'accumulation'].includes(figure.kind)) {
+        const svg = await readFile(path.join(process.cwd(), 'public', 'report', figure.svg), 'utf8')
+        const hitMap = readHitMap(figure.kind, svg, csvs[figure.kind], figure.numbers)
+        if (hitMap) figures.find(item => item.kind === figure.kind)!.hitMap = hitMap
+      }
     }
   }
   const sections = chapters(manifest, figures)
