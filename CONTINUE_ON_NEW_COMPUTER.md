@@ -1,58 +1,70 @@
 # Continue QualiCraft on another computer
 
-The public repository is:
+The shared repository is [LuX-x7/QualiCraft](https://github.com/LuX-x7/QualiCraft). Its current review work is on `t7-site`; `main` may contain an earlier version. Windows validation remains deferred. These instructions describe the local review setup, not a Windows acceptance result or a standalone installer.
 
-https://github.com/LuX-x7/QualiCraft
+## Get the review version
 
-## First setup
+Use Python 3.11 or newer, Node.js 24 and Git. From a terminal on macOS:
 
-Install Python 3.11 or newer and Git, then run:
-
-```powershell
-git clone https://github.com/LuX-x7/QualiCraft.git
+```sh
+git clone --branch t7-site https://github.com/LuX-x7/QualiCraft.git
 cd QualiCraft
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-The MVP uses Python's standard library. No `pip install` step is required for the core application.
+The core uses the Python standard library; figure generation and the repository checks use the dependencies in `requirements.txt`. No model key is needed for the demonstration.
 
-## Start the local workspace
+## Start an editable Bologna review copy
 
-If the Guide folder and key file are available at the same paths:
+Copy the bundled CC0 example to an ignored local data directory. This preserves the source database and does not overwrite an existing review session:
 
-```powershell
-.\run.ps1 -Open
+```sh
+python - <<'PY'
+from pathlib import Path
+import shutil
+target = Path('data/bologna-review/qualicraft.sqlite3')
+target.parent.mkdir(parents=True, exist_ok=True)
+if not target.exists():
+    shutil.copy2('demo-data/qualicraft.sqlite3', target)
+print(target)
+PY
+QUALICRAFT_API_KEY_FILE= QUALICRAFT_API_BASE=http://127.0.0.1:9/v1 \
+  QUALICRAFT_MODEL=review-no-provider python run.py \
+  --host 127.0.0.1 --port 8833 --base-path /w \
+  --data-dir data/bologna-review --backup-dir data/bologna-review-backups \
+  --guide-dir data/no-guide
 ```
 
-Otherwise provide the paths explicitly:
+The workbench is at `http://127.0.0.1:8833/w?lang=en`. Its changes are confined to the copied project. Do not import private participant material for this review.
 
-```powershell
-python run.py --open `
-  --guide-dir "D:\Research\Guide" `
-  --api-key-file "D:\Secrets\API_key.txt" `
-  --api-base "https://dashscope.aliyuncs.com/compatible-mode/v1" `
-  --model "qwen3.8-flash"
+## Start the website
+
+In a second terminal, from the checkout:
+
+```sh
+cd website
+npm ci
+npm run build
+HOST=127.0.0.1 PORT=4445 QT_WORKBENCH_URL=http://127.0.0.1:8833 npm start
 ```
 
-Then open `http://127.0.0.1:8765`.
+Open `http://127.0.0.1:4445/`, `/report` and `/w?lang=en`. Restart the website after every production rebuild. The loopback addresses work only on this computer; GitHub source publication does not update the hosted website.
 
-## What is intentionally not in GitHub
+## Check and review
 
-- `data/` and `*.sqlite3`: local projects, imported transcripts, memos, and review decisions.
-- `reports/`: local model smoke-test outputs.
-- API keys and `.env` files.
-- The source Guide datasets, because their licenses and research-data handling must be reviewed before redistribution.
+From the checkout root, with the virtual environment active:
 
-The server creates a fictional English demo project automatically when the local database is empty. Use the project dialog to import the TU Delft or Tian 2021 materials from a local Guide directory.
-
-## Verification
-
-```powershell
+```sh
 python -m unittest discover -s tests -v
+python -m unittest discover -s tests -t . -v
 node --check web/app.js
+node --test tests/*.test.mjs tools/report/*.test.mjs
 ```
 
-The Tian import creates an uncoded workspace for eight software-architecture practitioner interviews. IP1–IP2 pair Chinese answer passages with English translations; IP3–IP8 are in English. The parser recognizes `IQ...`, `Answer:`, and `IP1:`–`IP8:` labels.
+See [the short English review brief](docs/review/SUPERVISOR-ONE-PAGE.md), [the detailed guide](docs/review/SUPERVISOR-REVIEW.md), and [the current plan](docs/review/EXPERIENCE-ROADMAP.md). Both discovery forms now collect the same suite; the earlier collection failure remains in the evidence history.
 
-## Current development state
+Feedback goes to [GitHub Issues](https://github.com/LuX-x7/QualiCraft/issues). Use public or synthetic examples there; keep participant data and keys private. Local `data/`, backups and credentials stay outside Git. The bundled Bologna database is the explicit public-data exception.
 
-The MVP includes the English three-panel coding workspace, exact Unicode source offsets, manual coding and memos, an AI suggestion review queue, Qwen-compatible cloud analysis with an explicit preview confirmation, JSON/CSV export, and TU Delft benchmark tooling. The next research-data task is a read-only importer for the Tian MAXQDA SQLite project, with researcher coding clearly separated from model suggestions.
+Windows, physical device and assistive-technology acceptance require their own recorded results. Keep unverified checks visible. Do not deploy or change the repository's visibility as part of starting this local review.

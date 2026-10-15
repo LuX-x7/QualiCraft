@@ -39,7 +39,7 @@ QualiCraft is a modular workbench for interview studies and other open-ended mat
 
 ## Try it
 
-- **[Website](https://qualicraft-website.onrender.com/)** — English-first overview, with a language switch and a written walkthrough of all five modules.
+- **[Website](https://qualicraft-website.onrender.com/)** — English overview and a walkthrough of all five workflow steps.
 - **[Live workbench](https://qualicraft-workbench.onrender.com/w)** — the real interface, running on the public Bologna corpus. Read-only: no uploads, no edits.
 - **[Deploy your own](#deploy)** — one blueprint puts both services on the internet from this repository.
 - **[Chinese README](#中文)** — jump to the Chinese translation below.
@@ -61,8 +61,7 @@ does that on its free plan and deploys straight from this repository.
 to configure by hand:
 
 > **One limit worth knowing before you press the button.** A free instance has an **ephemeral
-> filesystem**
-> And a free instance has an **ephemeral filesystem**: its SQLite database is discarded on every
+> filesystem**: its SQLite database is discarded on every
 > restart. The deployment exists to demonstrate the interface on public data. **Do not put
 > research data in it.** For real work, run it locally, where `data/backups/` is also being
 > written.
@@ -78,8 +77,8 @@ To deploy — no fork, no GitHub App, no CLI:
    or go to [render.com](https://render.com) and sign in (GitHub or email; the free plan is enough).
 2. Render reads `render.yaml` from this public repository and lists both services
    with their build and start commands. Review them.
-3. **Apply**. The first build takes a few minutes: dependencies are installed,
-   and the site's database seeds itself from the repository on first boot.
+3. **Apply**. The first build installs dependencies. The website reads its committed
+   content and report assets; the read-only workbench opens the bundled Bologna sample.
 4. Copy the two URLs Render gives you — one for the site, one for the workbench.
 
 Because this repository is **public**, Render can deploy it directly: the deploy
@@ -105,7 +104,8 @@ Notes worth knowing before you share the link:
   (`website/app/w/[[...path]]/route.ts`) rather than a `next.config` rewrite,
   because rewrite destinations are frozen at build time. The handler reads
   `QT_WORKBENCH_URL` per request, so pointing the site at a different workbench
-  needs no rebuild; `render.yaml` fills it from the workbench service's host.
+  needs no rebuild; set `QT_WORKBENCH_URL` to the workbench's public URL in the
+  hosting dashboard. The blueprint declares the variable without replacing its value.
 
 ### A hosted public instance is not for private data
 
@@ -167,6 +167,9 @@ Five public datasets exercise different export shapes and data quality. Files ar
 Importing a coding table creates a new project and retains the source attribution available in the export. When an export contains no transcript text, QualiCraft does not invent source quotations or character offsets.
 
 ## Local installation
+
+For the current supervisor review branch and an editable Bologna-only copy, follow
+[the review setup guide](CONTINUE_ON_NEW_COMPUTER.md). Windows validation is deferred.
 
 Python 3.11 or later is recommended. The core application uses the Python standard library; plotting requires `matplotlib`, `pandas`, and `numpy`.
 
@@ -290,8 +293,7 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 
 仓库根目录的 `render.yaml` 已经定义好两个服务，不需要手工配置：
 
-> **按按钮之前要知道一件事。** 免费实例的**文件系统是临时的**
-> 另外免费实例的**文件系统是临时的**：SQLite 数据库每次重启都会被丢弃。这个部署是为了用公开数据演示界面，
+> **按按钮之前要知道一件事。** 免费实例的**文件系统是临时的**：SQLite 数据库每次重启都会被丢弃。这个部署是为了用公开数据演示界面，
 > **不要把研究数据放进去。** 真正做研究请在本机运行，那里的 `data/backups/` 也在持续写入。
 
 | 服务 | 说明 |
@@ -304,7 +306,7 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 1. 点 **[Deploy to Render](https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft)**，
    或打开 [render.com](https://render.com) 登录（GitHub 或邮箱均可，免费方案就够）。
 2. Render 会读取这个**公开仓库**里的 `render.yaml`，列出两个服务及其构建/启动命令。核对一下。
-3. 点 **Apply**。首次构建需要几分钟：依赖自动安装，网站数据库在首次启动时从仓库植入。
+3. 点 **Apply**。首次构建会安装依赖；网站读取已保存的内容和报告资产，只读工作台打开随仓库附带的 Bologna 示例。
 4. 记下 Render 给出的两个网址——网站一个，工作台一个。
 
 因为这个仓库是**公开**的，Render 可以直接部署：部署链接里带了仓库地址
@@ -322,7 +324,8 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
   中 `*.sqlite3` 规则唯一放行的数据库。
 - 网站用**路由处理器**（`website/app/w/[[...path]]/route.ts`）代理工作台，而不是 `next.config`
   的 rewrite——因为 rewrite 的目标在构建时就固化了。处理器按请求读取 `QT_WORKBENCH_URL`，
-  所以把网站指向另一个工作台无需重新构建；`render.yaml` 会从工作台服务的主机名自动填入。
+  所以把网站指向另一个工作台无需重新构建；请在托管面板把 `QT_WORKBENCH_URL` 设为工作台公开地址，
+  蓝图只声明变量，不覆盖面板中保存的值。
 
 ### 公开实例不适合放私人数据
 
@@ -379,6 +382,9 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 导入编码表会创建一个新项目，并保留导出文件中可用的来源信息。如果文件不含转录原文，QualiCraft 不会虚构引文或字符偏移。
 
 ## 本机安装
+
+当前 supervisor 审核分支及可编辑 Bologna 副本的启动方式见
+[审核版启动说明](CONTINUE_ON_NEW_COMPUTER.md)。Windows 验证继续暂缓。
 
 建议 Python 3.11 或更高版本。核心程序使用 Python 标准库；绘图需要 `matplotlib`、`pandas` 和 `numpy`。
 

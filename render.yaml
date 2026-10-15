@@ -4,10 +4,9 @@
 # Deploy it with the button in the README, or by opening:
 #   https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft
 #
-# The repository is private. Render's one-click flow needs access to it, so the
-# deploy button only works for someone who already has it — it is not a public
-# installer, and the README says so. If the repository is ever made public, the
-# button starts working for everyone and this comment should change with it.
+# The repository is public (verified 2026-10-15), so Render can read its source.
+# The deploy button creates a read-only hosted demonstration; it is not a
+# local installer. Source pushes do not deploy while autoDeployTrigger is off.
 #
 #   • qualicraft-workbench — the read-only workbench demo (Python + SQLite),
 #                            mounted at /w to match the site's proxy.

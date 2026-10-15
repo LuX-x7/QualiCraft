@@ -17,3 +17,4 @@ qualicraft = "qualicraft.server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["qualicraft*"]
