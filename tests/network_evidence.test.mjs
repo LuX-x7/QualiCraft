@@ -125,3 +125,41 @@ test('a late network response cannot replace another project selection', async (
   assert.equal(w.run('NET.selected'),'code:c1');
   assert.equal(w.run('NET.nodes.length'),3);
 });
+
+test('map has explicit keyboard and touch controls plus a live selection summary', () => {
+  const w=workspace(),html=w.run('insightsView()');
+  for(const action of ['net-prev','net-next','net-clear','net-passages'])assert.ok(html.includes(`data-action="${action}"`));
+  assert.match(html,/id="network-selection"[^>]*aria-live="polite"/);
+});
+test('source ranges are identified by document ID and exact bounds, not text', () => {
+  const w=workspace();
+  assert.equal(w.run('networkSourceCount(state.project.annotations)'),2);
+  assert.deepEqual(w.json("sameSourceCodings(state.project.annotations[0]).map(a=>a.id)"),['a1','a2','a4']);
+});
+test('evidence distinguishes one source range carrying several saved codings', () => {
+  const w=workspace();w.run("NET.evidenceId='a1'");
+  const html=w.run('networkEvidenceHtml()');
+  assert.match(html,/1 source range · 3 saved codings/);
+  for(const path of ['Theme &gt; Shared','Theme &gt; Shared &gt; Leaf','Other &gt; Shared'])assert.ok(html.includes(path));
+});
+test('previous and next visit every selectable node by ID, excluding passage dots', () => {
+  const w=workspace();w.run("toggleNetworkNode=id=>{NET.selected=id;}");
+  w.run('stepNetworkSelection(1)');assert.equal(w.run('NET.selected'),'theme:t1');
+  w.run('stepNetworkSelection(-1)');assert.equal(w.run('NET.selected'),'code:c1');
+  w.run('NET.selected=null;stepNetworkSelection(1)');assert.equal(w.run('NET.selected'),'theme:t1');
+});
+test('explicit collapse only hides the selected code passage dots and preserves evidence', () => {
+  const w=workspace();w.run(`NET.links=[{kind:'coding',source:'code:c1',target:'p:0'}];NET.evidenceId='a1';
+    NET.visible.add('other-dot');drawNetwork=()=>{};drawNetworkEvidence=()=>{};drawNetworkLegend=()=>{};drawNetworkControls=()=>{};wakeNetwork=()=>{};`);
+  w.run('toggleNetworkPassages()');
+  assert.equal(w.run("NET.visible.has('p:0')"),false);assert.equal(w.run("NET.visible.has('other-dot')"),true);
+  assert.equal(w.run('NET.evidenceId'),'a1');
+  w.run('toggleNetworkPassages()');assert.equal(w.run("NET.visible.has('p:0')"),true);
+});
+test('reduced motion settles the layout without scheduling animation frames', () => {
+  const w=workspace();w.run(`window.matchMedia=()=>({matches:true});state.steps=0;
+    stepNetwork=()=>{state.steps++;NET.alpha*=0.5;};drawNetwork=()=>{};
+    requestAnimationFrame=()=>{throw new Error('animation must stay off');};`);
+  w.run('wakeNetwork()');assert.equal(w.run('NET.frame'),0);assert.equal(w.run('NET.alpha'),0);
+  assert.ok(w.run('state.steps')>0);
+});

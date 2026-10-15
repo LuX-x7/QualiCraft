@@ -5,6 +5,11 @@
 const QT_LANG=(()=>{const u=new URLSearchParams(location.search).get('lang');if(u){try{sessionStorage.setItem('qt_lang',u);}catch(e){}return u;}try{const s=sessionStorage.getItem('qt_lang');if(s)return s;}catch(e){}return 'en';})();
 const _T={"en":{"loading":"Opening your local research workspace…","project":"PROJECT","switchProject":"Switch project","newProject":"+ New / import project","navCoding":"Coding workspace","navInsights":"Insights","navPlotting":"Figures","navAudit":"Audit trail","documents":"DOCUMENTS","codebook":"CODEBOOK","tools":"TOOLS","capabilityBlocks":"Capability blocks","localWorkspace":"Local workspace","noFileSelected":"No file selected","publicDemo":"Public demo","publicDemoNote":"Read-only sample project. Changes and uploads are disabled here; run QualiCraft locally to code your own material.","publicDemoReadOnly":"This public demonstration is read-only. Start a local copy to create or change projects.","publicDemoLocked":"Read-only demo. Run QualiCraft locally to make changes.","filterSidebar":"Filter documents and codes","noDocsFilter":"No documents match.","codeHits":"Codes matching","cloudNote":"Cloud only when requested","savedLocally":"Saved locally","model":"Model","export":"Export","switchLanguage":"Switch language","docCount":"documents","codeCount":"codes","codingCount":"codings","reviewCount":"to review","importInterview":"Import interview","mobileSwitch":"Switch / create project","footerBrand":"QUALICRAFT 0.1 · LOCAL WORKSPACE","footerTagline":"Exact source ranges · Researcher-reviewed coding","noDocEyebrow":"A SPACE FOR YOUR QUESTIONS","noDocTitle":"Start with a conversation","noDocBody":"Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.","noDocCreateCode":"Create code","searchDoc":"Search in document","documentLabel":"DOCUMENT","selectHint":"Select text to code a passage","newCode":"+ New code","analyzeAi":"Analyse with AI","readingNotes":"READING NOTES","readingPlaceholder":"First impressions, questions to follow up, anything that stands out.","aiReview":"AI REVIEW","suggestions":"Suggestions","reviewSubtitle":"Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.","pending":"Pending review","reviewAccepted":"Accepted","reviewRejected":"Rejected","reviewFootnote":"Source ranges are verified automatically.<br>Interpretation remains your decision.","noCodes":"No codes yet. Add one to start coding.","noCodesFilter":"No codes to show.","noPassages":"No passages match your filters.","clearFilters":"Clear filters","human":"HUMAN","reference":"REFERENCE","aiReviewed":"AI · REVIEWED","demoSuggest":"DEMO SUGGESTION","aiSuggest":"AI SUGGESTION","locateQuote":"Locate this quotation in the source","rationale":"RATIONALE","acceptCoding":"Accept coding","reject":"Reject","acceptedState":"Accepted by researcher","rejectedState":"Rejected · decision recorded","noSuggestions":"No suggestions in this view","runAiOrChoose":"Run AI coding or choose another review status.","codeFreq":"Code frequency","network":"Relationship map","netLoading":"Building the map…","networkDesc":"Themes are the largest nodes, codes next, coded passages smallest. A dashed edge means two codes were applied to overlapping ranges in the same interview. That is descriptive — it is not correlation, and it is not a claim about a relationship. Click a theme to isolate its family, click a code to open its passages.","netOverlap":"codes overlapping in one interview","netClear":"Clear selection","freqDesc":"Each confirmed quotation–code link counts once. Frequency is not importance or a count of participants. Pending suggestions are excluded. Charts of these counts are drawn in the Figures view, each captioned with the unit it counts.","docCodeMatrix":"Document × code","matrixDesc":"Export the complete matrix as CSV for further analysis and plotting.","applyCodesHint":"Apply codes to see your research take shape.","figures":"Figures","plotDesc":"The figure is drawn by a script on the server, not in the browser, so the preview you see is exactly what the exported script produces.","plotNotInstalled":"The plotting workbench is not installed","plotInstallHint":"Figures are drawn by a Python script rather than in the browser, so the same script can be exported and re-run by a co-author. Install it and reopen this view:","plotNotEnough":"Not enough codings yet","plotNeedTwo":"A figure needs at least two coded passages before there is anything to plot.","plotExportBtn":"Download figure + script","plotExportNote":"A folder with the counts as CSV, the script, and the figure as SVG, PDF and 300 dpi PNG.","auditTitle":"Provenance and activity","auditActions":"actions","codebookShow":"show codes","codebookHide":"hide codes","enableAllBlocks":"Turn on all five modules","enableAllBlocksHint":"The modules are off by default. This turns them all on for this project — nothing changes for your other projects.","blocksEnabled":"All five modules are on for this project.","plotNoPairs":"No overlapping code ranges","plotNoPairsHint":"This figure counts codes that were applied to overlapping character ranges in the same interview. Two codes on separate passages are never a pair, so the figure stays empty however many codings the project has. Apply two codes to the same stretch of text, or choose a different figure type.","plotCouldNotDraw":"Could not draw the figure","charsLabel":" characters","spansParagraphs":" (spans paragraphs)","subLevel":"sub-level","codeSearchPh":"Type a keyword, press Enter to code","closeEsc":"Close (Esc)","moreOptions":"More options…","analyzeSel":"Analyse with AI","createCodeTpl":"＋ Create “%s” and code it","noCodesYet":"No codes yet — type a keyword to create one","toastCoded":"Coded.","toastCodeCreated":"Created “%s” and coded it.","toastNeedKeyword":"Type a keyword first, or pick a code from the list.","snapshots":"snapshots","backupFailed":"Backup failed","snapshotsTitle":"Snapshots","snapshotsIntro":"A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.","restoreCopy":"Restore as a copy","noSnapshots":"No snapshots yet.","backupHint":"A restorable copy is written after every change. Restore it from the Projects dialog.","auditDesc1":"Personal research project. When sharing your findings, document the data source, methods, and role of AI assistance.","auditDesc2":"Activity is saved locally and included in project exports. This is an editable research trail, not a tamper-proof log.","figKind":"Figure type","kindFrequency":"Code frequency","kindCoverage":"Code × interview","kindCooccurrence":"Co-occurrence heatmap","kindHierarchy":"Theme hierarchy","kindAccumulation":"Code accumulation","withinOverlap":"Overlapping text","withinPassage":"The same passage","topN":"Top N codes","groupBy":"Group by","countWithin":"Count within","palette":"Palette","optional":"Optional","clustering":"Clustering","linkage":"Linkage","showCounts":"Show counts","baseFontSize":"Base font size","titleOpt":"Title","on":"On","off":"Off","yes":"Yes","no":"No","pt":"pt","themes":"Themes","codes":"Codes","passages":"Passages","importDlg":"Import interview","importDesc":"Import UTF-8 TXT or DOCX, or paste a transcript. Original line breaks define segments. Use Doctor:/Patient:, Interviewer:/Participant:, or IQ.../IP1: speaker labels. Chinese labels are also supported.","chooseFile":"Choose a file","fileHint":"DOCX imports paragraph and table text; layout, comments, and headers are not retained.","docName":"Document name","docNamePlaceholder":"e.g. P02 · Care experience","pasteTranscript":"Or paste a transcript","pastePlaceholder":"Doctor: How did the conversation feel?\\nPatient: ...","importBtn":"Import locally","importOther":"Import a coding table","importOtherLink":"Already have a coding table from another tool?","importOtherDesc":"Already coded elsewhere? Drop the export here and QualiCraft will read it into a new project — transcripts, codebook and codings, with the source licence recorded.","importOtherFormats":"OpenQDA or NVivo CSV · QualCoder .zip · ATLAS.ti or FAIRqual .xlsx","importOtherName":"Project name (optional)","importOtherNamePh":"Defaults to the file name","importOtherBtn":"Import coding table","importNoFile":"Choose a file first.","importWorking":"Reading the file…","importDone":"Imported","cancel":"Cancel","toolsDlg":"Capability blocks","toolsDesc":"The core is always there: <strong>documents, codes and codings</strong>. Everything else is a block — click one to add it to this project and the interface grows to match. Click again to take it away. Which blocks a study used is stored with the project, so it becomes part of the record.","saveBlocks":"Save blocks","createCode":"Create code","codeName":"Code name","codeNamePlaceholder":"e.g. Information barriers","codeDef":"Definition and inclusion criteria","codeDefPlaceholder":"Describe when to use this code and when to exclude it.","groupUnder":"Group under (optional)","topLevel":"— top level —","groupHint":"Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.","color":"Color","saveCode":"Save code","editCode":"Edit code","status":"Status","emergent":"Emergent","provisional":"Provisional","final":"Final","codeMemo":"Code / theme memo","codeMemoPlaceholder":"How is this code or theme developing?","inclusion":"Inclusion criteria","inclusionPlaceholder":"Use this code when…","exclusion":"Exclusion criteria","exclusionPlaceholder":"Do not use it when…","anchorExamples":"Anchor examples (one per line)","anchorPlaceholder":"Typical quotations that illustrate this code.","saveChanges":"Save changes","delete":"Delete","mergeInto":"Merge into…","deleteCode":"Delete code","mergeCode":"Merge code","codePassage":"Code this passage","selectCode":"Select a code","researchMemo":"Research memo","removeCoding":"Remove coding","saveMemo":"Save memo","memoPlaceholder":"Record your interpretation or a question for comparison.","applyCode":"Apply code","settingsTitle":"Cloud model settings","settingsDesc":"The launcher can read a local API_key.txt. Keys entered here stay in server memory only, outside browser storage, projects, and exports.","apiBase":"API Base URL","apiBaseHint":"Alibaba Cloud Beijing: https://dashscope.aliyuncs.com/compatible-mode/v1. A workspace-specific URL in the same region or another compatible endpoint also works.","modelName":"Model name","modelHint":"Default: qwen3.8-flash. When switching providers, update the endpoint, model, and key together.","apiKey":"API Key","apiKeyConfigured":"Configured; leave blank to keep the key for this endpoint","apiKeyPlaceholder":"Enter your key here, not in chat","settingsNotice":"Manual coding is free and works offline. Cloud analysis runs only after confirmation and may incur provider charges. De-identify real transcripts and confirm that sharing them with this provider is permitted.","saveSettings":"Save settings","clearKey":"Clear key","analyzeTitle":"AI-assisted coding","analyzeDesc":"Preview the exact request before running analysis. Results arrive as suggestions for your review.","codingApproach":"Coding approach","deductive":"Deductive · existing codes only","inductive":"Inductive · allow new codes","analysisScope":"Analysis scope","scopePatient":"Labeled patient / participant turns","scopeAll":"All non-empty text segments","includeContext":"Include the preceding doctor or interviewer question as context when speaker labels are recognized.","analyzeNotice":"Up to 200 requests per run. Long segments are split at 6,000 characters. Speaker identification relies on explicit labels. Check the preview before sending.","previewRequests":"Preview requests","reviewRequest":"Review cloud request","modelPrefix":"Model: ","requestsCount":" requests · ","targetChars":" target characters","previewNotice":"Requests include the listed text, selected context, complete codebook definitions, and system instructions. Canceling stops subsequent requests; in-flight requests may still incur charges.","viewFullRequest":"View full request bodies (","noCredentials":" segments, no credentials)","reviewConfirm":"I have reviewed the content. These texts are de-identified and may be shared with this provider.","back":"Back","sendAnalyze":"Send and analyze","projectsTitle":"Research projects","existingProjects":"Existing projects","openProject":"Open project","newProjectName":"New project name","newProjectPlaceholder":"e.g. Experiences of outpatient care","createProject":"Create project","groundedProject":"Tian 2021 · software architecture interviews","groundedDesc":"Import 8 semi-structured practitioner interviews. IP1–IP2 pair Chinese responses with English translations; IP3–IP8 are in English.","demoProject":"Fictional care interview","demoDesc":"Explore a fictional transcript, sample coding, and fixed review suggestions.","benchmarkProject":"TU Delft · blind workspace","benchmarkDesc":"Import 7 transcripts and 54 codes, without reference annotations.","referenceProject":"TU Delft · researcher reference","referenceDesc":"Explore 377 researcher annotations for comparison. These are not model predictions.","restoreProject":"Restore project JSON","restoreDesc":"Restore a backup as a new project while keeping the original.","guideNote":"Guide collections are imported from the local Guide directory and retain source provenance in the project audit trail.","exportTitle":"Export your research","exportDesc":"Files are saved to your browser download folder. Full project exports include source transcripts; handle them as research data.","exportJson":"Full project · JSON","exportJsonDesc":"Transcripts, codebook, codings, suggestions, and activity. Restore later to continue.","exportCsv":"Codings · CSV","exportCsvDesc":"Document, code, source quote, character offsets, memo, and provenance.","exportMatrix":"Document × code · CSV","exportMatrixDesc":"Confirmed codings only, ready for Excel, R, or Python.","exportMethods":"Methods record · Markdown","exportMethodsDesc":"How the analysis was actually carried out, assembled from your audit trail. Draft the methods section from it.","projectCreated":"Project created and saved locally.","blocksUpdated":"Capability blocks updated.","keyCleared":"Key cleared from memory.","settingsSaved":"Settings saved. No text has been sent.","confirmFirst":"Confirm the request content first.","analysisStarted":"Analysis started. Results will appear as suggestions.","cancelRequested":"Cancellation requested. The current request may still finish.","interviewImported":"Interview imported.","codeSaved":"Code saved.","codeUpdated":"Code updated.","passageCoded":"Passage coded.","toastAccepted":"Accepted and added to your codings.","toastRejected":"Rejected; review decision saved.","memoSaved":"Memo saved.","codingRemoved":"Coding removed; the previous record is retained in the audit trail.","figureExported":"Figure, counts and script exported.","exported":"Exported to your browser download folder.","confirmPreview":"Confirm the preview before sending data","jobRunning":"Analyzing","jobStopping":"Stopping","jobComplete":"Analysis complete","jobCancelled":"Analysis canceled","jobFailed":"Analysis interrupted","stopRemaining":"Stop remaining requests","workspaceError":"Could not open workspace: ","workspaceErrorHint":"Check that the local server is running, then refresh.","add":"Add","added":"Added","blocksCount":" services","direct":" direct · ","includingSub":" including sub-codes","subCode":" sub-code(s)","expand":"Expand","collapse":"Collapse","close":"Close","live":"live","inProgress":"in progress","notCovered":"Not covered yet","codingMargin":"CODING MARGIN","charactersLabel":" characters","segmentsLabel":" segments","codingsLabel":" codings"},"zh":{"loading":"正在打开本地研究工作台…","project":"项目","switchProject":"切换项目","newProject":"+ 新建 / 导入项目","navCoding":"编码工作区","navInsights":"洞察","navPlotting":"图表","navAudit":"审计记录","documents":"文档","codebook":"编码本","tools":"工具","capabilityBlocks":"功能模块","localWorkspace":"本地工作区","noFileSelected":"未选择文件","publicDemo":"公开演示","publicDemoNote":"只读示例项目。此处已关闭修改与上传；请在本机运行 QualiCraft 来编码你自己的材料。","publicDemoReadOnly":"这是只读公开演示。请启动本地副本来创建或修改项目。","publicDemoLocked":"只读演示。请在本机运行 QualiCraft 进行修改。","filterSidebar":"筛选文档与编码","noDocsFilter":"没有匹配的文档。","codeHits":"匹配的编码","cloudNote":"仅在请求时连接云端","savedLocally":"已本地保存","model":"模型","export":"导出","switchLanguage":"切换语言","docCount":"份文档","codeCount":"个编码","codingCount":"条标注","reviewCount":"待审核","importInterview":"导入访谈","mobileSwitch":"切换 / 创建项目","footerBrand":"QUALICRAFT 0.1 · 本地工作区","footerTagline":"精确源码范围 · 研究者审核编码","noDocEyebrow":"为您的研究问题留出空间","noDocTitle":"从一段对话开始","noDocBody":"导入 TXT、DOCX 或粘贴访谈稿。<br>建立编码本，手动编码，或连接模型获取建议。","noDocCreateCode":"创建编码","searchDoc":"在文档中搜索","documentLabel":"文档","selectHint":"选中文字即可为段落编码","newCode":"+ 新建编码","analyzeAi":"AI 分析","readingNotes":"阅读笔记","readingPlaceholder":"第一印象、待跟进的问题、任何引起注意的内容。","aiReview":"AI 审核","suggestions":"建议","reviewSubtitle":"逐一核对每个解释与原文的匹配度。建议只有经您确认后才会成为正式编码。","pending":"待审核","reviewAccepted":"已采纳","reviewRejected":"已拒绝","reviewFootnote":"源码范围已自动验证。<br>解释由您决定。","noCodes":"尚无编码。添加一个即可开始编码。","noCodesFilter":"没有可显示的编码。","noPassages":"没有匹配的段落。","clearFilters":"清除筛选","human":"人工","reference":"参考","aiReviewed":"AI · 已审核","demoSuggest":"演示建议","aiSuggest":"AI 建议","locateQuote":"在原文中定位此引用","rationale":"理由","acceptCoding":"采纳编码","reject":"拒绝","acceptedState":"已由研究者采纳","rejectedState":"已拒绝 · 决定已记录","noSuggestions":"此视图下没有建议","runAiOrChoose":"运行 AI 编码或选择其他审核状态。","codeFreq":"编码频率","network":"关系网图","netLoading":"正在生成关系图…","networkDesc":"主题是最大的节点，编码次之，被编码的文本片段最小。虚线表示两个编码被用在同一份访谈里区间重叠的地方。这是描述性的——不代表相关，也不构成关系判断。点击主题可只看它这一支，点击编码可展开它的文本片段。","netOverlap":"在同一份访谈中重叠的编码","netClear":"清除选择","freqDesc":"每条已确认的引用—编码链接计为一次。频率不代表重要性，也不代表受访者数量。待审核建议不计入。需要按编码计数出图，请到「图表」页；每张图都写明它数的是什么。","docCodeMatrix":"文档 × 编码","matrixDesc":"导出完整矩阵为 CSV，以便进一步分析和绘图。","applyCodesHint":"应用编码，让您的研究逐渐成形。","figures":"图表","plotDesc":"图表由服务器端脚本绘制，而非浏览器，因此您看到的预览与导出的脚本结果完全一致。","plotNotInstalled":"绘图工作台未安装","plotInstallHint":"图表由 Python 脚本绘制而非浏览器，因此同一脚本可被导出并由合作者重新运行。安装后重新打开此视图：","plotNotEnough":"编码数量不足","plotNeedTwo":"绘图需要至少两条已编码段落。","plotExportBtn":"下载图表 + 脚本","plotExportNote":"包含计数 CSV、脚本以及 SVG、PDF 和 300 dpi PNG 格式的图表。","auditTitle":"来源与活动","auditActions":"条操作","codebookShow":"展开","codebookHide":"收起","enableAllBlocks":"开启全部五个模块","enableAllBlocksHint":"模块默认关闭。此按钮为当前项目全部开启——不会影响你的其他项目。","blocksEnabled":"已为本项目开启全部五个模块。","plotNoPairs":"没有区间重叠的编码","plotNoPairsHint":"此图统计的是「同一份访谈中被应用到相互重叠字符区间」的编码对。两个编码如果落在不同段落上，就不构成一对，所以无论编了多少码，这张图都会是空的。请将两个编码应用到同一段文字，或改选其他图型。","plotCouldNotDraw":"无法绘制该图","charsLabel":" 字符","spansParagraphs":"（跨段）","subLevel":"子级","codeSearchPh":"输入关键字，回车即打标","closeEsc":"关闭 (Esc)","moreOptions":"更多选项…","analyzeSel":"AI 分析","createCodeTpl":"＋ 新建编码「%s」并打标","noCodesYet":"还没有编码，输入关键字即可新建","toastCoded":"已打标。","toastCodeCreated":"已新建编码「%s」并打标。","toastNeedKeyword":"先输入关键字，或从列表里选一个编码。","snapshots":"份快照","backupFailed":"备份失败","snapshotsTitle":"快照","snapshotsIntro":"每次改动后都会写一份可恢复的副本。恢复会新建一个项目，当前项目不受影响。","restoreCopy":"恢复为副本","noSnapshots":"还没有快照。","backupHint":"每次改动后都会写一份可恢复的副本。在「项目」对话框里恢复。","auditDesc1":"个人研究项目。分享研究结果时，请记录数据来源、方法和 AI 辅助的角色。","auditDesc2":"活动记录保存在本地，并包含在项目导出中。这是可编辑的研究记录，而非不可篡改的日志。","figKind":"图表类型","kindFrequency":"编码频率","kindCoverage":"编码 × 访谈","kindCooccurrence":"共现热力图","kindHierarchy":"主题层级","kindAccumulation":"编码累积","withinOverlap":"区间重叠","withinPassage":"同一段落","topN":"取前 N 个编码","groupBy":"分组方式","countWithin":"计数范围","palette":"配色","optional":"可选","clustering":"聚类","linkage":"连接方式","showCounts":"显示计数","baseFontSize":"基准字号","titleOpt":"标题","on":"开","off":"关","yes":"是","no":"否","pt":"磅","themes":"主题","codes":"编码","passages":"段落","importDlg":"导入访谈","importDesc":"导入 UTF-8 TXT 或 DOCX，或粘贴访谈稿。原始换行符定义段落。使用 Doctor:/Patient:、Interviewer:/Participant: 或 IQ.../IP1: 等说话人标签。中文标签也受支持。","chooseFile":"选择文件","fileHint":"DOCX 导入段落和表格文本；版式、批注和页眉不会被保留。","docName":"文档名称","docNamePlaceholder":"例如 P02 · 护理体验","pasteTranscript":"或粘贴访谈稿","pastePlaceholder":"医生：对话感觉如何？\\n患者：…","importBtn":"本地导入","importOther":"导入编码表","importOtherLink":"已经有别的工具导出的编码表？","importOtherDesc":"在别处编好码了？把导出文件放进来，QualiCraft 会把它读成一个新项目——转录、编码本和标注一起，并记下来源许可。","importOtherFormats":"OpenQDA 或 NVivo CSV · QualCoder .zip · ATLAS.ti 或 FAIRqual .xlsx","importOtherName":"项目名称（可选）","importOtherNamePh":"默认用文件名","importOtherBtn":"导入编码表","importNoFile":"请先选择一个文件。","importWorking":"正在读取文件…","importDone":"已导入","cancel":"取消","toolsDlg":"功能模块","toolsDesc":"核心功能始终可用：<strong>文档、编码和标注</strong>。其余均为模块——点击即可添加到本项目，界面会随之扩展。再次点击即可移除。研究使用了哪些模块会随项目一起保存，因此成为记录的一部分。","saveBlocks":"保存模块","createCode":"创建编码","codeName":"编码名称","codeNamePlaceholder":"例如 信息障碍","codeDef":"定义与纳入标准","codeDefPlaceholder":"描述何时使用此编码，何时排除。","groupUnder":"分组归属（可选）","topLevel":"— 顶级 —","groupHint":"选择父级会将此编码设为子编码。将编码归入主题下，才能把平面标签列表变成编码本。","color":"颜色","saveCode":"保存编码","editCode":"编辑编码","status":"状态","emergent":"涌现","provisional":"暂定","final":"最终","codeMemo":"编码 / 主题备忘录","codeMemoPlaceholder":"此编码或主题的发展情况如何？","inclusion":"纳入标准","inclusionPlaceholder":"在以下情况下使用此编码…","exclusion":"排除标准","exclusionPlaceholder":"在以下情况下不要使用…","anchorExamples":"锚点示例（每行一个）","anchorPlaceholder":"能说明此编码的典型引用。","saveChanges":"保存更改","delete":"删除","mergeInto":"合并到…","deleteCode":"删除编码","mergeCode":"合并编码","codePassage":"为段落编码","selectCode":"选择编码","researchMemo":"研究备忘录","removeCoding":"移除编码","saveMemo":"保存备忘录","memoPlaceholder":"记录您的解释或用于比较的问题。","applyCode":"应用编码","settingsTitle":"云端模型设置","settingsDesc":"启动器可以读取本地 API_key.txt。此处输入的密钥仅保存在服务器内存中，不会进入浏览器存储、项目或导出文件。","apiBase":"API 基础地址","apiBaseHint":"阿里云北京：https://dashscope.aliyuncs.com/compatible-mode/v1。同一区域或其他兼容端点的工作区专属地址也可以。","modelName":"模型名称","modelHint":"默认：qwen3.8-flash。切换提供商时，请同时更新端点、模型和密钥。","apiKey":"API 密钥","apiKeyConfigured":"已配置；留空可保留此端点的密钥","apiKeyPlaceholder":"在此输入密钥，不要在对话中发送","settingsNotice":"手动编码免费且可离线工作。云端分析仅在确认后运行，可能产生提供商费用。对真实访谈稿去标识化，并确认允许与提供商共享。","saveSettings":"保存设置","clearKey":"清除密钥","analyzeTitle":"AI 辅助编码","analyzeDesc":"运行分析前先预览具体请求。结果将以建议形式呈现供您审核。","codingApproach":"编码方式","deductive":"演绎 · 仅使用现有编码","inductive":"归纳 · 允许新建编码","analysisScope":"分析范围","scopePatient":"标记为患者 / 参与者的发言","scopeAll":"所有非空文本段落","includeContext":"识别到说话人标签时，将前面的医生或访谈者问题作为上下文包含在内。","analyzeNotice":"每次运行最多 200 条请求。长段落会在 6,000 字符处拆分。说话人识别依赖显式标签。发送前请先检查预览。","previewRequests":"预览请求","reviewRequest":"审核云端请求","modelPrefix":"模型：","requestsCount":" 条请求 · ","targetChars":" 目标字符","previewNotice":"请求包含所列文本、所选上下文、完整编码本定义和系统指令。取消会停止后续请求；进行中的请求可能仍会产生费用。","viewFullRequest":"查看完整请求内容（","noCredentials":" 个段落，不含凭证）","reviewConfirm":"我已审核内容。这些文本已去标识化，可以与此提供商共享。","back":"返回","sendAnalyze":"发送并分析","projectsTitle":"研究项目","existingProjects":"现有项目","openProject":"打开项目","newProjectName":"新项目名称","newProjectPlaceholder":"例如 门诊护理体验","createProject":"创建项目","groundedProject":"Tian 2021 · 软件架构访谈","groundedDesc":"导入 8 份半结构化从业者访谈。IP1–IP2 为中文回答配英文翻译；IP3–IP8 为英文。","demoProject":"虚构护理访谈","demoDesc":"探索一份虚构访谈稿、示例编码和固定的审核建议。","benchmarkProject":"代尔夫特理工 · 盲评工作区","benchmarkDesc":"导入 7 份访谈稿和 54 个编码，不含参考标注。","referenceProject":"代尔夫特理工 · 研究者参考","referenceDesc":"查看 377 条研究者标注以供比较。这些不是模型预测。","restoreProject":"恢复项目 JSON","restoreDesc":"将备份恢复为新项目，同时保留原始项目。","guideNote":"指南集从本地 Guide 目录导入，并在项目审计记录中保留来源出处。","exportTitle":"导出您的研究","exportDesc":"文件将保存到浏览器下载文件夹。完整项目导出包含源访谈稿；请按研究数据处理。","exportJson":"完整项目 · JSON","exportJsonDesc":"访谈稿、编码本、标注、建议和活动记录。后续可恢复继续工作。","exportCsv":"标注 · CSV","exportCsvDesc":"文档、编码、源引用、字符偏移、备忘录和来源。","exportMatrix":"文档 × 编码 · CSV","exportMatrixDesc":"仅包含已确认标注，可直接用于 Excel、R 或 Python。","exportMethods":"方法记录 · Markdown","exportMethodsDesc":"根据您的审计记录汇编实际执行的分析过程。可据此起草方法部分。","projectCreated":"项目已创建并保存在本地。","blocksUpdated":"功能模块已更新。","keyCleared":"密钥已从内存中清除。","settingsSaved":"设置已保存。尚未发送任何文本。","confirmFirst":"请先确认请求内容。","analysisStarted":"分析已开始。结果将以建议形式出现。","cancelRequested":"已请求取消。当前请求可能仍会完成。","interviewImported":"访谈已导入。","codeSaved":"编码已保存。","codeUpdated":"编码已更新。","passageCoded":"段落已编码。","toastAccepted":"已采纳并添加到您的标注中。","toastRejected":"已拒绝；审核决定已保存。","memoSaved":"备忘录已保存。","codingRemoved":"编码已移除；之前的记录保留在审计追踪中。","figureExported":"图表、计数和脚本已导出。","exported":"已导出到浏览器下载文件夹。","confirmPreview":"发送数据前请先确认预览","jobRunning":"分析中","jobStopping":"停止中","jobComplete":"分析完成","jobCancelled":"分析已取消","jobFailed":"分析中断","stopRemaining":"停止剩余请求","workspaceError":"无法打开工作区：","workspaceErrorHint":"请检查本地服务器是否正在运行，然后刷新页面。","add":"添加","added":"已添加","blocksCount":" 个服务","direct":" 直接 · ","includingSub":" 含子编码","subCode":" 个子编码","expand":"展开","collapse":"收起","close":"关闭","live":"在线","inProgress":"进行中","notCovered":"尚未覆盖","codingMargin":"编码边栏","charactersLabel":" 字符","segmentsLabel":" 段落","codingsLabel":" 编码"}};
 Object.assign(_T.en, {
+  previousNode:'Previous theme or code', nextNode:'Next theme or code',
+  showPassages:'Show passage nodes', hidePassages:'Hide passage nodes', codingsLabel:'Codings', rangesLabel:'Source ranges',
+  rangeCodings:'saved codings', oneRange:'1 source range', allRangeCodings:'Codings on this source range',
+  networkKeys:'Use the selector or Previous / Next to select. Show / Hide changes passage dots only. Escape clears the selection. Each passage dot is one saved coding; several codings may share one source range.',
+  noNetworkSelection:'No selection. Choose a theme or code.',
   insightsViews:'Insights views', selectNetwork:'Select a theme or code',
   evidenceTitle:'Source evidence', evidenceHint:'Choose a theme or code in the map or selector to read its saved codings.',
   evidenceList:'Saved codings', fullQuote:'Full quotation', openSource:'Open in document',
@@ -14,6 +19,10 @@ Object.assign(_T.en, {
   mapPreview:'The map shows up to 14 passage nodes per opened code. The list contains all saved codings in the selection.',
 });
 Object.assign(_T.zh, {
+  previousNode:'上一个主题或编码', nextNode:'下一个主题或编码', showPassages:'显示原句节点', hidePassages:'隐藏原句节点',
+  codingsLabel:'标注关联', rangesLabel:'独立原句范围', rangeCodings:'条已保存标注', oneRange:'1 处原句范围', allRangeCodings:'此原句上的全部标注',
+  networkKeys:'可用选择器或上一个／下一个选择；显示／隐藏只改变图中原句节点。Escape 清除选择。一个原句节点代表一条已保存标注；多条标注可以对应同一处原句范围。',
+  noNetworkSelection:'尚未选择，请选择主题或编码。',
   insightsViews:'洞察视图', selectNetwork:'选择主题或编码', evidenceTitle:'原句证据',
   evidenceHint:'在关系图或选择器中选择主题或编码，阅读已保存的标注。', evidenceList:'已保存标注',
   fullQuote:'完整原句', openSource:'在文档中定位', sourceUnavailable:'无法核对这条原句的位置，请打开文档检查后再定位。',
@@ -366,6 +375,8 @@ function insightsView() {
   const matrix=`<section class="panel"><h2>${QT('docCodeMatrix','Document × code')}</h2><p>${QT('matrixDesc','Export the complete matrix as CSV for further analysis and plotting.')}</p><div class="table-wrap"><table><thead><tr><th>Document</th>${p.codes.map(c=>`<th>${esc(c.name)}</th>`).join('')}</tr></thead><tbody>${p.documents.map(d=>`<tr><td>${esc(d.name)}</td>${p.codes.map(c=>`<td>${p.annotations.filter(a=>a.document_id===d.id&&a.code_id===c.id).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;
   const map=`<section class="panel"><h2>${QT('network','Relationship map')}</h2><p>${QT('networkDesc')}</p>
     <label class="network-picker">${QT('selectNetwork')}<select id="network-select" aria-label="${QT('selectNetwork')}" disabled><option value="">${QT('netLoading','Building the map…')}</option></select></label>
+    <div class="network-controls" role="group" aria-label="${QT('network','Relationship map')}"><button data-action="net-prev" id="network-prev" disabled>← ${QT('previousNode')}</button><button data-action="net-next" id="network-next" disabled>${QT('nextNode')} →</button><button data-action="net-passages" id="network-passages" disabled>${QT('showPassages')}</button><button data-action="net-clear" id="network-clear" disabled>${QT('netClear','Clear selection')}</button></div>
+    <p id="network-selection" class="network-selection" aria-live="polite" aria-atomic="true">${QT('noNetworkSelection')}</p><p class="network-note" id="network-key-help">${QT('networkKeys')}</p>
     <div class="network-layout"><div><div id="network-stage" class="network-stage"><div class="network-empty">${QT('netLoading','Building the map…')}</div></div><div id="network-legend" class="network-legend"></div><p class="network-note">${QT('mapPreview')}</p></div>
     <section id="network-evidence" class="network-evidence" aria-label="${QT('evidenceTitle')}"><h3>${QT('evidenceTitle')}</h3><p>${QT('netLoading','Building the map…')}</p></section></div></section>`;
   return `<div class="view-body insights-body">${nav}${state.insightsTab==='frequency'?frequency:state.insightsTab==='matrix'?matrix:map}</div>`;
@@ -796,6 +807,9 @@ async function action(button) {
   if(state.config.public_demo&&WRITE_ACTIONS.has(a)){toast(DEMO_LOCK(),true);return;}
   if(a==='close'){closeModal();return;}
   if(a==='insights-tab'){state.insightsTab=button.dataset.tab;render();document.querySelector(`[data-action="insights-tab"][data-tab="${state.insightsTab}"]`)?.focus();return;}
+  if(a==='net-prev'||a==='net-next'){stepNetworkSelection(a==='net-prev'?-1:1);return;}
+  if(a==='net-passages'){toggleNetworkPassages();return;}
+  if(a==='net-clear'){clearNetworkSelection();document.getElementById('network-next')?.focus();return;}
   if(a==='net-evidence'){NET.evidenceId=button.dataset.id;drawNetworkEvidence();document.querySelector('[data-action="net-locate"]')?.focus();return;}
   if(a==='net-locate'){openNetworkSource(button.dataset.id);return;}
   if(a==='net-return'){returnToNetwork();return;}
@@ -933,7 +947,7 @@ function renderJob(){
 function startPolling(){
   clearTimeout(pollTimer);pollTimer=setTimeout(async()=>{try{const before=state.jobs.filter(j=>j.status==='running').map(j=>j.id);state.jobs=await api('/api/jobs');renderJob();const finished=state.jobs.find(j=>before.includes(j.id)&&j.status!=='running');if(finished){if(finished.project_id===state.project.id)await refresh();toast(finished.error||'Analysis finished. Review your suggestions.',finished.status==='failed');}if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(e){toast('Could not read task status. Refresh to view saved results.',true);}},1500);
 }
-document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected)button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;}});
+document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action.startsWith('net-'))drawNetworkControls();}}});
 document.addEventListener('click',e=>{
   const brick=e.target.closest('.brick'); if(!brick) return;
   const on=brick.classList.toggle('on');
@@ -1015,7 +1029,7 @@ async function loadNetwork() {
       const graph = await api(projectUrl('network'));
       // A slow response must not overwrite another view or project.
       if (document.getElementById('network-stage') !== stage || key !== state.project.id + ':' + state.project.updated_at) return;
-      NET.nodes = graph.nodes.map(n=>({...n,x:0,y:0,vx:0,vy:0}));
+      NET.nodes = graph.nodes.map(n=>({...n,x:0,y:0,vx:0,vy:0,hint:n.kind==='passage'?(n.case+' · ['+n.start+', '+n.end+') · '+n.label):networkCodePath(n.code_id||n.theme_id)}));
       NET.links = graph.links;
       NET.index = new Map(NET.nodes.map(n=>[n.id,n]));
       NET.visible = new Set(graph.nodes.filter(n=>n.kind!=='passage').map(n=>n.id));
@@ -1023,7 +1037,7 @@ async function loadNetwork() {
       NET.levels = graph.levels; NET.projectKey = key;
       seedNetwork();
     }
-    stage.innerHTML = '<svg id="network-svg" role="img" aria-label="' + esc(QT('network','Relationship map')) + '"></svg>';
+    stage.innerHTML = '<svg id="network-svg" role="img" aria-describedby="network-key-help network-selection" aria-label="' + esc(QT('network','Relationship map')) + '"></svg>';
     NET.svg = document.getElementById('network-svg');
     const picker = document.getElementById('network-select');
     picker.innerHTML = '<option value="">' + esc(QT('selectNetwork')) + '</option>'
@@ -1032,7 +1046,7 @@ async function loadNetwork() {
     picker.disabled = false;
     drawNetwork(); drawNetworkLegend(); drawNetworkEvidence();
     if (fresh) wakeNetwork();
-    else if (NET.alpha >= 0.02) NET.frame = requestAnimationFrame(tickNetwork);
+    else if (NET.alpha >= 0.02 && !networkReducedMotion()) NET.frame = requestAnimationFrame(tickNetwork);
   } catch (error) {
     if (document.getElementById('network-stage') !== stage) return;
     stage.innerHTML = '<div class="network-empty">' + esc(error.message) + '</div>';
@@ -1068,14 +1082,25 @@ function networkCodePath(id) {
   const code=state.project.codes.find(c=>c.id===id);
   return code?codePath(code):id;
 }
+function networkSourceCount(rows) {
+  return new Set(rows.map(a=>JSON.stringify([a.document_id,a.start,a.end]))).size;
+}
+function sameSourceCodings(annotation) {
+  const ids=new Set(state.project.codes.map(c=>c.id));
+  return state.project.annotations.filter(a=>ids.has(a.code_id)&&a.document_id===annotation.document_id&&a.start===annotation.start&&a.end===annotation.end);
+}
+function networkRangeHtml(annotation) {
+  const related=sameSourceCodings(annotation);
+  return `<div class="network-range-codings"><p>${QT('oneRange')} · ${related.length} ${QT('rangeCodings')}</p><ul aria-label="${QT('allRangeCodings')}">${related.map(a=>`<li>${esc(networkCodePath(a.code_id))}</li>`).join('')}</ul></div>`;
+}
 function networkEvidenceHtml() {
   const node = NET.index.get(NET.selected);
   if (!node) return `<h3>${QT('evidenceTitle')}</h3><p>${QT('evidenceHint')}</p>`;
   const rows = networkEvidenceRows(), record = evidenceRecord(NET.evidenceId);
   const chosen = record && rows.some(a=>a.id===record.annotation.id) ? record : null;
   const path = networkCodePath(node.kind==='theme'?node.theme_id:node.code_id);
-  const detail = chosen ? `<div class="network-detail"><h4>${QT('fullQuote')}</h4><blockquote tabindex="0" aria-label="${QT('fullQuote')}">${esc(chosen.annotation.quote)}</blockquote><dl><dt>${QT('documentLabel','DOCUMENT')}</dt><dd>${esc(chosen.document?.name||chosen.annotation.document_id)}</dd><dt>${QT('codes','Codes')}</dt><dd>${esc(networkCodePath(chosen.annotation.code_id))}</dd><dt>${QT('sourceLocation')}</dt><dd>[${chosen.annotation.start}, ${chosen.annotation.end})</dd></dl>${chosen.valid?'':`<p role="status">${QT('sourceUnavailable')}</p>`}<button class="primary" data-action="net-locate" data-id="${esc(chosen.annotation.id)}"${chosen.valid?'':' disabled'}>${QT('openSource')} ↗</button></div>` : `<p>${QT('evidenceChoose')}</p>`;
-  return `<h3>${QT('evidenceTitle')}</h3><p class="network-path">${esc(path)}</p>${detail}<h4>${QT('evidenceList')} · ${rows.length}</h4><div class="network-evidence-list" role="group" aria-label="${QT('evidenceList')}">${rows.map(a=>{
+  const detail = chosen ? `<div class="network-detail"><h4>${QT('fullQuote')}</h4><blockquote tabindex="0" aria-label="${QT('fullQuote')}">${esc(chosen.annotation.quote)}</blockquote><dl><dt>${QT('documentLabel','DOCUMENT')}</dt><dd>${esc(chosen.document?.name||chosen.annotation.document_id)}</dd><dt>${QT('codes','Codes')}</dt><dd>${esc(networkCodePath(chosen.annotation.code_id))}</dd><dt>${QT('sourceLocation')}</dt><dd>[${chosen.annotation.start}, ${chosen.annotation.end})</dd></dl>${networkRangeHtml(chosen.annotation)}${chosen.valid?'':`<p role="status">${QT('sourceUnavailable')}</p>`}<button class="primary" data-action="net-locate" data-id="${esc(chosen.annotation.id)}"${chosen.valid?'':' disabled'}>${QT('openSource')} ↗</button></div>` : `<p>${QT('evidenceChoose')}</p>`;
+  return `<h3>${QT('evidenceTitle')}</h3><p class="network-path">${esc(path)}</p>${detail}<h4>${QT('evidenceList')} · ${rows.length}</h4><p class="network-source-count">${QT('rangesLabel')} · ${networkSourceCount(rows)}</p><div class="network-evidence-list" role="group" aria-label="${QT('evidenceList')}">${rows.map(a=>{
     const r=evidenceRecord(a.id);
     return `<button data-action="net-evidence" data-id="${esc(a.id)}" aria-pressed="${a.id===NET.evidenceId}"><strong>${esc(r.document?.name||a.document_id)} · [${a.start}, ${a.end})</strong><span>${esc(networkCodePath(a.code_id))}</span><span>${esc(cut(a.quote,0,100))}${cp(a.quote).length>100?'…':''}</span></button>`;
   }).join('')||`<p>${QT('noEvidence')}</p>`}</div>`;
@@ -1083,6 +1108,7 @@ function networkEvidenceHtml() {
 function drawNetworkEvidence() {
   const panel = document.getElementById('network-evidence');
   if (!panel) return;
+  drawNetworkControls();
   panel.innerHTML = networkEvidenceHtml();
   const picker = document.getElementById('network-select'), node = NET.index.get(NET.selected);
   if (picker) picker.value = node?.kind==='passage'?'code:'+node.code_id:(NET.selected||'');
@@ -1196,18 +1222,32 @@ function stepNetwork() {
   NET.alpha *= 0.982;
 }
 
+function networkReducedMotion() {
+  return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
 function wakeNetwork() {
   NET.alpha = 1;
+  if (networkReducedMotion()) {
+    if (NET.frame) cancelAnimationFrame(NET.frame);
+    NET.frame=0;
+    // Compute the same force layout without presenting moving frames.
+    for (let i=0;i<220&&NET.alpha>=0.02;i++) stepNetwork();
+    NET.alpha=0; drawNetwork(); return;
+  }
   if (!NET.frame) NET.frame = requestAnimationFrame(tickNetwork);
 }
-
 function tickNetwork() {
   NET.frame = 0;
-  if (NET.alpha < 0.02) { drawNetwork(); return; }
-  stepNetwork();
-  drawNetwork();
+  if (!NET.svg || networkReducedMotion() || NET.alpha < 0.02) { NET.alpha=0; drawNetwork(); return; }
+  stepNetwork(); drawNetwork();
   NET.frame = requestAnimationFrame(tickNetwork);
 }
+const networkMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+networkMotion?.addEventListener('change',()=>{
+  if (!networkMotion.matches) return;
+  if (NET.frame) cancelAnimationFrame(NET.frame);
+  NET.frame=0; NET.alpha=0; drawNetwork();
+});
 
 /* Everything within one hop of the selection stays lit; the rest fades. This
    is the whole point of the view — seeing what belongs with what. */
@@ -1270,7 +1310,7 @@ function drawNetwork() {
       : node.kind === 'code' ? Math.min(1.5, 0.8 + node.weight / 90) : 1);
     parts.push('<circle class="net-node" data-id="' + esc(node.id) + '" cx="' + (node.x + cx).toFixed(1)
       + '" cy="' + (node.y + cy).toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + NET_FILL[node.kind]
-      + '" opacity="' + (lit ? (node.kind === 'passage' ? 0.75 : 0.95) : 0.08) + '"/>');
+      + '" opacity="' + (lit ? (node.kind === 'passage' ? 0.75 : 0.95) : 0.08) + '"><title>' + esc(node.hint||node.label) + '</title></circle>');
     const wanted = node.kind === 'theme'
       || (focus ? (lit && focusNamed.has(node.id)) : named.has(node.id));
     if (node.kind !== 'passage' && wanted) {
@@ -1289,10 +1329,47 @@ function drawNetworkLegend() {
   if (!el || !NET.levels) return;
   el.innerHTML = '<span><i class="net-dot net-dot--theme"></i>' + QT('themes', 'Themes') + ' ' + NET.levels.themes + '</span>'
     + '<span><i class="net-dot net-dot--code"></i>' + QT('codes', 'Codes') + ' ' + NET.levels.codes + '</span>'
-    + '<span><i class="net-dot net-dot--passage"></i>' + QT('passages', 'Passages') + ' ' + NET.levels.passages + '</span>'
+    + '<span><i class="net-dot net-dot--passage"></i>' + QT('codingsLabel') + ' ' + NET.levels.passages + '</span>'
     + '<span><i class="net-line"></i>' + QT('netOverlap', 'codes overlapping in one interview') + '</span>'
-    + (NET.selected ? '<button type="button" class="link" data-action="net-clear">' + QT('netClear', 'Clear selection') + '</button>' : '');
+    + '<span>' + QT('rangesLabel') + ' ' + networkSourceCount(state.project.annotations.filter(a=>NET.index.has('code:'+a.code_id))) + '</span>';
 }
+
+function stepNetworkSelection(direction) {
+  const choices=NET.nodes.filter(n=>n.kind!=='passage');
+  if (!choices.length) return;
+  const selected=NET.index.get(NET.selected);
+  const current=selected?.kind==='passage'?'code:'+selected.code_id:NET.selected;
+  const index=choices.findIndex(n=>n.id===current);
+  const next=index<0?(direction>0?0:choices.length-1):(index+direction+choices.length)%choices.length;
+  if (choices[next].id!==NET.selected) toggleNetworkNode(choices[next].id);
+}
+function drawNetworkControls() {
+  const node=NET.index.get(NET.selected),codeId=node?.code_id;
+  const summary=document.getElementById('network-selection');
+  if (!summary) return;
+  const rows=networkEvidenceRows();
+  summary.textContent=node?networkCodePath(codeId||node.theme_id)+' · '+rows.length+' '+QT('codingsLabel')+' · '+networkSourceCount(rows)+' '+QT('rangesLabel'):QT('noNetworkSelection');
+  const toggle=document.getElementById('network-passages');
+  if (toggle) { toggle.disabled=!codeId; toggle.textContent=QT(NET.expanded.has('code:'+codeId)?'hidePassages':'showPassages');toggle.setAttribute('aria-expanded',String(NET.expanded.has('code:'+codeId))); }
+  const clear=document.getElementById('network-clear');if(clear)clear.disabled=!node;
+  for(const id of ['network-prev','network-next']){const button=document.getElementById(id);if(button)button.disabled=!NET.nodes.some(n=>n.kind!=='passage');}
+}
+function toggleNetworkPassages() {
+  const node=NET.index.get(NET.selected);
+  if (!node?.code_id) return;
+  const id='code:'+node.code_id,hide=NET.expanded.has(id);
+  const children=NET.links.filter(l=>l.kind==='coding'&&l.source===id);
+  if (hide) {
+    children.forEach(l=>NET.visible.delete(l.target));NET.expanded.delete(id);
+    if(node.kind==='passage')NET.selected=id;
+  } else {children.slice(0,NET.cap).forEach(l=>NET.visible.add(l.target));NET.expanded.add(id);}
+  drawNetwork();drawNetworkLegend();drawNetworkEvidence();wakeNetwork();
+}
+function handleNetworkKey(event) {
+  if (event.key!=='Escape'||!event.target.closest?.('.network-controls, .network-picker, .network-evidence, .network-stage')) return;
+  event.preventDefault();clearNetworkSelection();document.getElementById('network-next')?.focus();
+}
+document.addEventListener('keydown',handleNetworkKey);
 
 /* Opening a code reveals its passages, capped: past a dozen or so the extra
    nodes stop adding information and start costing legibility. */
@@ -1334,8 +1411,6 @@ function clearNetworkSelection() {
 document.addEventListener('click', (e) => {
   const circle = e.target.closest && e.target.closest('.net-node');
   if (circle) { toggleNetworkNode(circle.dataset.id); return; }
-  const clear = e.target.closest && e.target.closest('[data-action="net-clear"]');
-  if (clear) { clearNetworkSelection(); }
 });
 
 (function bindNetworkDrag() {
