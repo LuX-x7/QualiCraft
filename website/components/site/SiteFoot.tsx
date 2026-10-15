@@ -1,3 +1,4 @@
+import MotionPreference from './MotionPreference'
 import { FOOTER } from '@/lib/site/content'
 
 /**
@@ -11,6 +12,7 @@ export default function SiteFoot() {
   return (
     <footer className="site-foot" id="feedback">
       <div className="wrap">
+        <MotionPreference />
         <p className="site-foot__line mono">{FOOTER.licence}</p>
         <p className="site-foot__line mono">{FOOTER.cite}</p>
         {FOOTER.feedback ? (

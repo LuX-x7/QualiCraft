@@ -3,6 +3,7 @@
 /** Native anchors and disclosures keep the reading path usable without JS.
  *  Scroll tracking adds a current chapter; figures retain the T7 one-time fade. */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useReducedMotion } from '@/components/site/MotionPreference'
 import FigureReader from './FigureReader'
 import SourceEvidence from './SourceEvidence'
 import type { ReportEvidence } from '@/lib/report/evidence'
@@ -36,6 +37,7 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
   evidence: ReportEvidence
   csvs: Record<string, CsvTable>
 }) {
+  const reduced = useReducedMotion()
   const [current, setCurrent] = useState(sections[0]?.id ?? '')
   const [tables, setTables] = useState<Record<string, boolean>>({})
   const [selected, setSelected] = useState<Record<string, number | undefined>>({})
@@ -137,7 +139,7 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
   }, [current, narrow, contentsOpen])
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (reduced) return
     const nodes = [...figureRefs.current.values()]
     nodes.forEach(el => el.classList.add('fig-pending'))
     const observer = new IntersectionObserver(entries => {
@@ -147,7 +149,7 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.15 })
     nodes.forEach(el => observer.observe(el))
     return () => { observer.disconnect(); nodes.forEach(el => el.classList.remove('fig-pending')) }
-  }, [figures])
+  }, [figures, reduced])
 
   const setFigureRef = useCallback((kind: string, el: HTMLElement | null) => {
     if (el) figureRefs.current.set(kind, el)

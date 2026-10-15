@@ -1201,3 +1201,21 @@ summary:focus-visible,.evidence-steps button:focus-visible,.evidence-themes butt
 .workflow-output ul{padding-left:20px;font-size:14px;line-height:1.7}
 .workflow-note{color:var(--ink-muted);border-top:1px solid var(--rule);padding-top:12px;margin-bottom:0}
 .workflow-choices button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* UX-05: shared navigation, controls and explicit motion preference. */
+.site-header__brand { min-height: 56px; flex: 0 0 auto; }
+.site-nav__link { display: inline-flex; align-items: center; min-height: 44px; }
+.site-nav-disclosure__summary { min-height: 44px; display: flex; align-items: center; }
+.site-nav-disclosure__list { left: auto; right: 0; width: min(280px, calc(100vw - 32px)); border: 1px solid var(--rule-strong); padding: 12px 20px; }
+.site-nav-disclosure__list .site-nav__link { width: 100%; }
+.motion-preference { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 12px; margin-bottom: 24px; color: var(--ink-soft); }
+.motion-preference select { min-height: 44px; padding: 8px 12px; background: var(--paper-raised); color: var(--ink); border: 1px solid var(--rule-strong); font: inherit; }
+html[data-reduced-motion="true"] *,html[data-reduced-motion="true"] *::before,html[data-reduced-motion="true"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+html[data-reduced-motion="true"] .fig-pending { opacity: 1; transform: none; }
+@media(max-width: 800px) {
+  .site-header__inner { gap: 12px; }
+  .hero { padding-top: 48px; }
+  .hero__title { font-size: clamp(34px, 8.8vw, 52px); }
+  .home-proof { gap: 16px; }
+  .evidence-themes button { min-height: 44px; }
+}

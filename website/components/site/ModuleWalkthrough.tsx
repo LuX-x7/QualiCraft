@@ -21,6 +21,7 @@
  * every step is laid out in full, in order, as a static page.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useReducedMotion } from './MotionPreference'
 import { MODULES } from '@/lib/site/content'
 import { CLIPS } from '@/lib/site/clips'
 import CodingEvidence, { type CodingExample } from './CodingEvidence'
@@ -98,7 +99,7 @@ function StepDemo({ item, reduced, example, data }: { item: Module; reduced: boo
 
 export default function ModuleWalkthrough({ example, data }: { example: CodingExample | null; data: WorkflowData }) {
   const [active, setActive] = useState(1)
-  const [reduced, setReduced] = useState(false)
+  const reduced = useReducedMotion()
   const [compact, setCompact] = useState(false)
   const [mediaReady, setMediaReady] = useState(false)
   const inlineMedia = reduced || compact
@@ -126,18 +127,14 @@ export default function ModuleWalkthrough({ example, data }: { example: CodingEx
   }, [])
 
   useEffect(() => {
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const phone = window.matchMedia('(max-width: 800px)')
     const onChange = () => {
-      setReduced(motion.matches)
       setCompact(phone.matches)
       setMediaReady(true)
     }
     onChange()
-    motion.addEventListener('change', onChange)
     phone.addEventListener('change', onChange)
     return () => {
-      motion.removeEventListener('change', onChange)
       phone.removeEventListener('change', onChange)
     }
   }, [])

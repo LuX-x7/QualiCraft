@@ -163,3 +163,12 @@ test('reduced motion settles the layout without scheduling animation frames', ()
   w.run('wakeNetwork()');assert.equal(w.run('NET.frame'),0);assert.equal(w.run('NET.alpha'),0);
   assert.ok(w.run('state.steps')>0);
 });
+test('explicit reduced motion works without changing system preferences or project records',()=>{
+  const w=workspace(),before=w.json('state.project')
+  w.run(`window.matchMedia=()=>({matches:false});document.documentElement.dataset={reducedMotion:'true'};
+    state.steps=0;stepNetwork=()=>{state.steps++;NET.alpha*=.5};drawNetwork=()=>{};
+    requestAnimationFrame=()=>{throw new Error('manual reduction must keep frames off')}`)
+  assert.equal(w.run('networkReducedMotion()'),true)
+  w.run('wakeNetwork()');assert.equal(w.run('NET.frame'),0)
+  assert.deepEqual(w.json('state.project'),before)
+})

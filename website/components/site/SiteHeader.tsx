@@ -3,7 +3,7 @@ import QtMark from '@/components/QtMark'
 import { NAV } from '@/lib/site/content'
 
 /**
- * The site's own header. Six destinations, no JavaScript: on a narrow screen
+ * The site's own header. Five destinations, no JavaScript: on a narrow screen
  * the list folds into a disclosure, which is the one control that works
  * without a script, without a focus trap, and without hijacking the page.
  */
@@ -12,7 +12,7 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="wrap site-header__inner">
         <Link href="/" className="site-header__brand" aria-label="QualiCraft — home">
-          <QtMark size={14} />
+          <QtMark size={4} />
           <span className="site-header__word">QualiCraft</span>
         </Link>
 
