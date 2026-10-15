@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { MODULES } from '@/lib/site/content'
 import SketchGlyph from './SketchGlyph'
-const DESCRIPTIONS=['Original words','Linked evidence','Traceable structure','Figures + counts + code','Portable record']
+const DESCRIPTIONS=['File → text → range','Passage → code → theme','Trace the saved links','SVG + CSV + script','Record → chosen format']
 export default function ModuleAtlas() {
  const [route,setRoute]=useState(MODULES.map(step=>step.key))
  const toggle=(key:(typeof MODULES)[number]['key'])=>setRoute(current=>current.includes(key)?current.filter(item=>item!==key):[...current,key])

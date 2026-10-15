@@ -578,3 +578,55 @@
 .home-theme-guide button:focus-visible { outline:2px solid var(--rust); outline-offset:2px; }
 .story-plot--hierarchy .home-plot-svg { max-height:220px; }
 @media(max-width:600px) { .home-theme-guide { flex-wrap:wrap; } .home-theme-guide label { flex-basis:100%; } }
+/* UX-15: pencil construction and visible record logic, all original vectors. */
+.pencil-echo { stroke-width:.6; opacity:.38; }
+.sketch-glyph .glyph-record { fill:var(--paper); }
+.sketch-glyph .sketch-back { fill:var(--paper-raised); }
+.glyph-pin { fill:var(--rust); stroke:var(--rust); }
+.glyph-script { stroke:var(--rust); }
+:is(.atlas-block,.sketch-object,.provenance-stop,.method-path):is(:hover,:focus-within) .glyph-record { transform:translateY(-3px); }
+:is(.atlas-block,.sketch-object,.provenance-stop,.method-path):is(:hover,:focus-within) .glyph-script { transform:translateX(3px); }
+.sketch-glyph .glyph-check { stroke:var(--rust); }
+.import-range { display:block; width:100%; padding:10px 20px; background:var(--paper-raised); border:1px solid var(--rule); border-radius:4px 2px 5px 3px; color:var(--ink); cursor:pointer; text-align:left; }
+.import-range > .mono { display:block; font-size:11px; color:var(--ink-muted); }
+.import-range svg { display:block; width:100%; max-height:45px; margin:4px 0; stroke-linecap:round; stroke-linejoin:round; }
+.range-baseline { stroke:var(--rule-strong); stroke-width:1; }
+.range-selection { stroke:var(--rust); stroke-width:2; }
+.import-range > span:last-child { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.import-range strong { font:18px var(--mono); font-weight:400; }
+.import-range em { font:16px var(--serif); color:var(--ink-soft); }
+.import-range:is(:hover,:focus-visible),.import-range.is-current { border-color:var(--rust); }
+.import-range:focus-visible { outline:2px solid var(--rust); outline-offset:3px; }
+.import-journey { min-height:280px; }
+.import-sketch .sketch-object .sketch-glyph { max-width:250px; }
+.file-structure { display:block; width:100%; max-width:145px; height:60px; margin:auto; color:var(--ink-soft); }
+.format-trace { stroke:var(--rust); }
+.export-file { gap:7px; min-height:166px; }
+.export-package .sketch-glyph { width:200px; }
+.export-package { max-width:340px; margin-bottom:8px; }
+.export-package > .mono { font-size:11px; }
+.export-files::before { border-top-style:solid; }
+.export-file::before { content:''; position:absolute; top:-21px; height:20px; left:50%; border-left:1px solid var(--rule-strong); }
+.export-file.is-current::before { border-color:var(--rust); }
+:is(.export-file,.import-range):is(:hover,:focus-visible) .format-trace { stroke-width:1.8; }
+.method-drawing .sketch-glyph { width:200px; }
+.method-handnote { font-size:12px; max-width:14ch; }
+.provenance-stop .sketch-glyph { width:210px; }
+.boundary-drawing .sketch-glyph { max-width:190px; }
+@media(min-width:1001px) and (max-height:850px) {
+ .import-journey { min-height:240px; }
+ .import-journey .sketch-document { min-height:220px; }
+ .export-package .sketch-glyph { width:170px; }
+ .export-file { min-height:150px; }
+ .file-structure { height:48px; }
+}
+@media(max-width:1000px) {
+ .import-sketch .sketch-object .sketch-glyph { max-width:220px; }
+ .method-drawing { gap:16px; }
+ .method-drawing .sketch-glyph { width:170px; }
+ .import-range { margin-top:18px; padding:12px; }
+ .import-range em { font-size:14px; }
+}
+@media(prefers-reduced-motion:reduce) { .glyph-record,.glyph-script { transition:none!important; } }
+[data-reduced-motion="true"] .glyph-record,[data-reduced-motion="true"] .glyph-script { transition:none!important; }
+@media(min-width:1001px) and (max-height:850px) { .sketch-map-link { padding-block:6px; } }
