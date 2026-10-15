@@ -1,3 +1,5 @@
+> 最新：UX-04A 五图读值验收完成，[记录](UX-04A-REPORT-READERS.md)。新发现覆盖图原始方向限制，按原计划明确退回 CSV 选择；未改绘图。下一步 4B → 5。
+
 > 最新：2026-10-15 UX-03B 五模块展示已验收，见[记录](UX-03B-WORKFLOW.md)。下一步 4A/4B → 5；[总计划](EXPERIENCE-ROADMAP.md)。只使用同一项目标签页，不读取其他窗口。
 
 > 最新：2026-10-15 UX-03A 首页精简与 Coding 样板已验收，见[记录](UX-03A-HOME-CODING.md)。下一步 3B；当前全部状态与周末目标见[总计划](EXPERIENCE-ROADMAP.md)。只用本项目标签页，不读其他窗口。

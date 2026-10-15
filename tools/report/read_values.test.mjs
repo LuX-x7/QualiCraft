@@ -12,9 +12,9 @@ const { readHitMap } = await import(`data:text/javascript;base64,${Buffer.from(j
 const root = new URL('../../website/public/report/', import.meta.url)
 const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'))
 const fixtures = {}
-for (const kind of ['frequency', 'accumulation']) {
+for (const kind of ['frequency', 'accumulation', 'cooccurrence', 'hierarchy']) {
   const figure = manifest.figures.find(item => item.kind === kind)
-  const lines = (await readFile(new URL(figure.csv, root), 'utf8')).trim().split(/\r?\n/).map(line => line.split(','))
+  const lines = (await readFile(new URL(figure.csv, root), 'utf8')).trim().split(/\r?\n/).map(line => { const fields=[]; let field='', quoted=false; for(let i=0;i<line.length;i++){const c=line[i]; if(c==='"'){if(quoted && line[i+1]==='"'){field+='"';i++}else quoted=!quoted}else if(c===','&&!quoted){fields.push(field);field=''}else field+=c}fields.push(field);return fields })
   fixtures[kind] = { figure, table: { head: lines[0], rows: lines.slice(1) }, svg: await readFile(new URL(figure.svg, root), 'utf8') }
 }
 for (const kind of Object.keys(fixtures)) {
@@ -61,4 +61,31 @@ test('accumulation: first and last markers match the original SVG, with CSV new 
   assert.deepEqual(map.targets.at(-1), { x: 662.896364, y: 103.459286, width: 0, height: 0 })
   assert.deepEqual(table.rows[17], ['18', 'interview18.txt', '251', '1'])
   assert.equal(readHitMap('accumulation', svg.replaceAll('297.599454', '298.599454'), table, figure.numbers), null)
+})
+
+test('cooccurrence: reversed pairs remain distinct and zero/diagonal cells have no CSV targets', () => {
+  const { figure, table, svg } = fixtures.cooccurrence
+  const map = readHitMap('cooccurrence', svg, table, figure.numbers)
+  assert.ok(map)
+  for (let i=0;i<table.rows.length;i++) {
+    const [a,b,c]=table.rows[i]; assert.notEqual(a,b); assert.ok(Number(c)>0)
+    const j=table.rows.findIndex(r=>r[0]===b&&r[1]===a)
+    assert.ok(j>=0); assert.notDeepEqual(map.targets[i],map.targets[j])
+  }
+  assert.equal(readHitMap('cooccurrence', svg.replace('>7<','>99<'), table, figure.numbers), null)
+})
+test('hierarchy: full section and subsection identify bars, independent of tied counts', () => {
+  const { figure, table, svg } = fixtures.hierarchy
+  const map=readHitMap('hierarchy',svg,table,figure.numbers);assert.ok(map)
+  assert.equal(map.targets.length,table.rows.length)
+  assert.equal(readHitMap('hierarchy',svg.replace('academics do not get to keep the copyright','unrelated subsection'),table,figure.numbers),null)
+})
+test('coverage: original mismatched matrix axes keep CSV selection without a misleading overlay', async () => {
+  const figure=manifest.figures.find(f=>f.kind==='coverage')
+  const svg=await readFile(new URL(figure.svg,root),'utf8')
+  assert.equal(figure.numbers.matrix.length,figure.numbers.cases.length)
+  assert.equal(figure.numbers.matrix[0].length,figure.numbers.labels.length)
+  const raw=await readFile(new URL(figure.csv,root),'utf8')
+  assert.ok(raw.startsWith('case,code,count'))
+  assert.equal(readHitMap('coverage',svg,{head:['case','code','count'],rows:[['interview01.txt',figure.numbers.labels[0],'1']]},figure.numbers),null)
 })

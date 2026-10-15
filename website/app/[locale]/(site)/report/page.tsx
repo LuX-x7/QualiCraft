@@ -69,8 +69,8 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       id: 'sec-coverage', no: '03', title: 'Code × interview', figureKind: 'coverage',
       intro: <>
         <p className="report-lead">How are the busiest codes distributed across interviews?</p>
-        <p>The exported matrix places {cov?.cases?.length ?? 0} interviews in rows and {cov?.labels?.length ?? 0} codes in columns.
-          Follow a code down the interview rows, then use TABLE.02 to inspect individual cells.</p>
+        <p>The exported count matrix places {cov?.cases?.length ?? 0} interviews in rows and {cov?.labels?.length ?? 0} codes in columns.
+          Use TABLE.02 to inspect exact interview-by-code cells; the retained image has an axis-orientation limitation described below.</p>
       </>,
       reading: <>
         <p>A zero means no coding was recorded for that code in that interview. It does not establish that the topic was absent from the conversation.</p>
@@ -82,7 +82,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       id: 'sec-cooccurrence', no: '04', title: 'Co-occurrence', figureKind: 'cooccurrence',
       intro: <>
         <p className="report-lead">Which codes {co?.mode === 'unit' ? 'occur in the same paragraph' : 'share a stretch of text'}?</p>
-        <p>This view compares {co?.labels?.length ?? 0} codes. Read the off-diagonal cells as pairs; the caption gives the export’s counting rule.</p>
+        <p>This view compares {co?.labels?.length ?? 0} codes. Only codes with non-zero exported pairs appear in the image. Read the off-diagonal cells as pairs; the caption gives the counting rule.</p>
       </>,
       reading: <>
         <p>The diagonal and the off-diagonal cells answer different questions. TABLE.03 contains the exported non-zero pairs in both directions;
@@ -162,7 +162,7 @@ export default async function ReportPage() {
     if (!figure.error && figure.csv) {
       const rows = await readCsv(figure.csv)
       csvs[figure.kind] = { head: rows[0] ?? [], rows: rows.slice(1) }
-      if (['frequency', 'accumulation'].includes(figure.kind)) {
+      if (['frequency', 'accumulation', 'cooccurrence', 'hierarchy'].includes(figure.kind)) {
         const svg = await readFile(path.join(process.cwd(), 'public', 'report', figure.svg), 'utf8')
         const hitMap = readHitMap(figure.kind, svg, csvs[figure.kind], figure.numbers)
         if (hitMap) figures.find(item => item.kind === figure.kind)!.hitMap = hitMap

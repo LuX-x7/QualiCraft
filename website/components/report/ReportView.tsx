@@ -198,7 +198,7 @@ export default function ReportView({ sections, figures, csvs }: {
           const figureIndex = figures.findIndex(figure => figure.kind === section.figureKind)
           const figure = figures[figureIndex]
           const table = figure && csvs[figure.kind]
-          const readable = table && ['frequency', 'accumulation'].includes(figure.kind)
+          const readable = table && ['frequency', 'accumulation', 'coverage', 'cooccurrence', 'hierarchy'].includes(figure.kind)
           const number = String(figureIndex + 1).padStart(2, '0')
           return (
             <section key={section.id} className="report-section" id={section.id} tabIndex={-1} aria-labelledby={`${section.id}-title`}>
@@ -255,7 +255,7 @@ export default function ReportView({ sections, figures, csvs }: {
                                 {row.map((cell, cellIndex) => (
                                 <td key={cellIndex} className={numericColumns.has(table.head[cellIndex]) ? 'num' : undefined}>
                                   {readable && cellIndex === 0 ? <button type="button" className="reader-row-button"
-                                    aria-label={`Read ${figure.kind === 'frequency' ? cell : `step ${cell}: ${row[1]}`}`}
+                                    aria-label={`Read ${figure.kind === 'frequency' ? cell : figure.kind === 'accumulation' ? `step ${cell}: ${row[1]}` : `${cell} / ${row[1]}`}`}
                                     aria-pressed={selected[figure.kind] === rowIndex}
                                     onClick={() => selectRow(figure.kind, rowIndex)}>{cell}</button> : cell}
                                 </td>

@@ -18,7 +18,9 @@ export default function FigureReader({ figure, table, selected, onSelect, onLoca
   useEffect(() => setReady(true), [])
   const map: HitMap | undefined = figure.hitMap
   const frequency = figure.kind === 'frequency'
-  const label = (row: string[]) => frequency ? row[0] : `Step ${row[0]} · ${row[1]}`
+  const point = figure.kind === 'accumulation'
+  const label = (row: string[]) => figure.kind === 'frequency' ? row[0] : point ? `Step ${row[0]} · ${row[1]}` : `${row[0]} ${figure.kind === 'hierarchy' ? '›' : '×'} ${row[1]}`
+  const numeric = (index: number) => table.head[index] === 'count' || ['cumulative', 'new'].includes(table.head[index])
   const row = selected === undefined ? undefined : table.rows[selected]
   const hintIndex = hovered !== undefined || focused !== undefined ? selected : undefined
   const hintRow = hintIndex === undefined ? undefined : table.rows[hintIndex]
@@ -45,9 +47,9 @@ export default function FigureReader({ figure, table, selected, onSelect, onLoca
         aria-describedby={`reader-help-${figure.kind}`}>
         {map.targets.map((target, index) => <button key={index} type="button"
           ref={el => { buttons.current[index] = el }}
-          className={`figure-target ${frequency ? 'is-bar' : 'is-point'}${selected === index ? ' is-selected' : ''}`}
+          className={`figure-target ${point ? 'is-point' : 'is-bar'}${selected === index ? ' is-selected' : ''}`}
           style={{ left: `${target.x / map.width * 100}%`, top: `${target.y / map.height * 100}%`,
-            ...(frequency ? { width: `${target.width / map.width * 100}%`, height: `${target.height / map.height * 100}%` } : {}) }}
+            ...(!point ? { width: `${target.width / map.width * 100}%`, height: `${target.height / map.height * 100}%` } : {}) }}
           tabIndex={(selected ?? 0) === index ? 0 : -1}
           aria-label={`Read ${label(table.rows[index])}`}
           aria-pressed={selected === index} aria-controls={`reader-value-${figure.kind}`}
@@ -61,16 +63,18 @@ export default function FigureReader({ figure, table, selected, onSelect, onLoca
         style={{ left: `${Math.min(55, Math.max(5, (hintTarget.x + hintTarget.width) / map.width * 100))}%`,
           top: `${Math.min(75, hintTarget.y / map.height * 100 + 4)}%` }}>
         <p>{label(hintRow)}</p>
-        <dl className="mono">{table.head.map((column, index) => (frequency ? index === 1 : index >= 2)
+        <dl className="mono">{table.head.map((column, index) => numeric(index)
           && <div key={column}><dt>{column}</dt><dd>{hintRow[index]}</dd></div>)}</dl>
       </div>}
     </div>
     {ready && <div className="reader-panel">
       <p className="report-step mono">Read the exported values</p>
-      <p className="reader-help" id={`reader-help-${figure.kind}`}>Select an item below, or point to the figure on a larger screen.
-        Use arrow keys, Home and End on the figure; press Enter to open its counts.</p>
-      <label className="reader-label mono" htmlFor={`reader-select-${figure.kind}`}>{frequency ? 'Code' : 'Interview step'}</label>
+      <p className="reader-help" id={`reader-help-${figure.kind}`}>{map ? 'Select an item below, or point to the figure on a larger screen. Use arrow keys, Home and End on the figure; press Enter to open its counts.' : 'Choose a CSV row below. The original figure is retained; its layout has no verified one-to-one selection overlay.'}</p>
+      {figure.kind === 'coverage' && <p className="reader-help">Use the CSV for exact interview-by-code values: the exported image matrix and its axis labels use different orientations.</p>}
+      {figure.kind === 'cooccurrence' && <p className="reader-help">Only non-zero off-diagonal pairs are exported in this CSV. Reversed rows retain their original order; diagonal and zero cells are not selectable values.</p>}
+      <label className="reader-label mono" htmlFor={`reader-select-${figure.kind}`}>{frequency ? 'Code' : point ? 'Interview step' : figure.kind === 'coverage' ? 'Interview × code' : figure.kind === 'cooccurrence' ? 'Exported code pair' : 'Theme › code'}</label>
       <select id={`reader-select-${figure.kind}`} value={selected ?? ''}
+        onKeyDown={event => { if(event.key === 'Escape') onSelect(undefined) }}
         onChange={event => onSelect(event.target.value === '' ? undefined : Number(event.target.value), true)}>
         <option value="">Choose an item</option>
         {table.rows.map((item, index) => <option key={index} value={index}>{label(item)}</option>)}
@@ -79,7 +83,7 @@ export default function FigureReader({ figure, table, selected, onSelect, onLoca
         {row ? <>
           <p className="reader-item">{label(row)}</p>
           <dl className="reader-numbers mono">{table.head.map((column, index) =>
-            (frequency ? index === 1 : index >= 2) && <div key={column}><dt>{column}</dt><dd>{row[index]}</dd></div>)}</dl>
+            numeric(index) && <div key={column}><dt>{column}</dt><dd>{row[index]}</dd></div>)}</dl>
         </> : <p className="reader-empty">Choose a data item to read its CSV values.</p>}
       </div>
       <div className="reader-actions mono">
