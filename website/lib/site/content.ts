@@ -14,10 +14,8 @@
 
 export const NAV = [
   { href: '/#modules', label: 'Workflow' },
-  { href: '/report', label: 'Example report' },
-  { href: '/#method', label: 'Method' },
   { href: '/#data', label: 'Data' },
-  { href: '/about', label: 'About' },
+  { href: '/#method', label: 'Methods' },
 ] as const
 
 export const HERO = {

@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { SEO } from '@/lib/site/content'
 import './t7.css'
 import './experience.css'
+import './sketches.css'
 
 /**
  * The document shell. Metadata is static and comes from the site module —

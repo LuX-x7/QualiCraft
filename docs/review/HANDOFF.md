@@ -1,3 +1,5 @@
+> 当前入口：UX-11 QT 手绘与卫星首页候选，见 [记录](UX-11-SKETCH-STORY.md) 与 [总计划](EXPERIENCE-ROADMAP.md)。用户否定平面螺旋，已改独立卫星轨道；尚待用户视觉接受和实际 QT 试用。工作台 Import／Export 界面改进列 UX-12，未在本轮修改。Windows 暂缓，不推送、不部署。
+
 > 当前：用户未接受此前视觉结果，UX-10 已重开首页与报告展示。前端 CSV 新呈现获授权，保留原图/完整数据，不改工作台。[本轮记录](UX-10-VISUAL-RESTART.md) · [总计划](EXPERIENCE-ROADMAP.md)。本地技术检查不等于用户视觉接受；实际 QT/设备试用待确认。推送暂停，未部署，Windows 暂缓。
 
 > 最新：2026-10-15 UX-06 已修复覆盖图轴方向并更新报告资产，[验收](UX-06-COVERAGE-AXES.md)。五 CSV、所有统计值和四张其他图不变；UX-04A-L01 已关闭。审核包及[总计划](EXPERIENCE-ROADMAP.md)已更新。Windows 暂缓，不推送、不部署。

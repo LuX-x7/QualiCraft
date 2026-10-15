@@ -1,13 +1,14 @@
 'use client'
 
+import './data-plot.css'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { buildChartModel, type ChartItem, type ChartTable } from '@/lib/report/chart-model'
 
 const short = (text: string, length = 35) => text.length > length ? `${text.slice(0, length - 1)}…` : text
 
-export default function DataPlot({ kind, label, table, selected, onSelect, onLocate }: {
+export default function DataPlot({ kind, label, table, selected, onSelect, onLocate, keyboardHint }: {
   kind: string; label: string; table: ChartTable; selected: number | undefined
-  onSelect: (row: number | undefined, open?: boolean) => void; onLocate: (row: number) => void
+  onSelect: (row: number | undefined, open?: boolean) => void; onLocate: (row: number) => void; keyboardHint?: string
 }) {
   const model = useMemo(() => { try { return buildChartModel(kind, table) } catch { return null } }, [kind, table])
   const [group, setGroup] = useState(model?.groups[0] ?? '')
@@ -110,6 +111,6 @@ export default function DataPlot({ kind, label, table, selected, onSelect, onLoc
         </>}
       </svg>
     </div>
-    <p className="plot-keyboard mono">Arrow keys to explore · Enter to locate the count row · Escape to clear</p>
+    <p className="plot-keyboard mono">{keyboardHint ?? 'Arrow keys to explore · Enter to locate the count row · Escape to clear'}</p>
   </div>
 }

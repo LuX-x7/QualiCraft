@@ -730,38 +730,6 @@
 .report-reading[open] > summary { margin-bottom: 12px; }
 .report-export-record { padding: 0 20px 16px; }
 .report-rules { margin-top: 0; }
-.data-plot { border: 1px solid var(--rule); background: var(--paper-raised); padding: 16px 18px 0; }
-.plot-scroll { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
-.plot-svg { display: block; width: 100%; min-width: 680px; height: auto; overflow: visible; font-family: var(--mono); }
-.plot-svg--coverage,.plot-svg--cooccurrence { min-width: 920px; }
-.plot-label { font-size: 12px; fill: var(--ink-soft); }
-.plot-grid line { stroke: var(--rule); stroke-width: .7; }
-.plot-grid text,.plot-axis { font-size: 10px; fill: var(--ink-muted); }
-.plot-number { font-size: 12px; fill: var(--accent-deep); }
-.plot-bar { fill: var(--accent); transform-box: fill-box; transform-origin: left; }
-.plot-mark { cursor: pointer; outline: none; }
-.plot-mark:focus-visible .plot-bar,.plot-mark.is-selected .plot-bar { fill: var(--rust); stroke: var(--ink); stroke-width: 1.5px; }
-.plot-mark:focus-visible .plot-dot,.plot-mark.is-selected .plot-dot { fill: var(--rust); stroke-width: 3; r: 7; }
-.plot-mark:focus-visible .plot-cell,.plot-mark.is-selected .plot-cell { stroke: var(--rust); stroke-width: 3px; }
-.plot-cell-value { font-size: 12px; pointer-events: none; }
-.plot-mark:focus-visible .plot-label,.plot-mark.is-selected .plot-label { fill: var(--rust); font-weight: 700; }
-.plot-line { fill: none; stroke: var(--accent); stroke-width: 2.5px; }
-.plot-area { fill: var(--accent); opacity: .06; }
-.plot-dot { fill: var(--paper-raised); stroke: var(--accent); stroke-width: 2px; }
-.data-plot.has-entered .plot-bar { animation: plot-grow 460ms ease-out both; }
-.data-plot.has-entered .plot-line { animation: plot-draw 500ms ease-out both; }
-@keyframes plot-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes plot-draw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
-.plot-inspector { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 24px; min-height: 92px; padding: 16px 0; border-top: 1px solid var(--rule); margin-top: 16px; font-size: 14px; }
-.plot-inspector-label { flex: 1; min-width: 180px; overflow-wrap: anywhere; }
-.plot-inspector strong { font: 32px var(--mono); color: var(--rust); }
-.plot-inspector small { display: block; font: 9px var(--mono); color: var(--ink-muted); margin-top: 4px; }
-.plot-secondary { font: 10px var(--mono); color: var(--ink-soft); }
-.plot-keyboard { font-size: 8px; color: var(--ink-muted); padding-bottom: 12px; margin: 0; }
-.plot-theme { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font: 11px var(--mono); margin-bottom: 16px; }
-.plot-theme label { flex: 1; min-width: 0; }
-.plot-theme select { width: 100%; margin-top: 6px; }
-.plot-theme button { font: inherit; cursor: pointer; border: 1px solid var(--rule); background: var(--paper); color: var(--accent); min-height: 44px; padding: 8px 12px; }
 .reader-tools,.original-figure { border-bottom: 1px solid var(--rule); }
 .reader-tools summary,.original-figure summary { cursor: pointer; font: 11px var(--mono); padding: 14px 0; min-height: 44px; color: var(--accent); }
 .reader-tools select,.plot-theme select { border: 1px solid var(--rule-strong); min-height: 44px; padding: 8px 12px; color: var(--ink); background: var(--paper); font: 12px var(--mono); max-width: 100%; }

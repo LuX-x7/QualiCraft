@@ -77,7 +77,7 @@ function ModuleMedia({ item, reduced }: { item: Module; reduced: boolean }) {
   )
 }
 
-function RecordedExample({ item, reduced }: { item: Module; reduced: boolean }) {
+export function RecordedExample({ item, reduced }: { item: Module; reduced: boolean }) {
   const [open, setOpen] = useState(false)
   const clip = CLIPS[item.key]
   return <details className="recorded-example" open={open} onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => { if (event.key === 'Escape') { setOpen(false); event.currentTarget.querySelector('summary')?.focus() } }}>
