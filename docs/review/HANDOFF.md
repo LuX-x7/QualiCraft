@@ -1,4 +1,4 @@
-> 当前入口：UX-11 QT 手绘与卫星首页候选，见 [记录](UX-11-SKETCH-STORY.md) 与 [总计划](EXPERIENCE-ROADMAP.md)。用户否定平面螺旋，已改独立卫星轨道；尚待用户视觉接受和实际 QT 试用。工作台 Import／Export 界面改进列 UX-12，未在本轮修改。Windows 暂缓，不推送、不部署。
+> 当前入口：UX-13 回应六项首页反馈，见 [记录](UX-13-SPATIAL-NOTEBOOK.md) 与 [总计划](EXPERIENCE-ROADMAP.md)。QT 居中、粒子透视、可组合工程线稿、九段自然滚动与完整五图、明确关系节点、大字号和全首页网格。用户视觉接受及实际 QT 试用待确认；UX-12 工作台导入／导出界面另列。Windows 暂缓，不推送、不部署。
 
 > 当前：用户未接受此前视觉结果，UX-10 已重开首页与报告展示。前端 CSV 新呈现获授权，保留原图/完整数据，不改工作台。[本轮记录](UX-10-VISUAL-RESTART.md) · [总计划](EXPERIENCE-ROADMAP.md)。本地技术检查不等于用户视觉接受；实际 QT/设备试用待确认。推送暂停，未部署，Windows 暂缓。
 

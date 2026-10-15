@@ -1,5 +1,4 @@
 import OrbitMark from './OrbitMark'
-import QtMark from '@/components/QtMark'
 import WorkflowShowcase from './WorkflowShowcase'
 import MethodSketch from './MethodSketch'
 import ModuleAtlas from './ModuleAtlas'
@@ -30,14 +29,13 @@ export default async function HomeView() {
   return <div className="home-page">
     <section className="hero hero--focused" aria-labelledby="hero-title">
       <div className="hero__ground" aria-hidden="true"/>
-      <div className="wrap hero__composition"><div className="hero__inner">
-        <div className="hero-qt"><QtMark size={15} animate label="QT"/></div>
+      <div className="wrap hero__composition"><OrbitMark/><div className="hero__inner">
         <p className="hero__eyebrow mono">QT / A LOCAL RESEARCH WORKBENCH</p>
         <h1 id="hero-title" className="hero__title">Read closely.<br/><em>See the connections.</em></h1>
         <p className="hero__body">Passages, codes and themes. One traceable record.</p>
         <div className="hero__actions"><a className="btn btn--primary" href="/w?lang=en">Try the workbench ↗</a></div>
         <p className="hero__footnote mono">Local files · Human decisions</p>
-      </div><OrbitMark/></div>
+      </div></div>
       <a className="hero-scroll mono" href="#modules">FOLLOW THE RECORD ↓</a>
     </section>
     <section className="section home-atlas" id="modules" aria-labelledby="atlas-title"><div className="wrap"><ModuleAtlas/></div></section>

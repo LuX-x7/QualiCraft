@@ -1,7 +1,10 @@
-import type { ReactNode } from 'react'
+'use client'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 /** Original line drawings. Moving parts are semantic groups, not raster frames. */
 export default function SketchGlyph({ kind, className = '' }: { kind: string; className?: string }) {
+  const root=useRef<SVGSVGElement>(null),[entered,setEntered]=useState(false)
+  useEffect(()=>{if(!root.current)return;const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setEntered(true);observer.disconnect()}},{threshold:.15});observer.observe(root.current);return()=>observer.disconnect()},[])
   let drawing: ReactNode
   if (kind === 'import') drawing = <>
     <path className="sketch-back" d="M31 100L44 84H153L173 103V139L31 141Z"/>
@@ -36,5 +39,5 @@ export default function SketchGlyph({ kind, className = '' }: { kind: string; cl
   else if (kind === 'share') drawing = <><path d="M33 42H77L88 55V117H33Z M77 43V56H88M123 65H167L179 78V140H123Z M167 66V79H178"/><path className="glyph-transfer" d="M73 136H111V40H153M142 31L154 40L142 50"/></>
   else if (kind === 'search') drawing = <><circle cx="89" cy="77" r="46"/><path d="M121 111L163 151M64 65H111M64 80H109M64 95H99"/><path className="glyph-highlight" d="M60 73H114V87H60Z"/></>
   else drawing = <><path d="M42 42L153 38L168 53L165 144L42 147Z M55 28L143 26L155 39M66 15L132 14L143 27"/><path className="glyph-check" d="M74 93L94 112L134 66"/><path className="sketch-detail" d="M58 129H132"/></>
-  return <svg className={`sketch-glyph ${className}`} viewBox="0 0 206 176" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{drawing}</svg>
+  return <svg ref={root} className={`sketch-glyph ${className}${entered?' has-entered':''}`} viewBox="0 0 206 176" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><g className="glyph-datum" strokeWidth=".55" opacity=".4"><path d="M16 156H190M24 16V164M18 28H30M18 148H30M34 160V152M179 160V152"/><path strokeDasharray="2 5" d="M102 16V157M24 85H188"/></g>{drawing}<g className="glyph-fasteners" strokeWidth=".65" opacity=".5"><circle cx="24" cy="156" r="2.5"/><circle cx="188" cy="156" r="2.5"/><path d="M22 154L26 158M186 154L190 158"/></g></svg>
 }
