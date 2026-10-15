@@ -30,7 +30,7 @@ export default async function HomeView() {
       </div>
     </section>
 
-    <ModuleWalkthrough example={evidence?.example ?? null} />
+    <ModuleWalkthrough example={evidence?.example ?? null} data={source?.workflow ?? {frequency:[],frequencyCredit:'',frequencyCsv:'',figures:[]}} />
 
     <section className="section home-report" aria-labelledby="home-report-title">
       <div className="wrap home-report__grid"><div><span className="sec-no">03</span><h2 id="home-report-title">A figure you can question.</h2>

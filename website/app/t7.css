@@ -1175,3 +1175,29 @@ summary:focus-visible,.evidence-steps button:focus-visible,.evidence-themes butt
 .evidence-steps{position:sticky;top:0;z-index:1;background:var(--paper-raised);padding:4px 0;margin:0 0 12px}
 .evidence-quote,.evidence-code,.evidence-themes,.evidence-source{scroll-margin-top:110px}
 .evidence-explanation{min-height:0;margin:0 0 16px}
+/* UX-03B: four companion illustrations, using existing records and exports. */
+.workflow-choices{display:grid;gap:6px;margin:12px 0 20px}
+.workflow-choices button{display:flex;gap:12px;justify-content:space-between;align-items:center;text-align:left;font:13px var(--serif);min-height:44px;padding:10px 12px;line-height:1.4;color:var(--ink);background:var(--paper);border:1px solid var(--rule);cursor:pointer;overflow-wrap:anywhere}
+.workflow-choices button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 var(--accent);font-weight:600}
+.workflow-choices strong{font-family:var(--mono);flex:none;color:var(--accent-deep)}
+.workflow-source>div:not(.evidence-connector){padding:16px;border:1px solid var(--rule);background:#fff;overflow-wrap:anywhere}
+.workflow-source .is-selected{outline:2px solid var(--accent);outline-offset:2px}
+.workflow-source blockquote{margin:0;font-size:18px;line-height:1.6}
+.workflow-source>p{margin:16px 0 0;font-size:14px}
+.workflow-count dl{margin:0 0 16px}
+.workflow-count dt{font:11px var(--mono);color:var(--ink-muted);margin:12px 0 6px}
+.workflow-count dd{margin:0;font-size:17px;line-height:1.5}
+.workflow-count .workflow-count__value{font-size:44px;color:var(--accent-deep)}
+.workflow-count p,.workflow-count a,.workflow-output p{font-size:13px;line-height:1.6}
+.workflow-credit{border-top:1px solid var(--rule);padding-top:12px}
+.workflow-count>p:last-child{margin:16px 0 0}
+.workflow-illustration--plotting .workflow-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
+.workflow-figure{margin:0}
+.workflow-figure img{display:block;width:100%;height:auto;max-height:350px;object-fit:contain;background:#fff}
+.workflow-figure figcaption{font-size:12px;line-height:1.6;margin-top:12px}
+.workflow-figure figcaption p{font-size:12px;margin:8px 0}
+.workflow-output{border:1px solid var(--rule);padding:20px;background:#fff}
+.workflow-file{display:block;font-size:26px;color:var(--accent);padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid var(--rule)}
+.workflow-output ul{padding-left:20px;font-size:14px;line-height:1.7}
+.workflow-note{color:var(--ink-muted);border-top:1px solid var(--rule);padding-top:12px;margin-bottom:0}
+.workflow-choices button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}

@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { MODULES } from '@/lib/site/content'
 import { CLIPS } from '@/lib/site/clips'
 import CodingEvidence, { type CodingExample } from './CodingEvidence'
+import WorkflowIllustration, { type WorkflowData } from './WorkflowIllustration'
 
 type Module = (typeof MODULES)[number]
 
@@ -87,15 +88,15 @@ function RecordedExample({ item, reduced }: { item: Module; reduced: boolean }) 
     )}
   </details>
 }
-function StepDemo({ item, reduced, example }: { item: Module; reduced: boolean; example: CodingExample | null }) {
+function StepDemo({ item, reduced, example, data }: { item: Module; reduced: boolean; example: CodingExample | null; data: WorkflowData }) {
   return <>
     {item.key === 'coding' && (example ? <CodingEvidence example={example} /> : <p role="status">The source illustration could not be verified. Read the export record in the example report.</p>)}
-    {item.key !== 'coding' && <div className="workflow-result"><p className="illustration-label mono">Workflow outline</p><h3>{item.goal}</h3><p>{item.see}</p></div>}
+    {item.key !== 'coding' && <WorkflowIllustration kind={item.key} example={example} data={data} />}
     <RecordedExample item={item} reduced={reduced} />
   </>
 }
 
-export default function ModuleWalkthrough({ example }: { example: CodingExample | null }) {
+export default function ModuleWalkthrough({ example, data }: { example: CodingExample | null; data: WorkflowData }) {
   const [active, setActive] = useState(1)
   const [reduced, setReduced] = useState(false)
   const [compact, setCompact] = useState(false)
@@ -228,7 +229,7 @@ export default function ModuleWalkthrough({ example }: { example: CodingExample 
               <span className="walk__panel-no mono">{module.no}</span>
               <span className="walk__panel-title">{module.title}</span>
             </div>
-            <StepDemo key={module.key} item={module} reduced={reduced} example={example} />
+            <StepDemo key={module.key} item={module} reduced={reduced} example={example} data={data} />
             <p className="walk__panel-see">{module.see}</p>
           </div>}
 
@@ -264,7 +265,7 @@ export default function ModuleWalkthrough({ example }: { example: CodingExample 
                     {item.steps.map(step => <li key={step}>{step}</li>)}
                   </ul></details>
                   {inlineMedia && (reduced || current) && <div className="walk__inline" id={`module-demo-${item.key}`}>
-                    <StepDemo item={item} reduced={reduced} example={example} />
+                    <StepDemo item={item} reduced={reduced} example={example} data={data} />
                     <p className="walk__panel-see">{item.see}</p>
                   </div>}
                 </li>
