@@ -1,99 +1,35 @@
 'use client'
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { HitMap } from '@/lib/report/hit-map'
+import DataPlot from './DataPlot'
 import type { CsvTable, FigureData } from './ReportView'
 
 export default function FigureReader({ figure, table, selected, onSelect, onLocate }: {
-  figure: FigureData
-  table: CsvTable
-  selected: number | undefined
-  onSelect: (row: number | undefined, open?: boolean) => void
-  onLocate: (row: number) => void
+  figure: FigureData; table: CsvTable; selected: number | undefined
+  onSelect: (row: number | undefined, open?: boolean) => void; onLocate: (row: number) => void
 }) {
-  const [ready, setReady] = useState(false)
-  const [hovered, setHovered] = useState<number>()
-  const [focused, setFocused] = useState<number>()
-  const buttons = useRef<(HTMLButtonElement | null)[]>([])
-  useEffect(() => setReady(true), [])
-  const map: HitMap | undefined = figure.hitMap
-  const frequency = figure.kind === 'frequency'
-  const point = figure.kind === 'accumulation'
-  const label = (row: string[]) => figure.kind === 'frequency' ? row[0] : point ? `Step ${row[0]} · ${row[1]}` : `${row[0]} ${figure.kind === 'hierarchy' ? '›' : '×'} ${row[1]}`
-  const numeric = (index: number) => table.head[index] === 'count' || ['cumulative', 'new'].includes(table.head[index])
-  const row = selected === undefined ? undefined : table.rows[selected]
-  const hintIndex = hovered !== undefined || focused !== undefined ? selected : undefined
-  const hintRow = hintIndex === undefined ? undefined : table.rows[hintIndex]
-  const hintTarget = hintIndex === undefined ? undefined : map?.targets[hintIndex]
-  const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    index = selected ?? index
-    let next = index
-    if (event.key === 'Home') next = 0
-    else if (event.key === 'End') next = table.rows.length - 1
-    else if (['ArrowRight', 'ArrowDown'].includes(event.key)) next = Math.min(index + 1, table.rows.length - 1)
-    else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) next = Math.max(index - 1, 0)
-    else if (event.key === 'Escape') { onSelect(undefined); setHovered(undefined); setFocused(undefined); return }
-    else return
-    event.preventDefault()
-    onSelect(next)
-    buttons.current[next]?.focus({ preventScroll: true })
-  }
-
+  const label = (row: string[]) => figure.kind === 'frequency' ? row[0] : figure.kind === 'accumulation'
+    ? `Step ${row[0]} · ${row[1]}` : `${row[0]} ${figure.kind === 'hierarchy' ? '›' : '×'} ${row[1]}`
   return <div className="figure-reader">
-    <div className="figure-surface">
-      <img src={`/report/${figure.svg}`} alt={`${figure.label}. Exact exported values are in the count table below.`}
-        width={map?.width ?? 960} height={map?.height ?? 540} loading="lazy" />
-      {ready && map && <div className="figure-targets" role="group" aria-label={`${figure.label} data items`}
-        aria-describedby={`reader-help-${figure.kind}`}>
-        {map.targets.map((target, index) => <button key={index} type="button"
-          ref={el => { buttons.current[index] = el }}
-          className={`figure-target ${point ? 'is-point' : 'is-bar'}${selected === index ? ' is-selected' : ''}`}
-          style={{ left: `${target.x / map.width * 100}%`, top: `${target.y / map.height * 100}%`,
-            ...(!point ? { width: `${target.width / map.width * 100}%`, height: `${target.height / map.height * 100}%` } : {}) }}
-          tabIndex={(selected ?? 0) === index ? 0 : -1}
-          aria-label={`Read ${label(table.rows[index])}`}
-          aria-pressed={selected === index} aria-controls={`reader-value-${figure.kind}`}
-          onPointerEnter={event => { if (event.pointerType === 'mouse') { setHovered(index); onSelect(index) } }}
-          onPointerLeave={() => setHovered(undefined)}
-          onFocus={() => { setFocused(index); onSelect(index) }} onBlur={() => setFocused(undefined)}
-          onClick={() => onSelect(index, true)}
-          onKeyDown={event => move(event, index)} />)}
-      </div>}
-      {ready && map && hintRow && hintTarget && <div className="reader-hint" aria-hidden="true"
-        style={{ left: `${Math.min(55, Math.max(5, (hintTarget.x + hintTarget.width) / map.width * 100))}%`,
-          top: `${Math.min(75, hintTarget.y / map.height * 100 + 4)}%` }}>
-        <p>{label(hintRow)}</p>
-        <dl className="mono">{table.head.map((column, index) => numeric(index)
-          && <div key={column}><dt>{column}</dt><dd>{hintRow[index]}</dd></div>)}</dl>
-      </div>}
-    </div>
-    {ready && <div className="reader-panel">
-      <p className="report-step mono">Read the exported values</p>
-      <p className="reader-help" id={`reader-help-${figure.kind}`}>{map ? 'Select an item below, or point to the figure on a larger screen. Use arrow keys, Home and End on the figure; press Enter to open its counts.' : 'Choose a CSV row below to read its exact values. Use View selected row to move to its place in the table.'}</p>
-      {figure.kind === 'coverage' && <p className="reader-help">Interviews run across the figure; codes run down it. Choose an interview × code row below to read its exact CSV count.</p>}
-      {figure.kind === 'cooccurrence' && <p className="reader-help">Only non-zero off-diagonal pairs are exported in this CSV. Reversed rows retain their original order; diagonal and zero cells are not selectable values.</p>}
-      <label className="reader-label mono" htmlFor={`reader-select-${figure.kind}`}>{frequency ? 'Code' : point ? 'Interview step' : figure.kind === 'coverage' ? 'Interview × code' : figure.kind === 'cooccurrence' ? 'Exported code pair' : 'Theme › code'}</label>
+    <DataPlot kind={figure.kind} label={figure.label} table={table} selected={selected} onSelect={onSelect} onLocate={onLocate} />
+    {selected !== undefined && <div className="reader-actions mono">
+      <button type="button" disabled={selected === 0} onClick={() => onSelect(selected - 1)}>Previous</button>
+      <button type="button" disabled={selected === table.rows.length - 1} onClick={() => onSelect(selected + 1)}>Next</button>
+      <button type="button" onClick={() => onLocate(selected)}>View selected row ↓</button>
+    </div>}
+    <details className="reader-tools"><summary>Choose a value by name</summary>
+      <label className="reader-label mono" htmlFor={`reader-select-${figure.kind}`}>{figure.kind === 'frequency' ? 'Code' : figure.kind === 'accumulation' ? 'Interview step' : figure.kind === 'coverage' ? 'Interview × code' : figure.kind === 'cooccurrence' ? 'Exported code pair' : 'Theme › code'}</label>
       <select id={`reader-select-${figure.kind}`} value={selected ?? ''}
         onKeyDown={event => { if(event.key === 'Escape') onSelect(undefined) }}
-        onChange={event => onSelect(event.target.value === '' ? undefined : Number(event.target.value), true)}>
+        onChange={event => onSelect(event.target.value === '' ? undefined : Number(event.target.value))}>
         <option value="">Choose an item</option>
-        {table.rows.map((item, index) => <option key={index} value={index}>{label(item)}</option>)}
+        {table.rows.map((row,index) => <option key={index} value={index}>{label(row)}</option>)}
       </select>
-      <div className="reader-value" id={`reader-value-${figure.kind}`} role="status" aria-live="polite" aria-atomic="true">
-        {row ? <>
-          <p className="reader-item">{label(row)}</p>
-          <dl className="reader-numbers mono">{table.head.map((column, index) =>
-            numeric(index) && <div key={column}><dt>{column}</dt><dd>{row[index]}</dd></div>)}</dl>
-        </> : <p className="reader-empty">Choose a data item to read its CSV values.</p>}
-      </div>
-      <div className="reader-actions mono">
-        <button type="button" disabled={selected === undefined || selected === 0}
-          onClick={() => onSelect(selected! - 1, true)}>Previous</button>
-        <button type="button" disabled={selected === undefined || selected === table.rows.length - 1}
-          onClick={() => onSelect(selected! + 1, true)}>Next</button>
-        <button type="button" disabled={selected === undefined} onClick={() => onLocate(selected!)}>View selected row ↓</button>
-      </div>
-    </div>}
-    <noscript><p className="reader-help">Open the complete count table below to read exact values.</p></noscript>
+      {figure.kind === 'cooccurrence' && <p className="reader-help">Only exported non-zero off-diagonal pairs are selectable. Blank and diagonal cells have no value in this CSV.</p>}
+    </details>
+    <details className="original-figure"><summary>Original workbench figure</summary>
+      <img src={`/report/${figure.svg}`} alt={`${figure.label}: original workbench export.`} width={figure.hitMap?.width ?? 960} height={figure.hitMap?.height ?? 540} loading="lazy" />
+      <a className="mono" href={`/report/${figure.svg}`} download>Download original SVG</a>
+    </details>
+    <noscript><p className="reader-help">Open the original figure or complete table for static values.</p></noscript>
   </div>
 }

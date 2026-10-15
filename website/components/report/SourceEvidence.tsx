@@ -4,7 +4,7 @@ export default function SourceEvidence({ evidence, kind, selected }: {
   evidence: ReportEvidence; kind: string; selected: number | undefined
 }) {
   if (!evidence.available) return <p className="reader-help">Source examples are unavailable because their version could not be matched to this export. The original figures and count tables remain available.</p>
-  if (selected === undefined) return <p className="reader-help">Select a count row to inspect a limited example from the saved Bologna codings.</p>
+  if (selected === undefined) return null
   const ids = evidence.rows[kind]?.[selected]?.annotation_ids ?? []
   const examples = ids.map(id => evidence.examples[id])
   return <details className="reader-evidence">

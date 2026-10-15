@@ -89,7 +89,7 @@ function RecordedExample({ item, reduced }: { item: Module; reduced: boolean }) 
     )}
   </details>
 }
-function StepDemo({ item, reduced, example, data }: { item: Module; reduced: boolean; example: CodingExample | null; data: WorkflowData }) {
+export function StepDemo({ item, reduced, example, data }: { item: Module; reduced: boolean; example: CodingExample | null; data: WorkflowData }) {
   return <>
     {item.key === 'coding' && (example ? <CodingEvidence example={example} /> : <p role="status">The source illustration could not be verified. Read the export record in the example report.</p>)}
     {item.key !== 'coding' && <WorkflowIllustration kind={item.key} example={example} data={data} />}

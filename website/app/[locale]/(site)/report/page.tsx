@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import ReportSignal from '@/components/report/ReportSignal'
 import ReportView, { type CsvTable, type FigureData, type Section } from '@/components/report/ReportView'
 import { readCsv, readManifest, verifyManifest, type Manifest } from '@/lib/report/read'
 import dataCards from '@/lib/site/data-cards.json'
@@ -32,31 +33,25 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
     {
       id: 'sec-corpus', no: '01', title: 'The corpus',
       intro: <>
-        <p className="report-lead">Start with the material, then read the same coding record through five views.</p>
-        <p>The export records {manifest.project.documents} interview transcripts, {manifest.project.codes} defined codes and {manifest.project.codings} codings.
-          The chapters move from the busiest codes to their distribution, shared ranges, theme grouping and accumulation across files.</p>
-        {corpus && (
+        <p className="report-lead">One public corpus. One saved coding record.</p>
+        <p>Read frequency, distribution, shared ranges, theme structure and accumulation. Every view retains its exported values.</p>
+        {corpus && <details className="report-dataset"><summary>Dataset, licence &amp; source record</summary>
           <aside className="report-data-card" aria-labelledby="corpus-record-title">
             <p className="report-step mono">Source dataset · {corpus.id}</p>
             <h3 id="corpus-record-title">{corpus.title}</h3>
             <p className="report-card-meta">{corpus.author} · {corpus.year} · {corpus.language}</p>
             <p>{corpus.purpose}</p>
-            <div className="report-card-links mono">
-              <a href={`https://doi.org/${corpus.doi}`}>Dataset record ↗</a>
-              <a href={corpus.licence_url}>{corpus.licence}</a>
-            </div>
-            <p className="report-card-hash mono" title={`Archive: ${corpus.file}`}>Archive SHA-256 · {corpus.sha256_short}</p>
+            <div className="report-card-links mono"><a href={`https://doi.org/${corpus.doi}`}>Dataset record ↗</a><a href={corpus.licence_url}>{corpus.licence}</a></div>
+            <p className="report-card-hash mono">Archive SHA-256 · {corpus.sha256_short}</p>
           </aside>
-        )}
-        <p>Each chapter keeps its question, figure, exported count table and reading notes together.
-          Open the counts to inspect values, or download the unchanged CSV. The <a href="#sec-methods">methods and export record</a> explain their provenance.</p>
+        </details>}
       </>,
     },
     {
       id: 'sec-frequency', no: '02', title: 'Code frequency', figureKind: 'frequency',
       intro: <>
         <p className="report-lead">Which codes appear most often in the coding record?</p>
-        <p>Begin with the {freq?.labels?.length ?? 0} codes displayed in the export. Compare the bars, then check their exact values in TABLE.01.</p>
+        <p>Explore the {freq?.labels?.length ?? 0} exported codes. Choose a bar to read the count and find its source row.</p>
       </>,
       reading: <>
         <p>The five highest displayed counts belong to {top.map((item, index) => <span key={item.label}>
@@ -70,8 +65,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       id: 'sec-coverage', no: '03', title: 'Code × interview', figureKind: 'coverage',
       intro: <>
         <p className="report-lead">How are the busiest codes distributed across interviews?</p>
-        <p>The exported count matrix places {cov?.cases?.length ?? 0} interviews in rows and {cov?.labels?.length ?? 0} codes in columns.
-          The figure displays interviews horizontally and codes vertically. Use TABLE.02 to inspect exact interview-by-code cells.</p>
+        <p>{cov?.cases?.length ?? 0} interviews across, {cov?.labels?.length ?? 0} codes down. Choose any cell, including zeros.</p>
       </>,
       reading: <>
         <p>A zero means no coding was recorded for that code in that interview. It does not establish that the topic was absent from the conversation.</p>
@@ -83,11 +77,10 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       id: 'sec-cooccurrence', no: '04', title: 'Co-occurrence', figureKind: 'cooccurrence',
       intro: <>
         <p className="report-lead">Which codes {co?.mode === 'unit' ? 'occur in the same paragraph' : 'share a stretch of text'}?</p>
-        <p>This view compares {co?.labels?.length ?? 0} codes. Only codes with non-zero exported pairs appear in the image. Read the off-diagonal cells as pairs; the caption gives the counting rule.</p>
+        <p>Only the exported non-zero pairs are shown. Blank cells carry no CSV value; the original figure remains available below.</p>
       </>,
       reading: <>
-        <p>The diagonal and the off-diagonal cells answer different questions. TABLE.03 contains the exported non-zero pairs in both directions;
-          the diagonal stays in the figure and is not included in this CSV.</p>
+        <p>TABLE.03 preserves the exported non-zero pairs in both directions. The original workbench figure also includes a diagonal; it is not included in this CSV or the interactive view.</p>
         <p>A blank pair in the count export is not proof that two ideas are unrelated. These values describe the coded ranges under the chosen rule.
           Next, <a href="#sec-hierarchy">return to the codebook’s theme structure</a>.</p>
       </>,
@@ -96,7 +89,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       id: 'sec-hierarchy', no: '05', title: 'Theme hierarchy', figureKind: 'hierarchy',
       intro: <>
         <p className="report-lead">How does the codebook organise the coded material?</p>
-        <p>The export groups coded extracts under {themeCount} top-level themes. Read each panel with TABLE.04 to see the code names and their counts within that group.</p>
+        <p>Choose one of {themeCount} exported themes. Expand the group to inspect every code without merging its identity.</p>
       </>,
       reading: <>
         <p>The theme membership comes from the codebook. The exported layout orders groups and bars by their counts;
@@ -124,11 +117,10 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
         <p className="report-lead">Follow each number back to its export.</p>
         <p>The page reads the workbench’s SVGs and CSVs. It checks every listed file against the manifest’s SHA-256 and byte length before showing the report.
           Count tables retain the exported rows and order. The unit statements below come directly from that same manifest.</p>
-        <dl className="report-rules">{figures.map(figure => <div key={figure.kind}>
+        <details className="report-method-detail"><summary>Counting rules from the manifest</summary><dl className="report-rules">{figures.map(figure => <div key={figure.kind}>
           <dt>{figure.label}</dt><dd>{figure.credit}</dd>
-        </div>)}</dl>
-        <div className="report-export-record" id="export-record" tabIndex={-1}>
-          <h3>Export record</h3>
+        </div>)}</dl></details>
+        <details className="report-export-record" id="export-record"><summary>Export record &amp; file hashes</summary>
           <dl className="report-provenance">
             <div><dt>Project</dt><dd>{manifest.project.name}</dd></div>
             <div><dt>Source</dt><dd className="mono">{manifest.source}</dd></div>
@@ -139,9 +131,9 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
             <div><dt>Command</dt><dd className="mono">{manifest.command}</dd></div>
           </dl>
           <a href="/report/manifest.json" className="mono">Read the manifest and full file hashes ↗</a>
-        </div>
+        </details>
         <p>These descriptive views do not replace interpretation of the interviews. For the same workflow in the interface,
-          <Link href="/w">open the read-only workbench demo</Link>.</p>
+          <Link href="/w?lang=en">open the workbench</Link>.</p>
       </>,
     },
   ]
@@ -176,18 +168,18 @@ export default async function ReportPage() {
   const sections = chapters(manifest, figures)
 
   return <div className="t7">
-    <header className="report-head wrap">
-      <p className="sec-no">A worked example · Bologna</p>
-      <h1>Five figures, and the counts behind them</h1>
-      <p className="report-standfirst">One coding record, five ways to read it. Follow a question into a figure,
-        inspect its counts, then consider what those values can support.</p>
-      <dl className="report-facts mono">
-        <div><dt>Corpus</dt><dd>{manifest.project.name}</dd></div>
-        <div><dt>Documents</dt><dd>{manifest.project.documents}</dd></div>
-        <div><dt>Codes</dt><dd>{manifest.project.codes}</dd></div>
-        <div><dt>Codings</dt><dd>{manifest.project.codings}</dd></div>
-      </dl>
-      <a className="report-start mono" href="#sec-corpus">Start with the corpus ↓</a>
+    <header className="report-head report-head--visual wrap">
+      <div><p className="sec-no">FIELD NOTES / BOLOGNA · CC0</p>
+        <h1>One coding record.<br/><em>Five ways to read it.</em></h1>
+        <p className="report-standfirst">Follow a pattern back to the passage.</p>
+        <dl className="report-facts mono">
+          <div><dt>Interviews</dt><dd>{manifest.project.documents}</dd></div>
+          <div><dt>Defined codes</dt><dd>{manifest.project.codes}</dd></div>
+          <div><dt>Codings</dt><dd>{manifest.project.codings}</dd></div>
+        </dl>
+        <a className="report-start mono" href="#sec-frequency">Explore the first figure ↓</a>
+      </div>
+      {csvs.frequency && <ReportSignal table={csvs.frequency} credit={figures.find(item=>item.kind==='frequency')?.credit??''}/>}
     </header>
     <ReportView sections={sections} figures={figures} csvs={csvs} evidence={evidence} />
   </div>

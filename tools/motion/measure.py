@@ -4,9 +4,9 @@ The motion spec, measured frame by frame.
 The reference values are the ones in the brief (240 ms indicator travel on
 cubic-bezier(0.22, 0.61, 0.36, 1); a 240 ms figure fade; a hero that drifts
 continuously and evenly; the pixel mark assembled in 1.2–1.5 s, which is why
-QtMark lays its cells down at 50 ms intervals: fourteen cells at 55 ms plus a
-620 ms drop measured 1516 ms — outside the window — and 50 ms brings the whole
-assembly to about 1350 ms, inside it). This tool
+QtMark lays down fourteen occupied cells at 60 ms intervals, plus a
+620 ms drop, for a 1400 ms timeline). Pixel ink coverage and actual
+animation start/end readings are both preserved. This tool
 measures the built site against them and prints the comparison table. A
 difference beyond ±20 ms or ±10 % has to be explained, not waved at — there
 is deliberately no "looks about right" verdict in the output.
@@ -476,8 +476,10 @@ def measure_figure_fade(page, out: Path) -> dict:
     viewport, the box is measured after the fade has settled, and the trace
     is fitted from the frames that follow the scroll.
     """
+    page.goto(page_url + "/report", wait_until="load", timeout=60000)
+    page.wait_for_timeout(800)
     offset = page.evaluate("""() => {
-      const figs = [...document.querySelectorAll('figure.fig')]
+      const figs = [...document.querySelectorAll('.report-fig-section')]
       const fig = figs.find(f => f.getBoundingClientRect().top > window.innerHeight)
       if (!fig) return null
       const img = fig.querySelector('img')
@@ -486,11 +488,21 @@ def measure_figure_fade(page, out: Path) -> dict:
       // fade; the fade is the only thing this reading is about, so the image
       // is already there when the fade starts.
       if (img) img.loading = 'eager'
-      return { id: fig.id, offset_top: fig.offsetTop, eager: Boolean(img) }
+      return { id: fig.id, offset_top: fig.getBoundingClientRect().top + window.scrollY, eager: Boolean(img) }
     }""")
     if not offset:
         return {"name": "figure_fade", "ok": False, "reason": "no figure below the fold"}
     page.wait_for_timeout(900)
+    page.evaluate("""(id) => {
+      const fig = document.getElementById(id)
+      window.__figureMotion = {start:null,end:null}
+      fig.addEventListener('transitionstart', event => {
+        if (event.target === fig && event.propertyName === 'opacity') window.__figureMotion.start = performance.now()
+      })
+      fig.addEventListener('transitionend', event => {
+        if (event.target === fig && event.propertyName === 'opacity') window.__figureMotion.end = performance.now()
+      })
+    }""", offset["id"])
     with Screencast(page) as cap:
         page.wait_for_timeout(400)
         scrolled_at = time.monotonic()
@@ -502,10 +514,11 @@ def measure_figure_fade(page, out: Path) -> dict:
     # paper colour to the figure's, and nothing else arrives to bend it.
     box = page.evaluate("""(o) => {
       const fig = document.getElementById(o.id)
-      const img = fig.querySelector('img')
-      const r = img.getBoundingClientRect()
-      return [Math.round(r.left) + 60, Math.round(r.top) + 60,
-              Math.max(120, Math.round(r.width) - 120), Math.max(80, Math.round(r.height) - 120)]
+      const surface = fig.querySelector('.data-plot') || fig.querySelector('img')
+      const r = surface.getBoundingClientRect()
+      // A static panel strip isolates opacity from the chart's mark animation.
+      return [Math.round(r.left) + 3, Math.round(r.top) + 3,
+              Math.min(240, Math.round(r.width) - 6), 10]
     }""", offset)
     rows = normalise(frames)
     # the receipt clock decides which frames belong to the fade; the capture
@@ -517,10 +530,13 @@ def measure_figure_fade(page, out: Path) -> dict:
     fit = fit_fade(trace, REFERENCE["figure_fade"]["easing"])
     fit["series"] = {"t_ms": [round((t - trace[0][0]) * 1000, 1) for t, _ in trace],
                      "luminance": [round(v, 2) for _, v in trace]}
+    timeline = page.evaluate("() => window.__figureMotion")
+    fit["transition_ms"] = (timeline["end"] - timeline["start"]
+                            if timeline and timeline["start"] is not None and timeline["end"] is not None else None)
     fit.update({"name": "figure_fade", "ok": True,
                 "reference_ms": REFERENCE["figure_fade"]["duration_ms"],
                 "easing": list(REFERENCE["figure_fade"]["easing"]),
-                "box": box, "figure": offset["id"], "region": "the image, decoded first"})
+                "box": box, "figure": offset["id"], "region": "static panel strip, excluding animated marks"})
     save(frames[len(frames) // 2][2], out / "figure-fade-mid.jpg")
     return fit
 
@@ -531,9 +547,22 @@ def measure_hero(page, out: Path) -> tuple[dict, dict]:
     The capture starts before the navigation, because the mark's assembly is
     part of the page load and a later start would find it already built.
     """
+    page.add_init_script("""
+      window.__markMotion = {start:null,end:null,completed:0}
+      document.addEventListener('animationstart', event => {
+        if (event.animationName === 'qtmark-drop' && event.target.closest('.hero')) {
+          if (window.__markMotion.start === null) window.__markMotion.start = performance.now()
+        }
+      }, true)
+      document.addEventListener('animationend', event => {
+        if (event.animationName === 'qtmark-drop' && event.target.closest('.hero')) {
+          window.__markMotion.end = performance.now(); window.__markMotion.completed++
+        }
+      }, true)
+    """)
     with Screencast(page) as cap:
         page.goto(page_url + "/?lang=en", wait_until="load", timeout=60000)
-        page.wait_for_timeout(2800)
+        page.wait_for_timeout(6500)
     frames = list(cap.frames)
     arrays = normalise(frames)
     # the ground's motion is measured only after the page has settled: the
@@ -548,7 +577,7 @@ def measure_hero(page, out: Path) -> tuple[dict, dict]:
     drifting = [(row[0], row[2]) for row in arrays if row[0] >= arrays[0][0] + 1.8]
 
     box = page.evaluate("""() => {
-      const mark = document.querySelector('.hero__title .qtmark') || document.querySelector('.qtmark')
+      const mark = document.querySelector('.hero .qtmark')
       if (!mark) return null
       const r = mark.getBoundingClientRect()
       return [Math.round(r.left) - 2, Math.round(r.top) - 2, Math.round(r.width) + 4, Math.round(r.height) + 4]
@@ -582,6 +611,21 @@ def measure_hero(page, out: Path) -> tuple[dict, dict]:
                           "dark_px": [int(c) for c in counts]}
         save(frames[min(first + 2, len(frames) - 1)][2], out / "hero-mark-early.jpg")
         save(frames[-1][2], out / "hero-mark-done.jpg")
+
+    # Ink coverage reaches its threshold before the last falling cell settles.
+    # Preserve that pixel reading, and report the real start/end timeline too.
+    timeline = page.evaluate("""() => {
+      const cells = [...document.querySelectorAll('.hero .qtmark__cell')]
+      return {...window.__markMotion, cells:cells.length,
+        settled:cells.every(cell => {
+          const s=getComputedStyle(cell), m=new DOMMatrixReadOnly(s.transform)
+          return Number(s.opacity) === 1 && Math.abs(m.m42)<.01 && Math.abs(m.m11-1)<.01
+        })}
+    }""")
+    mark["timeline"] = timeline
+    mark["animation_ms"] = (timeline["end"] - timeline["start"]
+                             if timeline["start"] is not None and timeline["end"] is not None
+                             and timeline["completed"] == timeline["cells"] and timeline["settled"] else None)
 
     # The element's transform, read over a longer window than the frames can
     # cover: see the printer for why both readings are kept.
@@ -671,20 +715,17 @@ def print_table(rows: list[dict]) -> None:
                 ok = verdict(row["duration_ms"], row["reference_ms"],
                              TOLERANCE_MS, TOLERANCE_FRACTION)
         elif row["name"] == "figure_fade":
-            measured = (f"{row['duration_ms']:.0f} ms fit, "
-                        f"{row.get('rise_10_90_ms', 0):.0f} ms 10–90%")
-            difference = f"{row['duration_ms'] - row['reference_ms']:+.0f} ms"
-            ok = verdict(row["duration_ms"], row["reference_ms"],
-                         TOLERANCE_MS, TOLERANCE_FRACTION)
+            exact = row.get("transition_ms")
+            measured = f"{row['duration_ms']:.0f} ms fit, {exact:.0f} ms page" if exact is not None else f"{row['duration_ms']:.0f} ms fit, page n/a"
+            value = exact if exact is not None else row["duration_ms"]
+            difference = f"{value - row['reference_ms']:+.0f} ms"
+            ok = verdict(value, row["reference_ms"], TOLERANCE_MS, TOLERANCE_FRACTION)
         elif row["name"] == "hero_mark":
-            if row.get("measured_ms") is None:
-                measured = f"not settled ({row.get('reason', 'no reason recorded')})"
-                ok, difference = "EXPLAIN", "—"
-            else:
-                measured = f"{row['measured_ms']:.0f} ms"
-                window = row["window_ms"]
-                ok = "PASS" if window[0] <= row["measured_ms"] <= window[1] else "EXPLAIN"
-                difference = f"{row['measured_ms'] - row['reference_ms']:+.0f} ms"
+            value = row.get("animation_ms")
+            measured = f"{value:.0f} ms page, {row.get('measured_ms',0) or 0:.0f} ms ink" if value is not None else "page timeline incomplete"
+            window = row["window_ms"]
+            ok = "PASS" if value is not None and window[0] <= value <= window[1] else "EXPLAIN"
+            difference = f"{value - row['reference_ms']:+.0f} ms" if value is not None else "—"
         else:  # hero_ground
             # Two readings, because they disagree and the disagreement is the
             # pixel method's, not the page's: the pattern is faint and
@@ -723,17 +764,22 @@ def main() -> int:
         page = browser.new_context(viewport={"width": 1440, "height": 900},
                                    locale="en-US").new_page()
 
+        console = []
+        page.on("console", lambda message: console.append({"type": message.type, "text": message.text})
+                if message.type in ("warning", "error") else None)
+        page.on("pageerror", lambda error: console.append({"type": "pageerror", "text": str(error)}))
         mark, ground = measure_hero(page, out)
         indicator = measure_indicator(page, out)
         fade = measure_figure_fade(page, out)
         browser.close()
 
+    (out / "console.json").write_text(json.dumps(console, indent=1), encoding="utf-8")
     rows = [indicator, fade, mark, ground]
     print_table(rows)
     (out / "measurements.json").write_text(json.dumps(rows, indent=1, default=str),
                                            encoding="utf-8")
     print(f"\n  frames and readings: {out}")
-    return 0
+    return 1 if any(entry["type"] in ("error", "pageerror") for entry in console) else 0
 
 
 page_url = "http://127.0.0.1:4418"

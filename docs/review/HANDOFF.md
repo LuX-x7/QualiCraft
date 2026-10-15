@@ -1,3 +1,5 @@
+> 当前：用户未接受此前视觉结果，UX-10 已重开首页与报告展示。前端 CSV 新呈现获授权，保留原图/完整数据，不改工作台。[本轮记录](UX-10-VISUAL-RESTART.md) · [总计划](EXPERIENCE-ROADMAP.md)。本地技术检查不等于用户视觉接受；实际 QT/设备试用待确认。推送暂停，未部署，Windows 暂缓。
+
 > 最新：2026-10-15 UX-06 已修复覆盖图轴方向并更新报告资产，[验收](UX-06-COVERAGE-AXES.md)。五 CSV、所有统计值和四张其他图不变；UX-04A-L01 已关闭。审核包及[总计划](EXPERIENCE-ROADMAP.md)已更新。Windows 暂缓，不推送、不部署。
 
 > 最新：2026-10-15 体验阶段 2A…5 已验收，见[集成记录](UX-05-INTEGRATION.md)与[supervisor 审核提纲](SUPERVISOR-REVIEW.md)。完整现状以[总计划](EXPERIENCE-ROADMAP.md)为准。覆盖原图方向限制明确保留；Windows 暂缓，不推送、不部署。

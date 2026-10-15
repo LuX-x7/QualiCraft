@@ -2,7 +2,9 @@
 
 For a short handout, use the [one-page English review brief](SUPERVISOR-ONE-PAGE.md) and its PDF in the evidence package. It provides a 15-20 minute demonstration, three discussion questions and outstanding items; the longer walkthrough below remains available.
 
-Local review version, 2026-10-15. Planned experience stages 2A–5 are implemented and checked. UX-06 has also corrected coverage axes and refreshed the report/source bindings without changing any CSV values. No push or deployment. Windows remains unverified and deferred. The target remains Friday **16 October, 18:00 Asia/Nicosia (UTC+3)**; this local review version is available before that target.
+Latest review: UX-10 reopens visual acceptance following the owner's feedback that the previous website was too dense. The homepage now focuses on one workflow step and the report renders the existing CSVs as interactive graphics. This frontend presentation is explicitly authorised; original SVGs, full tables and downloads are retained. The owner has not yet trialled QT. Technical checks do not mean visual sign-off. **Source push is paused; no deployment; Windows deferred.** [UX-10 scope and evidence](UX-10-VISUAL-RESTART.md).
+
+The target remains Friday **16 October, 18:00 Asia/Nicosia (UTC+3)**. The revised candidate is available locally for review; final owner acceptance remains pending.
 
 ## Open the local review
 
@@ -24,14 +26,16 @@ Persistent evidence package: `~/qualicraft-review/supervisor-review/README.md`. 
 
 ## Known limits to review candidly
 
-Coverage axes are now corrected: interviews run horizontally, codes vertically. All 285 displayed cells were checked against the unchanged CSV. The report keeps static SVGs and exact CSV/table selection; it does not add a chart overlay in this round.
+Coverage axes are now corrected: interviews run horizontally, codes vertically. All 285 displayed cells were checked against the unchanged CSV. UX-10 adds an explicitly authorised frontend presentation of existing CSV rows. Original SVGs, exact row selection, full tables and downloads remain available; statistics and workbench rendering are unchanged.
 
-Desktop and 390px browser layouts, keyboard, console, local export responses and explicit reduced-motion mode were checked. A mobile viewport is not a physical touch device. Windows, screen-reader operation, OS-level motion switching and a new frame-by-frame motion-duration measurement were not checked. The browser download observer timed out; complete ZIP responses were independently checked instead of claiming OS download UI completion.
+Desktop and 390px browser layouts, keyboard, console, local export responses and explicit reduced-motion mode were checked. A mobile viewport is not a physical touch device. Windows, physical touch, screen-reader operation and OS-level motion switching await fresh manual confirmation. The authorised project motion script has been updated for the revised markup; its pixel estimates, actual timelines and console logs are retained in UX-10 evidence. The browser download observer timed out; complete ZIP responses were independently checked instead of claiming OS download UI completion.
 
-The existing `unittest -t .` collection failure is recorded. The supported discovery command for these checks ran 148 tests, with 3 skips. Node interaction/geometry/source checks ran 49 tests; website build and JavaScript syntax checks returned 0. No new statistics, private interview content or third-party reference-site assets were introduced.
+The former `unittest -t .` collection failure is fixed in UX-09 and its earlier output retained. Both discovery commands now run the same 148 tests, with 3 skips. Node interaction/geometry/source/chart checks ran 56 tests; website build and JavaScript syntax checks returned 0. No new statistics, private interview content or third-party reference-site assets were introduced. UX-08 observed a completed browser CSV download and checked it byte-for-byte against the report CSV; OS UI confirmation remains a separate manual check.
 
 ## Review records
 
 [Overall plan](EXPERIENCE-ROADMAP.md) · [2C](UX-02C-NETWORK-CONTROLS.md) · [2D](UX-02D-FACTS.md) · [3A](UX-03A-HOME-CODING.md) · [3B](UX-03B-WORKFLOW.md) · [4A](UX-04A-REPORT-READERS.md) · [4B](UX-04B-SOURCE-EXAMPLES.md) · [5](UX-05-INTEGRATION.md)
 
 [Coverage correction and refreshed acceptance](UX-06-COVERAGE-AXES.md). The prior coverage restriction is closed; Windows and public-release gates remain pending.
+
+Current visual revision: [UX-10](UX-10-VISUAL-RESTART.md). Historical 3A–5 acceptance is retained for traceability and does not override the owner’s later rejection of the visual result.

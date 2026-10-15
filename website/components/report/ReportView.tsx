@@ -183,7 +183,7 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
                       <span className="toc-no mono">{section.no}</span>
                       <span className="toc-title">{section.title}</span>
                     </a>
-                    {section.figureKind && (
+                    {section.figureKind && section.id === current && (
                       <ol className="toc-subs">
                         <li><a href={`#fig-${section.figureKind}`} className="toc-sub mono" onClick={() => visit(section)}>FIG.{number} · figure</a></li>
                         <li><a href={`#table-${section.figureKind}`} className="toc-sub mono" onClick={() => visit(section, true)}>TABLE.{number} · counts</a></li>
@@ -273,10 +273,10 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
                     {readable && <a className="reader-return mono" href={`#fig-${figure.kind}`}>Return to the figure ↑</a>}
                   </div>
                   <SourceEvidence evidence={evidence} kind={figure.kind} selected={selected[figure.kind]} />
-                  <div className="report-reading">
-                    <h3 className="report-step mono">Reading &amp; limits</h3>
+                  <details className="report-reading">
+                    <summary>Interpretation &amp; limits</summary>
                     <div className="report-prose">{section.reading}</div>
-                  </div>
+                  </details>
                 </>
               )}
             </section>
