@@ -850,8 +850,8 @@ def methods_narrative(project):
     if noted:
         add("### Reading notes")
         add("")
-        add("Familiarisation notes, as written. These are the researcher's first impressions")
-        add("before any coding took place.")
+        add("Stored reading notes, as written by the researcher.")
+        add("Timing relative to coding is not recorded in this project file.")
         add("")
         for document in noted:
             add("**" + document["name"] + "**")
@@ -859,12 +859,11 @@ def methods_narrative(project):
             add("> " + document["memo"].strip().replace("\n", "\n> "))
             add("")
     else:
-        # Reflexivity notes are a methodological expectation, so their absence
-        # is a finding rather than a blank. Saying so beats leaving the reader
-        # to wonder whether the section was dropped by accident.
+        # Report only what the saved file contains; absence of a note does not
+        # establish whether the researcher completed familiarisation.
         add("### Reading notes")
         add("")
-        add("_No familiarisation memos were recorded in this project file._")
+        add("_No reading notes were recorded in this project file._")
         add("")
 
     add("## 2. Coding")

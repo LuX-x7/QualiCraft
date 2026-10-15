@@ -185,13 +185,13 @@ export default function ModuleWalkthrough() {
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-no">03</span>
-          <h2 id="modules-title">Five modules, taken as you need them.</h2>
+          <h2 id="modules-title">Five steps, one traceable workflow.</h2>
           <p>
             Import, code, analyse, plot, export. Each step says what to do and what you
             should see. Play a recorded Bologna example or open its still image.
-            Every module is off by
-            default except the three at the core — turn one on and it stays on for that
-            study.
+            These are workflow steps, not switches. New projects enable theme grouping,
+            memos, AI suggestions, Insights and Audit. Figures is a separate capability
+            you can enable in Tools. Enabling AI suggestions does not send a request.
           </p>
         </div>
 

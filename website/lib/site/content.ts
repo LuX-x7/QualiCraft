@@ -138,7 +138,7 @@ export const METHODS = {
         'Themes with defining quotations; a written narrative of each theme.',
         'Not the frame: a single researcher coding well, with the judgement shown rather than a coefficient. (Braun & Clarke, 2006, 2019)',
         'Central. The researcher’s stance is part of the analysis and belongs in the write-up. (Braun & Clarke, 2019)',
-        'Carries the mechanics — passages to codes, codes to themes, memos, the record. The reflexive writing is yours: it happens in the memo fields, which are off until you turn them on.',
+        'Carries the mechanics — passages to codes, codes to themes, memos, the record. The reflexive writing is yours: it happens in the memo fields, which are enabled in new projects.',
       ],
     },
     {
@@ -170,7 +170,7 @@ export const NOT_DOING = {
   title: 'Four things it does not do.',
   body:
     'A short list, because only decisions that follow from the tool’s stance belong ' +
-    'on it. Anything that is merely a lot of work is an optional block you can switch on.',
+    'on it. Implemented capability blocks can be switched per project; other ideas remain in the roadmap.',
   items: [
     {
       name: 'Automatic coding',
