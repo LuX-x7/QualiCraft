@@ -326,7 +326,9 @@ function codingView() {
 }
 function readerHtml() {
   const d=doc(), annotations=state.project.annotations.filter(a=>a.document_id===d.id);
-  const paras=segments(d.text).filter(p=> (!state.search||p.text.toLocaleLowerCase().includes(state.search.toLocaleLowerCase())) && (!state.codeFilter||annotations.some(a=>a.code_id===state.codeFilter&&a.start<p.end&&a.end>p.start)));
+  // Match the sidebar's rolled-up scope, including codings on the parent itself.
+  const filterCodes=state.codeFilter?new Set([state.codeFilter,...codeDescendants(state.codeFilter)]):null;
+  const paras=segments(d.text).filter(p=> (!state.search||p.text.toLocaleLowerCase().includes(state.search.toLocaleLowerCase())) && (!filterCodes||annotations.some(a=>filterCodes.has(a.code_id)&&a.start<p.end&&a.end>p.start)));
   const filter=state.codeFilter?`<p class="tiny-label">Filter: ${esc(state.project.codes.find(c=>c.id===state.codeFilter)?.name)} <button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></p>`:'';
   return filter+(paras.map(p=>{
     const matches=annotations.filter(a=>a.start<p.end&&a.end>p.start);
