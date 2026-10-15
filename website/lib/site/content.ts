@@ -13,35 +13,21 @@
  */
 
 export const NAV = [
-  { href: '#method', label: 'Method' },
-  { href: '/w', label: 'Workspace' },
-  { href: '/report', label: 'Docs' },
-  { href: '#data', label: 'Data' },
+  { href: '/#modules', label: 'Workflow' },
+  { href: '/report', label: 'Example report' },
+  { href: '/#method', label: 'Method' },
+  { href: '/#data', label: 'Data' },
   { href: '/about', label: 'About' },
-  { href: '#feedback', label: 'Feedback' },
 ] as const
 
 export const HERO = {
-  eyebrow: 'Qualitative research · Local first · Auditable',
-  headline: ['You read it. You code it.', 'The tool only writes down how you got there.'],
-  body:
-    'A workbench for interview studies. Mark passages, build a codebook, group it into ' +
-    'themes — and keep the whole record of how you got there. Everything stays on the ' +
-    'machine you run it on, and works offline once you have it.',
-  primary: {
-    label: 'Download and run locally',
-    /** Disabled until the Windows gate passes; the note says why. */
-    disabled: true,
-    disabledNote: 'Windows check in progress',
-  },
-  secondary: {
-    label: 'Open the read-only demo',
-    href: '/w',
-    note: 'first load about 30 seconds',
-  },
-  footnote:
-    'The demo is a read-only sample project on public data. The workbench itself runs ' +
-    'on your own machine.',
+  eyebrow: 'Qualitative research · Local first · Researcher led',
+  headline: ['Read closely.', 'Keep every coding traceable.'],
+  body: 'Code passages, organise themes and check every link against the source. A local workbench for interview research.',
+  primary: { label: 'Download and run locally', disabled: true, disabledNote: 'Windows validation pending' },
+  secondary: { label: 'Open the read-only demo', href: '/w', note: 'First load may take about 30 seconds.' },
+  report: { label: 'Read the example report', href: '/report' },
+  footnote: 'Your project stays on your machine. The demo uses public Bologna data. AI suggestions become codings only after your review.',
 }
 
 /** The five steps of the walkthrough. Each: one goal, three verb-first
@@ -116,9 +102,7 @@ export const METHODS = {
   label: 'Method',
   title: 'Two ways to read the same transcript.',
   body:
-    'Thematic analysis and qualitative content analysis are the two a first project ' +
-    'usually has to choose between. They are not a right answer and a wrong one — the ' +
-    'research question decides. The same comparison, on the same axes.',
+    'Choose the approach that fits the research question. The tool records the mechanics; interpretation, reflexivity and reporting remain your work.',
   columns: [
     'Research question',
     'Unit of analysis',
@@ -169,11 +153,11 @@ export const NOT_DOING = {
   label: 'The boundary',
   title: 'Four things it does not do.',
   body:
-    'A short list, because only decisions that follow from the tool’s stance belong ' +
-    'on it. Implemented capability blocks can be switched per project; other ideas remain in the roadmap.',
+    'Four product decisions keep the workflow local and researcher led. Open a reason to inspect the boundary and alternatives.',
   items: [
     {
       name: 'Automatic coding',
+      summary: 'The model proposes; you review each suggestion.',
       reason:
         'A one-click codebook would be easy to build and would remove the thing that ' +
         'makes the analysis valid. The model proposes; a person decides, and the decision ' +
@@ -182,6 +166,7 @@ export const NOT_DOING = {
     },
     {
       name: 'Cloud accounts',
+      summary: 'Keep research files in the workspace you control.',
       reason:
         'An account means a server, which means the transcripts sit somewhere you cannot ' +
         'see. Local is the feature, not the limitation.',
@@ -189,6 +174,7 @@ export const NOT_DOING = {
     },
     {
       name: 'Real-time collaboration',
+      summary: 'Share a portable project file, with its record.',
       reason:
         'Sharing live means accounts, conflict resolution and a server holding the data. ' +
         'The project file is portable instead: hand it over and both copies can be compared.',
@@ -196,6 +182,7 @@ export const NOT_DOING = {
     },
     {
       name: 'Semantic (vector) search',
+      summary: 'Review exact text matches and their source ranges.',
       struckReason:
         'A researcher looking for every quotation about data sharing wants to know why ' +
         'each one came back. Keyword search is explainable; embeddings are not.',
@@ -221,13 +208,8 @@ export const NOT_DOING = {
 }
 
 export const DATA_SECTION = {
-  label: 'Data',
-  title: 'Try it on public data first.',
-  body:
-    'You do not need your own transcripts to walk the whole workflow. These corpora ' +
-    'are published and openly licensed, and each one arrives in a different export ' +
-    'format — so between them they exercise every import path. The demo opens the ' +
-    'Bologna corpus (CC0).',
+  title: 'Built on a checkable example.',
+  body: 'This page and the report use the Bologna CC0 corpus. Its original Italian text and researcher coding are preserved. Other importer fixtures remain available below.',
 }
 
 export const FOOTER = {
@@ -236,7 +218,7 @@ export const FOOTER = {
     'licences, listed on each card.',
   cite:
     'Cite the workbench as: QualiCraft (0.1) [Computer software]. Local-first ' +
-    'qualitative coding workbench. Available from the project’s releases page.',
+    'qualitative coding workbench.',
   /** Left empty on purpose: no address exists yet. See the T7 report. */
   feedback: '',
 }

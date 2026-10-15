@@ -1,6 +1,6 @@
 # UX-01 · 整体体验蓝图与首页 / Coding 方案
 
-2026-10-15，**设计方案，尚未实现**。依据 [本轮走查](UX-01-WALKTHROUGH.md)，推进状态与验收维护在 [总计划](EXPERIENCE-ROADMAP.md)。
+2026-10-15，原始设计方案。**后续 UX-03A 已实现首页精简与 Coding 样板，见[验收](UX-03A-HOME-CODING.md)；其他阶段状态以总计划为准**。依据 [本轮走查](UX-01-WALKTHROUGH.md)，推进状态与验收维护在 [总计划](EXPERIENCE-ROADMAP.md)。
 
 ## 一条体验主线，三个使用场景
 
