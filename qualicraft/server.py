@@ -22,6 +22,22 @@ from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def network_response(project, passages=True):
+    """Attach exact source references without changing the graph's statistics."""
+    graph = analyze.network(analyze.tidy(project), passages=passages)
+    code_ids = {code['id'] for code in project['codes']}
+    # tidy preserves annotation order and omits annotations with missing codes.
+    references = {f'p:{index}': annotation for index, annotation in enumerate(
+        a for a in project['annotations'] if a['code_id'] in code_ids)}
+    for node in graph['nodes']:
+        if node['kind'] == 'passage':
+            annotation = references[node['id']]
+            node.update(annotation_id=annotation['id'],
+                        document_id=annotation['document_id'],
+                        start=annotation['start'], end=annotation['end'])
+    return graph
+
+
 def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1",
                   public_demo=False, backup_dir=None):
     """Start the local workbench.
@@ -139,8 +155,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                             # client decides which passages to reveal.
                             query = urllib.parse.parse_qs(parsed.query)
                             with_passages = query.get("passages", ["1"])[0] not in ("0", "false")
-                            return self.send(analyze.network(analyze.tidy(project),
-                                                             passages=with_passages))
+                            return self.send(network_response(project, passages=with_passages))
                         if len(parts) == 4 and parts[3] in ("plot", "plot-bundle"):
                             query = urllib.parse.parse_qs(parsed.query)
                             options = {key: query[key][0] for key in query if query[key]}

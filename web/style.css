@@ -268,3 +268,34 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
   text-transform: none;
   color: var(--accent);
 }
+
+/* The map and its sources share one reading surface. Lists are complete even
+   when the graph caps passage dots; source ranges remain visible on return. */
+.insights-body{align-content:start}
+.insights-nav{display:flex;flex-wrap:wrap;gap:8px}
+.insights-nav button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.network-picker{display:flex;flex-direction:column;gap:7px;margin:16px 0;font-size:12px;font-weight:600}
+.network-picker select{width:100%;min-width:0;min-height:40px;background:#fff;padding:8px;border:1px solid var(--strong)}
+.network-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,340px);gap:20px;align-items:start}
+.network-layout>div{min-width:0}
+.network-layout .network-stage{margin-top:0;height:440px}
+.network-note{font-size:11px;line-height:1.6;color:var(--muted)}
+.network-evidence{min-width:0;padding:16px;background:var(--paper);border:1px solid var(--strong)}
+.network-evidence h3{font-size:16px;margin:0 0 10px}
+.network-evidence h4{font-size:12px;margin:16px 0 9px}
+.network-evidence p{font-size:12px;line-height:1.6;margin:0 0 12px}
+.network-path{overflow-wrap:anywhere;font-weight:600}
+.network-detail blockquote{margin:0;padding:12px;border-left:3px solid var(--accent);background:#fff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.7;max-height:280px;overflow:auto}
+.network-detail dl{font-size:11px;line-height:1.6;margin:12px 0;overflow-wrap:anywhere}
+.network-detail dt{font-weight:600;color:var(--muted);margin-top:7px}
+.network-detail dd{margin:0}
+.network-evidence-list{display:grid;gap:7px;max-height:260px;overflow:auto;padding:3px}
+.network-evidence-list button{display:grid;gap:5px;text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.5;padding:10px;background:#fff;font-size:11px}
+.network-evidence-list button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 var(--accent)}
+.network-evidence-list button span{display:block;font-weight:400}
+.network-source-trail{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:12px 24px;border-bottom:1px solid var(--line);background:var(--paper)}
+.network-source-trail span{flex:1;min-width:160px;font-size:12px;overflow-wrap:anywhere}
+.passage mark.source-target{outline:2px solid var(--accent);outline-offset:2px;background:#fbe6a4!important}
+.insights-nav button:focus-visible,.network-picker select:focus-visible,.network-evidence button:focus-visible,.network-source-trail button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media(max-width:1100px){.network-layout{grid-template-columns:minmax(0,1fr)}.network-layout .network-stage{height:360px}}
+@media(max-width:800px){.network-layout .network-stage{height:300px}.network-source-trail{padding:12px}.network-picker select,.insights-nav button,.network-evidence button,.network-source-trail button{min-height:44px}}
