@@ -4,6 +4,8 @@
  *  Scroll tracking adds a current chapter; figures retain the T7 one-time fade. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import FigureReader from './FigureReader'
+import SourceEvidence from './SourceEvidence'
+import type { ReportEvidence } from '@/lib/report/evidence'
 import type { HitMap } from '@/lib/report/hit-map'
 
 export type FigureData = {
@@ -28,9 +30,10 @@ export type Section = {
 }
 const numericColumns = new Set(['count', 'step', 'cumulative', 'new'])
 
-export default function ReportView({ sections, figures, csvs }: {
+export default function ReportView({ sections, figures, csvs, evidence }: {
   sections: Section[]
   figures: FigureData[]
+  evidence: ReportEvidence
   csvs: Record<string, CsvTable>
 }) {
   const [current, setCurrent] = useState(sections[0]?.id ?? '')
@@ -267,6 +270,7 @@ export default function ReportView({ sections, figures, csvs }: {
                     ) : <p className="report-prose">No count table was exported for this figure.</p>}
                     {readable && <a className="reader-return mono" href={`#fig-${figure.kind}`}>Return to the figure ↑</a>}
                   </div>
+                  <SourceEvidence evidence={evidence} kind={figure.kind} selected={selected[figure.kind]} />
                   <div className="report-reading">
                     <h3 className="report-step mono">Reading &amp; limits</h3>
                     <div className="report-prose">{section.reading}</div>

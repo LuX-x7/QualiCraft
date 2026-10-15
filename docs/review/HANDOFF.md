@@ -1,3 +1,5 @@
+> 最新：UX-04B 报告有限原句例证已验收，[记录](UX-04B-SOURCE-EXAMPLES.md)。下一步 5 视觉/响应式及 supervisor 审核包。Windows 暂缓，不推送不部署。
+
 > 最新：UX-04A 五图读值验收完成，[记录](UX-04A-REPORT-READERS.md)。新发现覆盖图原始方向限制，按原计划明确退回 CSV 选择；未改绘图。下一步 4B → 5。
 
 > 最新：2026-10-15 UX-03B 五模块展示已验收，见[记录](UX-03B-WORKFLOW.md)。下一步 4A/4B → 5；[总计划](EXPERIENCE-ROADMAP.md)。只使用同一项目标签页，不读取其他窗口。

@@ -5,6 +5,7 @@ import { readCsv, readManifest, verifyManifest, type Manifest } from '@/lib/repo
 import dataCards from '@/lib/site/data-cards.json'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { reportEvidence } from '@/lib/report/evidence'
 import { readHitMap } from '@/lib/report/hit-map'
 import '../t7-report.css'
 
@@ -169,6 +170,7 @@ export default async function ReportPage() {
       }
     }
   }
+  const evidence = reportEvidence(await readFile(path.join(process.cwd(), 'public', 'report', 'manifest.json'), 'utf8'), csvs)
   const sections = chapters(manifest, figures)
 
   return <div className="t7">
@@ -185,6 +187,6 @@ export default async function ReportPage() {
       </dl>
       <a className="report-start mono" href="#sec-corpus">Start with the corpus ↓</a>
     </header>
-    <ReportView sections={sections} figures={figures} csvs={csvs} />
+    <ReportView sections={sections} figures={figures} csvs={csvs} evidence={evidence} />
   </div>
 }

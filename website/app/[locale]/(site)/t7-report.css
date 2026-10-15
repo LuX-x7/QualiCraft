@@ -679,3 +679,17 @@
   }
 
 }
+
+/* Source examples remain a separate, explicitly limited evidence layer. */
+.reader-evidence { margin: 20px 0 36px; padding: 18px 20px; border: 1px solid var(--line); background: var(--paper); overflow-wrap: anywhere; }
+.reader-evidence summary { cursor: pointer; min-height: 32px; line-height: 1.5; }
+.reader-evidence[open] > summary { margin-bottom: 16px; }
+.source-example { padding: 16px 0; border-top: 1px solid var(--line); }
+.source-example > .mono { font-size: 12px; }
+.source-example blockquote { margin: 16px 0; padding-left: 16px; border-left: 3px solid var(--accent-deep); white-space: pre-wrap; line-height: 1.65; }
+.source-example mark { background: #e4eee7; color: var(--ink); }
+.source-code-path { font-size: 14px; line-height: 1.6; }
+.source-identities { display: grid; gap: 6px; font-size: 11px; line-height: 1.6; }
+.source-identities dt { color: var(--ink-soft); margin-top: 8px; }
+.source-identities dd { margin: 0; }
+@media(max-width: 900px) { .reader-evidence summary { min-height: 44px; } .reader-evidence { padding: 16px; } }
