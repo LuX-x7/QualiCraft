@@ -1,3 +1,7 @@
+# Latest local follow-up · UX-14
+
+Figure proportions, original SVG comparison and named hierarchy bars: [UX-14](UX-14-FIGURE-PROPORTIONS.md). UX-15 hand-drawn logic refinement is in progress. No remote operations; protected paths unchanged.
+
 > 当前入口：UX-13 回应六项首页反馈，见 [记录](UX-13-SPATIAL-NOTEBOOK.md) 与 [总计划](EXPERIENCE-ROADMAP.md)。QT 居中、粒子透视、可组合工程线稿、九段自然滚动与完整五图、明确关系节点、大字号和全首页网格。用户视觉接受及实际 QT 试用待确认；UX-12 工作台导入／导出界面另列。Windows 暂缓，不推送、不部署。
 
 > 当前：用户未接受此前视觉结果，UX-10 已重开首页与报告展示。前端 CSV 新呈现获授权，保留原图/完整数据，不改工作台。[本轮记录](UX-10-VISUAL-RESTART.md) · [总计划](EXPERIENCE-ROADMAP.md)。本地技术检查不等于用户视觉接受；实际 QT/设备试用待确认。推送暂停，未部署，Windows 暂缓。
