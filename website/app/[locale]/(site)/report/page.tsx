@@ -71,7 +71,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       intro: <>
         <p className="report-lead">How are the busiest codes distributed across interviews?</p>
         <p>The exported count matrix places {cov?.cases?.length ?? 0} interviews in rows and {cov?.labels?.length ?? 0} codes in columns.
-          Use TABLE.02 to inspect exact interview-by-code cells; the retained image has an axis-orientation limitation described below.</p>
+          The figure displays interviews horizontally and codes vertically. Use TABLE.02 to inspect exact interview-by-code cells.</p>
       </>,
       reading: <>
         <p>A zero means no coding was recorded for that code in that interview. It does not establish that the topic was absent from the conversation.</p>
@@ -133,7 +133,9 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
             <div><dt>Project</dt><dd>{manifest.project.name}</dd></div>
             <div><dt>Source</dt><dd className="mono">{manifest.source}</dd></div>
             <div><dt>Exported at</dt><dd className="mono"><time dateTime={manifest.generated_at}>{manifest.generated_at}</time></dd></div>
-            <div><dt>Commit</dt><dd className="mono">{manifest.commit}</dd></div>
+            <div><dt>{manifest.working_tree_dirty ? 'Base commit' : 'Commit'}</dt><dd className="mono">{manifest.commit}</dd></div>
+            {manifest.working_tree_dirty && <div><dt>Source state</dt><dd>Working tree at export; exact source hashes recorded below.</dd></div>}
+            {Object.entries(manifest.source_files ?? {}).map(([name, hash]) => <div key={name}><dt>{name} SHA-256</dt><dd className="mono">{hash}</dd></div>)}
             <div><dt>Command</dt><dd className="mono">{manifest.command}</dd></div>
           </dl>
           <a href="/report/manifest.json" className="mono">Read the manifest and full file hashes ↗</a>

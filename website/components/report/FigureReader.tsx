@@ -69,8 +69,8 @@ export default function FigureReader({ figure, table, selected, onSelect, onLoca
     </div>
     {ready && <div className="reader-panel">
       <p className="report-step mono">Read the exported values</p>
-      <p className="reader-help" id={`reader-help-${figure.kind}`}>{map ? 'Select an item below, or point to the figure on a larger screen. Use arrow keys, Home and End on the figure; press Enter to open its counts.' : 'Choose a CSV row below. The original figure is retained; its layout has no verified one-to-one selection overlay.'}</p>
-      {figure.kind === 'coverage' && <p className="reader-help">Use the CSV for exact interview-by-code values: the exported image matrix and its axis labels use different orientations.</p>}
+      <p className="reader-help" id={`reader-help-${figure.kind}`}>{map ? 'Select an item below, or point to the figure on a larger screen. Use arrow keys, Home and End on the figure; press Enter to open its counts.' : 'Choose a CSV row below to read its exact values. Use View selected row to move to its place in the table.'}</p>
+      {figure.kind === 'coverage' && <p className="reader-help">Interviews run across the figure; codes run down it. Choose an interview × code row below to read its exact CSV count.</p>}
       {figure.kind === 'cooccurrence' && <p className="reader-help">Only non-zero off-diagonal pairs are exported in this CSV. Reversed rows retain their original order; diagonal and zero cells are not selectable values.</p>}
       <label className="reader-label mono" htmlFor={`reader-select-${figure.kind}`}>{frequency ? 'Code' : point ? 'Interview step' : figure.kind === 'coverage' ? 'Interview × code' : figure.kind === 'cooccurrence' ? 'Exported code pair' : 'Theme › code'}</label>
       <select id={`reader-select-${figure.kind}`} value={selected ?? ''}

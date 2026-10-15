@@ -80,7 +80,7 @@ test('hierarchy: full section and subsection identify bars, independent of tied 
   assert.equal(map.targets.length,table.rows.length)
   assert.equal(readHitMap('hierarchy',svg.replace('academics do not get to keep the copyright','unrelated subsection'),table,figure.numbers),null)
 })
-test('coverage: original mismatched matrix axes keep CSV selection without a misleading overlay', async () => {
+test('coverage: CSV selection keeps the case-by-code table behind the corrected export', async () => {
   const figure=manifest.figures.find(f=>f.kind==='coverage')
   const svg=await readFile(new URL(figure.svg,root),'utf8')
   assert.equal(figure.numbers.matrix.length,figure.numbers.cases.length)

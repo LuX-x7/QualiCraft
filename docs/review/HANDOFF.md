@@ -1,3 +1,5 @@
+> 最新：2026-10-15 UX-06 已修复覆盖图轴方向并更新报告资产，[验收](UX-06-COVERAGE-AXES.md)。五 CSV、所有统计值和四张其他图不变；UX-04A-L01 已关闭。审核包及[总计划](EXPERIENCE-ROADMAP.md)已更新。Windows 暂缓，不推送、不部署。
+
 > 最新：2026-10-15 体验阶段 2A…5 已验收，见[集成记录](UX-05-INTEGRATION.md)与[supervisor 审核提纲](SUPERVISOR-REVIEW.md)。完整现状以[总计划](EXPERIENCE-ROADMAP.md)为准。覆盖原图方向限制明确保留；Windows 暂缓，不推送、不部署。
 
 > 最新：UX-04B 报告有限原句例证已验收，[记录](UX-04B-SOURCE-EXAMPLES.md)。下一步 5 视觉/响应式及 supervisor 审核包。Windows 暂缓，不推送不部署。

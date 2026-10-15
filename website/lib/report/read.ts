@@ -26,6 +26,8 @@ export type Manifest = {
   commit: string
   command: string
   source: string
+  working_tree_dirty?: boolean
+  source_files?: Record<string, string>
   project: { name: string; documents: number; codes: number; codings: number }
   figures: ManifestFigure[]
   files: { path: string; bytes: number; sha256: string }[]

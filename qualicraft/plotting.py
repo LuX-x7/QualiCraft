@@ -467,7 +467,9 @@ def main():
         order[r["code"]] = order.get(r["code"], 0) + int(r["count"])
     codes = sorted(order, key=lambda c: (-order[c], c))[:SETTINGS["top"]]
     counts = {(r["case"], r["code"]): int(r["count"]) for r in rows}
-    matrix = [[counts.get((case, code), 0) for code in codes] for case in cases]
+    # imshow indexes [y, x]: codes run down the page, interviews across it.
+    # The source CSV and analysis result remain case-by-code.
+    matrix = [[counts.get((case, code), 0) for case in cases] for code in codes]
 
     fig, ax = plt.subplots(figsize=(max(SETTINGS["figsize"], 0.42 * len(cases) + 5),
                                     max(6.0, 0.46 * len(codes) + 3)))

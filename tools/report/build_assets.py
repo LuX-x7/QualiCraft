@@ -80,9 +80,16 @@ def main() -> int:
 
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO,
                             capture_output=True, text=True).stdout.strip()
+    source_paths = ["qualicraft/plotting.py", "qualicraft/analyze.py", "tools/report/build_assets.py"]
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", *source_paths], cwd=REPO,
+                           capture_output=True, text=True, check=True).stdout
     manifest = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "commit": commit,
+        # Generated before the workflow's local commit. Hash the exact sources
+        # rather than implying HEAD already contains any uncommitted fix.
+        "working_tree_dirty": bool(dirty),
+        "source_files": {name: sha256(REPO / name) for name in source_paths},
         "command": "python tools/report/build_assets.py",
         "source": "demo-data/qualicraft.sqlite3",
         "project": {

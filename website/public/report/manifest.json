@@ -1,6 +1,12 @@
 {
- "generated_at": "2026-10-12T18:50:45+00:00",
- "commit": "3e3487d6b7b7b70506f44a3d45ed62480b7b4702",
+ "generated_at": "2026-10-15T11:38:04+00:00",
+ "commit": "e740d89e3a7e1e00ed1007893811bc70c8535827",
+ "working_tree_dirty": true,
+ "source_files": {
+  "qualicraft/plotting.py": "a08385dd803ac61650df512d863219841ad8d7c4577170c2fae9c5f15bc787eb",
+  "qualicraft/analyze.py": "32de83d41c4808c7483db4a4efd01b56f986ecac0268be628de7b5524e1e53fd",
+  "tools/report/build_assets.py": "fa3123ddeff8db5706b844f3956baef0d4ba687f6267080bfe92410f40991a77"
+ },
  "command": "python tools/report/build_assets.py",
  "source": "demo-data/qualicraft.sqlite3",
  "project": {
@@ -1086,8 +1092,8 @@
   },
   {
    "path": "figures/coverage.svg",
-   "bytes": 54837,
-   "sha256": "c62809e9ff80089a0b7ce5d19786b609fb7c08acea78933ac851435c832f15aa"
+   "bytes": 60321,
+   "sha256": "9d413a84151a814cf4e2eb9e5f85bc4910402812540fb7ea4bec838ea258c605"
   },
   {
    "path": "figures/frequency.csv",
