@@ -1,5 +1,7 @@
 # Supervisor review · QualiCraft
 
+For a short handout, use the [one-page English review brief](SUPERVISOR-ONE-PAGE.md) and its PDF in the evidence package. It provides a 15-20 minute demonstration, three discussion questions and outstanding items; the longer walkthrough below remains available.
+
 Local review version, 2026-10-15. Planned experience stages 2A–5 are implemented and checked. UX-06 has also corrected coverage axes and refreshed the report/source bindings without changing any CSV values. No push or deployment. Windows remains unverified and deferred. The target remains Friday **16 October, 18:00 Asia/Nicosia (UTC+3)**; this local review version is available before that target.
 
 ## Open the local review
