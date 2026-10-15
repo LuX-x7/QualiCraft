@@ -10,8 +10,9 @@ import SiteFoot from '@/components/site/SiteFoot'
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <a className="site-skip" href="#site-content">Skip to content</a>
       <SiteHeader />
-      {children}
+      <main id="site-content" tabIndex={-1}>{children}</main>
       <SiteFoot />
     </>
   )

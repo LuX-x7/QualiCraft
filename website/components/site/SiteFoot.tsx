@@ -2,11 +2,8 @@ import MotionPreference from './MotionPreference'
 import { FOOTER } from '@/lib/site/content'
 
 /**
- * Three lines, deliberately quiet: the licence, how to cite, and where to
- * write. The feedback line renders only when an address exists — the string
- * in content.ts is empty on purpose, per the brief: missing information is
- * left blank and listed in the report, never filled with something that
- * mails nowhere.
+ * Licence, citation and the verified project feedback channel. An email is
+ * optional; without one, use the existing repository's Issues page.
  */
 export default function SiteFoot() {
   return (
@@ -18,6 +15,10 @@ export default function SiteFoot() {
         {FOOTER.feedback ? (
           <p className="site-foot__line mono">
             Feedback: <a href={`mailto:${FOOTER.feedback}`}>{FOOTER.feedback}</a>
+          </p>
+        ) : FOOTER.feedbackUrl ? (
+          <p className="site-foot__line mono">
+            Feedback: <a href={FOOTER.feedbackUrl}>GitHub Issues</a> · Use public examples; keep research data and keys private.
           </p>
         ) : null}
       </div>

@@ -198,7 +198,7 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
         </details>
       </nav>
 
-      <main className="report-body" id="main">
+      <div className="report-body" id="main">
         {sections.map(section => {
           const figureIndex = figures.findIndex(figure => figure.kind === section.figureKind)
           const figure = figures[figureIndex]
@@ -282,7 +282,7 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
             </section>
           )
         })}
-      </main>
+      </div>
     </div>
   )
 }

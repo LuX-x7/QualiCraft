@@ -221,6 +221,7 @@ export const FOOTER = {
     'qualitative coding workbench.',
   /** Left empty on purpose: no address exists yet. See the T7 report. */
   feedback: '',
+  feedbackUrl: 'https://github.com/LuX-x7/QualiCraft/issues',
 }
 
 export const ABOUT = {

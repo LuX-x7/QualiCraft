@@ -425,7 +425,7 @@ figure.fig figcaption .fig-source {
 .hero {
   position: relative;
   overflow: hidden;
-  padding: var(--s8) 0 var(--s7);
+  padding: var(--s7) 0 var(--s5);
   border-top: 0;
 }
 
@@ -466,7 +466,7 @@ figure.fig figcaption .fig-source {
   display: flex;
   align-items: flex-start;
   gap: var(--s3);
-  max-width: 22ch;
+  max-width: 30ch;
 }
 
 .hero__title .qtmark { margin-top: 8px; flex: none; }
@@ -1170,10 +1170,33 @@ summary:focus-visible,.evidence-steps button:focus-visible,.evidence-themes butt
 .workflow-result{padding:24px;border:1px solid var(--rule);background:var(--paper-raised)}
 .workflow-result h3{margin-bottom:12px}
 .workflow-result p:last-child{font-size:16px;margin:0}
-.walk__panel{max-height:calc(100svh - 112px);overflow-y:auto;scrollbar-gutter:stable}
+.walk__panel{max-height:none;overflow:visible}
 @media(max-width:800px){.walk__panel{max-height:none;overflow:visible}}
 .evidence-steps{position:sticky;top:0;z-index:1;background:var(--paper-raised);padding:4px 0;margin:0 0 12px}
 .evidence-quote,.evidence-code,.evidence-themes,.evidence-source{scroll-margin-top:110px}
+
+/* Keep the source-code-theme trail together; expanded records use page scroll. */
+@media(min-width:801px) {
+  .walk__panel { padding: 20px; }
+  .walk__panel .illustration-label { margin-bottom: 10px; }
+  .walk__panel .evidence-steps { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .walk__panel .evidence-steps button { padding: 7px; }
+  .walk__panel .evidence-explanation { min-height: 0; margin: 8px 0 12px; }
+  .walk__panel .evidence-quote,.walk__panel .evidence-code,.walk__panel .evidence-themes { padding: 12px; }
+  .walk__panel .evidence-quote blockquote { font-size: 18px; line-height: 1.4; }
+  .walk__panel .evidence-connector { height: 20px; line-height: 20px; }
+  .walk__panel .evidence-themes button { min-height: 32px; }
+  .walk__panel .evidence-themes ol { gap: 2px; }
+  .walk__panel .evidence-source summary { min-height: 36px; padding: 4px 0; }
+  .walk__panel .recorded-example { margin-top: 12px; padding-top: 0; }
+  .walk__panel:has(details[open]),.walk__panel:has(.evidence-definition) { position: static; }
+}
+@media(min-width:801px) and (max-height:800px) {
+  .walk__panel { position: static; }
+}
+
+.site-skip { position: fixed; top: 8px; left: 16px; z-index: 100; transform: translateY(-180%); padding: 10px 16px; background: var(--paper-raised); border: 2px solid var(--accent); color: var(--ink); }
+.site-skip:focus { transform: none; }
 .evidence-explanation{min-height:0;margin:0 0 16px}
 /* UX-03B: four companion illustrations, using existing records and exports. */
 .workflow-choices{display:grid;gap:6px;margin:12px 0 20px}
