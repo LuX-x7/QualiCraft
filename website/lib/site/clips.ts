@@ -1,4 +1,5 @@
-/** Accepted recordings; provenance in T7-10-CLIPS.md and T7-11-COMPLETION.md. */
+/** Real current-QT recordings; provenance and frame audit in UX-29-CURRENT-QT-RECORDINGS.md. */
+export const RECORDING_NOTE = 'QT interface · Recorded 16 October 2026'
 export const CLIPS: Partial<Record<string, {
   src: string
   poster: string
@@ -8,39 +9,38 @@ export const CLIPS: Partial<Record<string, {
   label?: string
 }>> = {
   import: {
-    src: '/clips/import.webm',
-    poster: '/clips/import.png',
-    width: 946,
-    height: 741,
-    description: 'Bologna’s interview02.txt after import: the document and 31 numbered segments.',
+    src: '/clips/import.webm?v=785fb7706310',
+    poster: '/clips/import.png?v=4fe619a3352a',
+    width: 1440,
+    height: 1000,
+    description: 'The imported Bologna document, its saved receipt and current reading controls in QT.',
   },
   coding: {
-    src: '/clips/coding.webm',
-    poster: '/clips/coding.png',
-    width: 2720,
-    height: 1750,
-    description: 'Existing coded passages and their margin labels in the Bologna sample.',
+    src: '/clips/coding.webm?v=f34881af0697',
+    poster: '/clips/coding.png?v=140a350c4929',
+    width: 1440,
+    height: 1000,
+    description: 'One demonstration coding saved in the Bologna copy, with its full theme and code path.',
   },
   analysis: {
-    src: '/clips/analysis.webm',
-    poster: '/clips/analysis.png',
-    width: 2720,
-    height: 1502,
-    description: 'Further down the code frequency results in the Bologna sample’s Insights view.',
+    src: '/clips/analysis.webm?v=2c7f6637faf8',
+    poster: '/clips/analysis.png?v=2a28b8d4b9df',
+    width: 1440,
+    height: 1000,
+    description: 'The QT relationship map with passage nodes expanded and an exact source quotation selected.',
   },
   plotting: {
-    src: '/clips/plotting.webm',
-    poster: '/clips/plotting.png',
-    width: 2032,
-    height: 1566,
-    description: 'A rendered code frequency figure, its controls and the download option in the Bologna sample.',
+    src: '/clips/plotting.webm?v=8fddadea7edb',
+    poster: '/clips/plotting.png?v=6f622fde6679',
+    width: 1440,
+    height: 1000,
+    description: 'The rendered theme frequency figure, its controls and the figure-and-script download in QT.',
   },
   export: {
-    src: '/clips/export.webm',
-    poster: '/clips/export.png',
-    width: 720,
-    height: 420,
-    description: 'Completed Bologna exports—project JSON, two CSV files and methods Markdown—shown in a local file listing.',
-    label: 'Export completed files recording',
+    src: '/clips/export.webm?v=59c84668ade4',
+    poster: '/clips/export.png?v=cc45cd786378',
+    width: 696,
+    height: 696,
+    description: 'The current QT export panel after a verified project JSON download: filename, bytes and content preview.',
   },
 }

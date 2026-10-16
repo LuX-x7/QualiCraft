@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from './MotionPreference'
 import { MODULES } from '@/lib/site/content'
-import { CLIPS } from '@/lib/site/clips'
+import { CLIPS, RECORDING_NOTE } from '@/lib/site/clips'
 import CodingEvidence, { type CodingExample } from './CodingEvidence'
 import WorkflowIllustration, { type WorkflowData } from './WorkflowIllustration'
 
@@ -60,7 +60,7 @@ function ModuleMedia({ item, reduced }: { item: Module; reduced: boolean }) {
         </video>
       )}
       <figcaption id={captionId}>
-        <p>{clip.description} <span className="walk__recording-meta">3 seconds · CC0 sample · No audio.</span></p>
+        <p>{clip.description} <span className="walk__recording-meta">{RECORDING_NOTE} · 3 seconds · CC0 sample · No audio.</span></p>
         {failed && <p role="status">The recording could not load. The recorded still image is shown.</p>}
         <div className="walk__media-actions">
           {!reduced && !failed && (
