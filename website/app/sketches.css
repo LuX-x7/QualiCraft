@@ -873,3 +873,34 @@
 /* UX-22: the circular network supplements the original saved-path drawing. */
 .network-supplement-label { display:block; color:var(--rust); font-size:13px; line-height:1.5; margin-bottom:20px; letter-spacing:.06em; }
 #network-title:focus-visible { outline:2px solid var(--rust); outline-offset:5px; }
+
+/* UX-23: one sticky desktop stage across every workflow step; all panels retained. */
+.story-panel { width:100%; min-width:0; }
+.story-panel[hidden] { display:none; }
+.story-stage-body { max-height:calc(100dvh - 210px); overflow:auto; scrollbar-gutter:stable; }
+.story-stage--sequence { align-self:start; }
+.heatmap-magnifier { margin-top:18px; }
+.lens-panels { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:24px; align-items:start; }
+.lens-detail,.lens-overview { min-width:0; }
+.lens-panel-heading { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; color:var(--ink-muted); font-size:10px; line-height:1.5; margin-bottom:12px; }
+.lens-detail-svg { display:block; width:100%; height:240px; background:var(--paper-raised); border:1px solid var(--rule); }
+.lens-original-svg { display:block; width:100%; height:auto; border:1px solid var(--rule); background:white; }
+.lens-original-svg,.lens-detail-svg { touch-action:none; }
+.lens-hit-area { fill:transparent; touch-action:none; cursor:crosshair; }
+.lens-viewfinder { fill:color-mix(in srgb,var(--rust) 5%,transparent); stroke:var(--rust); stroke-width:2; pointer-events:none; }
+.lens-selected-cell { fill:none; stroke:var(--rust); stroke-width:2; pointer-events:none; }
+.lens-coordinate { margin-top:14px; }
+.lens-coordinate > .mono { font-size:11px; line-height:1.4; color:var(--ink-muted); }
+.lens-coordinate p { margin:8px 0; color:var(--ink); font:18px/1.4 var(--serif); overflow-wrap:anywhere; }
+.lens-csv-value { display:block; color:var(--rust); font:13px/1.5 var(--mono); }
+.lens-freeze { margin-top:12px; min-height:44px; padding:8px 12px; font:12px var(--mono); background:var(--paper); color:var(--accent); border:1px solid var(--rule); cursor:pointer; }
+.lens-freeze[aria-pressed="true"] { border-color:var(--rust); color:var(--rust); }
+.lens-hint { font:11px/1.6 var(--mono); color:var(--ink-muted); margin:10px 0; }
+.lens-overview .quiet-link { font-size:13px; }
+.lens-original-svg:focus-visible,.lens-freeze:focus-visible { outline:2px solid var(--rust); outline-offset:3px; }
+@media(max-width:600px) {
+ .lens-panels { grid-template-columns:1fr; gap:24px; }
+ .lens-detail-svg { height:240px; }
+ .lens-overview { grid-row:1; max-width:360px; width:100%; }
+ .lens-coordinate p { font-size:20px; }
+}

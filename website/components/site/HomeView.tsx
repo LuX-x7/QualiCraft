@@ -1,3 +1,7 @@
+import {readFile} from 'node:fs/promises'
+import path from 'node:path'
+import {originalHeatmap,type OriginalHeatmap} from '@/lib/site/original-heatmap'
+import {buildChartModel} from '@/lib/report/chart-model'
 import OrbitMark from './OrbitMark'
 import WorkflowShowcase from './WorkflowShowcase'
 import MethodSketch from './MethodSketch'
@@ -22,9 +26,14 @@ export default async function HomeView() {
   const source=await readSiteEvidence().catch(()=>null)
   const example=source?.evidence?.example??null
   const manifest=source?.evidence?source.manifest:null
-  const charts: Record<string, ChartTable> = {}
+  const charts: Record<string, ChartTable> = {},heatmaps:Record<string,OriginalHeatmap>={}
   if(source?.evidence) for(const figure of source.workflow.figures){
     const [head,...rows]=await readCsv(figure.csv);charts[figure.kind]={head,rows}
+    if(['coverage','cooccurrence'].includes(figure.kind))try{
+      const svg=await readFile(path.join(process.cwd(),'public/report',figure.svg),'utf8')
+      const digest=source.manifest.files.find(file=>file.path===figure.svg)?.sha256??''
+      heatmaps[figure.kind]=originalHeatmap(svg,figure.kind,buildChartModel(figure.kind,charts[figure.kind]),digest)
+    }catch{/* A failed mapping leaves counts and the original image available. */}
   }
   return <div className="home-page">
     <section className="hero hero--focused" aria-labelledby="hero-title">
@@ -39,7 +48,7 @@ export default async function HomeView() {
       <a className="hero-scroll mono" href="#modules">FOLLOW THE RECORD ↓</a>
     </section>
     <section className="section home-atlas" id="modules" aria-labelledby="atlas-title"><div className="wrap"><ModuleAtlas/></div></section>
-    <WorkflowShowcase records={source?.network??[]} example={example} data={source?.workflow??{frequency:[],frequencyCredit:'',frequencyCsv:'',figures:[]}} charts={charts}/>
+    <WorkflowShowcase heatmaps={heatmaps} records={source?.network??[]} example={example} data={source?.workflow??{frequency:[],frequencyCredit:'',frequencyCsv:'',figures:[]}} charts={charts}/>
     <section className="section home-source" id="data" aria-labelledby="source-title"><div className="wrap">
       <ProvenanceSketch project={manifest?.project}/>
       <details className="home-details"><summary>Data cards &amp; licences</summary><p>{DATA_SECTION.body}</p><DataCards selected={cards.cards.filter(card=>card.file==='bologna_qda.zip')}/><details><summary>Other public importer fixtures</summary><DataCards selected={cards.cards.filter(card=>card.file!=='bologna_qda.zip')}/></details></details>
