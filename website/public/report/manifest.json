@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-10-15T11:38:04+00:00",
- "commit": "e740d89e3a7e1e00ed1007893811bc70c8535827",
+ "generated_at": "2026-10-16T07:27:42+00:00",
+ "commit": "e44a787fc2d97e490fa6e68aa2ba9ac6324b8c62",
  "working_tree_dirty": true,
  "source_files": {
-  "qualicraft/plotting.py": "a08385dd803ac61650df512d863219841ad8d7c4577170c2fae9c5f15bc787eb",
+  "qualicraft/plotting.py": "38b9efab181812a311c3d41b726030d4b7cca26b83cd276350386428858f505a",
   "qualicraft/analyze.py": "32de83d41c4808c7483db4a4efd01b56f986ecac0268be628de7b5524e1e53fd",
   "tools/report/build_assets.py": "fa3123ddeff8db5706b844f3956baef0d4ba687f6267080bfe92410f40991a77"
  },
@@ -1112,8 +1112,8 @@
   },
   {
    "path": "figures/hierarchy.svg",
-   "bytes": 271179,
-   "sha256": "0b36f0a7c48c4cf9380d71d79e7e06fefccc95a32a5cd2d086a84be72a09bf35"
+   "bytes": 366293,
+   "sha256": "2e90955c81f5ba57248d719fb6e0a097f7723b64f9026eaac24adb3ab0afa2ee"
   }
  ]
 }

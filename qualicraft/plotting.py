@@ -405,7 +405,8 @@ def finish(fig, title, subtitle, credit, rect=(0, 0.075, 1, 0.88)):
         fig.text(.025, .934, subtitle, ha="left", va="top", fontsize=10, color=MUTED)
     if credit:
         fig.text(.025, .018, credit, ha="left", va="bottom", fontsize=8, color=MUTED)
-    fig.tight_layout(rect=rect, pad=1.8)
+    if rect is not None:
+        fig.tight_layout(rect=rect, pad=1.8)
     # A wall-clock stamp would make the same data export different bytes on
     # every run, which breaks "the export reproduces the preview". The key
     # differs per backend: SVG uses Date, PDF uses CreationDate and ModDate.
@@ -553,6 +554,7 @@ main()
 _BODY_HIERARCHY = '''
 
 def main():
+    plt.rcParams["font.family"] = [SETTINGS["font"], "sans-serif"]
     rows = read_data()
     if not rows:
         raise SystemExit("figure_data.csv is empty")
@@ -561,30 +563,89 @@ def main():
         sections.setdefault(r["section"], []).append((r["subsection"], int(r["count"])))
     names = sorted(sections)
     columns = 2 if len(names) > 4 else 1
-    grid_rows = -(-len(names) // columns)
-    fig, axes = plt.subplots(grid_rows, columns,
-                             figsize=(SETTINGS["figsize"] * columns / 2.0,
-                                      max(5.0, 4.6 * grid_rows)),
-                             squeeze=False)
-    for ax, section in zip(axes.flat, names):
+    font = SETTINGS["fontsize"]
+    title_font = max(11, font + 1)
+    fig = plt.figure()
+    renderer = fig.canvas.get_renderer()
+
+    def measure(label, size):
+        # Use the selected font's actual multiline extents, in physical points.
+        text = fig.text(0, 0, label, fontsize=size)
+        box = text.get_window_extent(renderer)
+        text.remove()
+        return box.width * 72 / fig.dpi, box.height * 72 / fig.dpi
+
+    panels = []
+    label_width = title_width = 0
+    for section in names:
         pairs = sorted(sections[section], key=lambda p: p[1])
         labels = [wrap(n, 42) for n, _c in pairs]
         values = [c for _n, c in pairs]
-        ax.barh(range(len(values)), values, color=SETTINGS["color"], height=0.7)
-        ax.set_yticks(range(len(labels)), labels, fontsize=9)
+        sizes = [measure(label, font) for label in labels]
+        label_width = max(label_width, *(width for width, _height in sizes))
+        slots = [max(height, font * 1.25) + font * .65 for _width, height in sizes]
+        title = wrap(section, 48) + "\\n%d coded extracts" % sum(values)
+        width, title_height = measure(title, title_font)
+        title_width = max(title_width, width)
+        # Axes and row centres share point units, so dense themes grow taller
+        # instead of squeezing their labels. No row or full name is omitted.
+        data_height = sum(slots) + font
+        above = title_height + 20
+        below = font * 4 + 20
+        panels.append((labels, values, slots, title, data_height, above, below))
+
+    outer, gutter = 20, 36
+    left = label_width + 16
+    right = max(measure(str(max(p[1])), font)[0] for p in panels) + 20
+    panel_width = max(SETTINGS["figsize"] * 72 / columns,
+                      left + right + max(90, font * 7), title_width)
+    width = outer * 2 + panel_width * columns + gutter * (columns - 1)
+    heights = [0.0] * columns
+    placement = []
+    for panel in panels:
+        column = min(range(columns), key=lambda col: heights[col])
+        placement.append((column, heights[column]))
+        heights[column] += sum(panel[4:])
+    header, footer = 80, 36
+    height = max(360, max(heights) + header + footer)
+    fig.set_size_inches(width / 72, height / 72)
+    for panel, (column, offset) in zip(panels, placement):
+        labels, values, slots, title, data_height, above, _below = panel
+        axis_width = panel_width - left - right
+        top = height - header - offset - above
+        ax = fig.add_axes(((outer + column * (panel_width + gutter) + left) / width,
+                           (top - data_height) / height,
+                           axis_width / width, data_height / height))
+        centres = []
+        cursor = font / 2
+        for slot in slots:
+            centres.append(cursor + slot / 2)
+            cursor += slot
+        ax.barh(centres, values, color=SETTINGS["color"], height=font * .9)
+        ax.set_yticks(centres, labels, fontsize=font)
+        ax.tick_params(axis="y", pad=10)
+        ax.set_ylim(0, data_height)
         ax.set_xlim(0, max(max(values) * 1.23, 20))
-        ax.set_title(wrap(section, 48) + "\\n%d coded extracts" % sum(values),
-                     fontsize=11, loc="left", pad=12)
-        for i, value in enumerate(values):
-            ax.text(value + max(max(values) * .02, .4), i, str(value),
-                    va="center", fontsize=9)
+        heading = ax.set_title(title, fontsize=title_font, loc="left", pad=12)
+        heading.set_position((-left / axis_width, 1))
+        for y, value in zip(centres, values):
+            ax.text(value + max(max(values) * .02, .4), y, str(value),
+                    va="center", fontsize=font)
         ax.set_xlabel("Coded extracts")
-        ax.xaxis.grid(True, color=GRID)
+        # Exact counts stay beside each bar, without grid strokes through text.
         ax.set_axisbelow(True)
-    for ax in axes.flat[len(names):]:
-        ax.axis("off")
-    finish(fig, SETTINGS["title"], SETTINGS["subtitle"], SETTINGS["credit"],
-           rect=(0, .04, 1, .92))
+    if SETTINGS["title"]:
+        fig.text(outer / width, 1 - 16 / height, SETTINGS["title"],
+                 ha="left", va="top", fontsize=16, fontweight="bold")
+    if SETTINGS["subtitle"]:
+        fig.text(outer / width, 1 - 44 / height, SETTINGS["subtitle"],
+                 ha="left", va="top", fontsize=10)
+    if SETTINGS["credit"]:
+        fig.text(outer / width, 12 / height, SETTINGS["credit"],
+                 ha="left", va="bottom", fontsize=8)
+    # This layout already reserves physical space for all text. tight_layout
+    # would rescale those rows; the other four renderers keep their old layout.
+    finish(fig, "", "", "", rect=None)
 
 
 main()

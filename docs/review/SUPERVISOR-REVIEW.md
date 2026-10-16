@@ -1,5 +1,7 @@
 # Supervisor review · QualiCraft
 
+**Current update, 16 October 2026 — UX-18:** UX17-01 hierarchy label overlap is fixed and verified, with all counts/CSVs and the other four original figures unchanged. 150 Python tests (3 skipped), 74 Node tests, five project-only desktop/phone/keyboard/download/console checks, standalone SVG/PDF/PNG reproduction and production build pass. UX17-02/03 mobile usability, UX17-04/05 follow-ups, owner/device acceptance and release gates remain open. Windows is deferred; no push or deployment. Use the updated [one-page brief](SUPERVISOR-ONE-PAGE.md) and [UX-18 evidence](UX-18-HIERARCHY-LAYOUT.md). The longer notes below describe earlier candidates and do not supersede that brief; earlier PDFs are historical.
+
 For a short handout, use the [one-page English review brief](SUPERVISOR-ONE-PAGE.md) and its PDF in the evidence package. It provides a 15-20 minute demonstration, three discussion questions and outstanding items; the longer walkthrough below remains available.
 
 Latest review: UX-10 reopens visual acceptance following the owner's feedback that the previous website was too dense. The homepage now focuses on one workflow step and the report renders the existing CSVs as interactive graphics. This frontend presentation is explicitly authorised; original SVGs, full tables and downloads are retained. The owner has not yet trialled QT. Technical checks do not mean visual sign-off. **Source push is paused; no deployment; Windows deferred.** [UX-10 scope and evidence](UX-10-VISUAL-RESTART.md).
