@@ -114,6 +114,7 @@ applyMotionPreference();
 function motionLabel() { return QT(motionPreference==='reduce'?'motionReduced':'motionSystem',motionPreference==='reduce'?'Motion: reduced':'Motion: system'); }
 
 const cut = (s, a, b) => cp(s).slice(a, b).join('');
+Object.assign(_T.zh,{ovOverview:'概览',ovRead:'项目阅读标记',ovReadKey:'已读',ovRevisitKey:'待回看',ovMap:'全文双轨概览。选择位置预览段落，使用精确列表跳转。',ovSaved:'已有编码范围',ovCp:'字符',ovCurrent:'当前位置',ovPreview:'预览',ovTrackHint:'细范围使用最小可见宽度；准确端点见下方列表。',ovPrevious:'上一页',ovNext:'下一页',ovEntire:'全文',ovRanges:'原句范围',ovFullJump:'显示全文并跳转',ovJump:'转到原文',ovNoParagraph:'没有非空段落',ovInactive:'旧阅读标记已失效；现有编码范围不变。',ovKeep:'保留此阅读位置',ovFilterHint:'双轨与列表始终覆盖全文；只有明确选择显示全文才清除搜索和编码筛选。',ovParagraphList:'精确段落列表',ovParagraphNumber:'段落编号',ovSourceList:'精确原句范围列表',ovScope:'列表范围',ovTouching:'涉及段落',ovRangeNumber:'当前列表中的范围编号',ovNoRanges:'没有已保存的编码范围',ovOriginal:'原始原句范围',ovAssignment:'标注 ID',ovCodeId:'编码 ID',ovUnits:'原句范围是本文中一个原始 [起点, 终点) 对，可关联多个编码。各段的涉及数量不能相加；连续笔迹只是视觉并集，不代表共现。',ovMemory:'预览和跳转不标记已读、不覆盖 Resume；选择保留此阅读位置才更新浏览器记忆。',ovJumped:'原文预览。Resume 可返回保存的位置。'});
 const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[], collapsed:new Set(), sideFilter:'', codebookOpen:false, backups:[], backupStatus:null, insightsTab:'map', sourceFocus:null, networkReturn:null};
 Object.assign(_T.zh, {markRefreshFailed:'暂时无法取得最新标记 · 请重试刷新',markExport:'v5 JSON 包含项目阅读标记，旧版本 QT 无法打开。阅读标记随下一次研究编辑快照收录；现在导出 JSON 可单独保留。',projectMarks:'项目阅读标记',projectMark:'项目标记',mark_unmarked:'○ 未标记',mark_read:'✓ 已读',mark_revisit:'↺ 待回看',markRead:'标为已读',markUndo:'撤销',markRetry:'重试',markSaving:'保存中…',markSaved:'项目标记已保存',markNotSaved:'未保存',markRecheck:'需重新核对',markReadonly:'项目标记 · 只读',markReset:'重置标记…',markConflict:'其他位置已修改 · 请核对后重选',markResetConfirm:'原文已改变。清除这些项目阅读标记并绑定当前原文？重置前会检查一份恢复快照。',markPolicy:'标记是随文件共享的手动工作状态，不证明阅读或理解。标记即时保存到项目，随下一次研究编辑快照收录；现在导出 JSON 可保留当前状态。v5 JSON 需要当前版本的 QT。'});
 
@@ -294,6 +295,7 @@ function currentMarkTarget(){
   const d=doc();if(!d)return null;
   if(readingMarkTarget?.projectId===state.project.id&&readingMarkTarget.documentId===d.id)return readingMarkTarget;
   const p=visibleReadingFocus()||readingParagraph();if(!p)return null;
+  if(readingOverview.open&&p.getBoundingClientRect().top>=Math.min(window.innerHeight,$('#document-pane')?.getBoundingClientRect().bottom||window.innerHeight))return null;
   const paragraph=segments(d.text).find(s=>s.start===Number(p.dataset.start));if(!paragraph)return null;
   return {projectId:state.project.id,documentId:d.id,source_sha256:d.sha256,start:paragraph.start,end:paragraph.end,index:paragraph.index};
 }
@@ -302,7 +304,8 @@ function updateProjectMarks(){
   const d=doc(),bar=$('#reading-marks');if(!d||!bar)return;
   const target=currentMarkTarget(),key=markKey(state.project.id,d.id),pending=readingWrites.has(key),failure=readingFailures.get(key),stale=!validReadingSource(d);
   const select=$('#reading-mark-status'),button=$('[data-action="reading-mark-read"]'),undo=$('[data-action="reading-mark-undo"]'),retry=$('[data-action="reading-mark-retry"]'),reset=$('[data-action="reading-mark-reset"]');
-  const status=target?paragraphMark(d,target.start):'unmarked';
+  const status=target?paragraphMark(d,target.start):readingOverview.open?paragraphMark(d,readingMounted?.start):'unmarked';
+  bar.title=!target&&readingOverview.open?QT('ovMarkHint','Go to the source text to edit a paragraph mark.'):'';
   if(select){select.value=status;select.disabled=!!state.config.public_demo||pending||failure?.blocked||stale||!target;select.setAttribute('aria-label',`${QT('projectMark','Project mark')} · ¶${target?target.index+1:'—'}`);}
   if(button){button.textContent=target?`${QT('markRead','Mark read')} · ¶${target.index+1}`:QT('markRead','Mark read');button.disabled=!!state.config.public_demo||pending||failure?.blocked||stale||!target;}
   if(undo)undo.disabled=!!state.config.public_demo||pending||failure?.blocked||!readingUndos.has(key)||stale;
@@ -320,6 +323,7 @@ function acceptReadingResponse(projectId,result){
   const d=state.project.documents.find(d=>d.id===result.document_id);if(!d)return false;
   if((d.reading_state?.revision||0)>result.reading_state.revision)return false;
   d.reading_state=result.reading_state;
+  if(state.docId===d.id&&readingOverview.open)renderReadingOverview();
   if(result.updated_at>state.project.updated_at)state.project.updated_at=result.updated_at;
   if(result.audit_event&&!state.project.audit.some(e=>e.id===result.audit_event.id))state.project.audit.push(result.audit_event);
   return true;
@@ -366,6 +370,119 @@ document.addEventListener('focusin',e=>{
 });
 document.addEventListener('focusout',e=>{if(e.target.closest?.('#reading-marks')&&!e.relatedTarget?.closest?.('#reading-marks')){readingMarkTarget=null;updateProjectMarks();}});
 
+// UX-32B: derived navigation only. No project state or analysis is written here.
+Object.assign(_T.zh,{ovPositionSaved:'已保存本浏览器阅读位置。',ovStorageUnavailable:'浏览器存储不可用，无法记忆此位置。'});
+let readingOverview={key:null,open:false},readingOverviewNav=null,readingOverviewFocus=null;
+function ensureReadingOverview(){
+  const key=state.project&&doc()?markKey(state.project.id,doc().id):null;
+  if(readingOverview.key!==key){readingOverview={key,open:false,paragraph:0,paragraphPage:0,sourcePage:0,sourceScope:'paragraph',rangeKey:null,returnStart:null};readingOverviewNav=null;readingOverviewFocus=null;}
+  if(readingOverviewFocus?.key===key){
+    const ids=state.project.annotations.filter(a=>a.document_id===doc().id&&a.start===readingOverviewFocus.start&&a.end===readingOverviewFocus.end&&codesFor(a)).map(a=>a.id);
+    if(ids.length)readingOverviewFocus.ids=ids;else{readingOverviewFocus=null;readingOverview.rangeKey=null;}
+  }
+  return readingOverview;
+}
+function overviewBound(values,value,inclusive=false){
+  let lo=0,hi=values.length;while(lo<hi){const mid=(lo+hi)>>>1;if(values[mid]<value||(inclusive&&values[mid]===value))lo=mid+1;else hi=mid;}return lo;
+}
+function readingOverviewData(project,d){
+  const length=cp(d.text).length,codeIds=new Set(project.codes.map(c=>c.id)),ids=new Set(),groups=new Map();
+  const annotations=project.annotations.filter(a=>{
+    if(a.document_id!==d.id||!codeIds.has(a.code_id)||ids.has(a.id)||!Number.isInteger(a.start)||!Number.isInteger(a.end)||a.start<0||a.start>=a.end||a.end>length)return false;
+    ids.add(a.id);return true;
+  });
+  for(const a of annotations){const key=`${a.start}:${a.end}`;if(!groups.has(key))groups.set(key,{key,start:a.start,end:a.end,annotations:[]});groups.get(key).annotations.push(a);}
+  const ranges=[...groups.values()].sort((a,b)=>a.start-b.start||a.end-b.end),unions=[];
+  for(const range of ranges){const last=unions.at(-1);if(last&&range.start<=last[1])last[1]=Math.max(last[1],range.end);else unions.push([range.start,range.end]);}
+  const starts=annotations.map(a=>a.start).sort((a,b)=>a-b),ends=annotations.map(a=>a.end).sort((a,b)=>a-b),rangeStarts=ranges.map(g=>g.start),rangeEnds=ranges.map(g=>g.end).sort((a,b)=>a-b);
+  const stale=!validReadingSource(d),marks=new Map(stale?[]:(d.reading_state?.marks||[]).map(m=>[m.start,m.status]));
+  const paragraphs=segments(d.text).map(p=>({...p,status:marks.get(p.start)||'unmarked',codingCount:overviewBound(starts,p.end)-overviewBound(ends,p.start,true),rangeCount:overviewBound(rangeStarts,p.end)-overviewBound(rangeEnds,p.start,true)}));
+  return {length,paragraphs,ranges,unions,codingCount:annotations.length,stale};
+}
+function overviewParagraphAt(paragraphs,offset){
+  const index=overviewBound(paragraphs.map(p=>p.start),offset,true)-1;
+  return Math.max(0,Math.min(paragraphs.length-1,index));
+}
+function overviewPreviewNavigation(){return !!readingOverviewNav&&readingOverviewNav.key===markKey(state.project?.id,doc()?.id);}
+function overviewTrackHtml(data){
+  const x=offset=>data.length?offset/data.length*1000:0;
+  const rect=(start,end,y,kind)=>`<rect data-start="${start}" data-end="${end}" class="overview-stroke ${kind}" x="${Math.min(999.2,x(start))}" y="${y}" width="${Math.min(1000-x(start),Math.max(.8,x(end)-x(start)))}" height="14"/>`;
+  return `<div class="overview-track-label"><span>${QT('ovRead','Project read marks')}</span><span>✓ ${QT('ovReadKey','Read')} · ↺ ${QT('ovRevisitKey','Revisit')}</span></div><svg id="reading-overview-map" viewBox="0 0 1000 64" preserveAspectRatio="none" role="img" aria-label="${QT('ovMap','Two tracks across the entire document. Select a position to preview a paragraph; use the exact lists to jump.')}"><defs><pattern id="qt-overview-revisit" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#f3e6cb"/><path d="M0 6L6 0" stroke="#805b21" stroke-width="2"/></pattern></defs><path d="M0 12H1000M0 47H1000" stroke="#d7dce1" stroke-width="14"/>${data.paragraphs.filter(p=>p.status!=='unmarked').map(p=>rect(p.start,p.end,5,p.status)).join('')}${data.unions.map(([start,end])=>rect(start,end,40,'coding')).join('')}<line id="overview-current-line" y1="0" y2="64" stroke="#202a37" stroke-width="2"/><line id="overview-preview-line" x1="${x(data.paragraphs[readingOverview.paragraph]?.start||0)}" x2="${x(data.paragraphs[readingOverview.paragraph]?.start||0)}" y1="0" y2="64" stroke="#805b21" stroke-width="2" stroke-dasharray="4 3"/></svg><div class="overview-track-label"><span>${QT('ovSaved','Saved coding ranges')}</span><span>0 → ${data.length.toLocaleString()} ${QT('ovCp','code points')}</span></div><p class="overview-key">│ ${QT('ovCurrent','Current position')} · ┆ ${QT('ovPreview','Preview')} · ${QT('ovTrackHint','Strokes may have a minimum visible width; exact ranges are listed below.')}</p>`;
+}
+function overviewPagerHtml(kind,page,total,size){
+  const pages=Math.max(1,Math.ceil(total/size));return `<div class="overview-pager"><button data-action="overview-page" data-kind="${kind}" data-direction="previous" data-page="${page-1}" ${page===0?'disabled':''}>← ${QT('ovPrevious','Previous')}</button><span>${page+1} / ${pages}</span><button data-action="overview-page" data-kind="${kind}" data-direction="next" data-page="${page+1}" ${page+1>=pages?'disabled':''}>${QT('ovNext','Next')} →</button></div>`;
+}
+function readingOverviewHtml(){
+  ensureReadingOverview();if(!readingOverview.open)return '';
+  const d=doc(),data=readingOverviewData(state.project,d),o=readingOverview;
+  o.paragraph=Math.max(0,Math.min(o.paragraph,data.paragraphs.length-1));
+  const p=data.paragraphs[o.paragraph],scope=o.sourceScope==='paragraph'&&p?data.ranges.filter(g=>g.start<p.end&&g.end>p.start):data.ranges;
+  o.paragraphPage=Math.max(0,Math.min(o.paragraphPage,Math.ceil(data.paragraphs.length/12)-1));o.sourcePage=Math.max(0,Math.min(o.sourcePage,Math.ceil(scope.length/10)-1));
+  const selected=data.ranges.find(g=>g.key===o.rangeKey),scopeLabel=o.sourceScope==='paragraph'?`¶${p?p.index+1:'—'}`:QT('ovEntire','Entire document');
+  const jump=selected||p,shown=new Set([...document.querySelectorAll?.('#reader .paragraph')||[]].map(el=>Number(el.dataset.start))),touching=jump?data.paragraphs.filter(row=>row.start<jump.end&&row.end>jump.start):[],visible=touching.length>0&&touching.every(row=>shown.has(row.start)),filtered=!!(state.search||state.codeFilter);
+  const jumpAction=filtered&&!visible?'overview-show-full':selected?'overview-jump-source':'overview-jump-paragraph';
+  const button=jump?`<button data-action="${jumpAction}"${!touching.length?' disabled':''}>${jumpAction==='overview-show-full'?QT('ovFullJump','Show full document & jump'):QT('ovJump','Go to source')} ${selected?`[${selected.start}, ${selected.end})`:`¶${p.index+1}`}</button>`:'';
+  const excerpt=p?cp(p.text).slice(0,140).join('')+(cp(p.text).length>140?'…':''):QT('ovNoParagraph','No nonempty paragraphs');
+  const paragraphRows=data.paragraphs.slice(o.paragraphPage*12,o.paragraphPage*12+12).map(row=>`<li><button data-action="overview-select-paragraph" data-index="${row.index}" aria-pressed="${row.index===o.paragraph}"><strong>¶${row.index+1} · ${markLabel(row.status)}</strong><span>[${row.start}, ${row.end}) · ${row.codingCount} ${QT('savedCodings','saved codings')} · ${row.rangeCount} ${QT('ovRanges','source ranges')}</span></button></li>`).join('');
+  const rangeRows=scope.slice(o.sourcePage*10,o.sourcePage*10+10).map(g=>`<li><button data-action="overview-select-source" data-key="${g.key}" aria-pressed="${g.key===o.rangeKey}"><strong>[${g.start}, ${g.end})</strong><span>${g.annotations.length} ${QT('savedCodings','saved codings')}</span></button></li>`).join('');
+  return `<header class="overview-heading"><h2 id="overview-title">${QT('ovEntire','Entire document')}</h2><span>${data.paragraphs.length} ${QT('readingParagraphs','paragraphs')} · ${data.codingCount} ${QT('savedCodings','saved codings')} · ${data.ranges.length} ${QT('ovRanges','source ranges')}</span></header>${data.stale?`<p class="overview-warning">${QT('markRecheck','Needs recheck')} · ${QT('ovInactive','Old reading marks are inactive; saved coding ranges are unchanged.')}</p>`:''}${overviewTrackHtml(data)}<output id="overview-current-label"></output><section class="overview-preview" aria-label="${QT('ovPreview','Preview')}"><h3>¶${p?p.index+1:'—'} · ${p?markLabel(p.status):'—'}</h3><p>${esc(excerpt)}</p><p class="overview-exact">${p?`[${p.start}, ${p.end}) · ${p.codingCount} ${QT('savedCodings','saved codings')} · ${p.rangeCount} ${QT('ovRanges','source ranges')}`:''}</p>${selected?'':button}${overviewPreviewNavigation()?`<button data-action="overview-keep">${QT('ovKeep','Keep this reading position')}</button>`:''}${filtered?`<p>${QT('ovFilterHint','Tracks and lists cover the entire document. Existing search and code filters remain until you explicitly show the full document.')}</p>`:''}</section>
+    <details id="overview-paragraph-list"><summary>${QT('ovParagraphList','Exact paragraphs')} · ${data.paragraphs.length}</summary><div class="overview-number"><label for="overview-paragraph-number">${QT('ovParagraphNumber','Paragraph number')}</label><input id="overview-paragraph-number" type="number" min="1" max="${Math.max(1,data.paragraphs.length)}" value="${p?p.index+1:1}"><button data-action="overview-find-paragraph">${QT('ovPreview','Preview')}</button></div><ol class="overview-list">${paragraphRows}</ol>${overviewPagerHtml('paragraph',o.paragraphPage,data.paragraphs.length,12)}</details>
+    <details id="overview-source-list"><summary>${QT('ovSourceList','Exact source ranges')} · ${scope.length}</summary><label class="overview-scope" for="overview-source-scope">${QT('ovScope','List scope')}<select id="overview-source-scope"><option value="paragraph" ${o.sourceScope==='paragraph'?'selected':''}>${QT('ovTouching','Touching')} ¶${p?p.index+1:'—'}</option><option value="document" ${o.sourceScope==='document'?'selected':''}>${QT('ovEntire','Entire document')}</option></select></label><p>${esc(scopeLabel)} · ${scope.length} ${QT('ovRanges','source ranges')}</p><div class="overview-number"><label for="overview-range-number">${QT('ovRangeNumber','Range number in this list')}</label><input id="overview-range-number" type="number" min="1" max="${Math.max(1,scope.length)}" value="1"><button data-action="overview-find-source" ${scope.length?'':'disabled'}>${QT('ovPreview','Preview')}</button></div><ol class="overview-list">${rangeRows}</ol>${scope.length?'':`<p>${QT('ovNoRanges','No saved coding ranges')}</p>`}${overviewPagerHtml('source',o.sourcePage,scope.length,10)}</details>
+    ${selected?`<section class="overview-source-detail"><h3 tabindex="-1">${QT('ovOriginal','Original source range')} [${selected.start}, ${selected.end})</h3><blockquote>${esc(cut(d.text,selected.start,selected.end))}</blockquote><ul>${selected.annotations.map(a=>`<li data-annotation-id="${esc(a.id)}"><strong>${esc(codeIdentity(codesFor(a)))}</strong><span>${QT('ovAssignment','Coding ID')}: <code>${esc(a.id)}</code> · ${QT('ovCodeId','Code ID')}: <code>${esc(a.code_id)}</code></span></li>`).join('')}</ul>${button}</section>`:''}<p class="overview-note">${QT('ovUnits','A source range is one original [start, end) pair in this document. Multiple codes can share it. Per-paragraph touching counts must not be summed. A continuous stroke is only a visual union, not a co-occurrence claim.')}</p><p class="overview-note">${QT('ovMemory','Preview and jumps do not mark reading or replace Resume. Choose Keep this reading position to update browser memory.')}</p>`;
+}
+function renderReadingOverview(){
+  const panel=$('#reading-overview');if(!panel)return;
+  const opened=[...panel.querySelectorAll('details[open]')].map(el=>el.id),active=document.activeElement?.closest?.('#reading-overview')?document.activeElement:null,activeId=active?.id,action=active?.dataset?.action,key=active?.dataset?.key,index=active?.dataset?.index,kind=active?.dataset?.kind,direction=active?.dataset?.direction;
+  panel.hidden=!readingOverview.open;panel.innerHTML=readingOverviewHtml();
+  for(const id of opened){const element=document.getElementById(id);if(element)element.open=true;}
+  if(active){const replacement=(activeId&&document.getElementById(activeId))||[...panel.querySelectorAll('[data-action]')].find(el=>el.dataset.action===action&&el.dataset.key===key&&el.dataset.index===index&&el.dataset.kind===kind&&el.dataset.direction===direction);if(replacement?.disabled&&kind){panel.querySelector(`[data-action="overview-page"][data-kind="${kind}"]:not(:disabled)`)?.focus({preventScroll:true});}else replacement?.focus({preventScroll:true});}
+  updateReadingOverviewPosition();
+}
+function updateReadingOverviewPosition(){
+  const line=$('#overview-current-line'),label=$('#overview-current-label');if(!line||!doc()||!readingMounted)return;
+  const length=cp(doc().text).length,start=readingMounted.start;
+  line.hidden=start===null;line.setAttribute('visibility',start===null?'hidden':'visible');line.setAttribute('x1',length?start/length*1000:0);line.setAttribute('x2',length?start/length*1000:0);
+  if(label){const p=readingMounted.paragraph;label.textContent=!p?QT('readingNoMatch','No matching paragraph'):`${QT('ovCurrent','Current position')}: ¶${p.index+1} [${p.start}, ${p.end})`;}
+}
+function toggleReadingOverview(force){
+  const o=ensureReadingOverview(),open=force??!o.open;
+  const current=readingParagraph(),box=current?.getBoundingClientRect(),visible=box&&box.top<Math.min(window.innerHeight,$('#document-pane')?.getBoundingClientRect().bottom||window.innerHeight);
+  if(open&&!o.open){captureReadingPosition();o.returnStart=readingMounted?.start;o.paragraph=Math.max(0,segments(doc().text).findIndex(p=>p.start===o.returnStart));o.paragraphPage=Math.floor(o.paragraph/12);}
+  o.open=open;const button=$('[data-action="reading-overview"]');button?.setAttribute('aria-expanded',String(open));renderReadingOverview();
+  if(open){const pane=$('#document-pane');if(getComputedStyle(pane).overflowY==='auto')pane.scrollTop=0;else $('#reading-overview').scrollIntoView({block:'start',behavior:'instant'});}
+  else{scrollReadingParagraph(visible?Number(current.dataset.start):overviewPreviewNavigation()?readingOverviewNav.start:o.returnStart);updateReadingPosition();button?.focus({preventScroll:true});}
+}
+function selectReadingOverviewParagraph(index){
+  const o=ensureReadingOverview(),paragraphs=segments(doc().text);if(!Number.isInteger(index)||index<0||index>=paragraphs.length)return;
+  o.paragraph=index;o.paragraphPage=Math.floor(index/12);o.rangeKey=null;o.sourcePage=0;renderReadingOverview();
+}
+function jumpReadingOverview(full=false){
+  const o=ensureReadingOverview(),data=readingOverviewData(state.project,doc()),group=data.ranges.find(g=>g.key===o.rangeKey),p=data.paragraphs[o.paragraph];if(!p)return;
+  const range=group||p,shown=new Set([...document.querySelectorAll('#reader .paragraph')].map(el=>Number(el.dataset.start))),touching=data.paragraphs.filter(row=>row.start<range.end&&row.end>range.start),visible=touching.length>0&&touching.every(row=>shown.has(row.start));
+  if((state.search||state.codeFilter)&&!visible&&!full)return;
+  if(!readingOverviewNav)captureReadingPosition();
+  const first=data.paragraphs.find(row=>row.start<range.end&&row.end>range.start);if(!first)return;
+  readingOverviewNav={key:o.key,start:first.start,focusPending:true};readingOverviewFocus=group?{key:o.key,start:group.start,end:group.end,ids:group.annotations.map(a=>a.id)}:null;
+  if(full){state.search='';state.codeFilter=null;}
+  state.sourceFocus=null;state.selection=null;render();
+  focusReadingOverviewSource();announceMark(QT('ovJumped','Source preview. Resume returns to the saved position.'));
+}
+function focusReadingOverviewSource(){
+  if(!overviewPreviewNavigation()||state.sourceFocus||!readingOverviewNav.focusPending)return;
+  scrollReadingParagraph(readingOverviewNav.start,true);
+  if(readingOverviewFocus){const target=document.querySelector('.overview-source-target');if(target){for(let pass=0;pass<2;pass++){const pane=$('#document-pane'),tools=$('.document-tools'),top=Math.max($('.reading-dock').getBoundingClientRect().bottom,pane.getBoundingClientRect().top,getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0),delta=target.getBoundingClientRect().top-top;if(getComputedStyle(pane).overflowY==='auto')pane.scrollTop+=delta;else window.scrollBy({top:delta,behavior:'instant'});}target.focus({preventScroll:true});}previewCoding(readingOverviewFocus.ids);}
+  readingOverviewNav.focusPending=false;
+  updateReadingPosition();
+}
+function keepOverviewPosition(){
+  const start=readingMounted?.start;readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;renderReadingOverview();$('#reader').innerHTML=readerHtml();previewCoding();$('[data-action="reading-overview"]')?.setAttribute('aria-expanded','false');scrollReadingParagraph(start,true);updateReadingPosition();
+  const kept=writeReadingPosition(state.project,doc(),readingMounted?.start),message=QT(kept?'ovPositionSaved':'ovStorageUnavailable',kept?'Browser reading position saved.':'Browser storage is unavailable; this position cannot be remembered.');
+  announceMark(message);toast(message,!kept);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&readingOverview.open&&(e.target.closest?.('#reading-overview')||e.target.closest?.('[data-action="reading-overview"]'))){e.preventDefault();toggleReadingOverview(false);}});
+document.addEventListener('click',e=>{const map=e.target.closest?.('#reading-overview-map');if(!map)return;const box=map.getBoundingClientRect(),data=readingOverviewData(state.project,doc()),offset=Math.max(0,Math.min(data.length,(e.clientX-box.left)/Math.max(1,box.width)*data.length));selectReadingOverviewParagraph(overviewParagraphAt(data.paragraphs,offset));});
+document.addEventListener('change',e=>{if(e.target.id==='overview-source-scope'){readingOverview.sourceScope=e.target.value;readingOverview.sourcePage=0;renderReadingOverview();}});
+
 let readingMounted=null,readingFrame=0;
 function readingParagraph() {
   const pane=$('#document-pane'),dock=$('.reading-dock');if(!pane||!dock)return null;
@@ -375,7 +492,7 @@ function readingParagraph() {
   return paragraphs.find(p=>p.getBoundingClientRect().bottom>top+2)||paragraphs.at(-1)||null;
 }
 function captureReadingPosition() {
-  if(!readingMounted||readingMounted.filtered)return;
+  if(!readingMounted||readingMounted.filtered||readingOverview.open||overviewPreviewNavigation())return;
   const paragraph=readingParagraph();if(!paragraph)return;
   writeReadingPosition({id:readingMounted.projectId},readingMounted.document,Number(paragraph.dataset.start));
 }
@@ -387,12 +504,15 @@ function updateReadingPath() {
 }
 function updateReadingPosition() {
   if(!readingMounted||!$('#reading-document'))return;
-  const paragraph=readingParagraph(),start=paragraph?Number(paragraph.dataset.start):null;
+  const paragraph=readingParagraph(),box=paragraph?.getBoundingClientRect(),pane=$('#document-pane')?.getBoundingClientRect();
+  const inView=box&&box.top<Math.min(window.innerHeight,pane?.bottom||window.innerHeight);
+  const start=readingOverview.open&&!inView?readingMounted.start:paragraph?Number(paragraph.dataset.start):null;
   const all=segments(doc().text),index=all.findIndex(p=>p.start===start),output=$('#reading-position');
-  readingMounted.start=start;
+  readingMounted.start=start;readingMounted.paragraph=all[index]||null;
+  if(overviewPreviewNavigation()&&inView&&Number.isInteger(start))readingOverviewNav.start=start;
   if(output)output.textContent=index<0?QT('readingNoMatch','No matching paragraph'):`${QT('readingParagraph','Paragraph')} ${index+1} / ${all.length}`;
   captureReadingPosition();updateReadingPath();
-  updateProjectMarks();
+  updateProjectMarks();updateReadingOverviewPosition();
   const resume=$('[data-action="reading-resume"]');if(resume)resume.disabled=!readReadingPosition(state.project,doc());
 }
 function scrollReadingParagraph(start,focus=false) {
@@ -413,10 +533,13 @@ function mountReading(restore=true) {
   if(state.view!=='coding'||!doc()||!$('#reading-document'))return;
   readingMounted={projectId:state.project.id,document:doc(),filtered:!!(state.search||state.codeFilter),start:null};
   const saved=readReadingPosition(state.project,doc());
-  if(restore&&!readingMounted.filtered&&!state.sourceFocus){
+  if(restore&&!state.sourceFocus&&overviewPreviewNavigation()){scrollReadingParagraph(readingOverviewNav.start);}
+  else if(restore&&!readingMounted.filtered&&!state.sourceFocus){
     if(saved)scrollReadingParagraph(saved.start);else if(window.innerWidth<=800)window.scrollTo({top:0,behavior:'instant'});
   }
   updateReadingPosition();
+  if(readingOverview.open)renderReadingOverview();
+  if(overviewPreviewNavigation())focusReadingOverviewSource();
 }
 function scheduleReadingPosition(event) {
   if(event&&event.type==='scroll'&&event.target!==document&&event.target!==$('#document-pane'))return;
@@ -695,7 +818,7 @@ function render() {
   loadNetwork();
   focusNetworkSource();
   mountReading();
-  previewCoding();
+  previewCoding(state.view==='coding'&&overviewPreviewNavigation()&&readingOverviewFocus?readingOverviewFocus.ids:[]);
 }
 function highlight(text, start, annotations) {
   const chars=cp(text), end=start+chars.length;
@@ -707,19 +830,21 @@ function highlight(text, start, annotations) {
     const activeCodes=active.map(x=>codesFor(x)).filter(Boolean);
     if(!activeCodes.length) return part;
     const filtered=state.codeFilter?new Set([state.codeFilter,...codeDescendants(state.codeFilter)]):null;
-    const source=active.some(x=>x.id===state.sourceFocus),classes=[source?'source-target':'',filtered&&active.some(x=>filtered.has(x.code_id))?'coding-filtered':''].filter(Boolean).join(' ');
-    return `<mark${classes?` class="${classes}"`:''}${source?' tabindex="-1"':''} data-coding-ids="${esc(JSON.stringify(active.map(x=>x.id)))}" data-coding-count="${active.length}" title="${esc(activeCodes.map(c=>c.name).join(' · '))}">${part}</mark>`;
+    const source=active.some(x=>x.id===state.sourceFocus),overview=readingOverviewFocus?.key===markKey(state.project.id,doc().id)&&a<readingOverviewFocus.end&&b>readingOverviewFocus.start,classes=[source?'source-target':'',overview?'overview-source-target':'',filtered&&active.some(x=>filtered.has(x.code_id))?'coding-filtered':''].filter(Boolean).join(' ');
+    return `<mark${classes?` class="${classes}"`:''}${source||overview?' tabindex="-1"':''} data-coding-ids="${esc(JSON.stringify(active.map(x=>x.id)))}" data-coding-count="${active.length}" title="${esc(activeCodes.map(c=>c.name).join(' · '))}">${part}</mark>`;
   }).join('');
 }
 
 function codingView() {
   const d=doc();if(!d)return emptyProjectHtml();
+  ensureReadingOverview();
   return `${networkSourceTrailHtml()}<section class="reading-dock" aria-label="${QT('readingNavigation','Reading navigation')}">
-    <div class="reading-primary"><label class="reading-document-label" for="reading-document">${icon('doc')}<span class="sr-only">${QT('readingDocument','Current document')}</span></label><select id="reading-document" aria-label="${QT('readingDocument','Current document')}">${state.project.documents.map(item=>`<option value="${esc(item.id)}" ${item.id===d.id?'selected':''}>${esc(item.name)}</option>`).join('')}</select><output id="reading-position" aria-label="${QT('readingPosition','Reading position')}"></output><button data-action="reading-resume" title="${QT('readingResumeHint','Return to the saved paragraph in this browser. Position is not a read mark.')}">${QT('readingResume','Resume')}</button><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button></div>
+    <div class="reading-primary"><label class="reading-document-label" for="reading-document">${icon('doc')}<span class="sr-only">${QT('readingDocument','Current document')}</span></label><select id="reading-document" aria-label="${QT('readingDocument','Current document')}">${state.project.documents.map(item=>`<option value="${esc(item.id)}" ${item.id===d.id?'selected':''}>${esc(item.name)}</option>`).join('')}</select><output id="reading-position" aria-label="${QT('readingPosition','Reading position')}"></output><button data-action="reading-resume" title="${QT('readingResumeHint','Return to the saved paragraph in this browser. Position is not a read mark.')}">${QT('readingResume','Resume')}</button><button type="button" data-action="reading-overview" aria-expanded="${readingOverview.open}" aria-controls="reading-overview">${QT('ovOverview','Overview')}</button></div>
     <div class="reading-marks" id="reading-marks" role="group" aria-label="${QT('projectMarks','Project reading marks')}"><select id="reading-mark-status" aria-label="${QT('projectMark','Project mark')}">${['unmarked','read','revisit'].map(status=>`<option value="${status}">${markLabel(status)}</option>`).join('')}</select><button type="button" data-action="reading-mark-read">${QT('markRead','Mark read')}</button><button type="button" data-action="reading-mark-undo" disabled>${QT('markUndo','Undo')}</button><button type="button" data-action="reading-mark-retry" hidden>${QT('markRetry','Retry')}</button><button type="button" data-action="reading-mark-reset" hidden>${QT('markReset','Reset marks…')}</button><span id="reading-mark-save"></span></div>
     <div class="reading-context" tabindex="0" role="region" aria-label="${QT('readingPaths','Coding paths at this position')}"><span id="reading-path-label">${QT('readingHere','Codings here')}</span><span id="reading-code-path"></span></div><span id="reading-announcement" class="sr-only" role="status"></span>
   </section><div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript">
-  <div class="document-tools"><input id="search" class="search" type="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"><button class="mobile-only reading-tools-toggle" data-action="reading-tools" aria-expanded="false" aria-controls="reading-coding-tools">${QT('readingTools','Coding tools')}</button><div class="tool-group" id="reading-coding-tools"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
+  <div class="document-tools"><input id="search" class="search" type="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"><button class="mobile-only reading-tools-toggle" data-action="reading-tools" aria-expanded="false" aria-controls="reading-coding-tools">${QT('readingTools','Coding tools')}</button><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button><div class="tool-group" id="reading-coding-tools"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
+  <section id="reading-overview" class="reading-overview" aria-labelledby="overview-title" ${readingOverview.open?'':'hidden'}>${readingOverviewHtml()}</section>
   ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<details class="reading-details"><summary>${QT('readingDetails','Document details & notes')}<span>${segments(d.text).length} ${QT('readingParagraphs','paragraphs')} · ${state.project.annotations.filter(a=>a.document_id===d.id).length} ${QT('savedCodings')}</span></summary><div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div></div>
   <p class="reading-marks-help">${QT('markPolicy','Project marks are manual and shared with this file; they do not prove reading or understanding. Reading-only changes are saved to the project and enter its next snapshot. Export JSON to keep this state now. JSON format v5 requires this version of QT.')}</p><p class="reading-memory-note">${QT('readingMemoryNote','Position only · stored in this browser, outside project exports. Scrolling does not mark text as read.')}</p><div class="reading-note${hasBlock('memos')?'':' block-off'}"><label class="reading-note-label" for="doc-memo">${QT('readingNotes','READING NOTES')}</label><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div></details>
   <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">${QT('aiReview','AI REVIEW')}</div><div class="review-title"><h3>${QT('suggestions','Suggestions')}</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">${QT('reviewSubtitle','Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.')}</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending',QT('pending','Pending review')],['accepted',QT('reviewAccepted','Accepted')],['rejected',QT('reviewRejected','Rejected')]].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
@@ -1342,14 +1467,26 @@ async function action(button) {
   if(a==='net-dismiss'){state.sourceFocus=null;state.networkReturn=null;render();return;}
   if(a==='view'){state.view=button.dataset.view;state.selection=null;render();return;}
   if(a==='doc'){switchReadingDocument(button.dataset.id);return;}
+  if(a==='reading-overview'){button.disabled=false;toggleReadingOverview();return;}
+  if(a==='overview-select-paragraph'){selectReadingOverviewParagraph(Number(button.dataset.index));return;}
+  if(a==='overview-find-paragraph'){const input=$('#overview-paragraph-number');if(input.reportValidity())selectReadingOverviewParagraph(Number(input.value)-1);return;}
+  if(a==='overview-select-source'||a==='overview-find-source'){
+    const data=readingOverviewData(state.project,doc()),p=data.paragraphs[readingOverview.paragraph],scope=readingOverview.sourceScope==='paragraph'&&p?data.ranges.filter(g=>g.start<p.end&&g.end>p.start):data.ranges;
+    const input=$('#overview-range-number');if(a==='overview-find-source'&&!input.reportValidity())return;
+    const group=a==='overview-select-source'?data.ranges.find(g=>g.key===button.dataset.key):scope[Number(input.value)-1];
+    if(group){readingOverview.rangeKey=group.key;readingOverview.sourcePage=Math.floor(scope.indexOf(group)/10);if(readingOverview.sourceScope==='document'){const first=data.paragraphs.find(p=>p.start<group.end&&p.end>group.start);if(first){readingOverview.paragraph=first.index;readingOverview.paragraphPage=Math.floor(first.index/12);}}renderReadingOverview();const detail=$('.overview-source-detail h3');detail?.scrollIntoView({block:'center',behavior:'instant'});detail?.focus({preventScroll:true});}return;
+  }
+  if(a==='overview-page'){const kind=button.dataset.kind;readingOverview[kind==='paragraph'?'paragraphPage':'sourcePage']=Number(button.dataset.page);renderReadingOverview();return;}
+  if(a==='overview-jump-paragraph'||a==='overview-jump-source'||a==='overview-show-full'){jumpReadingOverview(a==='overview-show-full');return;}
+  if(a==='overview-keep'){keepOverviewPosition();return;}
   if(a==='reading-mark-read')return saveReadingMark('read');
   if(a==='reading-mark-undo'){const saved=readingUndos.get(markKey(state.project.id,doc().id));if(saved)return saveReadingMark(saved.status,{undo:true,targetOverride:saved});return;}
   if(a==='reading-mark-retry'){const failure=readingFailures.get(markKey(state.project.id,doc().id));if(failure?.retry?.refresh)return refreshReadingMarks(failure.retry.projectId,failure.retry.documentId);if(failure?.retry)return saveReadingMark(failure.retry.body.status,{retry:failure.retry,reset:failure.retry.reset,undo:failure.retry.undo});return;}
   if(a==='reading-mark-reset'){if(confirm(QT('markResetConfirm','The source has changed. Clear these project reading marks and bind new marks to this text? A recovery snapshot will be checked first.')))return saveReadingMark('unmarked',{reset:true});return;}
-  if(a==='reading-resume'){const saved=readReadingPosition(state.project,doc());if(saved){state.search='';state.codeFilter=null;state.sourceFocus=null;render();scrollReadingParagraph(saved.start,true);updateReadingPosition();}return;}
+  if(a==='reading-resume'){readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;const saved=readReadingPosition(state.project,doc());if(saved){state.search='';state.codeFilter=null;state.sourceFocus=null;render();scrollReadingParagraph(saved.start,true);updateReadingPosition();}return;}
   if(a==='reading-tools'){const pane=$('#document-pane'),open=pane.classList.toggle('reading-tools-open');button.setAttribute('aria-expanded',String(open));return;}
   if(a==='coding-codebook')return showMobileCodebook();
-  if(a==='filter-code'){const inBook=button.closest('#mobile-codebook-list');const fromTree=button.closest('.codebook-tree'),id=button.dataset.id;if(inBook){delete $('#dialog').dataset.codingCodebook;closeModal();}state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();if(inBook)$('.reader-code-filter button')?.focus();else if(fromTree)[...document.querySelectorAll('#side-list [data-action="filter-code"]')].find(el=>el.dataset.id===id)?.focus({preventScroll:true});return;}
+  if(a==='filter-code'){const inBook=button.closest('#mobile-codebook-list');const fromTree=button.closest('.codebook-tree'),id=button.dataset.id;if(inBook){delete $('#dialog').dataset.codingCodebook;closeModal();}readingOverviewNav=null;readingOverviewFocus=null;state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();if(inBook)$('.reader-code-filter button')?.focus();else if(fromTree)[...document.querySelectorAll('#side-list [data-action="filter-code"]')].find(el=>el.dataset.id===id)?.focus({preventScroll:true});return;}
   if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);refreshCodebooks(id,'toggle-code',button.closest('#mobile-codebook-list')?'mobile':'side');return;}
   if(a==='toggle-codebook'){state.codebookOpen=!state.codebookOpen;refreshSideList();$('[data-action="toggle-codebook"]')?.focus({preventScroll:true});return;}
   if(a==='code-edit'){showCodeEdit(button.dataset.id);$('#dialog').dataset.codingEdit=button.dataset.id;return;}
@@ -1523,7 +1660,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){captureReadingPosition();state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){captureReadingPosition();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
 // Preview changes CSS only: no re-render, source text insertion or server write.
 document.addEventListener('pointerover',event=>{
   if(event.pointerType!=='mouse')return;
@@ -1706,6 +1843,7 @@ function drawNetworkEvidence() {
 }
 function openNetworkSource(id) {
   const record = evidenceRecord(id);
+  readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;
   if (!record?.valid) { toast(QT('sourceUnavailable'),true); return; }
   state.networkReturn = {projectId:state.project.id,docId:state.docId,search:state.search,codeFilter:state.codeFilter};
   state.docId=record.annotation.document_id; state.search=''; state.codeFilter=null;

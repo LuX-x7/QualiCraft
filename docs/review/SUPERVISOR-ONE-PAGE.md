@@ -1,27 +1,26 @@
 # QT · Supervisor review — 16 October 2026
 
-**Local candidate: UX-32A.** Manual paragraph marks now work in Coding and travel with JSON format 5. Windows remains deferred and unverified. Nothing has been pushed or deployed.
+**Local candidate: UX-32B.** Coding now has a two-track overview and exact source navigation, alongside the manual paragraph marks from 32A. Windows remains deferred and unverified. Nothing has been pushed or deployed.
 
 ## Demonstration order · about 12 minutes
 
-1. **Website → report (2 min):** inspect the five modules, permanent passage–code–theme network, exact CSV/table readings and movable heatmap lens. Report data is the fixed Bologna example, not live workbench edits.
-2. **Import → Coding (4 min):** use an editable Bologna copy. Show the imported document, calm highlights and Theme › Code hierarchy. Select a paragraph and demonstrate Unmarked → Read → Revisit, Clear (Unmarked) and Undo. Scrolling and coding do not mark reading. Resume remembers browser position separately.
-3. **Save → recover (2 min):** refresh or switch documents to confirm saved project marks. Download JSON and restore it as a new project; marks survive. A stale tab must review the latest state after a conflict.
-4. **Relationships → figures → export (4 min):** expand a source node, return to its quotation, inspect the five figures and phone original-size view, then download JSON/CSV/matrix/methods. Confirm the actual file download. Website clips are the prior UX-29 demonstration; current reading controls are shown live and in UX-32A screenshots.
+1. **Website → report (2 min):** inspect the five modules, permanent passage–code–theme network, CSV/table readings and movable heatmap lens. The report is a fixed Bologna example, separate from live edits.
+2. **Import → Coding (3 min):** open an editable Bologna copy, its document, calm highlights and Theme › Code hierarchy. Demonstrate Unmarked → Read → Revisit, Clear and Undo. Resume remembers browser position separately; scrolling and coding do not mark reading.
+3. **Overview → evidence (4 min):** open Overview. The two tracks use full-document Unicode character coordinates: manual marks above, saved coding ranges below. Interview02 has31 paragraphs,53 codings and52 source ranges. Preview a paragraph; inspect a shared range’s complete quotation and both coding IDs/paths; jump to the exact source. Demonstrate keyboard pagination, phone controls and an explicit Show full document & jump when filters hide the source. Resume returns to the previous position; Keep this reading position explicitly replaces browser memory. Return from a network quotation without losing its selection.
+4. **Figures → export/recover (3 min):** inspect the five figures and phone original-size viewer, download JSON/CSV/matrix/methods, then restore JSON as a new project. Confirm the actual downloaded file. Website UX-29 clips predate the new reading controls; demonstrate those live or with the new screenshots.
 
-## Important rules and discussion
+## Rules and discussion
 
-- Marks are manual, shared project workflow metadata. Unmarked does not mean unread; timestamps do not establish reading duration, comprehension or familiarisation before coding.
-- JSON is now **format 5**. Older QT versions cannot open it. Loading format 4 is neutral and read-only; its first write requires a verified recovery snapshot of the original stored format 4 project.
-- Marks save immediately to SQLite. Reading-only actions do not rotate research-edit snapshots; the next research edit includes them. **Export JSON to preserve the current state now.** Restoring an older snapshot restores only that snapshot’s marks.
-- Coding CSV, matrix, statistics, figures and source text keep their meanings. Methods adds only a separate workflow caveat and truthful audit information.
+Marks are manual, shared project metadata. Unmarked does not mean unread; timestamps do not prove reading duration, comprehension or familiarisation before coding. A continuous coding stroke is a visual union. Two codes on one range remain two codings/one source range; paragraph touching counts cannot be summed.
 
-Discuss whether manual whole-paragraph marks and this snapshot policy fit the research workflow, and whether the compact desktop/phone controls are clear enough. The underlying unit is each nonempty physical line, not an arbitrary selected quotation.
+JSON remains **format5** and older QT versions cannot open it. Marks save immediately to SQLite, without rotating research-edit snapshots; the next research edit includes them. **Export JSON to preserve the current marks now.** An older stored format is checkpointed before its first write. Overview preview/navigation does not write project data or create snapshots.
 
-## Remaining work and review boundary
+Discuss whether the compact controls, whole-line paragraph unit, exact source lists and preview/Resume distinction fit the research workflow. Counts, statistics, figure definitions and source text remain unchanged.
 
-**Next planned slice: 32B**, the optional two-track reading/coding overview, exact paragraph/source-range list and accessible jumps. No overview or completion percentage is included yet. Remaining W03 visual refinements, owner/supervisor acceptance, current-feature VoiceOver and physical-device checks, and release gates remain open. Earlier device checks are historical. Windows remains unverified.
+## Remaining work and acceptance boundary
 
-Evidence: UX-32A-READING-MARKS.md, screenshots and raw/ux-32a in this package. Current technical checks pass: 163 Python tests (3 skipped), 129 Node tests, 10 main Chrome cases, compatibility checks and a direct Next build. npm is unavailable; its exit 127 is retained alongside the successful equivalent build.
+The planned T03 technical slices are implemented. Joint website/report/workbench acceptance, remaining W03 visual refinement, owner/supervisor acceptance, current-feature physical-device/VoiceOver checks and release gates remain open. Earlier device evidence is historical; Windows remains unverified.
 
-Local entries: [Website](http://127.0.0.1:4445/), [Report](http://127.0.0.1:4445/report), [Workbench](http://127.0.0.1:4445/w?lang=en). Use a disposable copy when editing; these loopback links are not a public deployment.
+Evidence: UX-32B-READING-OVERVIEW.md, screenshots and raw/ux-32b in this package. 163 Python tests (3 skipped),139 Node tests,11 overview +10 existing-mark +2 read-only/storage cases and direct Next build pass. npm is unavailable (exit127 retained).
+
+Local entries: [Website](http://127.0.0.1:4445/), [Report](http://127.0.0.1:4445/report), [Workbench](http://127.0.0.1:4445/w?lang=en); marked [32B QA copy](http://127.0.0.1:4465/w?lang=en). These are loopback previews, not public hosting.
