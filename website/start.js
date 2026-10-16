@@ -38,17 +38,49 @@ const base = workbenchBase()
 console.log(`QualiCraft site | listening on ${host}:${port}`)
 console.log(`  workbench     ${base}${process.env.QT_WORKBENCH_URL ? '' : '  (default; QT_WORKBENCH_URL is not set)'}`)
 
-// Probe it once, without blocking startup: a free instance may be asleep, so a
-// slow first answer is expected rather than a fault.
-const started = Date.now()
-// Five seconds, then give up and say so. Without a bound this promise can hang
-// for as long as the platform's own socket timeout, so a misconfigured address
-// shows up as silence instead of as a line in the log.
-fetch(`${base}/api/health`, { signal: AbortSignal.timeout(5000) })
-  .then((response) => console.log(
-    `  health        ${response.status} in ${Date.now() - started}ms${response.ok ? '' : '  <- check QT_WORKBENCH_URL'}`))
-  .catch((error) => console.log(
-    `  health        unreachable after ${Date.now() - started}ms: ${error.message}`))
+// Diagnose the same mounted bootstrap used by the /w proxy. The workbench has
+// no /api/health route. HTTP 200 alone could be another site's landing page, so
+// require the bootstrap shape without logging tokens or project metadata.
+// A waking backend gets a bounded retry window; Next starts independently.
+async function probeWorkbench(base) {
+  const target = `${base}/w/api/bootstrap`
+  const started = Date.now()
+  const attempts = 3, timeoutMs = 5000, retryMs = 1000
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    let failure
+    try {
+      const response = await fetch(target, {
+        signal: AbortSignal.timeout(timeoutMs), cache: 'no-store', redirect: 'manual',
+      })
+      if (!response.ok) {
+        failure = `HTTP ${response.status}`
+        await response.body?.cancel()
+      } else {
+        const payload = await response.json()
+        if (payload && typeof payload.token === 'string' && payload.token.length > 0 &&
+            Array.isArray(payload.projects) && payload.config &&
+            typeof payload.config === 'object' && !Array.isArray(payload.config)) {
+          console.log(`  health        ready in ${Date.now() - started}ms (bootstrap ${target}; attempt ${attempt}/${attempts})`)
+          return
+        }
+        failure = 'unexpected bootstrap response'
+      }
+    } catch (error) {
+      failure = error.name === 'TimeoutError' || error.name === 'AbortError'
+        ? `request timed out (${timeoutMs}ms)`
+        : error.name === 'SyntaxError'
+          ? 'invalid bootstrap JSON'
+          : `unreachable (${error.cause?.code || error.message})`
+    }
+    if (attempt < attempts) {
+      console.log(`  health        waiting (${attempt}/${attempts}): ${failure}; retrying in ${retryMs}ms`)
+      await new Promise(resolve => setTimeout(resolve, retryMs))
+    } else {
+      console.warn(`  health        failed after ${attempts} attempts in ${Date.now() - started}ms: ${failure}; check QT_WORKBENCH_URL and backend readiness (${target})`)
+    }
+  }
+}
+void probeWorkbench(base)
 
 const child = spawn(process.execPath, [nextBin, 'start', '-p', port, '-H', host], {
   cwd: __dirname,
