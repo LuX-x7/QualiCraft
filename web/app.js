@@ -65,6 +65,21 @@ Object.assign(_T.zh, {
   plotViewHint:'滑动或滚动查看。方向键移动；+ / − 缩放；0 恢复原尺寸。',
   plotSvg:'下载 SVG', plotClose:'关闭图表', plotScale:'缩放比例',
 });
+// UX-24: roles describe saved tree positions, not a new analytic classification.
+Object.assign(_T.en, {
+  importedCoding:'IMPORTED', codebookTree:'Themes & codes', themeGroup:'Theme / group', parentCode:'Parent code', codeRole:'Code',
+  ungroupedCode:'Ungrouped code', codebookHint:'Saved parent relationships · counts include descendants',
+  codebookFind:'Find a code', savedCodings:'saved codings', overlappingRanges:'Overlapping ranges',
+  codeFilterLabel:'Code filter', codePathLabel:'Saved code path', overlapCodings:'Codings overlapping this range',
+  codingHighlight:'Saved coding', codingHighlightFocus:'Focused coding', codingKeyHint:'Hover or focus a coding to trace its path.',
+});
+Object.assign(_T.zh, {
+  importedCoding:'已导入', codebookTree:'主题与编码', themeGroup:'主题／分组', parentCode:'父编码', codeRole:'编码',
+  ungroupedCode:'未归组编码', codebookHint:'已保存的父子关系 · 计数包含后代编码',
+  codebookFind:'查找编码', savedCodings:'条已保存标注', overlappingRanges:'存在重叠范围',
+  codeFilterLabel:'编码筛选', codePathLabel:'已保存的编码路径', overlapCodings:'与此范围重叠的标注',
+  codingHighlight:'已编码', codingHighlightFocus:'当前聚焦标注', codingKeyHint:'悬浮或聚焦标注以查看所属路径。',
+});
 function QT(k,fb){const d=_T[QT_LANG];return(d&&d[k])||fb||k;}
 document.documentElement.lang = QT_LANG === 'zh' ? 'zh-CN' : 'en';
 if(QT_LANG==='zh'){document.title='QualiCraft \u00b7 \u8d28\u6027\u7814\u7a76\u5de5\u4f5c\u53f0';}
@@ -148,13 +163,22 @@ async function api(path, body) {
 const projectUrl = action => `${QT_BASE}/api/projects/${state.project.id}${action?'/'+action:''}`;
 const doc = () => state.project?.documents.find(d=>d.id===state.docId);
 const codesFor = a => state.project.codes.find(c=>c.id===a.code_id);
-function codePath(code) {
-  const byId=new Map(state.project.codes.map(c=>[c.id,c]));
-  const parts=[code.name]; let cur=code; const seen=new Set([code.id]);
-  while(cur.parent_id && byId.has(cur.parent_id) && !seen.has(cur.parent_id)) {
-    cur=byId.get(cur.parent_id); seen.add(cur.id); parts.push(cur.name);
+function codeLineage(code) {
+  const byId=new Map(state.project.codes.map(c=>[c.id,c])), parts=[code], seen=new Set([code.id]);
+  let cur=code;
+  while(cur.parent_id&&byId.has(cur.parent_id)&&!seen.has(cur.parent_id)) {
+    cur=byId.get(cur.parent_id);seen.add(cur.id);parts.unshift(cur);
   }
-  return parts.reverse().join(' > ');
+  return parts;
+}
+function codePath(code) { return codeLineage(code).map(c=>c.name).join(' > '); }
+function codeRole(code) {
+  const grouped=state.project.codes.some(c=>c.id===code.parent_id), parent=state.project.codes.some(c=>c.parent_id===code.id);
+  return QT(!grouped?(parent?'themeGroup':'ungroupedCode'):(parent?'parentCode':'codeRole'));
+}
+function codeIdentity(code) {
+  const path=codePath(code);
+  return state.project.codes.filter(c=>codePath(c)===path).length>1?`${path} · ${code.id}`:path;
 }
 // The theme a code ultimately sits under — its topmost ancestor, or the code
 // itself when it has none.
@@ -166,29 +190,40 @@ function themeOf(code) {
   }
   return cur;
 }
-// The coding margin, grouped by theme. Several screens into a transcript, a pill
-// reading "The gym is not for me" is hard to place; the theme above it is what
-// makes it legible again. A code with no parent is its own theme and gets no
-// header, so a flat codebook looks exactly as it did.
+// Only saved ancestry is drawn. Root codes without children are not called themes.
+function codingSourceLabel(annotation) {
+  const label={manual:'human',researcher_reference:'reference',ai_reviewed:'aiReviewed',imported:'importedCoding'}[annotation.source];
+  return label?QT(label):annotation.source;
+}
 function marginHtml(matches) {
-  const groups=[];
+  if(!matches.length)return '';
+  const roots=new Map();
   matches.forEach(a=>{
-    const c=codesFor(a); if(!c) return;
-    const theme=themeOf(c);
-    let group=groups.find(g=>g.theme.id===theme.id);
-    if(!group) groups.push(group={theme,items:[]});
-    group.items.push({a,c});
+    const code=codesFor(a);if(!code)return;
+    let level=roots;
+    codeLineage(code).forEach((c,i,path)=>{if(!level.has(c.id))level.set(c.id,{code:c,children:new Map(),items:[]});const node=level.get(c.id);if(i===path.length-1)node.items.push(a);level=node.children;});
   });
-  return groups.map(({theme,items})=>{
-    const header=items.some(({c})=>c.id!==theme.id)
-      ? `<button class="margin-theme" data-action="filter-code" data-id="${theme.id}" title="${esc(theme.definition||theme.name)}"><span class="dot" style="background:${esc(theme.color)}"></span><span class="margin-theme-name">${esc(theme.name)}</span></button>`
-      : '';
-    return `<div class="margin-group">${header}${items.map(({a,c})=>`
-      <button class="pill" style="--code-color:${esc(c.color)}" data-action="annotation" data-id="${a.id}">
-        <span class="code-name">${esc(c.name)}</span>
-        <span class="source">${a.source==='manual'?QT('human','HUMAN'):a.source==='researcher_reference'?QT('reference','REFERENCE'):QT('aiReviewed','AI · REVIEWED')}</span>
-      </button>`).join('')}</div>`;
-  }).join('');
+  const nodeHtml=node=>{
+    const c=node.code, label=codeRole(c);
+    const header=`<button class="margin-node-label" data-action="filter-code" data-id="${c.id}" title="${esc(codeIdentity(c))}"><span class="code-role">${esc(label)}</span><span class="margin-theme-name">${esc(c.name)}${codeIdentity(c)!==codePath(c)?`<small class="code-identity-id">${esc(c.id)}</small>`:''}</span></button>`;
+    return `<li data-coding-node="${c.id}">${header}${node.items.map(a=>`<button class="pill" data-action="annotation" data-id="${a.id}" data-code-id="${c.id}" aria-label="${esc(codeIdentity(c))} · [${a.start}, ${a.end})" title="${esc(codeIdentity(c))}"><span class="coding-range">[${a.start}, ${a.end}) ↗</span><span class="source">${esc(codingSourceLabel(a))}</span></button>`).join('')}${node.children.size?`<ul>${[...node.children.values()].map(nodeHtml).join('')}</ul>`:''}</li>`;
+  };
+  const overlap=matches.some((a,i)=>matches.slice(i+1).some(b=>a.start<b.end&&b.start<a.end));
+  return `<div class="margin-summary">${matches.length} ${QT('savedCodings')}${overlap?`<span>${QT('overlappingRanges')}</span>`:''}<span class="coding-preview-path"></span></div><ul class="margin-tree">${[...roots.values()].map(nodeHtml).join('')}</ul>`;
+}
+function codingDetailsHtml(annotation) {
+  const code=codesFor(annotation),others=state.project.annotations.filter(a=>a.document_id===annotation.document_id&&a.start<annotation.end&&a.end>annotation.start);
+  return `<p class="coding-detail-path"><span class="code-role">${QT('codePathLabel')}</span>${esc(codeIdentity(code))}</p><blockquote class="big-quote">${esc(annotation.quote)}</blockquote><p>Source range [${annotation.start}, ${annotation.end}) · ${esc(annotation.source)}</p><button type="button" data-action="coding-locate" data-id="${annotation.id}">${QT('openSource')}</button>${others.length>1?`<details class="coding-overlaps"><summary>${others.length} · ${QT('overlapCodings')}</summary>${others.map(a=>`<button data-action="annotation" data-id="${a.id}" aria-pressed="${a.id===annotation.id}">${esc(codeIdentity(codesFor(a)))}<small>[${a.start}, ${a.end})</small></button>`).join('')}</details>`:''}`;
+}
+let codingPreview=[];
+function previewCoding(ids=[]) {
+  codingPreview=ids;
+  const effective=ids.length?ids:(state.sourceFocus?[state.sourceFocus]:[]),chosen=new Set(effective),path=new Set();
+  state.project?.annotations.filter(a=>chosen.has(a.id)).forEach(a=>{const c=codesFor(a);if(c)codeLineage(c).forEach(c=>path.add(c.id));});
+  document.querySelectorAll('.passage mark[data-coding-ids]').forEach(mark=>mark.classList.toggle('coding-active',JSON.parse(mark.dataset.codingIds).some(id=>chosen.has(id))));
+  document.querySelectorAll('.pill[data-code-id]').forEach(pill=>pill.classList.toggle('coding-active',chosen.has(pill.dataset.id)));
+  document.querySelectorAll('.margin-tags').forEach(margin=>{const label=margin.querySelector('.coding-preview-path');if(!label)return;const own=[...margin.querySelectorAll('.pill[data-code-id]')].filter(el=>chosen.has(el.dataset.id)),names=[...new Set(own.map(el=>{const c=state.project.codes.find(c=>c.id===el.dataset.codeId);return c?codeIdentity(c):''}))];const first=margin.querySelector('.pill[data-code-id]'),fallback=first&&state.project.codes.find(c=>c.id===first.dataset.codeId);label.textContent=names.join(' · ')||(fallback?codeIdentity(fallback):'');});
+  document.querySelectorAll('[data-coding-node],[data-code-node]').forEach(node=>node.classList.toggle('coding-path-active',path.has(node.dataset.codingNode||node.dataset.codeNode)));
 }
 function codeDescendants(id) {
   const out=new Set(); const stack=[id];
@@ -239,48 +274,52 @@ function codeCounts() {
   });
   return {own, total};
 }
-function codebookHtml() {
+function codebookHtml(context='side') {
   const p=state.project;
-  if(!p.codes.length) return `<div class="empty">${QT('noCodes','No codes yet. Add one to start coding.')}</div>`;
-  const {own,total}=codeCounts();
-  const row=({code:c,depth,childCount})=>{
-    const open=!state.collapsed.has(c.id);
-    return `<div class="code-row" style="--depth:${depth}">
-      <button class="twisty${childCount?'':' leaf'}" data-action="toggle-code" data-id="${c.id}" title="${childCount?(open?QT('collapse','Collapse'):QT('expand','Expand')):''}" aria-label="Toggle">${childCount?(open?'▾':'▸'):''}</button>
-      <button class="side-item${state.codeFilter===c.id?' selected':''}" data-action="filter-code" data-id="${c.id}" title="${esc(c.definition||c.name)}">
-        <span class="dot" style="background:${esc(c.color)}"></span>
-        <span class="name">${esc(c.name)}${c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}</span>
-        <span class="count" title="${own.get(c.id)||0} direct · ${total.get(c.id)||0} including sub-codes">${total.get(c.id)||0}</span>
-      </button>
-      <button class="edit-code" data-action="code-edit" data-id="${c.id}"${demoLock('Edit, re-parent, merge or delete')} aria-label="${QT('editCode','Edit code')}">⋯</button>
-    </div>`;
+  if(!p.codes.length)return `<div class="empty">${QT('noCodes','No codes yet. Add one to start coding.')}</div>`;
+  const {own,total}=codeCounts(),byParent=new Map(),needle=state.sideFilter.trim().toLowerCase();
+  p.codes.forEach(c=>{const key=c.parent_id||null;if(!byParent.has(key))byParent.set(key,[]);byParent.get(key).push(c);});
+  byParent.forEach(list=>list.sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name)));
+  const row=(c,search=false)=>{
+    const children=byParent.get(c.id)||[],open=!state.collapsed.has(c.id),path=codeIdentity(c),role=codeRole(c);
+    return `<li data-code-node="${c.id}" data-parent-id="${esc(c.parent_id||'')}"><div class="code-row">
+      ${children.length&&!search?`<button class="twisty" data-action="toggle-code" data-id="${c.id}" aria-expanded="${open}" aria-controls="cb-${context}-${c.id}" aria-label="${esc((open?QT('collapse','Collapse'):QT('expand','Expand'))+' '+c.name)}">${open?'▾':'▸'}</button>`:'<span class="twisty leaf" aria-hidden="true">·</span>'}
+      <button class="side-item${state.codeFilter===c.id?' selected':''}" data-action="filter-code" data-id="${c.id}" aria-pressed="${state.codeFilter===c.id}" aria-label="${esc(role+': '+path+' · '+(total.get(c.id)||0)+' '+QT('savedCodings'))}" title="${esc(path+(c.definition?' — '+c.definition:''))}">
+        <span class="code-row-label"><span class="code-role">${esc(role)}</span><span class="name">${esc(c.name)}${c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}</span>${search?`<small class="code-parent">${esc(path)}</small>`:path!==codePath(c)?`<small class="code-identity-id">${esc(c.id)}</small>`:''}</span>
+        <span class="count" title="${own.get(c.id)||0} direct · ${total.get(c.id)||0} including sub-codes">${total.get(c.id)||0}</span><span class="code-color-swatch" style="background:${esc(c.color)}" aria-hidden="true"></span>
+      </button><button class="edit-code" data-action="code-edit" data-id="${c.id}"${demoLock('Edit, re-parent, merge or delete')} aria-label="${esc(QT('editCode','Edit code')+': '+path)}">⋯</button>
+    </div>${children.length&&!search?`<ul id="cb-${context}-${c.id}"${open?'':' hidden'}>${children.map(child=>row(child)).join('')}</ul>`:''}</li>`;
   };
-
-  // A filter answers a different question from the tree: "where is this code",
-  // not "how does the codebook hang together". So matches are listed flat, with
-  // their parent shown for context, rather than leaving a filtered tree whose
-  // branches no longer mean anything.
-  const needle=state.sideFilter.trim().toLowerCase();
-  if(needle){
-    const hits=p.codes.filter(c=>`${c.name} ${c.definition||''}`.toLowerCase().includes(needle));
-    if(!hits.length) return `<div class="empty">${QT('noCodesFilter','No codes to show.')}</div>`;
-    const byId=new Map(p.codes.map(c=>[c.id,c]));
-    const parents=c=>{const path=[];let cur=byId.get(c.parent_id);const seen=new Set([c.id]);
-      while(cur&&!seen.has(cur.id)){seen.add(cur.id);path.unshift(cur.name);cur=byId.get(cur.parent_id);}
-      return path;};
-    return `<div class="side-hits">${QT('codeHits','Codes matching')} ${hits.length} / ${p.codes.length}</div>`
-      + hits.map(c=>`<div class="code-row" style="--depth:0">
-        <button class="twisty leaf" aria-label="Toggle"></button>
-        <button class="side-item${state.codeFilter===c.id?' selected':''}" data-action="filter-code" data-id="${c.id}" title="${esc(c.definition||c.name)}">
-          <span class="dot" style="background:${esc(c.color)}"></span>
-          <span class="name">${esc(c.name)}${c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}${parents(c).length?`<small class="code-parent">${esc(parents(c).join(' › '))}</small>`:''}</span>
-          <span class="count" title="${own.get(c.id)||0} direct · ${total.get(c.id)||0} including sub-codes">${total.get(c.id)||0}</span>
-        </button>
-        <button class="edit-code" data-action="code-edit" data-id="${c.id}"${demoLock('Edit, re-parent, merge or delete')} aria-label="${QT('editCode','Edit code')}">⋯</button>
-      </div>`).join('');
-  }
-
-  return codeTree().map(row).join('') || `<div class="empty">${QT('noCodesFilter','No codes to show.')}</div>`;
+  const hits=needle?p.codes.filter(c=>`${c.name} ${c.definition||''}`.toLowerCase().includes(needle)):byParent.get(null)||[];
+  return `<p class="codebook-key">${QT('codebookHint')}</p>${needle?`<div class="side-hits">${QT('codeHits','Codes matching')} ${hits.length} / ${p.codes.length}</div>`:''}<ul class="codebook-tree" aria-label="${QT('codebookTree')}">${hits.map(c=>row(c,!!needle)).join('')}</ul>${hits.length?'':`<div class="empty">${QT('noCodesFilter','No codes to show.')}</div>`}`;
+}
+function refreshCodebooks(id,part='filter-code',context='side') {
+  const scroller=$('.sidebar-scroll'),top=scroller?.scrollTop;
+  refreshSideList();if(scroller)scroller.scrollTop=top;
+  const mobile=$('#mobile-codebook-list');if(mobile)mobile.innerHTML=codebookHtml('mobile');
+  const host=context==='mobile'?mobile:$('#side-list');
+  [...host?.querySelectorAll(`[data-action="${part}"]`)||[]].find(el=>el.dataset.id===id)?.focus({preventScroll:true});
+  previewCoding(codingPreview);
+}
+function handleCodebookKey(event) {
+  if(event.altKey||event.ctrlKey||event.metaKey)return;
+  const button=event.target.closest('.codebook-tree [data-action="filter-code"],.codebook-tree [data-action="toggle-code"]');if(!button)return;
+  const tree=button.closest('.codebook-tree'),id=button.dataset.id,code=state.project.codes.find(c=>c.id===id),context=tree.closest('#mobile-codebook-list')?'mobile':'side';
+  const visible=[...tree.querySelectorAll('[data-action="filter-code"]')].filter(el=>el.getClientRects().length),index=visible.findIndex(el=>el.dataset.id===id),children=state.project.codes.filter(c=>c.parent_id===id);
+  let next;
+  if(event.key==='ArrowDown')next=visible[Math.min(index+1,visible.length-1)];else if(event.key==='ArrowUp')next=visible[Math.max(0,index-1)];else if(event.key==='Home')next=visible[0];else if(event.key==='End')next=visible.at(-1);
+  else if(event.key==='ArrowRight'){
+    if(children.length&&state.collapsed.has(id)){event.preventDefault();state.collapsed.delete(id);refreshCodebooks(id,'filter-code',context);return;}
+    next=visible.find(el=>el.closest('[data-code-node]').dataset.parentId===id);
+  }else if(event.key==='ArrowLeft'){
+    if(children.length&&!state.collapsed.has(id)){event.preventDefault();state.collapsed.add(id);refreshCodebooks(id,'filter-code',context);return;}
+    next=visible.find(el=>el.dataset.id===code.parent_id);
+  }else return;
+  event.preventDefault();next?.focus();next?.scrollIntoView({block:'nearest'});
+}
+function showMobileCodebook() {
+  modal(QT('codebookTree'),`<label class="field">${QT('codebookFind')}<input id="mobile-code-filter" type="search" value="${esc(state.sideFilter)}" autocomplete="off"></label><div id="mobile-codebook-list">${codebookHtml('mobile')}</div>`);
+  $('#dialog').dataset.codingCodebook='1';$('#mobile-code-filter').focus();
 }
 // The sidebar's own scroll, re-rendered on every keystroke in the filter box.
 // Redrawing the whole app would take the caret out of the input.
@@ -293,7 +332,7 @@ function sideListHtml() {
   const open=state.codebookOpen||!!needle;
   return `<div class="side-title"><div class="section-label">${QT('documents','DOCUMENTS')} <span class="count">${docs.length}${docs.length!==p.documents.length?`/${p.documents.length}`:''}</span></div><button class="link" data-action="import"${demoLock()} aria-label="${QT('importDlg','Import interview')}">＋</button></div>
     ${docs.map(d=>`<button class="side-item ${d.id===state.docId?'selected':''}" data-action="doc" data-id="${d.id}" title="${esc(d.name)}">${icon('doc')}<span class="name">${esc(d.name)}</span></button>`).join('') || `<div class="empty">${QT('noDocsFilter','No documents match.')}</div>`}
-    <div class="side-title"><button class="side-toggle" data-action="toggle-codebook" aria-expanded="${open}"><span class="twisty">${open?'▾':'▸'}</span>${QT('codebook','CODEBOOK')} <span class="count">${total}</span>${total?`<span class="side-hint">${open?QT('codebookHide','hide codes'):QT('codebookShow','show codes')}</span>`:''}</button><button class="link" data-action="code"${demoLock()} aria-label="${QT('createCode','Create code')}">＋</button></div>
+    <div class="side-title"><button class="side-toggle" data-action="toggle-codebook" aria-expanded="${open}"><span class="twisty">${open?'▾':'▸'}</span>${QT('codebookTree')} <span class="count">${total}</span>${total?`<span class="side-hint">${open?QT('codebookHide','hide codes'):QT('codebookShow','show codes')}</span>`:''}</button><button class="link" data-action="code"${demoLock()} aria-label="${QT('createCode','Create code')}">＋</button></div>
     ${open?codebookHtml():''}`;
 }
 function segments(text) {
@@ -341,7 +380,7 @@ function showSnapshots() {
   modal(QT('snapshotsTitle','Snapshots'),`<p>${QT('snapshotsIntro','A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.')}</p>${rows||`<div class="empty">${QT('noSnapshots','No snapshots yet.')}</div>`}`);
 }
 function modal(title, body, footer='') {
-  const dlg=$('#dialog'); delete dlg.dataset.workflow; dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
+  const dlg=$('#dialog'); delete dlg.dataset.workflow;delete dlg.dataset.codingId;delete dlg.dataset.codingCodebook;delete dlg.dataset.codingEdit; dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
   if(!dlg.open) dlg.showModal();
 }
 function closeModal() { $('#dialog').close(); $('#dialog').innerHTML=''; }
@@ -350,7 +389,7 @@ function render() {
   const p=state.project; if(!p) return;
   const pending=p.suggestions.filter(s=>s.status==='pending').length;
   const titles={coding:QT('navCoding','Coding workspace'),insights:QT('navInsights','Insights'),audit:QT('navAudit','Audit trail'),plotting:QT('navPlotting','Figures')};
-  $('#app').innerHTML=`<a class="workspace-skip" href="#workspace-content">Skip to workspace</a><div class="shell">
+  $('#app').innerHTML=`<a class="workspace-skip" href="#workspace-content">Skip to workspace</a><div class="shell shell--${state.view}">
     <aside class="sidebar"><div class="brand"><span class="brand-icon">Q</span><span class="brand-name">QualiCraft</span><span class="version">ALPHA</span></div>
     <div class="section-label">${QT('project','PROJECT')}</div><select id="project-select" class="project-select" aria-label="${QT('switchProject','Switch project')}">${state.projects.map(x=>`<option value="${esc(x.id)}" ${x.id===p.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
     <button class="link new-project" data-action="projects">${QT('newProject','+ New / import project')}</button>
@@ -370,6 +409,7 @@ function render() {
   loadPlotPreview();
   loadNetwork();
   focusNetworkSource();
+  previewCoding();
 }
 function highlight(text, start, annotations) {
   const chars=cp(text), end=start+chars.length;
@@ -380,18 +420,17 @@ function highlight(text, start, annotations) {
     if(!active.length) return part;
     const activeCodes=active.map(x=>codesFor(x)).filter(Boolean);
     if(!activeCodes.length) return part;
-    const depth=codeDepthMap();
-    const shallow=activeCodes.reduce((m,c)=>((depth.get(c.id)||0)<(depth.get(m.id)||0)?c:m),activeCodes[0]);
-    const deep=activeCodes.reduce((m,c)=>((depth.get(c.id)||0)>(depth.get(m.id)||0)?c:m),activeCodes[0]);
-    return `<mark${active.some(x=>x.id===state.sourceFocus)?' class="source-target" tabindex="-1"':''} style="background:color-mix(in srgb,${esc(shallow.color)} 20%,#fff);border-bottom-color:${esc(deep.color)}" title="${esc(activeCodes.map(c=>c.name).join(' · '))}">${part}</mark>`;
+    const filtered=state.codeFilter?new Set([state.codeFilter,...codeDescendants(state.codeFilter)]):null;
+    const source=active.some(x=>x.id===state.sourceFocus),classes=[source?'source-target':'',filtered&&active.some(x=>filtered.has(x.code_id))?'coding-filtered':''].filter(Boolean).join(' ');
+    return `<mark${classes?` class="${classes}"`:''}${source?' tabindex="-1"':''} data-coding-ids="${esc(JSON.stringify(active.map(x=>x.id)))}" data-coding-count="${active.length}" title="${esc(activeCodes.map(c=>c.name).join(' · '))}">${part}</mark>`;
   }).join('');
 }
 
 function codingView() {
   const d=doc(); if(!d) return `<div class="no-doc"><div class="eyebrow">${QT('noDocEyebrow','A SPACE FOR YOUR QUESTIONS')}</div><h2>${QT('noDocTitle','Start with a conversation')}</h2><p>Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.</p><button class="primary" data-action="import"${demoLock()}>${QT('importDlg','Import interview')}</button> <button data-action="code"${demoLock()}>${QT('createCode','Create code')}</button> <button data-action="enable-all-blocks"${demoLock()}>${QT('enableAllBlocks','Enable figure workflow')}</button> <span class="muted tiny-label" style="border:0;background:transparent;padding:0">${QT('enableAllBlocksHint','Adds theme grouping, Insights, Figures and Audit to this project. Other blocks keep their current settings.')}</span></div>`;
   return `${networkSourceTrailHtml()}<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"></div>
-  <div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">${QT('documentLabel','DOCUMENT')}</div><div class="tool-group"><span class="selection-hint">${QT('selectHint','Select text to code a passage')}</span><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
-  ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">${QT('codingMargin','CODING MARGIN')}</div></div>
+  <div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="coding-tools-label"><span class="panel-kicker">${QT('documentLabel','DOCUMENT')}</span><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button></div><div class="tool-group"><span class="selection-hint">${QT('selectHint','Select text to code a passage')}</span><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
+  ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">${QT('codebookTree')}</div></div>
   <div class="reading-note${hasBlock('memos')?'':' block-off'}"><span class="reading-note-label">${QT('readingNotes','READING NOTES')}</span><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
   <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">${QT('aiReview','AI REVIEW')}</div><div class="review-title"><h3>${QT('suggestions','Suggestions')}</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">${QT('reviewSubtitle','Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.')}</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending',QT('pending','Pending review')],['accepted',QT('reviewAccepted','Accepted')],['rejected',QT('reviewRejected','Rejected')]].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
 }
@@ -400,10 +439,10 @@ function readerHtml() {
   // Match the sidebar's rolled-up scope, including codings on the parent itself.
   const filterCodes=state.codeFilter?new Set([state.codeFilter,...codeDescendants(state.codeFilter)]):null;
   const paras=segments(d.text).filter(p=> (!state.search||p.text.toLocaleLowerCase().includes(state.search.toLocaleLowerCase())) && (!filterCodes||annotations.some(a=>filterCodes.has(a.code_id)&&a.start<p.end&&a.end>p.start)));
-  const filter=state.codeFilter?`<p class="tiny-label">Filter: ${esc(state.project.codes.find(c=>c.id===state.codeFilter)?.name)} <button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></p>`:'';
-  return filter+(paras.map(p=>{
+  const filter=state.codeFilter?`<p class="tiny-label reader-code-filter">${QT('codeFilterLabel')}: ${esc(codeIdentity(state.project.codes.find(c=>c.id===state.codeFilter)))} <button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></p>`:'';
+  return `<div class="coding-key"><span>${QT('codingHighlight')}</span><span>${QT('codingHighlightFocus')}</span><small>${QT('codingKeyHint')}</small></div>`+filter+(paras.map(p=>{
     const matches=annotations.filter(a=>a.start<p.end&&a.end>p.start);
-    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}"><span class="line-no">${String(p.index+1).padStart(2,'0')}</span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="margin-tags">${marginHtml(matches)}</div></div>`;
+    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}"><span class="line-no">${String(p.index+1).padStart(2,'0')}</span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="margin-tags"${matches.length?` role="region" tabindex="0" aria-label="${QT('codebookTree')} · ${matches.length} ${QT('savedCodings')}"`: ''}>${marginHtml(matches)}</div></div>`;
   }).join('') || `<div class="empty">${QT('noPassages','No passages match your filters.')}<button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></div>`);
 }
 function suggestionsHtml() {
@@ -992,13 +1031,14 @@ async function action(button) {
   if(a==='net-dismiss'){state.sourceFocus=null;state.networkReturn=null;render();return;}
   if(a==='view'){state.view=button.dataset.view;state.selection=null;render();return;}
   if(a==='doc'){state.sourceFocus=null;state.docId=button.dataset.id;state.selection=null;state.search='';state.codeFilter=null;state.view='coding';render();return;}
-  if(a==='filter-code'){state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();return;}
-  if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);render();return;}
-  if(a==='toggle-codebook'){state.codebookOpen=!state.codebookOpen;refreshSideList();return;}
-  if(a==='code-edit')return showCodeEdit(button.dataset.id);
+  if(a==='coding-codebook')return showMobileCodebook();
+  if(a==='filter-code'){const inBook=button.closest('#mobile-codebook-list');const fromTree=button.closest('.codebook-tree'),id=button.dataset.id;if(inBook){delete $('#dialog').dataset.codingCodebook;closeModal();}state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();if(inBook)$('.reader-code-filter button')?.focus();else if(fromTree)[...document.querySelectorAll('#side-list [data-action="filter-code"]')].find(el=>el.dataset.id===id)?.focus({preventScroll:true});return;}
+  if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);refreshCodebooks(id,'toggle-code',button.closest('#mobile-codebook-list')?'mobile':'side');return;}
+  if(a==='toggle-codebook'){state.codebookOpen=!state.codebookOpen;refreshSideList();$('[data-action="toggle-codebook"]')?.focus({preventScroll:true});return;}
+  if(a==='code-edit'){showCodeEdit(button.dataset.id);$('#dialog').dataset.codingEdit=button.dataset.id;return;}
   if(a==='code-delete-ask')return showCodeDeleteAsk(button.dataset.id);
   if(a==='code-merge-ask')return showMergeAsk(button.dataset.id);
-  if(a==='clear-filter'){state.codeFilter=null;state.search='';render();return;}
+  if(a==='clear-filter'){state.codeFilter=null;state.search='';render();$('.reader-heading')?.focus({preventScroll:true});return;}
   if(a==='import')return showImport();
   if(a==='code')return showCode();
   if(a==='tools')return showTools();
@@ -1083,9 +1123,12 @@ async function action(button) {
   }
   if(a==='save-annotation'){await api(projectUrl('annotations'),{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();await refresh();toast(QT('passageCoded','Passage coded.'));return;}
   if(a==='review'){const start=state.project.suggestions.find(s=>s.id===button.dataset.id)?.start;await api(projectUrl('review'),{id:button.dataset.id,action:button.dataset.decision});await refresh();locate(start);toast(button.dataset.decision==='accept'?QT('toastAccepted','Accepted and added to your codings.'):QT('toastRejected','Rejected; review decision saved.'));return;}
+  if(a==='coding-locate'){const id=button.dataset.id;delete $('#dialog').dataset.codingId;closeModal();if(state.search||state.codeFilter){state.search='';state.codeFilter=null;render();}const mark=[...document.querySelectorAll('.passage mark[data-coding-ids]')].find(el=>JSON.parse(el.dataset.codingIds).includes(id));if(mark){mark.setAttribute('tabindex','-1');mark.scrollIntoView({block:'center',behavior:'auto'});mark.focus({preventScroll:true});previewCoding([id]);}return;}
   if(a==='annotation'){
     const annotation=state.project.annotations.find(x=>x.id===button.dataset.id);
-    modal(codesFor(annotation).name,`<blockquote class="big-quote">${esc(annotation.quote)}</blockquote><p>Source range [${annotation.start}, ${annotation.end}) · ${esc(annotation.source)}</p><label class="field">${QT('researchMemo','Research memo')}<textarea id="edit-memo" rows="4">${esc(annotation.memo)}</textarea></label>`,`<button class="danger" data-action="remove-annotation"${demoLock()} data-id="${annotation.id}">${QT('removeCoding','Remove coding')}</button><button class="primary" data-action="save-memo"${demoLock()} data-id="${annotation.id}">${QT('saveMemo','Save memo')}</button>`);return;
+    previewCoding([annotation.id]);
+    modal(codesFor(annotation).name,`${codingDetailsHtml(annotation)}<label class="field">${QT('researchMemo','Research memo')}<textarea id="edit-memo" rows="4">${esc(annotation.memo)}</textarea></label>`,`<button class="danger" data-action="remove-annotation"${demoLock()} data-id="${annotation.id}">${QT('removeCoding','Remove coding')}</button><button class="primary" data-action="save-memo"${demoLock()} data-id="${annotation.id}">${QT('saveMemo','Save memo')}</button>`);
+    $('#dialog').dataset.codingId=annotation.id;return;
   }
   if(a==='save-memo'){await api(projectUrl('memo'),{id:button.dataset.id,memo:$('#edit-memo').value});closeModal();await refresh();toast(QT('memoSaved','Memo saved.'));return;}
   if(a==='remove-annotation'){await api(projectUrl('remove-annotation'),{id:button.dataset.id});closeModal();await refresh();toast(QT('codingRemoved','Coding removed; the previous record is retained in the audit trail.'));return;}
@@ -1161,7 +1204,28 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(e.target.id==='search'){state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+// Preview changes CSS only: no re-render, source text insertion or server write.
+document.addEventListener('pointerover',event=>{
+  if(event.pointerType!=='mouse')return;
+  const pill=event.target.closest('.pill[data-code-id]'),mark=event.target.closest('.passage mark[data-coding-ids]');
+  if(pill)previewCoding([pill.dataset.id]);else if(mark)previewCoding(JSON.parse(mark.dataset.codingIds));
+});
+document.addEventListener('pointerout',event=>{
+  if(event.target.closest('.pill[data-code-id],.passage mark[data-coding-ids]')&&!event.relatedTarget?.closest('.pill[data-code-id],.passage mark[data-coding-ids]')){
+    const focused=document.activeElement?.closest('.pill[data-code-id]');previewCoding(focused?[focused.dataset.id]:[]);
+  }
+});
+document.addEventListener('focusin',event=>{const pill=event.target.closest('.pill[data-code-id]');if(pill)previewCoding([pill.dataset.id]);});
+document.addEventListener('focusout',event=>{if(event.target.closest('.pill[data-code-id]')&&!event.relatedTarget?.closest('.pill[data-code-id]'))previewCoding();});
+document.addEventListener('keydown',handleCodebookKey);
+document.addEventListener('close',event=>{
+  if(event.target.id!=='dialog')return;
+  const edit=event.target.dataset.codingEdit;if(edit){const button=[...document.querySelectorAll('.codebook-tree [data-action="code-edit"]')].find(el=>el.dataset.id===edit);(button||document.querySelector('[data-action="coding-codebook"]'))?.focus({preventScroll:true});}
+  const id=event.target.dataset.codingId;
+  if(id){const button=[...document.querySelectorAll('.pill')].find(el=>el.dataset.id===id);button?.focus({preventScroll:true});previewCoding(button?[id]:[]);}
+  if(event.target.dataset.codingCodebook)document.querySelector('[data-action="coding-codebook"]')?.focus({preventScroll:true});
+},true);
 let docMemoTimer=null;
 document.addEventListener('input',e=>{
   if(e.target.id!=='doc-memo')return;

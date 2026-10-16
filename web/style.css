@@ -425,3 +425,79 @@ html[data-reduced-motion="true"] *,html[data-reduced-motion="true"] *::before,ht
  .io-source-preview pre { max-height:110px; }
  .import-receipt { padding:10px 13px; }
 }
+
+/* UX-24: saved hierarchy is visible in structure and words, not a rainbow. */
+.codebook-key{font-size:10px;line-height:1.5;color:var(--muted);margin:10px 7px}
+.codebook-tree,.codebook-tree ul,.margin-tree,.margin-tree ul{list-style:none;margin:0;padding:0;min-width:0}
+.codebook-tree ul{margin-left:8px;padding-left:4px;border-left:1px solid var(--strong)}
+.codebook-tree [hidden]{display:none}
+.codebook-tree li{min-width:0;position:relative}
+.codebook-tree ul>li:before{content:'';position:absolute;left:-4px;top:29px;width:4px;border-top:1px solid var(--strong)}
+.codebook-tree .code-row{padding:0;gap:0;align-items:stretch;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+.codebook-tree [data-parent-id=""]>.code-row{border-top:1px solid var(--strong);margin-top:10px;background:color-mix(in srgb,var(--accent) 4%,transparent)}
+.codebook-tree .side-item{gap:6px;padding:8px 3px;align-items:center;min-height:44px}
+.code-row-label{flex:1;min-width:0}
+.code-role{display:block;font-size:9px;line-height:1.5;letter-spacing:.04em;color:var(--muted);font-weight:500}
+.codebook-tree .name{display:block;overflow:visible;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;font-size:12px;line-height:1.45}
+.codebook-tree .code-parent{white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.5;font-size:10px;margin-top:5px}
+.codebook-tree .count{align-self:start;margin-top:18px;padding-left:0;font-size:10px}
+.code-color-swatch{flex:0 0 5px;height:5px;align-self:start;margin-top:22px;border-radius:50%}
+.codebook-tree .twisty{flex:0 0 24px;width:24px;min-height:44px;font-size:13px;padding:8px 0}
+.codebook-tree .twisty.leaf{display:block;color:var(--muted);padding-top:24px}
+.codebook-tree .edit-code{opacity:1;flex:0 0 24px;width:24px;min-height:44px;font-size:17px;color:var(--muted);padding:0}
+.codebook-tree .coding-path-active>.code-row{box-shadow:inset 2px 0 var(--accent);background:#e7edf2}
+.coding-tools-label{display:flex;align-items:center;gap:10px}
+.coding-codebook-entry{display:none}
+.coding-key{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;padding:12px 24px 12px 48px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted)}
+.coding-key>span:before{content:'';display:inline-block;width:18px;height:10px;vertical-align:-1px;margin-right:6px;background:#edf0f3;border-bottom:1px solid #acb5c0}
+.coding-key>span+span:before{background:#d8e2eb;border-bottom:2px solid var(--accent)}
+.coding-key small{font-size:10px;line-height:1.5}
+.reader-code-filter{overflow-wrap:anywhere;line-height:1.6}
+.passage mark{background:#edf0f3;border-bottom:1px solid #acb5c0;color:inherit}
+.passage mark:not([data-coding-count="1"]){border-bottom-style:dashed}
+.passage mark.coding-filtered{background:#e3eaf0;border-bottom-color:var(--accent)}
+.passage mark.coding-active,.passage mark.source-target{background:#d8e2eb!important;border-bottom:2px solid var(--accent);outline:1px solid var(--accent);outline-offset:1px}
+.margin-tags{gap:10px;min-width:0}
+.margin-summary{font-size:10px;line-height:1.6;color:var(--muted);padding-bottom:7px;border-bottom:1px solid var(--line)}
+.margin-summary span{display:block}
+.margin-tree>li+li{margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}
+.margin-tree ul{margin:7px 0 0 4px;padding-left:12px;border-left:1px solid var(--strong)}
+.margin-tree li{min-width:0;position:relative}
+.margin-tree ul>li:before{content:'';position:absolute;left:-12px;top:20px;width:9px;border-top:1px solid var(--strong)}
+.margin-tree li+li{margin-top:12px}
+.margin-node-label{display:block;width:100%;padding:4px 0;min-height:40px;text-align:left;border:0;background:transparent;overflow-wrap:anywhere}
+.margin-node-label .margin-theme-name{display:block;white-space:normal;overflow:visible;text-overflow:clip;font-size:12px;line-height:1.5;font-weight:600}
+.margin-tree .pill{width:100%;max-width:none;min-height:44px;margin-top:4px;border:1px solid var(--line);border-left:2px solid #acb5c0;background:#f6f7f8;padding:7px 8px;gap:2px}
+.margin-tree .pill:hover,.margin-tree .pill.coding-active{background:#d8e2eb;border-color:var(--accent)}
+.coding-range{font:11px/1.5 ui-monospace,Consolas,monospace}
+.margin-tree .source{font-size:9px;line-height:1.5}
+.margin-tree .coding-path-active>.margin-node-label{color:var(--accent-dark);background:#e7edf2}
+.coding-detail-path{overflow-wrap:anywhere;line-height:1.65;border-left:2px solid var(--accent);padding-left:12px}
+.coding-overlaps{margin:16px 0;border-block:1px solid var(--line);padding:8px 0}
+.coding-overlaps summary{padding:10px 0;font-size:12px;cursor:pointer}
+.coding-overlaps button{display:block;min-height:44px;width:100%;margin:7px 0;text-align:left;overflow-wrap:anywhere;line-height:1.5;font-size:12px}
+.coding-overlaps button small{display:block;color:var(--muted)}
+.coding-overlaps button[aria-pressed="true"]{border-color:var(--accent);background:#e7edf2}
+#mobile-codebook-list .codebook-tree .side-item{font-size:13px}
+@media(min-width:1121px){.paragraph{grid-template-columns:27px minmax(300px,1fr) 240px}.reader-header{grid-template-columns:minmax(0,1fr) 240px}}
+@media(max-width:1120px){.margin-tags{flex-direction:column;align-items:stretch}.margin-tree{width:100%}}
+@media(max-width:800px){
+ .coding-codebook-entry{display:inline-flex;align-items:center;min-height:44px;font-size:11px;padding:7px 9px}
+ .coding-key{padding:12px 14px 12px 38px}
+ .margin-tree .margin-node-label{min-height:44px}
+ .margin-node-label .margin-theme-name{font-size:13px}
+ .margin-tree .pill{min-height:44px}
+ #mobile-codebook-list .codebook-tree .edit-code,#mobile-codebook-list .codebook-tree .twisty{flex-basis:44px;width:44px}
+}
+/* Bound the annotation rail so deep ancestry cannot stretch a short passage. */
+.margin-tags[role="region"]{display:block;max-height:560px;overflow:auto;align-self:start;padding-top:0;scrollbar-gutter:stable}
+.margin-summary{position:sticky;top:0;background:white;z-index:1;padding-block:7px}
+.coding-preview-path:empty{display:none}
+.margin-summary .coding-preview-path{font-size:11px;line-height:1.5;color:var(--accent-dark);overflow-wrap:anywhere;padding-top:7px}
+@media(max-width:1120px){.margin-tags[role="region"]{max-height:420px;border:1px solid var(--line);padding-inline:12px}}
+/* A fixed path area prevents hover from moving the annotation under the pointer. */
+.margin-summary .coding-preview-path{display:block;height:96px;overflow:auto;padding-right:4px}
+.code-identity-id{display:block;font:10px/1.5 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;color:var(--muted)}
+
+.margin-tags[role="region"]>.margin-tree{margin-top:10px}
+@media(min-width:1280px){.shell--coding>.sidebar{width:320px;flex-basis:320px}}
