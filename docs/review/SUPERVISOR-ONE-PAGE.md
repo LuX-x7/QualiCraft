@@ -1,26 +1,26 @@
 # QT · Supervisor review — 16 October 2026
 
-**Local candidate: UX-32B.** Coding now has a two-track overview and exact source navigation, alongside the manual paragraph marks from 32A. Windows remains deferred and unverified. Nothing has been pushed or deployed.
+**UX-33: joint review of the UX-32B product.** The main demonstration completes, but acceptance remains open: 44 of 46 browser checks pass, with two mobile position-memory findings. This round changes documentation only. Windows is deferred and unverified; no push or deployment.
 
-## Demonstration order · about 12 minutes
+## Demonstration order · about 12–15 minutes
 
-1. **Website → report (2 min):** inspect the five modules, permanent passage–code–theme network, CSV/table readings and movable heatmap lens. The report is a fixed Bologna example, separate from live edits.
-2. **Import → Coding (3 min):** open an editable Bologna copy, its document, calm highlights and Theme › Code hierarchy. Demonstrate Unmarked → Read → Revisit, Clear and Undo. Resume remembers browser position separately; scrolling and coding do not mark reading.
-3. **Overview → evidence (4 min):** open Overview. The two tracks use full-document Unicode character coordinates: manual marks above, saved coding ranges below. Interview02 has31 paragraphs,53 codings and52 source ranges. Preview a paragraph; inspect a shared range’s complete quotation and both coding IDs/paths; jump to the exact source. Demonstrate keyboard pagination, phone controls and an explicit Show full document & jump when filters hide the source. Resume returns to the previous position; Keep this reading position explicitly replaces browser memory. Return from a network quotation without losing its selection.
-4. **Figures → export/recover (3 min):** inspect the five figures and phone original-size viewer, download JSON/CSV/matrix/methods, then restore JSON as a new project. Confirm the actual downloaded file. Website UX-29 clips predate the new reading controls; demonstrate those live or with the new screenshots.
+1. **Website → import:** inspect five modules, distinct Coding/Analysis illustrations and the permanent passage–code–theme map. Open an editable Bologna copy, import interview02.txt and inspect the saved document.
+2. **Coding → reading:** select one passage and assign two existing codes. Check Theme › Code ownership, then manually save Read/Revisit and Undo. Scrolling and coding do not mark reading.
+3. **Overview → source:** compare whole-document reading and coding tracks. Two codes on one range remain two codings/one source. Inspect exact quotations, IDs and paths; filter by a theme and search; explicitly reveal hidden source text before jumping. Demonstrate Resume, document switching and reload. See the mobile exceptions below before demonstrating Keep.
+4. **Relationship map → figures:** select a saved coding, open its exact source and return with selection and filter context preserved. Inspect all five figures and the phone original-size viewer.
+5. **Report → export/recover:** select exact CSV values and locate table rows; move the original-heatmap lens. Download JSON, coding CSV, matrix and methods; restore JSON as a new project. The report is a fixed 19-document/874-coding example. The edited review copy has 20 documents/876 codings; these are separate snapshots.
 
-## Rules and discussion
+## Findings and discussion
 
-Marks are manual, shared project metadata. Unmarked does not mean unread; timestamps do not prove reading duration, comprehension or familiarisation before coding. A continuous coding stroke is a visual union. Two codes on one range remain two codings/one source range; paragraph touching counts cannot be summed.
+- **UX33-02 / P2:** on a 390px touch viewport, jump to paragraph 4, then tap Keep. Bringing its control into view can change the tracked position to paragraph 1, which is saved instead. Independently reproduced; desktop click and phone keyboard controls pass. Prioritise this before mobile sign-off.
+- **UX33-01 / P3:** keyboard focus on the phone’s upper search field scrolls the page and replaces the pre-search anchor before typing. Resume subsequently returns to paragraph 1. Decide how entering search should preserve the previous reading context.
 
-JSON remains **format5** and older QT versions cannot open it. Marks save immediately to SQLite, without rotating research-edit snapshots; the next research edit includes them. **Export JSON to preserve the current marks now.** An older stored format is checkpointed before its first write. Overview preview/navigation does not write project data or create snapshots.
+Neither finding loses source text, codings or manual project marks. Discuss the compact controls and visual density, and whether manual whole-line marks and the preview/Resume distinction fit the research workflow. Marks do not establish comprehension or completion; visual coding unions do not add statistics.
 
-Discuss whether the compact controls, whole-line paragraph unit, exact source lists and preview/Resume distinction fit the research workflow. Counts, statistics, figure definitions and source text remain unchanged.
+## Evidence and remaining work
 
-## Remaining work and acceptance boundary
+This round: 163 Python tests (3 skipped), 139 Node tests and syntax pass; 594 report rows, 25 figure-bundle members, four real downloads and v5 restoration checked. Normal console/HTTP errors: 0. Product files and report assets are unchanged. No new production build; the passing UX-32B build is historical evidence.
 
-The planned T03 technical slices are implemented. Joint website/report/workbench acceptance, remaining W03 visual refinement, owner/supervisor acceptance, current-feature physical-device/VoiceOver checks and release gates remain open. Earlier device evidence is historical; Windows remains unverified.
+Fix/retest the two findings, then review remaining W03 visuals and obtain owner/supervisor acceptance. Current-feature physical-device/VoiceOver checks and release gates remain open. JSON v5 carries manual marks and requires current QT; browser positions are separate. Marks save immediately and enter the next research-edit snapshot. UX-29 website clips predate the reading controls; use live views/current screenshots.
 
-Evidence: UX-32B-READING-OVERVIEW.md, screenshots and raw/ux-32b in this package. 163 Python tests (3 skipped),139 Node tests,11 overview +10 existing-mark +2 read-only/storage cases and direct Next build pass. npm is unavailable (exit127 retained).
-
-Local entries: [Website](http://127.0.0.1:4445/), [Report](http://127.0.0.1:4445/report), [Workbench](http://127.0.0.1:4445/w?lang=en); marked [32B QA copy](http://127.0.0.1:4465/w?lang=en). These are loopback previews, not public hosting.
+Evidence: UX-33-JOINT-ACCEPTANCE.md, screenshots/ux33-*, raw/ux-33. Local [Website](http://127.0.0.1:4445/) · [Report](http://127.0.0.1:4445/report) · [review workbench](http://127.0.0.1:4466/w?lang=en). Loopback links require this computer.
