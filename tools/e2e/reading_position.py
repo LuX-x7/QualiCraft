@@ -12,7 +12,9 @@ def main():
   ctx,page=context(viewport={'width':1440,'height':900});boot=ctx.request.get(base+'/w/api/bootstrap').json();headers={'X-QualiCraft-Token':boot['token']};pid='a71a0b538c024c3ab23fb4286cfe93e2';url=base+'/w/api/projects/'+pid;original=ctx.request.get(url,headers=headers).json();assert original['name']=='Bologna · What is data?' and len(original['documents'])==19 and len(original['annotations'])==874;(out/'project-before.json').write_text(json.dumps(original,ensure_ascii=False,indent=2));snapshots=ctx.request.get(url+'/backups',headers=headers).json()['items'];documents=original['documents'];d1,d2=documents[:2]
   def open_original(p):
    p.goto(base+'/w/?lang=en',wait_until='networkidle')
-   if p.locator('#project-select').input_value()!=pid:
+   if p.locator('#start-project-select').count():
+    p.locator('#start-project-select').select_option(pid);p.locator('[data-action="start-open"]').click()
+   elif p.locator('#project-select').input_value()!=pid:
     if p.locator('#project-select').is_visible():p.locator('#project-select').select_option(pid)
     else:p.locator('[data-action="projects"]:visible').first.click();p.locator('#modal-project-select').select_option(pid);p.locator('[data-action="switch-project"]').click()
    expect(p.locator('.project-strip h1')).to_have_text(original['name'])
@@ -36,7 +38,7 @@ def main():
   open_original(page)
   def compact():
    assert page.locator('#reading-document option').count()==19;assert not page.locator('.reading-details').get_attribute('open');assert not page.locator('#doc-memo').is_visible();assert page.locator('.tabs-bar').count()==0
-   top=page.locator('.paragraph').first.bounding_box()['y'];assert top<360,top;snap(page,'01-desktop-compact');return {'first_paragraph_top':top,'before':416.375,'documents':19,'details_initially_folded':True}
+   top=page.locator('.paragraph').first.bounding_box()['y'];example_height=page.locator('.example-context').bounding_box()['height'] if page.locator('.example-context').count() else 0;assert top-example_height<360,{'top':top,'explicit_example_label':example_height};snap(page,'01-desktop-compact');return {'first_paragraph_top':top,'explicit_example_label_height':example_height,'before':416.375,'documents':19,'details_initially_folded':True}
   check('desktop compact header retains tools and folds document metadata/notes',compact)
   saved={}
   def desktop_memory():

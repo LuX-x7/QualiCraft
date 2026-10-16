@@ -88,6 +88,15 @@ Object.assign(_T.zh, {
   readingDetails:'文档详情与笔记',readingParagraphs:'段落',readingTools:'编码工具',
   readingMemoryNote:'仅记忆位置 · 保存在本机浏览器，不进入项目导出。滚动不会标记为已读。',
 });
+Object.assign(_T.zh, {
+ help:'帮助',quickStart:'简短引导',guideImport:'导入一份文档',guideCode:'选择一段原句',guideInspect:'检查关系并导出',
+ guideImportText:'选择 TXT、DOCX 文件，或粘贴文本。',guideCodeText:'选中准确的原句，再选择或创建编码。',guideInspectText:'从已保存编码核对原句，再下载结果。',
+ guideReadOnly:'这是只读示例。可查看已有内容；导入与编码需使用本地项目。',guideRead:'打开文档',guideMap:'查看关系图',guideClose:'关闭简短引导',guideDone:'完成引导',guideNext:'下一步',guideSkip:'跳过',
+ startEyebrow:'从下一份材料开始',startTitle:'从你的材料开始。',startIntro:'导入文档、试用示例，或继续已有工作。',startOwn:'你的项目',startOwnText:'从空工作台开始，准备好后添加第一份文档。',startProject:'新建项目',startImport:'导入文档',startExample:'试用 Bologna',startExampleText:'在独立、可编辑的示例副本中查看已有编码与原句。',
+ startReadOnlyTitle:'选择只读示例。',startReadOnlyEmpty:'暂无可用示例项目',startReadOnlyInfo:'此工作台为只读模式。',continueLast:'继续上次项目',continueWork:'继续',chooseProject:'选择项目',restoreSafe:'恢复为独立新项目。',startLocal:'项目保存在当前工作区；上次项目和阅读位置仅由此浏览器记忆。',
+ startName:'为项目命名',untitledProject:'未命名研究项目',startCreateNote:'先创建空项目，再选择文档。取消导入后仍可稍后继续。',createImport:'创建并导入',emptyEyebrow:'空项目',emptyTitle:'准备好第一份文档。',emptyText:'导入文本，阅读一段原句，再为它赋码。',optionalTools:'可选工具',
+ bolognaLabel:'Bologna 示例',editableExample:'可在当前本地工作区编辑',startOwnAction:'新建自己的项目',moreProjectSources:'其他示例来源',backStart:'返回起步页',
+});
 function QT(k,fb){const d=_T[QT_LANG];return(d&&d[k])||fb||k;}
 document.documentElement.lang = QT_LANG === 'zh' ? 'zh-CN' : 'en';
 if(QT_LANG==='zh'){document.title='QualiCraft \u00b7 \u8d28\u6027\u7814\u7a76\u5de5\u4f5c\u53f0';}
@@ -141,7 +150,7 @@ const WRITE_ACTIONS = new Set([
   'save-memo', 'save-annotation', 'annotate', 'annotation', 'remove-annotation',
   'save-blocks', 'enable-all-blocks', 'new-project', 'restore-pick', 'review', 'analyze',
   'analyze-selection', 'start-analysis', 'popup-apply', 'popup-create',
-  'demo-project', 'grounded-project', 'benchmark-project', 'reference-project',
+  'start-project', 'start-create', 'bologna-project', 'demo-project', 'grounded-project', 'benchmark-project', 'reference-project',
 ]);
 const icons = {
   grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -447,9 +456,79 @@ function segments(text) {
     return {text:m[0], start, end:start+cp(m[0]).length, index:i, speaker};
   });
 }
+// UX-26: startup and guide preferences are browser-only navigation, never research data.
+function workspaceMemoryKey() { return 'qt.workspace.v1:'+QT_BASE; }
+function rememberWorkspaceProject(id) {
+  try{localStorage.setItem(workspaceMemoryKey(),JSON.stringify({version:1,projectId:id}));}catch(_){}
+}
+function selectedStartupProject(projects,publicDemo=false) {
+  try{const saved=JSON.parse(localStorage.getItem(workspaceMemoryKey()));if(saved?.version===1&&typeof saved.projectId==='string'&&projects.some(p=>p.id===saved.projectId))return saved.projectId;}catch(_){}
+  return publicDemo?(projects[0]?.id||null):null;
+}
+function isBolognaExample(project) { return project.id==='a71a0b538c024c3ab23fb4286cfe93e2'||project.audit?.some(e=>e.action==='example_copy'&&e.example==='bologna')||false; }
+const guideFallback=new Map();
+let guide={open:false,step:null},guideReturnFocus=null,startReturnFocus=null;
+function guideMemoryKey(id) { return 'qt.guide.v1:'+JSON.stringify([QT_BASE,id]); }
+function guidePreference(id) {
+  let saved;
+  try{const raw=localStorage.getItem(guideMemoryKey(id));saved=raw===null?guideFallback.get(id):JSON.parse(raw);}catch(_){saved=guideFallback.get(id);}
+  return saved?.version===1&&['active','dismissed'].includes(saved.status)&&(saved.step===null||Number.isInteger(saved.step)&&saved.step>=0&&saved.step<3)?saved:null;
+}
+function setGuidePreference(id,status,step=null) {
+  const saved={version:1,status,step};
+  try{localStorage.setItem(guideMemoryKey(id),JSON.stringify(saved));guideFallback.delete(id);}catch(_){guideFallback.set(id,saved);}
+}
+function guideCurrentStep(project) { return !project?.documents.length?0:!project.annotations.length?1:2; }
+function quickGuideHtml() {
+  if(!guide.open)return '';
+  const step=guide.step??guideCurrentStep(state.project),readonly=state.config.public_demo;
+  const titles=[QT('guideImport','Import one document'),QT('guideCode','Select a passage'),QT('guideInspect','Inspect and export')];
+  const descriptions=[QT('guideImportText','Choose a TXT or DOCX file, or paste text.'),QT('guideCodeText','Select exact words, then choose or create a code.'),QT('guideInspectText','Trace saved codes to their sources, then download your results.')];
+  let action=step===0?'import':step===1?'guide-source':'guide-map',label=step===0?QT('importDlg','Import interview'):step===1?QT('guideRead','Open document'):QT('guideMap','View relationships');
+  if(!state.project){action=readonly?(state.projects.length?'guide-examples':'guide-dismiss'):'start-project';label=readonly?QT('chooseProject','Choose a project'):QT('startProject','Start a project');}
+  else if(readonly){action=step===2?'guide-map':'guide-source';label=step===2?QT('guideMap','View relationships'):QT('guideRead','Open document');}
+  else if(step===1&&!doc()){action='import';label=QT('importDlg','Import interview');}
+  if(action==='guide-map'&&!hasBlock('insights')){action='export';label=QT('export','Export');}
+  const showAction=!(state.project&&state.view==='coding'&&!doc()&&step===0&&!readonly);
+  return `<section class="quick-guide" aria-labelledby="guide-title"><div class="guide-copy"><span class="guide-kicker">${QT('quickStart','Quick start')} · ${step+1} / 3</span><h2 id="guide-title" tabindex="-1">${titles[step]}</h2><p>${readonly?QT('guideReadOnly','This example is read-only. Inspect saved material here; create and code in a local workspace.'):descriptions[step]}</p></div><button class="guide-close" data-action="guide-dismiss" aria-label="${QT('guideClose','Close quick start')}">×</button><div class="guide-controls">${showAction?`<button class="guide-primary-action" data-action="${action}">${label}</button>`:''}<span class="guide-control-spacer"></span><button data-action="guide-back"${step===0?' disabled':''}>${QT('back','Back')}</button><button data-action="guide-next">${step===2?QT('guideDone','Done'):QT('guideNext','Next')}</button><button class="link" data-action="guide-dismiss">${QT('guideSkip','Skip')}</button></div></section>`;
+}
+function updateGuide() { const region=$('#guide-region');if(region)region.innerHTML=quickGuideHtml(); }
+function openGuide(opener) {
+  guideReturnFocus=opener;guide={open:true,step:null};
+  setGuidePreference(state.project?.id||null,'active',guide.step);updateGuide();
+  $('#guide-title')?.focus();
+}
+function dismissGuide() {
+  const inside=document.activeElement?.closest('.quick-guide');
+  setGuidePreference(state.project?.id||null,'dismissed');guide.open=false;updateGuide();
+  const opener=guideReturnFocus?.isConnected?guideReturnFocus:null;
+  if(inside){const target=opener||$('#reading-document')||$('.empty-project [data-action="import"]')||$('#workspace-help-mobile')||$('#workspace-help');target?.focus({preventScroll:true});if(target&&(target.getBoundingClientRect().top<0||target.getBoundingClientRect().bottom>window.innerHeight))target.scrollIntoView({block:'nearest',behavior:'instant'});}
+  guideReturnFocus=null;
+}
+function startupHtml() {
+  const last=selectedStartupProject(state.projects,false),recent=state.projects.find(p=>p.id===last),readonly=state.config.public_demo;
+  return `<a class="workspace-skip" href="#workspace-content">Skip to workspace</a><div class="shell shell--welcome"><main class="welcome-sheet" id="workspace-content" tabindex="-1"><header class="welcome-header"><span class="welcome-brand">${icon('grid')} QualiCraft</span><span>${QT('localWorkspace','Local workspace')}</span><button id="workspace-help" data-action="guide-open">${QT('help','Help')}</button></header><div class="welcome-content"><p class="welcome-eyebrow">${QT('startEyebrow','YOUR NEXT CONVERSATION')}</p><h1 tabindex="-1">${readonly?(state.projects.length?QT('startReadOnlyTitle','Choose a read-only example.'):QT('startReadOnlyEmpty','No example project is available')):QT('startTitle','Start with your material.')}</h1><p class="welcome-intro">${readonly?QT('startReadOnlyInfo','This workspace is read-only.'):QT('startIntro','Import a document, choose an example, or return to your work.')}</p><div id="guide-region">${quickGuideHtml()}</div>
+    ${recent?`<section class="welcome-resume"><div><span>${QT('continueLast','Continue last project')}</span><strong>${esc(recent.name)}</strong></div><button class="primary" data-action="open-project" data-id="${esc(recent.id)}">${QT('continueWork','Continue')} →</button></section>`:''}
+    ${readonly?'':`<div class="welcome-options"><section><span class="welcome-number">01</span><h2>${QT('startOwn','Your project')}</h2><p>${QT('startOwnText','Begin with an empty workspace. Add one document when you are ready.')}</p><button class="primary" data-action="start-project">${icon('upload')}${QT('startImport','Import a document')}</button></section>${state.config.bologna_example_available?`<section><span class="welcome-number">02</span><h2>${QT('startExample','Try Bologna')}</h2><p>${QT('startExampleText','Explore saved codes and sources in a separate, editable example copy.')}</p><button data-action="bologna-project">${QT('startExample','Try Bologna')} →</button></section>`:''}</div>`}
+    ${state.projects.length?`<section class="welcome-existing"><label for="start-project-select">${QT('existingProjects','Existing projects')}</label><div><select id="start-project-select"><option value="">${QT('chooseProject','Choose a project')}</option>${state.projects.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><button data-action="start-open" disabled>${QT('openProject','Open project')}</button></div></section>`:''}
+    ${readonly?'':`<div class="welcome-restore"><button class="link" data-action="restore-pick">${QT('restoreProject','Restore project JSON')} ↗</button><span>${QT('restoreSafe','Opens as a new project.')}</span></div><input id="restore-file" type="file" accept=".json" hidden>`}<p class="welcome-local">${QT('startLocal','Projects stay in this workspace. The remembered project and reading positions belong to this browser.')}</p></div></main></div>`;
+}
+function showStartProject() {
+  modal(QT('startName','Name your project'),`<label class="field">${QT('newProjectName','New project name')}<input id="new-project-name" maxlength="160" value="${QT('untitledProject','Untitled research project')}"></label><p>${QT('startCreateNote','Create an empty project, then choose a document. You can cancel the import and return later.')}</p>`,`<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="start-create">${QT('createImport','Create & import')}</button>`);
+  $('#dialog').dataset.startup='1';$('#new-project-name').focus();$('#new-project-name').select();
+}
+function showWorkspaceStart() {
+  captureReadingPosition();closeCodePopup();state.project=null;state.docId=null;state.selection=null;state.sourceFocus=null;state.networkReturn=null;state.view='coding';guide.open=false;render();
+  $('.welcome-content h1')?.focus({preventScroll:true});
+}
+function emptyProjectHtml() {
+  return `<section class="no-doc empty-project"><span class="empty-project-glyph" aria-hidden="true">${icon('doc')}</span><p class="eyebrow">${QT('emptyEyebrow','EMPTY PROJECT')}</p><h2>${QT('emptyTitle','Ready for your first document.')}</h2><p>${QT('emptyText','Import text, read a passage, and give it a code.')}</p><button class="primary" data-action="import"${demoLock()}>${icon('upload')}${QT('startImport','Import a document')}</button><details class="empty-project-options"><summary>${QT('optionalTools','Optional tools')}</summary><button data-action="code"${demoLock()}>${QT('createCode','Create code')}</button><button data-action="enable-all-blocks"${demoLock()}>${QT('enableAllBlocks','Enable figure workflow')}</button><p>${QT('enableAllBlocksHint','Adds theme grouping, Insights, Figures and Audit to this project. Other blocks keep their current settings.')}</p></details></section>`;
+}
 async function loadProject(id) {
   captureReadingPosition();
-  state.project=await api(`/api/projects/${id}`); state.docId=preferredReadingDocument(state.project);
+  const project=await api(`/api/projects/${id}`);
+  state.project=project;state.docId=preferredReadingDocument(project);rememberWorkspaceProject(project.id);
+  const preference=guidePreference(project.id);guide={open:preference?.status==='active',step:preference?.step??null};guideReturnFocus=null;
   state.selection=null; state.search=''; state.codeFilter=null; state.sourceFocus=null; state.networkReturn=null; NET.restoreFocus=false; state.insightsTab='map'; await loadBackups(); render();
 }
 // Snapshots are written on every change, so the indicator reports how many exist
@@ -483,14 +562,14 @@ function showSnapshots() {
   modal(QT('snapshotsTitle','Snapshots'),`<p>${QT('snapshotsIntro','A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.')}</p>${rows||`<div class="empty">${QT('noSnapshots','No snapshots yet.')}</div>`}`);
 }
 function modal(title, body, footer='') {
-  const dlg=$('#dialog'); delete dlg.dataset.workflow;delete dlg.dataset.codingId;delete dlg.dataset.codingCodebook;delete dlg.dataset.codingEdit; dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
+  const dlg=$('#dialog'); delete dlg.dataset.workflow;delete dlg.dataset.codingId;delete dlg.dataset.codingCodebook;delete dlg.dataset.codingEdit;delete dlg.dataset.startup; dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
   if(!dlg.open) dlg.showModal();
 }
 function closeModal() { $('#dialog').close(); $('#dialog').innerHTML=''; }
 function errorDisplay(error) { if($('#dialog').open && $('#modal-error')) { $('#modal-error').className='inline-error'; $('#modal-error').textContent=error.message; } else toast(error.message,true); }
 function render() {
   captureReadingPosition();
-  const p=state.project; if(!p) return;
+  const p=state.project;if(!p){readingMounted=null;$('#app').innerHTML=startupHtml();return;}
   const pending=p.suggestions.filter(s=>s.status==='pending').length;
   const titles={coding:QT('navCoding','Coding workspace'),insights:QT('navInsights','Insights'),audit:QT('navAudit','Audit trail'),plotting:QT('navPlotting','Figures')};
   $('#app').innerHTML=`<a class="workspace-skip" href="#workspace-content">Skip to workspace</a><div class="shell shell--${state.view}">
@@ -503,10 +582,12 @@ function render() {
     <div id="side-list">${sideListHtml()}</div>
     <div class="side-title"><div class="section-label">${QT('tools','TOOLS')} <span class="count">${(p.blocks||[]).length}/${BLOCKS.length}</span></div></div><button class="side-item" data-action="tools" title="Add or remove capability blocks"><span class="tools-glyph">\u229e</span><span class="name">${QT('toolsDlg','Capability blocks')}</span><span class="count">${(p.blocks||[]).length}</span></button>
     </div><div class="local-note"><span class="status-dot"></span><div><strong>${QT('localWorkspace','Local workspace')}</strong><span>${QT('cloudNote','Cloud only when requested')}</span></div></div></aside>
-    <main class="workspace" id="workspace-content" tabindex="-1"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions">${saveStateHtml()}<button data-action="toggle-motion" aria-pressed="${motionPreference==='reduce'}" title="${QT('motionHint','Reduce movement, or follow system preferences')}">${motionLabel()}</button><button data-action="toggle-lang" title="${QT('switchLanguage','Switch language')}">${QT_LANG==='zh'?'EN':'ZH'}</button><button data-action="settings">${icon('setting')}${QT('model','Model')}</button><button data-action="export">${icon('down')}${QT('export','Export')}</button><span class="avatar">QC</span></div></header>
+    <main class="workspace" id="workspace-content" tabindex="-1"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions">${saveStateHtml()}<button data-action="toggle-motion" aria-pressed="${motionPreference==='reduce'}" title="${QT('motionHint','Reduce movement, or follow system preferences')}">${motionLabel()}</button><button data-action="toggle-lang" title="${QT('switchLanguage','Switch language')}">${QT_LANG==='zh'?'EN':'ZH'}</button><button data-action="settings">${icon('setting')}${QT('model','Model')}</button><button data-action="export">${icon('down')}${QT('export','Export')}</button><button id="workspace-help" data-action="guide-open">${QT('help','Help')}</button><span class="avatar">QC</span></div></header>
     ${state.config.public_demo?`<div class="public-demo-banner" role="status"><strong>${QT('publicDemo','Public demo')}</strong><span>${QT('publicDemoNote','Read-only sample project. Changes and uploads are disabled here; run QualiCraft locally to code your own material.')}</span></div>`:''}
+    ${!state.config.public_demo&&isBolognaExample(p)?`<details class="example-context"><summary><strong>${QT('bolognaLabel','Bologna example')}</strong><span>${QT('editableExample','Editable in this local workspace')}</span></summary><button class="link" data-action="start-project">${QT('startOwnAction','Start your own project')} →</button></details>`:''}
     <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> ${QT('reviewCount','to review')}</span></div></div><button class="primary" data-action="import"${demoLock()}>${icon('upload')}${QT('importDlg','Import interview')}</button></section>
-    <div id="job-status"></div><button class="link mobile-only" data-action="projects">${QT('mobileSwitch','Switch / create project')}</button>
+    <div id="job-status"></div><div class="mobile-only mobile-project-bar"><button class="link" data-action="projects">${state.config.public_demo?QT('switchProject','Switch project'):QT('mobileSwitch','Switch / create project')}</button><button id="workspace-help-mobile" class="link" data-action="guide-open">${QT('help','Help')}</button></div>
+    <div id="guide-region">${quickGuideHtml()}</div>
     ${state.view==='coding'?codingView():state.view==='insights'?insightsView():state.view==='plotting'?plottingView():auditView()}
     <footer class="bottom-bar"><span>${QT('footerBrand','QUALICRAFT 0.1 · LOCAL WORKSPACE')}</span><span>${QT('footerTagline','Exact source ranges · Researcher-reviewed coding')}</span></footer></main></div>`;
   renderJob();
@@ -532,7 +613,7 @@ function highlight(text, start, annotations) {
 }
 
 function codingView() {
-  const d=doc(); if(!d) return `<div class="no-doc"><div class="eyebrow">${QT('noDocEyebrow','A SPACE FOR YOUR QUESTIONS')}</div><h2>${QT('noDocTitle','Start with a conversation')}</h2><p>Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.</p><button class="primary" data-action="import"${demoLock()}>${QT('importDlg','Import interview')}</button> <button data-action="code"${demoLock()}>${QT('createCode','Create code')}</button> <button data-action="enable-all-blocks"${demoLock()}>${QT('enableAllBlocks','Enable figure workflow')}</button> <span class="muted tiny-label" style="border:0;background:transparent;padding:0">${QT('enableAllBlocksHint','Adds theme grouping, Insights, Figures and Audit to this project. Other blocks keep their current settings.')}</span></div>`;
+  const d=doc();if(!d)return emptyProjectHtml();
   return `${networkSourceTrailHtml()}<section class="reading-dock" aria-label="${QT('readingNavigation','Reading navigation')}">
     <div class="reading-primary"><label class="reading-document-label" for="reading-document">${icon('doc')}<span class="sr-only">${QT('readingDocument','Current document')}</span></label><select id="reading-document" aria-label="${QT('readingDocument','Current document')}">${state.project.documents.map(item=>`<option value="${esc(item.id)}" ${item.id===d.id?'selected':''}>${esc(item.name)}</option>`).join('')}</select><output id="reading-position" aria-label="${QT('readingPosition','Reading position')}"></output><button data-action="reading-resume" title="${QT('readingResumeHint','Return to the saved paragraph in this browser. Position is not a read mark.')}">${QT('readingResume','Resume')}</button><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button></div>
     <div class="reading-context" tabindex="0" role="region" aria-label="${QT('readingPaths','Coding paths at this position')}"><span id="reading-path-label">${QT('readingHere','Codings here')}</span><span id="reading-code-path"></span></div><span id="reading-announcement" class="sr-only" role="status"></span>
@@ -1111,8 +1192,9 @@ async function previewAnalysis() {
   modal(QT('reviewRequest','Review cloud request'),`<p><b>${esc(preview.base_url)}</b><br>Model: ${esc(preview.model)} · ${preview.requests.length} requests · ${preview.segments.reduce((n,s)=>n+cp(s.text).length,0).toLocaleString()} target characters</p><div class="notice">${QT('previewNotice','Requests include the listed text, selected context, complete codebook definitions, and system instructions. Canceling stops subsequent requests; in-flight requests may still incur charges.')}</div><details class="preview-details"><summary>View full request bodies (${preview.requests.length} segments, no credentials)</summary>${preview.requests.map((r,i)=>`<details class="preview-details"><summary>Segment ${i+1} · source [${preview.segments[i].start}, ${preview.segments[i].end})</summary><pre class="preview-json">${esc(JSON.stringify(r,null,2))}</pre></details>`).join('')}</details><label class="check-row"><input id="send-confirm" type="checkbox">${QT('reviewConfirm','I have reviewed the content. These texts are de-identified and may be shared with this provider.')}</label>`, `<button data-action="close">${QT('back','Back')}</button><button class="primary" data-action="start-analysis" disabled>${QT('sendAnalyze','Send and analyze')}</button>`);
 }
 function showProjects() {
-  modal(QT('projectsTitle','Research projects'),`<label class="field">${QT('existingProjects','Existing projects')}<select id="modal-project-select">${state.projects.map(p=>`<option value="${p.id}" ${p.id===state.project.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><button data-action="switch-project">${QT('openProject','Open project')}</button><hr style="border:0;border-top:1px solid #e3e7e2;margin:22px 0"><label class="field">${QT('newProjectName','New project name')}<input id="new-project-name" placeholder="${QT('newProjectPlaceholder','e.g. Experiences of outpatient care')}" maxlength="160"></label><button class="primary" data-action="new-project">${QT('createProject','Create project')}</button><div class="option-grid"><button class="option-card" data-action="grounded-project"><strong>${QT('groundedProject','Tian 2021 · software architecture interviews')}</strong><span>${QT('groundedDesc','Import 8 semi-structured practitioner interviews. IP1–IP2 pair Chinese responses with English translations; IP3–IP8 are in English.')}</span></button><button class="option-card" data-action="demo-project"><strong>${QT('demoProject','Fictional care interview')}</strong><span>${QT('demoDesc','Explore a fictional transcript, sample coding, and fixed review suggestions.')}</span></button><button class="option-card" data-action="benchmark-project"><strong>${QT('benchmarkProject','TU Delft · blind workspace')}</strong><span>${QT('benchmarkDesc','Import 7 transcripts and 54 codes, without reference annotations.')}</span></button><button class="option-card" data-action="reference-project"><strong>${QT('referenceProject','TU Delft · researcher reference')}</strong><span>${QT('referenceDesc','Explore 377 researcher annotations for comparison. These are not model predictions.')}</span></button><button class="option-card" data-action="restore-pick"><strong>${QT('restoreProject','Restore project JSON')}</strong><span>${QT('restoreDesc','Restore a backup as a new project while keeping the original.')}</span></button></div><input id="restore-file" type="file" accept=".json" hidden><p>${QT('guideNote','Guide collections are imported from the local Guide directory and retain source provenance in the project audit trail.')}</p>`);
+  modal(QT('projectsTitle','Research projects'),`${state.projects.length?`<label class="field">${QT('existingProjects','Existing projects')}<select id="modal-project-select">${state.projects.map(p=>`<option value="${p.id}" ${p.id===state.project?.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><button data-action="switch-project">${QT('openProject','Open project')}</button>`:''}<hr class="project-divider"><label class="field">${QT('newProjectName','New project name')}<input id="new-project-name" placeholder="${QT('untitledProject','Untitled research project')}" maxlength="160"></label><div class="project-dialog-actions"><button class="primary" data-action="new-project"${demoLock()}>${QT('createProject','Create project')}</button>${state.config.bologna_example_available?`<button data-action="bologna-project"${demoLock()}>${QT('startExample','Try Bologna')}</button>`:''}<button data-action="restore-pick"${demoLock()}>${QT('restoreProject','Restore project JSON')}</button></div><details class="project-more"><summary>${QT('moreProjectSources','Other example sources')}</summary><div class="option-grid"><button class="option-card" data-action="grounded-project"><strong>${QT('groundedProject','Tian 2021 · software architecture interviews')}</strong><span>${QT('groundedDesc','Import 8 semi-structured practitioner interviews. IP1–IP2 pair Chinese responses with English translations; IP3–IP8 are in English.')}</span></button><button class="option-card" data-action="demo-project"><strong>${QT('demoProject','Fictional care interview')}</strong><span>${QT('demoDesc','Explore a fictional transcript, sample coding, and fixed review suggestions.')}</span></button><button class="option-card" data-action="benchmark-project"><strong>${QT('benchmarkProject','TU Delft · blind workspace')}</strong><span>${QT('benchmarkDesc','Import 7 transcripts and 54 codes, without reference annotations.')}</span></button><button class="option-card" data-action="reference-project"><strong>${QT('referenceProject','TU Delft · researcher reference')}</strong><span>${QT('referenceDesc','Explore 377 researcher annotations for comparison. These are not model predictions.')}</span></button></div><p>${QT('guideNote','Guide collections are imported from the local Guide directory and retain source provenance in the project audit trail.')}</p></details><input id="restore-file" type="file" accept=".json" hidden>`,`<button data-action="workspace-home">${QT('backStart','Back to start')}</button><button data-action="close">${QT('close','Close')}</button>`);
 }
+
 function showExport() {
   const formats=[['json','JSON','exportProjectName','exportProjectUse'],['csv','CSV','exportCodingsName','exportCodingsUse'],['matrix','CSV','exportMatrixName','exportMatrixUse'],['methods','MD','exportMethodsName','exportMethodsUse']];
   modal(QT('exportTitle'),`<p class="io-intro">${QT('exportShort')}</p><div class="option-grid io-export-options">${formats.map(([format,ext,title,use])=>`<button class="option-card io-export-card" data-action="download" data-format="${format}"><span class="io-file-icon" aria-hidden="true">${icon('doc')}<b>${ext}</b></span><span><strong>${QT(title)}</strong><span>${QT(use)}</span></span><span class="io-download-icon" aria-hidden="true">↓</span></button>`).join('')}</div>
@@ -1124,12 +1206,31 @@ function exportResultHtml(filename,bytes,text) {
   return `<div class="io-result-heading">${icon('doc')}<div><span class="io-kicker">${QT('exportSent')}</span><strong data-export-filename>${esc(filename)}</strong><span>${bytes.toLocaleString()} B</span></div><span class="io-result-check" aria-hidden="true">✓</span></div><p>${QT('exportCheck')}</p><details class="io-export-preview"><summary>${QT('exportPreview')}</summary><pre>${esc(excerpt)}</pre></details>`;
 }
 async function createProject(body) {
-  const p=await api('/api/projects',body); state.projects=await api('/api/projects'); closeModal(); state.view='coding'; await loadProject(p.id); toast(QT('projectCreated','Project created and saved locally.'));
+  const p=await api('/api/projects',body); state.projects=await api('/api/projects');
+  if(['empty','bologna'].includes(body.kind))setGuidePreference(p.id,'active');
+  closeModal(); state.view='coding'; await loadProject(p.id); toast(QT('projectCreated','Project created and saved locally.'));
 }
 async function action(button) {
   const a=button.dataset.action;
   if(state.config.public_demo&&WRITE_ACTIONS.has(a)){toast(DEMO_LOCK(),true);return;}
   if(a==='close'){closeModal();return;}
+  if(a==='workspace-home'){closeModal();showWorkspaceStart();return;}
+  if(a==='start-project'){startReturnFocus=button;showStartProject();return;}
+  if(a==='start-create'){await createProject({name:$('#new-project-name').value,kind:'empty'});showImport();return;}
+  if(a==='bologna-project')return createProject({kind:'bologna'});
+  if(a==='open-project'){await loadProject(button.dataset.id);return;}
+  if(a==='start-open'){const id=$('#start-project-select').value;if(id)await loadProject(id);return;}
+  if(a==='guide-examples'){$('#start-project-select')?.focus();return;}
+  if(a==='guide-open'){openGuide(button);return;}
+  if(a==='guide-dismiss'){dismissGuide();return;}
+  if(a==='guide-back'||a==='guide-next'){
+    const step=guide.step??guideCurrentStep(state.project);
+    if(a==='guide-next'&&step===2){dismissGuide();return;}
+    guide.step=Math.max(0,Math.min(2,step+(a==='guide-next'?1:-1)));setGuidePreference(state.project?.id||null,'active',guide.step);updateGuide();$('#guide-title')?.focus({preventScroll:true});return;
+  }
+  if(a==='guide-source'){if(!doc()){if(!state.config.public_demo)showImport();return;}state.view='coding';render();scrollReadingParagraph(0,true);return;}
+  if(a==='guide-map'){state.view='insights';state.insightsTab='map';render();return;}
+
   if(a==='insights-tab'){state.insightsTab=button.dataset.tab;render();document.querySelector(`[data-action="insights-tab"][data-tab="${state.insightsTab}"]`)?.focus();return;}
   if(a==='net-prev'||a==='net-next'){stepNetworkSelection(a==='net-prev'?-1:1);return;}
   if(a==='net-passages'){toggleNetworkPassages();return;}
@@ -1293,7 +1394,7 @@ function renderJob(){
   holder.innerHTML=`<div class="job-bar"><span>${esc(labels[job.status])} · ${job.done}/${job.total} segments · ${job.saved} new suggestions${job.discarded?' · '+job.discarded+' failed validation':''}${job.error?' · '+esc(job.error):''}</span>${job.status==='running'?`<button data-action="cancel-job" data-id="${job.id}" ${job.cancel_requested?'disabled':''}>${QT('stopRemaining','Stop remaining requests')}</button>`:''}</div>`;
 }
 function startPolling(){
-  clearTimeout(pollTimer);pollTimer=setTimeout(async()=>{try{const before=state.jobs.filter(j=>j.status==='running').map(j=>j.id);state.jobs=await api('/api/jobs');renderJob();const finished=state.jobs.find(j=>before.includes(j.id)&&j.status!=='running');if(finished){if(finished.project_id===state.project.id)await refresh();toast(finished.error||'Analysis finished. Review your suggestions.',finished.status==='failed');}if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(e){toast('Could not read task status. Refresh to view saved results.',true);}},1500);
+  clearTimeout(pollTimer);pollTimer=setTimeout(async()=>{try{const before=state.jobs.filter(j=>j.status==='running').map(j=>j.id);state.jobs=await api('/api/jobs');renderJob();const finished=state.jobs.find(j=>before.includes(j.id)&&j.status!=='running');if(finished){if(finished.project_id===state.project?.id)await refresh();toast(finished.error||'Analysis finished. Review your suggestions.',finished.status==='failed');}if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(e){toast('Could not read task status. Refresh to view saved results.',true);}},1500);
 }
 document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;if(['import','export'].includes(button.dataset.action))ioReturnFocus=button;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action.startsWith('net-'))drawNetworkControls();}}});
 document.addEventListener('close',e=>{if(e.target.id==='dialog'&&e.target.dataset.workflow&&ioReturnFocus?.isConnected&&!ioReturnFocus.disabled)ioReturnFocus.focus({preventScroll:true});},true);
@@ -1308,6 +1409,7 @@ document.addEventListener('change',async e=>{
 
   try{
     if(e.target.id==='network-select'){if(!e.target.value)clearNetworkSelection();else if(NET.selected!==e.target.value)toggleNetworkNode(e.target.value);return;}
+    if(e.target.id==='start-project-select')$('[data-action="start-open"]').disabled=!e.target.value;
     if(e.target.id==='reading-document'){switchReadingDocument(e.target.value);return;}
     if(e.target.id==='project-select')await loadProject(e.target.value);
     if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;render();}
@@ -1331,6 +1433,8 @@ document.addEventListener('pointerout',event=>{
 document.addEventListener('focusin',event=>{const pill=event.target.closest('.pill[data-code-id]');if(pill)previewCoding([pill.dataset.id]);});
 document.addEventListener('focusout',event=>{if(event.target.closest('.pill[data-code-id]')&&!event.relatedTarget?.closest('.pill[data-code-id]'))previewCoding();});
 document.addEventListener('keydown',handleCodebookKey);
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#dialog').open&&document.activeElement?.closest('.quick-guide')){event.preventDefault();dismissGuide();}});
+document.addEventListener('close',event=>{if(event.target.id==='dialog'&&event.target.dataset.startup&&startReturnFocus?.isConnected)startReturnFocus.focus({preventScroll:true});},true);
 document.addEventListener('close',event=>{
   if(event.target.id!=='dialog')return;
   const edit=event.target.dataset.codingEdit;if(edit){const button=[...document.querySelectorAll('.codebook-tree [data-action="code-edit"]')].find(el=>el.dataset.id===edit);(button||document.querySelector('[data-action="coding-codebook"]'))?.focus({preventScroll:true});}
@@ -1363,7 +1467,11 @@ window.addEventListener('scroll',scheduleReadingPosition,true);
 window.addEventListener('resize',()=>{if(readingMounted&&!readingMounted.filtered&&readingMounted.start!==null)scrollReadingParagraph(readingMounted.start);scheduleReadingPosition();});
 window.addEventListener('pagehide',captureReadingPosition);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')captureReadingPosition();});
-async function init(){try{const boot=await api('/api/bootstrap');state.token=boot.token;state.projects=boot.projects;state.config=boot.config;await loadProject(state.projects[0].id);state.jobs=await api('/api/jobs');renderJob();if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(error){$('#app').innerHTML=`<div class="loading">Could not open workspace: ${esc(error.message)}. Check that the local server is running, then refresh.</div>`;}}
+async function init(){try{
+  const boot=await api('/api/bootstrap');state.token=boot.token;state.projects=boot.projects;state.config=boot.config;
+  const id=selectedStartupProject(state.projects,state.config.public_demo);if(id)await loadProject(id);else render();
+  state.jobs=await api('/api/jobs');renderJob();if(state.jobs.some(j=>j.status==='running'))startPolling();
+}catch(error){$('#app').innerHTML=`<div class="loading">Could not open workspace: ${esc(error.message)}. Check that the local server is running, then refresh.</div>`;}}
 init();
 
 /* ---------------------------------------------------------------- network --

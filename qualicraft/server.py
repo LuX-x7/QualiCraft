@@ -7,6 +7,7 @@ import json
 import mimetypes
 import os
 import secrets
+import sqlite3
 import sys
 import tempfile
 import urllib.parse
@@ -20,6 +21,22 @@ from .ai import Analyzer
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def bologna_example():
+    """Copy only the bundled public example; never open or modify user data."""
+    source = ROOT / "demo-data" / "qualicraft.sqlite3"
+    require(source.is_file(), "The bundled Bologna example is not installed.")
+    with sqlite3.connect(source.resolve().as_uri() + "?mode=ro", uri=True) as db:
+        row = db.execute("SELECT data FROM projects WHERE id=?",
+                         ("a71a0b538c024c3ab23fb4286cfe93e2",)).fetchone()
+    require(row is not None, "The bundled Bologna example is unavailable.")
+    project = validate_project(json.loads(row[0]))
+    project["id"] = uid()
+    project["name"] = "Bologna · example copy"
+    project["updated_at"] = now()
+    event(project, "example_copy", example="bologna")
+    return project
 
 
 def network_response(project, passages=True):
@@ -49,8 +66,6 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
     base_path = ("/" + base_path.strip("/")) if base_path.strip("/") else ""
     store = Store(Path(data_dir) / "qualicraft.sqlite3", backup_dir=backup_dir)
     store.migrate_legacy_demo_projects()
-    if not store.list():
-        store.create(synthetic_project())
     analyzer = Analyzer(store)
     token = secrets.token_urlsafe(32)
 
@@ -122,7 +137,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 if path == "/api/bootstrap":
                     return self.send({"token": token, "projects": store.list(),
                                       "config": {**analyzer.public_config(), "plotting": plotting.availability(),
-                                                 "public_demo": public_demo},
+                                                 "public_demo": public_demo,
+                                                 "bologna_example_available": (ROOT / "demo-data" / "qualicraft.sqlite3").is_file()},
                                       "guide_available": (Path(guide_dir) / "Paired_Qualitative_Transcripts_TU_Delft").is_dir()})
                 if path.startswith("/api/"):
                     require(self.headers.get("X-QualiCraft-Token") == token, "The session has expired; refresh the page")
@@ -249,7 +265,9 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                     return self.send(analyzer.cancel(parts[2]))
                 if parts == ["api", "projects"]:
                     kind = body.get("kind", "empty")
-                    if kind == "demo":
+                    if kind == "bologna":
+                        project = bologna_example()
+                    elif kind == "demo":
                         project = synthetic_project()
                     elif kind in {"benchmark", "reference"}:
                         project = benchmark_project(guide_dir, reference=kind == "reference")

@@ -27,13 +27,21 @@ def main():
    return path
   def path(code):return ' > '.join(c['name'] for c in chain(code))
   initial_doc=original['documents'][0];sample=max((a for a in original['annotations'] if a['document_id']==initial_doc['id']),key=lambda a:len(chain(codes[a['code_id']])));leaf=codes[sample['code_id']];root=chain(leaf)[0]
+  def open_original(p):
+   p.goto(base+'/w/?lang=en',wait_until='networkidle')
+   if p.locator('#start-project-select').count():
+    p.locator('#start-project-select').select_option(pid);p.locator('[data-action="start-open"]').click()
+   elif p.locator('#project-select').input_value()!=pid:
+    if p.locator('#project-select').is_visible():p.locator('#project-select').select_option(pid)
+    else:p.locator('[data-action="projects"]:visible').first.click();p.locator('#modal-project-select').select_option(pid);p.locator('[data-action="switch-project"]').click()
+   expect(p.locator('.project-strip h1')).to_have_text(original['name']);p.mouse.move(10,10)
   def snap(p,name):p.wait_for_timeout(120);p.screenshot(path=str(shots/(name+'.png')))
   def check(name,fn,p=page):
    print('START',name,flush=True)
    try:results['checks'].append({'name':name,'pass':True,'reading':fn()});print('PASS',name,flush=True)
    except Exception as e:results['checks'].append({'name':name,'pass':False,'error':str(e),'traceback':traceback.format_exc()});snap(p,'failure-'+str(len(results['checks'])));print('FAIL',name,str(e),flush=True)
    save()
-  page.goto(base+'/w/?lang=en',wait_until='networkidle');page.locator('#project-select').select_option(pid);expect(page.locator('.project-strip h1')).to_have_text(original['name'])
+  open_original(page)
   def tree():
    page.locator('[data-action="toggle-codebook"]').click();nodes=page.locator('#side-list [data-code-node]');actual=nodes.evaluate_all('(es)=>es.map(e=>({id:e.dataset.codeNode,parent:e.dataset.parentId,domParent:e.parentElement.closest("[data-code-node]")?.dataset.codeNode||"",name:e.querySelector(".name").textContent,role:e.querySelector(".code-role").textContent}))');assert len(actual)==317
    for node in actual:
@@ -74,7 +82,7 @@ def main():
    after=ctx.request.get(url,headers=headers).json();assert after==original;assert results['writes']==[],results['writes'];(out/'project-after-readonly.json').write_text(json.dumps(after,ensure_ascii=False,indent=2));return {'project_json_equal':True,'post_requests':0,'codings':874}
   check('all tree, highlight, search and inspection actions leave the original project unchanged',no_writes)
   def phone():
-   c,t=context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True);t.goto(base+'/w/?lang=en',wait_until='networkidle');
+   c,t=context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True);open_original(t);
    if t.locator('#project-select').input_value()!=pid:
     t.locator('[data-action="projects"]:visible').first.tap();t.locator('#modal-project-select').select_option(pid);t.locator('[data-action="switch-project"]').tap();expect(t.locator('.project-strip h1')).to_have_text(original['name'])
    assert t.evaluate('innerWidth')==390;t.locator('[data-action="coding-codebook"]').tap();expect(t.locator('#mobile-code-filter')).to_be_focused();assert t.locator('#mobile-codebook-list [data-code-node]').count()==317
@@ -84,7 +92,7 @@ def main():
    t.set_viewport_size({'width':844,'height':390});assert t.evaluate('document.documentElement.scrollWidth-innerWidth')==0;snap(t,'08-phone-landscape');c.close();return {'width':390,'touch_search_select_disclosure':True,'escape_returns_focus':True,'nodes_and_connectors_preserved':True,'overflow':0,'physical_device':'not tested'}
   check('phone exposes the full tree, touch selection, exact quotation and keyboard dismissal',phone)
   def reduced():
-   c,t=context(viewport={'width':1440,'height':900},reduced_motion='reduce');t.goto(base+'/w/?lang=en',wait_until='networkidle');t.locator('#project-select').select_option(pid);expect(t.locator('.project-strip h1')).to_have_text(original['name']);pill=t.locator(f'.pill[data-id="{sample["id"]}"]').first;pill.focus();assert pill.get_attribute('class')=='pill coding-active';assert pill.evaluate('(e)=>getComputedStyle(e).animationName')=='none';snap(t,'09-reduced-motion');c.close();return {'static_highlight_and_focus':True}
+   c,t=context(viewport={'width':1440,'height':900},reduced_motion='reduce');open_original(t);pill=t.locator(f'.pill[data-id="{sample["id"]}"]').first;pill.focus();assert pill.get_attribute('class')=='pill coding-active';assert pill.evaluate('(e)=>getComputedStyle(e).animationName')=='none';snap(t,'09-reduced-motion');c.close();return {'static_highlight_and_focus':True}
   check('reduced motion preserves static source and hierarchy focus',reduced)
   def responsive():
    widths=[800,801,1120,1121,1279,1280,1366,1440]
