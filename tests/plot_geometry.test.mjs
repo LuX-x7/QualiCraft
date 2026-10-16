@@ -27,3 +27,13 @@ test('hierarchy pages preserve theme, CSV order and stable row navigation',async
  assert.equal(page.total,20)
  assert.deepEqual(hierarchyPage(items,23).rows.map(item=>item.row),[20,21,22,23,24])
 })
+
+test('matrix detail windows keep every original coordinate reachable without shrinking cells',async()=>{
+ const {matrixWindow}=await import('../website/lib/site/plot-geometry.ts')
+ for(const small of [false,true])for(const [xs,ys,pairs] of [[19,15,false],[12,12,true]])for(let x=0;x<xs;x++)for(let y=0;y<ys;y++){
+  const window=matrixWindow(xs,ys,x,y,small,pairs)
+  assert.ok(x>=window.xStart&&x<window.xEnd&&y>=window.yStart&&y<window.yEnd)
+  const geometry=matrixLayout(window.columns,window.rows,window.rows*56+105)
+  assert.equal(geometry.cellWidth,56);assert.equal(geometry.cellHeight,56)
+ }
+})

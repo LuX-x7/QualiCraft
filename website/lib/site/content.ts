@@ -112,13 +112,13 @@ export const METHODS = {
   ],
   rows: [
     {
-      approach: 'Thematic analysis (TA)',
+      approach: 'Reflexive thematic analysis (one TA approach)',
       cells: [
         'What do participants make of X, and what does the field take it to mean?',
         'The coded meaning — a pattern across the corpus, not a single utterance.',
-        'Codes emerge from the data; the codebook grows and is revised as themes form.',
+        'Researchers develop codes from the data or with theoretical guidance, then develop and revisit themes. Specify the TA approach used.',
         'Themes with defining quotations; a written narrative of each theme.',
-        'Not the frame: a single researcher coding well, with the judgement shown rather than a coefficient. (Braun & Clarke, 2006, 2019)',
+        'For reflexive TA, inter-coder agreement is not the quality criterion; show reflexive engagement and a coherent interpretation. (Braun & Clarke, 2019)',
         'Central. The researcher’s stance is part of the analysis and belongs in the write-up. (Braun & Clarke, 2019)',
         'Carries the mechanics — passages to codes, codes to themes, memos, the record. The reflexive writing is yours: it happens in the memo fields, which are enabled in new projects.',
       ],
@@ -126,12 +126,12 @@ export const METHODS = {
     {
       approach: 'Qualitative content analysis (CA)',
       cells: [
-        'What is in the text, and how much of it is there?',
+        'How can the content and its meaning be interpreted through categories?',
         'The coded unit — a defined stretch of text placed in a category.',
-        'Codes derive from a framework or emerge, then categories are defined and counted.',
-        'A category system with frequencies; matrices of category by case.',
-        'Central. Inter-coder agreement (e.g. Krippendorff’s alpha) and a documented codebook. (Hsieh & Shannon, 2005; Krippendorff, 2019)',
-        'Present but quieter: the analyst defines categories and inclusion rules, and those definitions are the audit trail. (Krippendorff, 2019)',
+        'Conventional approaches derive categories from data; directed approaches start with theory. Summative approaches combine counting with contextual interpretation.',
+        'Categories with contextual interpretation; descriptive counts or matrices where justified.',
+        'Conventional, directed and summative approaches have different coding and trustworthiness considerations. (Hsieh & Shannon, 2005)',
+        'Describe how the analyst developed categories and inclusion rules and interpreted their context.',
         'Carries the counting directly — frequency, document × code, and the whole codebook exported for an appendix. Agreement across coders is not computed here; export the codings and compute it where you report it.',
       ],
     },

@@ -39,7 +39,7 @@ export default async function HomeView() {
       <a className="hero-scroll mono" href="#modules">FOLLOW THE RECORD ↓</a>
     </section>
     <section className="section home-atlas" id="modules" aria-labelledby="atlas-title"><div className="wrap"><ModuleAtlas/></div></section>
-    <WorkflowShowcase example={example} data={source?.workflow??{frequency:[],frequencyCredit:'',frequencyCsv:'',figures:[]}} charts={charts}/>
+    <WorkflowShowcase records={source?.network??[]} example={example} data={source?.workflow??{frequency:[],frequencyCredit:'',frequencyCsv:'',figures:[]}} charts={charts}/>
     <section className="section home-source" id="data" aria-labelledby="source-title"><div className="wrap">
       <ProvenanceSketch project={manifest?.project}/>
       <details className="home-details"><summary>Data cards &amp; licences</summary><p>{DATA_SECTION.body}</p><DataCards selected={cards.cards.filter(card=>card.file==='bologna_qda.zip')}/><details><summary>Other public importer fixtures</summary><DataCards selected={cards.cards.filter(card=>card.file!=='bologna_qda.zip')}/></details></details>

@@ -1,6 +1,8 @@
-# Latest local follow-up · UX-15
+# Latest local follow-up · UX-16 · 2026-10-16
 
-Figure proportions, original SVG comparison and named hierarchy bars: [UX-14](UX-14-FIGURE-PROPORTIONS.md). [UX-15](UX-15-RECORD-SCHEMATICS.md) adds original record schematics and confirms the real four-node graph during normal scrolling. 70 Node tests, build and desktop/mobile viewport/keyboard/reduced-motion/console checks pass. Owner visual acceptance and actual QT trial remain open. No remote operations; protected paths unchanged.
+[UX-16](UX-16-HOVER-NETWORK-CLARITY.md) reproduces and fixes real Chrome heading hover, separates the Coding document from an actual saved Theme–Code–Passage network, and makes matrix detail readable with full context and original SVG fallback. 74 Node tests, 148 Python tests (3 skips), 10 project-only Chrome checks and the final production build pass; all 594 UI CSV values match. The methods note explains shared tools with different analytic decisions. See the [current roadmap](EXPERIENCE-ROADMAP.md). Owner visual acceptance, actual QT trial and separately scoped UX-12 remain open. Windows deferred; no push/deploy or protected-path changes. Build used bundled Node directly because npm is unavailable; retained failures and exact commands are in the UX-16 record.
+
+<!-- Below: historical handoff entries, not current completion claims. -->
 
 > 当前入口：UX-13 回应六项首页反馈，见 [记录](UX-13-SPATIAL-NOTEBOOK.md) 与 [总计划](EXPERIENCE-ROADMAP.md)。QT 居中、粒子透视、可组合工程线稿、九段自然滚动与完整五图、明确关系节点、大字号和全首页网格。用户视觉接受及实际 QT 试用待确认；UX-12 工作台导入／导出界面另列。Windows 暂缓，不推送、不部署。
 
