@@ -32,6 +32,31 @@ Object.assign(_T.zh, {
   evidenceChoose:'选择下方标注以阅读完整原句。', noEvidence:'当前选择没有已保存标注。',
   mapPreview:'每个展开的编码最多显示 14 个原句节点；列表包含当前选择的全部已保存标注。',
 });
+// UX-12 labels are presentation only; import/export formats and endpoints stay unchanged.
+Object.assign(_T.en, {
+  importFileMode:'Choose a file', importPasteMode:'Paste text', importShort:'Add a document to this project.',
+  importFormats:'TXT / DOCX · UTF-8 · up to 8 MB', importHelp:'Format details',
+  importTableLink:'Import a coding table instead', importTableShort:'Create a new project from a coding export.',
+  importReady:'Text preview', importDocxReady:'Text opens after import.', importedLocal:'Imported · saved locally',
+  importName:'Document name', importPaste:'Transcript', importEmpty:'Choose a TXT or DOCX file, or switch to Paste text.',
+  exportShort:'Choose the file you need.', exportProjectName:'Project', exportProjectUse:'Restore and continue',
+  exportCodingsName:'Codings', exportCodingsUse:'Quotes and source ranges', exportMatrixName:'Matrix', exportMatrixUse:'Documents × codes',
+  exportMethodsName:'Methods', exportMethodsUse:'Recorded research steps', exportChoose:'Your file will appear here.',
+  exportPreparing:'Preparing file…', exportSent:'Sent to browser', exportCheck:'Check your browser’s downloads for completion.',
+  exportPreview:'Preview · first lines', exportPrivate:'Project JSON includes the source text.',
+});
+Object.assign(_T.zh, {
+  importFileMode:'选择文件', importPasteMode:'粘贴文本', importShort:'将文档加入当前项目。',
+  importFormats:'TXT / DOCX · UTF-8 · 最大 8 MB', importHelp:'格式说明',
+  importTableLink:'改为导入编码表', importTableShort:'从已有编码导出文件创建新项目。',
+  importReady:'文本预览', importDocxReady:'导入后显示文档文本。', importedLocal:'已导入 · 保存在本地',
+  importName:'文档名称', importPaste:'访谈文本', importEmpty:'请选择 TXT / DOCX 文件，或切换到粘贴文本。',
+  exportShort:'选择需要的文件。', exportProjectName:'项目', exportProjectUse:'恢复并继续研究',
+  exportCodingsName:'标注', exportCodingsUse:'原句与来源范围', exportMatrixName:'矩阵', exportMatrixUse:'文档 × 编码',
+  exportMethodsName:'方法', exportMethodsUse:'已记录的研究步骤', exportChoose:'文件结果将显示在这里。',
+  exportPreparing:'正在准备文件…', exportSent:'已发送至浏览器', exportCheck:'请在浏览器下载列表中确认完成。',
+  exportPreview:'预览 · 文件开头', exportPrivate:'项目 JSON 包含源文档文本。',
+});
 function QT(k,fb){const d=_T[QT_LANG];return(d&&d[k])||fb||k;}
 document.documentElement.lang = QT_LANG === 'zh' ? 'zh-CN' : 'en';
 if(QT_LANG==='zh'){document.title='QualiCraft \u00b7 \u8d28\u6027\u7814\u7a76\u5de5\u4f5c\u53f0';}
@@ -99,7 +124,7 @@ const icons = {
   down:'<path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/>'
 };
 const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.doc}</svg>`;
-let toastTimer, pollTimer;
+let toastTimer, pollTimer, ioReturnFocus;
 function toast(message, error=false) { const el=$('#toast'); el.textContent=message; el.className='visible'+(error?' error':''); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',6000); }
 // When the workbench is proxied behind the site, /config.js sets QT_BASE to the
 // prefix it is mounted at. Standalone, the base is empty and every path is root.
@@ -308,7 +333,7 @@ function showSnapshots() {
   modal(QT('snapshotsTitle','Snapshots'),`<p>${QT('snapshotsIntro','A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.')}</p>${rows||`<div class="empty">${QT('noSnapshots','No snapshots yet.')}</div>`}`);
 }
 function modal(title, body, footer='') {
-  const dlg=$('#dialog'); dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
+  const dlg=$('#dialog'); delete dlg.dataset.workflow; dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
   if(!dlg.open) dlg.showModal();
 }
 function closeModal() { $('#dialog').close(); $('#dialog').innerHTML=''; }
@@ -358,7 +383,7 @@ function codingView() {
   const d=doc(); if(!d) return `<div class="no-doc"><div class="eyebrow">${QT('noDocEyebrow','A SPACE FOR YOUR QUESTIONS')}</div><h2>${QT('noDocTitle','Start with a conversation')}</h2><p>Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.</p><button class="primary" data-action="import"${demoLock()}>${QT('importDlg','Import interview')}</button> <button data-action="code"${demoLock()}>${QT('createCode','Create code')}</button> <button data-action="enable-all-blocks"${demoLock()}>${QT('enableAllBlocks','Enable figure workflow')}</button> <span class="muted tiny-label" style="border:0;background:transparent;padding:0">${QT('enableAllBlocksHint','Adds theme grouping, Insights, Figures and Audit to this project. Other blocks keep their current settings.')}</span></div>`;
   return `${networkSourceTrailHtml()}<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"></div>
   <div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="panel-kicker">${QT('documentLabel','DOCUMENT')}</div><div class="tool-group"><span class="selection-hint">${QT('selectHint','Select text to code a passage')}</span><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
-  <div class="reader-header"><div><h2 class="reader-heading">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">${QT('codingMargin','CODING MARGIN')}</div></div>
+  ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">${QT('codingMargin','CODING MARGIN')}</div></div>
   <div class="reading-note${hasBlock('memos')?'':' block-off'}"><span class="reading-note-label">${QT('readingNotes','READING NOTES')}</span><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
   <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">${QT('aiReview','AI REVIEW')}</div><div class="review-title"><h3>${QT('suggestions','Suggestions')}</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">${QT('reviewSubtitle','Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.')}</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending',QT('pending','Pending review')],['accepted',QT('reviewAccepted','Accepted')],['rejected',QT('reviewRejected','Rejected')]].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
 }
@@ -683,13 +708,52 @@ function locate(start) {
   if(para){para.scrollIntoView({behavior:'smooth',block:'center'});para.classList.add('flash');setTimeout(()=>para.classList.remove('flash'),1800);}
 }
 function showImport() {
-  modal(QT('importDlg','Import interview'),`<p>${QT('importDesc','Import UTF-8 TXT or DOCX, or paste a transcript. Original line breaks define segments. Use Doctor:/Patient:, Interviewer:/Participant:, or IQ.../IP1: speaker labels. Chinese labels are also supported.')}</p><label class="field">${QT('chooseFile','Choose a file')}<span class="file-picker"><span class="file-picker-button">${QT('chooseFile','Choose a file')}</span><span class="file-picker-name" data-file-name="import-file">${QT('noFileSelected','No file selected')}</span><input id="import-file" type="file" accept=".txt,.docx" aria-label="${QT('chooseFile','Choose a file')}"></span><small>${QT('fileHint','DOCX imports paragraph and table text; layout, comments, and headers are not retained.')}</small></label><label class="field">${QT('docName','Document name')}<input id="document-name" placeholder="${QT('docNamePlaceholder','e.g. P02 · Care experience')}" maxlength="200"></label><label class="field">${QT('pasteTranscript','Or paste a transcript')}<textarea id="document-text" rows="9" placeholder="Doctor: How did the conversation feel?&#10;Patient: ..."></textarea></label>`, `<button class="link" data-action="import-export-open">${QT('importOtherLink','Already have a coding table from another tool?')}</button><button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="save-document">${QT('importBtn','Import locally')}</button>`);
+  modal(QT('importDlg','Import interview'), `<p class="io-intro">${QT('importShort')}</p>
+    <div class="io-modes" role="group" aria-label="${QT('importDlg')}"><button type="button" data-action="import-mode" data-mode="file" aria-pressed="true">${icon('upload')}${QT('importFileMode')}</button><button type="button" data-action="import-mode" data-mode="paste" aria-pressed="false">${icon('doc')}${QT('importPasteMode')}</button></div>
+    <div id="import-file-panel"><label class="field io-file-label"><span class="file-picker io-file-picker">${icon('upload')}<span><strong class="file-picker-button">${QT('chooseFile')}</strong><span class="file-picker-name" data-file-name="import-file">${QT('noFileSelected')}</span></span><input id="import-file" type="file" accept=".txt,.docx" aria-label="${QT('chooseFile')}"></span><small>${QT('importFormats')}</small></label><div id="import-preview" class="io-source-preview" hidden></div></div>
+    <div id="import-paste-panel" hidden><label class="field">${QT('importPaste')}<textarea id="document-text" rows="6" placeholder="Interviewer: …&#10;Participant: …" disabled></textarea></label></div>
+    <label class="field">${QT('importName')}<input id="document-name" placeholder="${QT('docNamePlaceholder')}" maxlength="200"></label>
+    <details class="io-help"><summary>${QT('importHelp')}</summary><p>${QT('importDesc')}</p><p>${QT('fileHint')}</p></details>
+    <button class="link io-table-link" data-action="import-export-open">${QT('importTableLink')} ↗</button>`,
+    `<button data-action="close">${QT('cancel')}</button><button class="primary" data-action="save-document">${QT('importBtn')}</button>`);
+  $('#dialog').dataset.workflow='import';
+}
+function setImportMode(mode) {
+  const file=mode==='file';
+  $('#import-file-panel').hidden=!file; $('#import-paste-panel').hidden=file;
+  $('#import-file').disabled=!file; $('#document-text').disabled=file;
+  document.querySelectorAll('[data-action="import-mode"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+  $('#modal-error').textContent='';
+  (file?$('#import-file'):$('#document-text')).focus();
+}
+async function updateImportPreview() {
+  const input=$('#import-file'),preview=$('#import-preview'),file=input?.files[0];
+  if(!preview)return;
+  preview.hidden=!file;if(!file)return;
+  preview.innerHTML=`<div class="io-file-meta">${icon('doc')}<strong>${esc(file.name)}</strong><span>${file.size.toLocaleString()} B</span></div>`;
+  if(file.size>8_000_000)return;
+  if(/\.txt$/i.test(file.name)){
+    try{
+      const text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());
+      if(!preview.isConnected||input.files[0]!==file)return;
+      preview.insertAdjacentHTML('beforeend',`<span class="io-kicker">${QT('importReady')}</span><pre>${esc(cp(text).slice(0,800).join(''))}</pre>`);
+    }catch(error){if(preview.isConnected)preview.insertAdjacentHTML('beforeend',`<p>${esc(error.message)}</p>`);}
+  }else if(/\.docx$/i.test(file.name))preview.insertAdjacentHTML('beforeend',`<p>${QT('importDocxReady')}</p>`);
+}
+function importedDocument(id) {
+  state.docId=id;state.selection=null;state.sourceFocus=null;state.search='';state.codeFilter=null;state.sideFilter='';state.view='coding';state.importReceipt=id;
+}
+function focusImportedDocument() {
+  const heading=$('.reader-heading');if(!heading)return;
+  heading.focus({preventScroll:true});
+  if(window.innerWidth<=800)heading.scrollIntoView({block:'start'});
 }
 /* A second path through the same dialog: another tool's coding export. The
    file is sent whole and the server works out which exporter produced it, so
    the researcher does not have to know that OpenQDA and NVivo both emit CSV. */
 function showImportExport() {
-  modal(QT('importOther','Import a coding table'), `<p>${QT('importOtherDesc','Already coded elsewhere? Drop the export here and QualiCraft will read it into a new project — transcripts, codebook and codings, with the source licence recorded.')}</p><label class="field">${QT('chooseFile','Choose a file')}<span class="file-picker"><span class="file-picker-button">${QT('chooseFile','Choose a file')}</span><span class="file-picker-name" data-file-name="import-export">${QT('noFileSelected','No file selected')}</span><input id="import-export" type="file" accept=".csv,.tsv,.zip,.xlsx" aria-label="${QT('chooseFile','Choose a file')}"></span><small>${QT('importOtherFormats','OpenQDA or NVivo CSV · QualCoder .zip · ATLAS.ti or FAIRqual .xlsx')}</small></label><label class="field">${QT('importOtherName','Project name (optional)')}<input id="import-name" maxlength="160" placeholder="${QT('importOtherNamePh','Defaults to the file name')}"></label><div id="import-status" class="muted"></div>`, `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="run-import">${QT('importOtherBtn','Import coding table')}</button>`);
+  modal(QT('importOther','Import a coding table'), `<p>${QT('importTableShort')}</p><label class="field">${QT('chooseFile','Choose a file')}<span class="file-picker"><span class="file-picker-button">${QT('chooseFile','Choose a file')}</span><span class="file-picker-name" data-file-name="import-export">${QT('noFileSelected','No file selected')}</span><input id="import-export" type="file" accept=".csv,.tsv,.zip,.xlsx" aria-label="${QT('chooseFile','Choose a file')}"></span><small>${QT('importOtherFormats','OpenQDA or NVivo CSV · QualCoder .zip · ATLAS.ti or FAIRqual .xlsx')}</small></label><label class="field">${QT('importOtherName','Project name (optional)')}<input id="import-name" maxlength="160" placeholder="${QT('importOtherNamePh','Defaults to the file name')}"></label><div id="import-status" class="muted"></div>`, `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="run-import">${QT('importOtherBtn','Import coding table')}</button>`);
+  $('#dialog').dataset.workflow='import-table';
 }
 async function runImport() {
   const input = document.getElementById('import-export');
@@ -712,8 +776,8 @@ async function runImport() {
     closeModal();
     state.projects = await api('/api/projects');
     state.project = created;
-    state.docId = created.documents.length ? created.documents[0].id : null;
-    render();
+    importedDocument(created.documents[0]?.id || null);
+    render();focusImportedDocument();
     toast(QT('importDone', 'Imported') + ': ' + created.documents.length + ' '
       + QT('docCount', 'documents') + ', ' + created.codes.length + ' '
       + QT('codeCount', 'codes') + ', ' + created.annotations.length + ' '
@@ -808,7 +872,14 @@ function showProjects() {
   modal(QT('projectsTitle','Research projects'),`<label class="field">${QT('existingProjects','Existing projects')}<select id="modal-project-select">${state.projects.map(p=>`<option value="${p.id}" ${p.id===state.project.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><button data-action="switch-project">${QT('openProject','Open project')}</button><hr style="border:0;border-top:1px solid #e3e7e2;margin:22px 0"><label class="field">${QT('newProjectName','New project name')}<input id="new-project-name" placeholder="${QT('newProjectPlaceholder','e.g. Experiences of outpatient care')}" maxlength="160"></label><button class="primary" data-action="new-project">${QT('createProject','Create project')}</button><div class="option-grid"><button class="option-card" data-action="grounded-project"><strong>${QT('groundedProject','Tian 2021 · software architecture interviews')}</strong><span>${QT('groundedDesc','Import 8 semi-structured practitioner interviews. IP1–IP2 pair Chinese responses with English translations; IP3–IP8 are in English.')}</span></button><button class="option-card" data-action="demo-project"><strong>${QT('demoProject','Fictional care interview')}</strong><span>${QT('demoDesc','Explore a fictional transcript, sample coding, and fixed review suggestions.')}</span></button><button class="option-card" data-action="benchmark-project"><strong>${QT('benchmarkProject','TU Delft · blind workspace')}</strong><span>${QT('benchmarkDesc','Import 7 transcripts and 54 codes, without reference annotations.')}</span></button><button class="option-card" data-action="reference-project"><strong>${QT('referenceProject','TU Delft · researcher reference')}</strong><span>${QT('referenceDesc','Explore 377 researcher annotations for comparison. These are not model predictions.')}</span></button><button class="option-card" data-action="restore-pick"><strong>${QT('restoreProject','Restore project JSON')}</strong><span>${QT('restoreDesc','Restore a backup as a new project while keeping the original.')}</span></button></div><input id="restore-file" type="file" accept=".json" hidden><p>${QT('guideNote','Guide collections are imported from the local Guide directory and retain source provenance in the project audit trail.')}</p>`);
 }
 function showExport() {
-  modal(QT('exportTitle','Export your research'),`<p>${QT('exportDesc','Files are saved to your browser download folder. Full project exports include source transcripts; handle them as research data.')}</p><div class="option-grid"><button class="option-card" data-action="download" data-format="json"><strong>${QT('exportJson','Full project · JSON')}</strong><span>${QT('exportJsonDesc','Transcripts, codebook, codings, suggestions, and activity. Restore later to continue.')}</span></button><button class="option-card" data-action="download" data-format="csv"><strong>${QT('exportCsv','Codings · CSV')}</strong><span>${QT('exportCsvDesc','Document, code, source quote, character offsets, memo, and provenance.')}</span></button><button class="option-card" data-action="download" data-format="matrix"><strong>${QT('exportMatrix','Document × code · CSV')}</strong><span>${QT('exportMatrixDesc','Confirmed codings only, ready for Excel, R, or Python.')}</span></button><button class="option-card" data-action="download" data-format="methods"><strong>${QT('exportMethods','Methods record · Markdown')}</strong><span>${QT('exportMethodsDesc','How the analysis was actually carried out, assembled from your audit trail. Draft the methods section from it.')}</span></button></div>`);
+  const formats=[['json','JSON','exportProjectName','exportProjectUse'],['csv','CSV','exportCodingsName','exportCodingsUse'],['matrix','CSV','exportMatrixName','exportMatrixUse'],['methods','MD','exportMethodsName','exportMethodsUse']];
+  modal(QT('exportTitle'),`<p class="io-intro">${QT('exportShort')}</p><div class="option-grid io-export-options">${formats.map(([format,ext,title,use])=>`<button class="option-card io-export-card" data-action="download" data-format="${format}"><span class="io-file-icon" aria-hidden="true">${icon('doc')}<b>${ext}</b></span><span><strong>${QT(title)}</strong><span>${QT(use)}</span></span><span class="io-download-icon" aria-hidden="true">↓</span></button>`).join('')}</div>
+    <div id="export-result" class="io-export-result" role="status" aria-live="polite"><div class="io-result-empty">${icon('down')}<span>${QT('exportChoose')}</span></div></div><p class="io-privacy">${QT('exportPrivate')}</p>`);
+  $('#dialog').dataset.workflow='export';
+}
+function exportResultHtml(filename,bytes,text) {
+  const excerpt=cp(text.split('\n').slice(0,8).join('\n')).slice(0,1000).join('');
+  return `<div class="io-result-heading">${icon('doc')}<div><span class="io-kicker">${QT('exportSent')}</span><strong data-export-filename>${esc(filename)}</strong><span>${bytes.toLocaleString()} B</span></div><span class="io-result-check" aria-hidden="true">✓</span></div><p>${QT('exportCheck')}</p><details class="io-export-preview"><summary>${QT('exportPreview')}</summary><pre>${esc(excerpt)}</pre></details>`;
 }
 async function createProject(body) {
   const p=await api('/api/projects',body); state.projects=await api('/api/projects'); closeModal(); state.view='coding'; await loadProject(p.id); toast(QT('projectCreated','Project created and saved locally.'));
@@ -884,11 +955,13 @@ async function action(button) {
   }
   if(a==='import-export-open')return showImportExport();
   if(a==='run-import')return runImport();
+  if(a==='import-mode')return setImportMode(button.dataset.mode);
   if(a==='save-document'){
-    const file=$('#import-file').files[0];
+    const file=$('#import-file').disabled?null:$('#import-file').files[0];
+    if(!$('#import-file').disabled&&!file)throw new Error(QT('importEmpty'));
     const body={name:$('#document-name').value||file?.name,text:$('#document-text').value};
     if(file){if(file.size>8_000_000)throw new Error('File exceeds 8 MB.'); if(/\.docx$/i.test(file.name)){const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));body.docx_base64=btoa(binary);delete body.text;}else if(/\.txt$/i.test(file.name)){body.text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());}else throw new Error('Choose a TXT or DOCX file.');}
-    const d=await api(projectUrl(QT('docCount','documents')),body);state.docId=d.id;state.selection=null;closeModal();await refresh();toast(QT('interviewImported','Interview imported.'));return;
+    const d=await api(projectUrl('documents'),body);importedDocument(d.id);closeModal();await refresh();focusImportedDocument();toast(QT('interviewImported','Interview imported.'));return;
   }
   if(a==='save-code'){await api(projectUrl(QT('codeCount','codes')),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null});closeModal();await refresh();toast(QT('codeSaved','Code saved.'));return;}
   if(a==='code-save'){
@@ -950,8 +1023,17 @@ async function action(button) {
     return;
   }
   if(a==='download'){
+    const result=$('#export-result');
+    if(result){result.textContent=QT('exportPreparing');$('#modal-error').textContent='';}
+    try {
     const format=button.dataset.format,response=await fetch(projectUrl('export')+'?format='+format,{headers:{'X-QualiCraft-Token':state.token}});
-    if(!response.ok)throw new Error('Export failed.');const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');link.href=url;link.download='qualicraft-'+(format==='json'?'project.json':format==='methods'?'methods.md':format+'.csv');link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(QT('exported','Exported to your browser download folder.'));return;
+    if(!response.ok){if(result?.isConnected)result.textContent='';throw new Error('Export failed.');}
+    const blob=await response.blob(),filename='qualicraft-'+(format==='json'?'project.json':format==='methods'?'methods.md':format+'.csv');
+    const text=await blob.text(),url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    if(result?.isConnected)result.innerHTML=exportResultHtml(filename,blob.size,text);
+    toast(QT('exportSent')+': '+filename);return;
+    }catch(error){if(result?.isConnected)result.textContent='';throw error;}
   }
 }
 function renderJob(){
@@ -964,7 +1046,8 @@ function renderJob(){
 function startPolling(){
   clearTimeout(pollTimer);pollTimer=setTimeout(async()=>{try{const before=state.jobs.filter(j=>j.status==='running').map(j=>j.id);state.jobs=await api('/api/jobs');renderJob();const finished=state.jobs.find(j=>before.includes(j.id)&&j.status!=='running');if(finished){if(finished.project_id===state.project.id)await refresh();toast(finished.error||'Analysis finished. Review your suggestions.',finished.status==='failed');}if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(e){toast('Could not read task status. Refresh to view saved results.',true);}},1500);
 }
-document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action.startsWith('net-'))drawNetworkControls();}}});
+document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;if(['import','export'].includes(button.dataset.action))ioReturnFocus=button;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action.startsWith('net-'))drawNetworkControls();}}});
+document.addEventListener('close',e=>{if(e.target.id==='dialog'&&e.target.dataset.workflow&&ioReturnFocus?.isConnected&&!ioReturnFocus.disabled)ioReturnFocus.focus({preventScroll:true});},true);
 document.addEventListener('click',e=>{
   const brick=e.target.closest('.brick'); if(!brick) return;
   const on=brick.classList.toggle('on');
@@ -979,7 +1062,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='project-select')await loadProject(e.target.value);
     if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;render();}
     if(e.target.id==='send-confirm')$('[data-action="start-analysis"]').disabled=!e.target.checked;
-    if(e.target.matches('input[type="file"]')&&e.target.files[0]){const label=document.querySelector('[data-file-name="'+e.target.id+'"]');if(label)label.textContent=e.target.files[0].name;if(e.target.id==='import-file')$('#document-name').value=e.target.files[0].name.replace(/\.(txt|docx)$/i,'');}
+    if(e.target.matches('input[type="file"]')&&e.target.files[0]){const label=document.querySelector('[data-file-name="'+e.target.id+'"]');if(label)label.textContent=e.target.files[0].name;if(e.target.id==='import-file'){$('#document-name').value=e.target.files[0].name.replace(/\.(txt|docx)$/i,'');await updateImportPreview();}}
     if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
   }catch(error){errorDisplay(error);}
 });

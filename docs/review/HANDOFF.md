@@ -1,6 +1,8 @@
-# Latest local follow-up · UX-16 · 2026-10-16
+# Latest local follow-up · UX-12 · 2026-10-16
 
-[UX-16](UX-16-HOVER-NETWORK-CLARITY.md) reproduces and fixes real Chrome heading hover, separates the Coding document from an actual saved Theme–Code–Passage network, and makes matrix detail readable with full context and original SVG fallback. 74 Node tests, 148 Python tests (3 skips), 10 project-only Chrome checks and the final production build pass; all 594 UI CSV values match. The methods note explains shared tools with different analytic decisions. See the [current roadmap](EXPERIENCE-ROADMAP.md). Owner visual acceptance, actual QT trial and separately scoped UX-12 remain open. Windows deferred; no push/deploy or protected-path changes. Build used bundled Node directly because npm is unavailable; retained failures and exact commands are in the UX-16 record.
+[UX-12](UX-12-IMPORT-EXPORT.md) completes the user-authorized workbench Import/Export interface: File/Paste modes, reduced default copy, exact TXT preview, direct saved-document result and keyboard focus; four unchanged download formats now show actual filename/size and optional response preview. Nine dedicated Chrome checks, 148 Python tests (3 skips), 74 Node tests, syntax and direct Next production build pass. Source data, backend analysis/plotting and website assets are unchanged. Original review entry is `http://127.0.0.1:4445/w?lang=en`; isolated acceptance is at 8844. See the [roadmap](EXPERIENCE-ROADMAP.md) and raw evidence in `~/qualicraft-review/ux-12/`. User visual/device/QT trial remains open; old recordings show the historical UI. Windows deferred; no push/deploy. npm is unavailable, so the existing Next target was executed directly via bundled Node; failures are retained.
+
+Prior website revision: [UX-16](UX-16-HOVER-NETWORK-CLARITY.md), commit `5d0cbc7f5dfcfc99d54fd8e2060b6df3884a59e1` (hover, distinct Coding/Analysis, readable matrix details and methods clarification).
 
 <!-- Below: historical handoff entries, not current completion claims. -->
 
