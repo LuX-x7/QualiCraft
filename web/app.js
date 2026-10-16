@@ -115,6 +115,7 @@ function motionLabel() { return QT(motionPreference==='reduce'?'motionReduced':'
 
 const cut = (s, a, b) => cp(s).slice(a, b).join('');
 const state = {token:'', projects:[], project:null, docId:null, view:'coding', search:'', codeFilter:null, selection:null, reviewFilter:'pending', config:{}, jobs:[], collapsed:new Set(), sideFilter:'', codebookOpen:false, backups:[], backupStatus:null, insightsTab:'map', sourceFocus:null, networkReturn:null};
+Object.assign(_T.zh, {markRefreshFailed:'暂时无法取得最新标记 · 请重试刷新',markExport:'v5 JSON 包含项目阅读标记，旧版本 QT 无法打开。阅读标记随下一次研究编辑快照收录；现在导出 JSON 可单独保留。',projectMarks:'项目阅读标记',projectMark:'项目标记',mark_unmarked:'○ 未标记',mark_read:'✓ 已读',mark_revisit:'↺ 待回看',markRead:'标为已读',markUndo:'撤销',markRetry:'重试',markSaving:'保存中…',markSaved:'项目标记已保存',markNotSaved:'未保存',markRecheck:'需重新核对',markReadonly:'项目标记 · 只读',markReset:'重置标记…',markConflict:'其他位置已修改 · 请核对后重选',markResetConfirm:'原文已改变。清除这些项目阅读标记并绑定当前原文？重置前会检查一份恢复快照。',markPolicy:'标记是随文件共享的手动工作状态，不证明阅读或理解。标记即时保存到项目，随下一次研究编辑快照收录；现在导出 JSON 可保留当前状态。v5 JSON 需要当前版本的 QT。'});
 
 // Capability blocks. The core (documents, codes, codings) is always on; these
 // are opt-in, so a researcher assembles the tool they need. See docs/NOT_BUILDING.md.
@@ -145,6 +146,7 @@ const demoLock = (fallback = '') => state.config.public_demo
   ? ` data-locked="1" aria-disabled="true" title="${esc(DEMO_LOCK())}"`
   : (fallback ? ` title="${esc(fallback)}"` : '');
 const WRITE_ACTIONS = new Set([
+  'reading-mark-read', 'reading-mark-undo', 'reading-mark-retry', 'reading-mark-reset',
   'import', 'run-import', 'import-export-open', 'code', 'save-code', 'code-save',
   'code-delete', 'code-delete-ask', 'code-merge', 'code-merge-ask', 'save-document',
   'save-memo', 'save-annotation', 'annotate', 'annotation', 'remove-annotation',
@@ -175,7 +177,7 @@ async function api(path, body) {
   }
   const url = path.startsWith('/api') ? QT_BASE + path : path;
   const response = await fetch(url, {method:body ? 'POST':'GET', headers:{'X-QualiCraft-Token':state.token,...(body?{'Content-Type':'application/json'}:{})}, ...(body?{body:JSON.stringify(body)}:{})});
-  const data = await response.json(); if(!response.ok) throw new Error(data.error || 'Request failed'); return data;
+  const data = await response.json(); if(!response.ok) { const error=new Error(data.error || 'Request failed'); error.status=response.status; throw error; } return data;
 }
 const projectUrl = action => `${QT_BASE}/api/projects/${state.project.id}${action?'/'+action:''}`;
 const doc = () => state.project?.documents.find(d=>d.id===state.docId);
@@ -275,6 +277,95 @@ function codingReadingPaths(start,ids=[]) {
   const annotations=state.project.annotations.filter(a=>a.document_id===d.id&&(chosen.size?chosen.has(a.id):paragraph&&a.start<paragraph.end&&a.end>paragraph.start));
   return [...new Set(annotations.map(a=>codesFor(a)).filter(Boolean).map(codeIdentity))];
 }
+// Project marks are server-confirmed metadata. Navigation remains browser-only.
+let readingMarkTarget=null,readingFocusedStart=null;
+const readingWrites=new Map(),readingFailures=new Map(),readingUndos=new Map();
+function markKey(projectId,documentId){return JSON.stringify([projectId,documentId]);}
+function markLabel(status){return QT('mark_'+status,({unmarked:'○ Unmarked',read:'✓ Read',revisit:'↺ Revisit'})[status]);}
+function validReadingSource(d){const r=d?.reading_state;return !r||(r.source_sha256===d.sha256&&r.source_length===cp(d.text).length);}
+function paragraphMark(d,start){return validReadingSource(d)?d.reading_state?.marks.find(m=>m.start===start)?.status||'unmarked':'unmarked';}
+function visibleReadingFocus(){
+  const p=[...document.querySelectorAll('#reader .paragraph')].find(p=>Number(p.dataset.start)===readingFocusedStart);
+  if(!p)return null;
+  const box=p.getBoundingClientRect(),dock=$('.reading-dock')?.getBoundingClientRect(),pane=$('#document-pane')?.getBoundingClientRect();
+  return box.bottom>Math.max(dock?.bottom||0,pane?.top||0)&&box.top<Math.min(window.innerHeight,pane?.bottom||window.innerHeight)?p:null;
+}
+function currentMarkTarget(){
+  const d=doc();if(!d)return null;
+  if(readingMarkTarget?.projectId===state.project.id&&readingMarkTarget.documentId===d.id)return readingMarkTarget;
+  const p=visibleReadingFocus()||readingParagraph();if(!p)return null;
+  const paragraph=segments(d.text).find(s=>s.start===Number(p.dataset.start));if(!paragraph)return null;
+  return {projectId:state.project.id,documentId:d.id,source_sha256:d.sha256,start:paragraph.start,end:paragraph.end,index:paragraph.index};
+}
+function freezeMarkTarget(){readingMarkTarget=currentMarkTarget();updateProjectMarks();}
+function updateProjectMarks(){
+  const d=doc(),bar=$('#reading-marks');if(!d||!bar)return;
+  const target=currentMarkTarget(),key=markKey(state.project.id,d.id),pending=readingWrites.has(key),failure=readingFailures.get(key),stale=!validReadingSource(d);
+  const select=$('#reading-mark-status'),button=$('[data-action="reading-mark-read"]'),undo=$('[data-action="reading-mark-undo"]'),retry=$('[data-action="reading-mark-retry"]'),reset=$('[data-action="reading-mark-reset"]');
+  const status=target?paragraphMark(d,target.start):'unmarked';
+  if(select){select.value=status;select.disabled=!!state.config.public_demo||pending||failure?.blocked||stale||!target;select.setAttribute('aria-label',`${QT('projectMark','Project mark')} · ¶${target?target.index+1:'—'}`);}
+  if(button){button.textContent=target?`${QT('markRead','Mark read')} · ¶${target.index+1}`:QT('markRead','Mark read');button.disabled=!!state.config.public_demo||pending||failure?.blocked||stale||!target;}
+  if(undo)undo.disabled=!!state.config.public_demo||pending||failure?.blocked||!readingUndos.has(key)||stale;
+  if(retry){retry.hidden=!failure?.retry;retry.disabled=pending;}
+  if(reset){reset.hidden=!stale;reset.disabled=!!state.config.public_demo||pending||failure?.blocked;}
+  const output=$('#reading-mark-save');if(output)output.textContent=pending?QT('markSaving','Saving…'):failure?failure.message:stale?QT('markRecheck','Needs recheck'):state.config.public_demo?QT('markReadonly','Project marks · read-only'):'';
+  for(const p of document.querySelectorAll('#reader .paragraph')){
+    const value=paragraphMark(d,Number(p.dataset.start)),badge=p.querySelector('.reading-mark-badge');
+    p.dataset.readingMark=value;p.classList.toggle('reading-mark-target',!!target&&Number(p.dataset.start)===target.start);
+    if(badge){badge.textContent=value==='read'?'✓':value==='revisit'?'↺':'';badge.title=markLabel(value);badge.setAttribute('role','img');badge.setAttribute('aria-label',markLabel(value));badge.hidden=value==='unmarked';}
+  }
+}
+function acceptReadingResponse(projectId,result){
+  if(state.project?.id!==projectId)return false;
+  const d=state.project.documents.find(d=>d.id===result.document_id);if(!d)return false;
+  if((d.reading_state?.revision||0)>result.reading_state.revision)return false;
+  d.reading_state=result.reading_state;
+  if(result.updated_at>state.project.updated_at)state.project.updated_at=result.updated_at;
+  if(result.audit_event&&!state.project.audit.some(e=>e.id===result.audit_event.id))state.project.audit.push(result.audit_event);
+  return true;
+}
+function announceMark(message){const output=$('#reading-announcement');if(output)output.textContent=message;}
+async function refreshReadingMarks(projectId,documentId){
+  const key=markKey(projectId,documentId);
+  try{
+    const latest=await api(`/api/projects/${projectId}`),current=latest.documents.find(x=>x.id===documentId);
+    if(!current)throw Error('Document unavailable');
+    acceptReadingResponse(projectId,{document_id:documentId,reading_state:current.reading_state,updated_at:latest.updated_at});
+    readingFailures.set(key,{message:QT('markConflict','Changed elsewhere · review and choose again')});return true;
+  }catch(_){
+    readingFailures.set(key,{message:QT('markRefreshFailed','Latest marks unavailable · Retry to refresh'),blocked:true,retry:{refresh:true,projectId,documentId}});return false;
+  }finally{if(state.project?.id===projectId&&state.docId===documentId)updateProjectMarks();}
+}
+async function saveReadingMark(status,{retry=null,undo=false,reset=false,targetOverride=null}={}){
+  const target=retry?.target||targetOverride||currentMarkTarget();if(!target)return;
+  const project=state.project,d=project?.documents.find(d=>d.id===target.documentId);
+  if(!d||project.id!==target.projectId)return;
+  const key=markKey(project.id,d.id);if(readingWrites.has(key))return;
+  const body=retry?.body||{document_id:d.id,source_sha256:target.source_sha256,start:target.start,end:target.end,status,
+    expected_revision:undo?readingUndos.get(key)?.revision:d.reading_state?.revision||0,request_id:crypto.randomUUID().replaceAll('-',''),...(reset?{confirmed:true}:{})};
+  const previous=retry?.previous||paragraphMark(d,target.start);
+  readingWrites.set(key,true);readingFailures.delete(key);updateProjectMarks();
+  try{
+    const result=await api(`/api/projects/${project.id}/${reset?'reading-reset':'reading-mark'}`,body);
+    const applied=acceptReadingResponse(project.id,result);
+    if(applied&&!reset&&!undo&&result.audit_event&&result.audit_event.revision===result.reading_state.revision)readingUndos.set(key,{...target,status:result.audit_event.before??previous,revision:result.reading_state.revision});
+    if(undo||reset)readingUndos.delete(key);
+    if(applied&&state.docId===d.id)announceMark(`${QT('markSaved','Project mark saved')} · ¶${target.index+1} · ${markLabel(reset?'unmarked':body.status)}`);
+  }catch(error){
+    if(error.status===409){
+      readingUndos.delete(key);
+      await refreshReadingMarks(project.id,d.id);
+    }else readingFailures.set(key,{message:QT('markNotSaved','Not saved')+' · '+error.message,retry:{target,body,previous,reset,undo}});
+    if(state.project?.id===project.id&&state.docId===d.id)announceMark(readingFailures.get(key).message);
+  }finally{readingWrites.delete(key);if(state.project?.id===project.id&&state.docId===d.id)updateProjectMarks();}
+}
+document.addEventListener('pointerdown',e=>{if(e.target.closest?.('#reading-marks'))freezeMarkTarget();else{const p=e.target.closest?.('#reader .paragraph');if(p){readingFocusedStart=Number(p.dataset.start);readingMarkTarget=null;updateProjectMarks();}}});
+document.addEventListener('focusin',e=>{
+  const paragraph=e.target.closest?.('#reader .paragraph');if(paragraph){readingFocusedStart=Number(paragraph.dataset.start);readingMarkTarget=null;updateProjectMarks();}
+  else if(e.target.closest?.('#reading-marks'))freezeMarkTarget();
+});
+document.addEventListener('focusout',e=>{if(e.target.closest?.('#reading-marks')&&!e.relatedTarget?.closest?.('#reading-marks')){readingMarkTarget=null;updateProjectMarks();}});
+
 let readingMounted=null,readingFrame=0;
 function readingParagraph() {
   const pane=$('#document-pane'),dock=$('.reading-dock');if(!pane||!dock)return null;
@@ -301,6 +392,7 @@ function updateReadingPosition() {
   readingMounted.start=start;
   if(output)output.textContent=index<0?QT('readingNoMatch','No matching paragraph'):`${QT('readingParagraph','Paragraph')} ${index+1} / ${all.length}`;
   captureReadingPosition();updateReadingPath();
+  updateProjectMarks();
   const resume=$('[data-action="reading-resume"]');if(resume)resume.disabled=!readReadingPosition(state.project,doc());
 }
 function scrollReadingParagraph(start,focus=false) {
@@ -317,6 +409,7 @@ function scrollReadingParagraph(start,focus=false) {
 }
 function mountReading(restore=true) {
   readingMounted=null;codingPreview=[];
+  readingMarkTarget=null;readingFocusedStart=null;
   if(state.view!=='coding'||!doc()||!$('#reading-document'))return;
   readingMounted={projectId:state.project.id,document:doc(),filtered:!!(state.search||state.codeFilter),start:null};
   const saved=readReadingPosition(state.project,doc());
@@ -623,11 +716,12 @@ function codingView() {
   const d=doc();if(!d)return emptyProjectHtml();
   return `${networkSourceTrailHtml()}<section class="reading-dock" aria-label="${QT('readingNavigation','Reading navigation')}">
     <div class="reading-primary"><label class="reading-document-label" for="reading-document">${icon('doc')}<span class="sr-only">${QT('readingDocument','Current document')}</span></label><select id="reading-document" aria-label="${QT('readingDocument','Current document')}">${state.project.documents.map(item=>`<option value="${esc(item.id)}" ${item.id===d.id?'selected':''}>${esc(item.name)}</option>`).join('')}</select><output id="reading-position" aria-label="${QT('readingPosition','Reading position')}"></output><button data-action="reading-resume" title="${QT('readingResumeHint','Return to the saved paragraph in this browser. Position is not a read mark.')}">${QT('readingResume','Resume')}</button><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button></div>
+    <div class="reading-marks" id="reading-marks" role="group" aria-label="${QT('projectMarks','Project reading marks')}"><select id="reading-mark-status" aria-label="${QT('projectMark','Project mark')}">${['unmarked','read','revisit'].map(status=>`<option value="${status}">${markLabel(status)}</option>`).join('')}</select><button type="button" data-action="reading-mark-read">${QT('markRead','Mark read')}</button><button type="button" data-action="reading-mark-undo" disabled>${QT('markUndo','Undo')}</button><button type="button" data-action="reading-mark-retry" hidden>${QT('markRetry','Retry')}</button><button type="button" data-action="reading-mark-reset" hidden>${QT('markReset','Reset marks…')}</button><span id="reading-mark-save"></span></div>
     <div class="reading-context" tabindex="0" role="region" aria-label="${QT('readingPaths','Coding paths at this position')}"><span id="reading-path-label">${QT('readingHere','Codings here')}</span><span id="reading-code-path"></span></div><span id="reading-announcement" class="sr-only" role="status"></span>
   </section><div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript">
   <div class="document-tools"><input id="search" class="search" type="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"><button class="mobile-only reading-tools-toggle" data-action="reading-tools" aria-expanded="false" aria-controls="reading-coding-tools">${QT('readingTools','Coding tools')}</button><div class="tool-group" id="reading-coding-tools"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
   ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<details class="reading-details"><summary>${QT('readingDetails','Document details & notes')}<span>${segments(d.text).length} ${QT('readingParagraphs','paragraphs')} · ${state.project.annotations.filter(a=>a.document_id===d.id).length} ${QT('savedCodings')}</span></summary><div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div></div>
-  <p class="reading-memory-note">${QT('readingMemoryNote','Position only · stored in this browser, outside project exports. Scrolling does not mark text as read.')}</p><div class="reading-note${hasBlock('memos')?'':' block-off'}"><label class="reading-note-label" for="doc-memo">${QT('readingNotes','READING NOTES')}</label><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div></details>
+  <p class="reading-marks-help">${QT('markPolicy','Project marks are manual and shared with this file; they do not prove reading or understanding. Reading-only changes are saved to the project and enter its next snapshot. Export JSON to keep this state now. JSON format v5 requires this version of QT.')}</p><p class="reading-memory-note">${QT('readingMemoryNote','Position only · stored in this browser, outside project exports. Scrolling does not mark text as read.')}</p><div class="reading-note${hasBlock('memos')?'':' block-off'}"><label class="reading-note-label" for="doc-memo">${QT('readingNotes','READING NOTES')}</label><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div></details>
   <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">${QT('aiReview','AI REVIEW')}</div><div class="review-title"><h3>${QT('suggestions','Suggestions')}</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">${QT('reviewSubtitle','Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.')}</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending',QT('pending','Pending review')],['accepted',QT('reviewAccepted','Accepted')],['rejected',QT('reviewRejected','Rejected')]].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
 }
 function readerHtml() {
@@ -638,7 +732,7 @@ function readerHtml() {
   const filter=state.codeFilter?`<p class="tiny-label reader-code-filter">${QT('codeFilterLabel')}: ${esc(codeIdentity(state.project.codes.find(c=>c.id===state.codeFilter)))} <button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></p>`:'';
   return `<div class="coding-key"><span>${QT('codingHighlight')}</span><span>${QT('codingHighlightFocus')}</span><small>${QT('codingKeyHint')}</small></div>`+filter+(paras.map(p=>{
     const matches=annotations.filter(a=>a.start<p.end&&a.end>p.start);
-    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}"><span class="line-no">${String(p.index+1).padStart(2,'0')}</span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="margin-tags"${matches.length?` role="region" tabindex="0" aria-label="${QT('codebookTree')} · ${matches.length} ${QT('savedCodings')}"`: ''}>${marginHtml(matches)}</div></div>`;
+    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}" tabindex="-1" data-reading-mark="${paragraphMark(d,p.start)}"><span class="line-no">${String(p.index+1).padStart(2,'0')}<span class="reading-mark-badge" role="img" aria-label="${markLabel(paragraphMark(d,p.start))}" title="${markLabel(paragraphMark(d,p.start))}"${paragraphMark(d,p.start)==='unmarked'?' hidden':''}>${paragraphMark(d,p.start)==='read'?'✓':paragraphMark(d,p.start)==='revisit'?'↺':''}</span></span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="margin-tags"${matches.length?` role="region" tabindex="0" aria-label="${QT('codebookTree')} · ${matches.length} ${QT('savedCodings')}"`: ''}>${marginHtml(matches)}</div></div>`;
   }).join('') || `<div class="empty">${QT('noPassages','No passages match your filters.')}<button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></div>`);
 }
 function suggestionsHtml() {
@@ -851,7 +945,7 @@ function plottingView() {
     + `<span class="muted">${QT('plotExportNote','A folder with the counts as CSV, the script, and the figure as SVG, PDF and 300 dpi PNG.')}</span>`
     + '</div></section></div>';
 }
-const actionNames={document_import:'Document imported',code_create:QT('createCode','Create code'),annotation_create:'Coding created',suggestion_review:'Suggestion reviewed',analysis_start:'Analysis started',analysis_segment:'Segment analyzed',analysis_finish:'Analysis finished',benchmark_import:'Benchmark imported',annotation_remove:'Coding removed',memo_update:'Memo updated',project_restore:'Project restored'};
+const actionNames={reading_mark_set:QT('projectMark','Project mark'),reading_marks_reset:QT('markReset','Reading marks reset'),document_import:'Document imported',code_create:QT('createCode','Create code'),annotation_create:'Coding created',suggestion_review:'Suggestion reviewed',analysis_start:'Analysis started',analysis_segment:'Segment analyzed',analysis_finish:'Analysis finished',benchmark_import:'Benchmark imported',annotation_remove:'Coding removed',memo_update:'Memo updated',project_restore:'Project restored'};
 // The audit trail is one entry per action, so a study that coded 91 passages
 // has 91 near-identical rows and the reader learns nothing from the list. The
 // entries are grouped by day and consecutive runs of the same action collapse
@@ -1204,7 +1298,7 @@ function showProjects() {
 
 function showExport() {
   const formats=[['json','JSON','exportProjectName','exportProjectUse'],['csv','CSV','exportCodingsName','exportCodingsUse'],['matrix','CSV','exportMatrixName','exportMatrixUse'],['methods','MD','exportMethodsName','exportMethodsUse']];
-  modal(QT('exportTitle'),`<p class="io-intro">${QT('exportShort')}</p><div class="option-grid io-export-options">${formats.map(([format,ext,title,use])=>`<button class="option-card io-export-card" data-action="download" data-format="${format}"><span class="io-file-icon" aria-hidden="true">${icon('doc')}<b>${ext}</b></span><span><strong>${QT(title)}</strong><span>${QT(use)}</span></span><span class="io-download-icon" aria-hidden="true">↓</span></button>`).join('')}</div>
+  modal(QT('exportTitle'),`<p class="io-intro">${QT('exportShort')}</p><p class="reading-marks-help">${QT('markExport','JSON v5 includes project reading marks. Older QT versions cannot open v5. Reading-only changes enter the next research-edit snapshot; export JSON to keep them now.')}</p><div class="option-grid io-export-options">${formats.map(([format,ext,title,use])=>`<button class="option-card io-export-card" data-action="download" data-format="${format}"><span class="io-file-icon" aria-hidden="true">${icon('doc')}<b>${ext}</b></span><span><strong>${QT(title)}</strong><span>${QT(use)}</span></span><span class="io-download-icon" aria-hidden="true">↓</span></button>`).join('')}</div>
     <div id="export-result" class="io-export-result" role="status" aria-live="polite"><div class="io-result-empty">${icon('down')}<span>${QT('exportChoose')}</span></div></div><p class="io-privacy">${QT('exportPrivate')}</p>`);
   $('#dialog').dataset.workflow='export';
 }
@@ -1248,6 +1342,10 @@ async function action(button) {
   if(a==='net-dismiss'){state.sourceFocus=null;state.networkReturn=null;render();return;}
   if(a==='view'){state.view=button.dataset.view;state.selection=null;render();return;}
   if(a==='doc'){switchReadingDocument(button.dataset.id);return;}
+  if(a==='reading-mark-read')return saveReadingMark('read');
+  if(a==='reading-mark-undo'){const saved=readingUndos.get(markKey(state.project.id,doc().id));if(saved)return saveReadingMark(saved.status,{undo:true,targetOverride:saved});return;}
+  if(a==='reading-mark-retry'){const failure=readingFailures.get(markKey(state.project.id,doc().id));if(failure?.retry?.refresh)return refreshReadingMarks(failure.retry.projectId,failure.retry.documentId);if(failure?.retry)return saveReadingMark(failure.retry.body.status,{retry:failure.retry,reset:failure.retry.reset,undo:failure.retry.undo});return;}
+  if(a==='reading-mark-reset'){if(confirm(QT('markResetConfirm','The source has changed. Clear these project reading marks and bind new marks to this text? A recovery snapshot will be checked first.')))return saveReadingMark('unmarked',{reset:true});return;}
   if(a==='reading-resume'){const saved=readReadingPosition(state.project,doc());if(saved){state.search='';state.codeFilter=null;state.sourceFocus=null;render();scrollReadingParagraph(saved.start,true);updateReadingPosition();}return;}
   if(a==='reading-tools'){const pane=$('#document-pane'),open=pane.classList.toggle('reading-tools-open');button.setAttribute('aria-expanded',String(open));return;}
   if(a==='coding-codebook')return showMobileCodebook();
@@ -1936,3 +2034,6 @@ document.addEventListener('click', (e) => {
 })();
 
 window.addEventListener('resize', () => { if (NET.svg) drawNetwork(); });
+
+// A native select commits only an explicit change, never scroll or focus.
+document.addEventListener('change',e=>{if(e.target.id==='reading-mark-status')saveReadingMark(e.target.value);});

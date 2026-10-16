@@ -51,7 +51,7 @@ class NetworkEvidenceTests(unittest.TestCase):
                 node.pop(key, None)
         self.assertEqual(actual, expected)
         self.assertEqual(project, before)
-        self.assertEqual(project['schema_version'], 4)
+        self.assertEqual(project['schema_version'], 5)
 
     def test_deleted_code_rows_do_not_shift_source_references(self):
         project = evidence_project()

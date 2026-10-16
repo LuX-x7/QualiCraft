@@ -18,7 +18,56 @@ from xml.etree import ElementTree as ET
 
 COLORS = ["#427d77", "#ba8650", "#7b77b5", "#5c85b0", "#ba6e85", "#778c51"]
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
+READING_MAX_MARKS = 50_000
+READING_MAX_BYTES = 19_000_000
+
+
+class ReadingConflict(ValueError):
+    """A reading gesture was based on a different source or revision."""
+
+
+def empty_reading_state(document, revision=0):
+    return {"version": 1, "source_sha256": hashlib.sha256(document["text"].encode("utf-8")).hexdigest(),
+            "source_length": len(document["text"]), "segmentation": "nonempty-lines-cp-v1",
+            "revision": revision, "marks": []}
+
+
+def reading_source_matches(document):
+    state = document["reading_state"]
+    return (state["source_sha256"] == hashlib.sha256(document["text"].encode("utf-8")).hexdigest()
+            and state["source_length"] == len(document["text"]))
+
+
+def validate_reading_state(document):
+    state = document.get("reading_state")
+    require(isinstance(state, dict) and set(state) == {"version", "source_sha256", "source_length", "segmentation", "revision", "marks"},
+            "The reading state format is invalid")
+    require(type(state["version"]) is int and state["version"] == 1 and state["segmentation"] == "nonempty-lines-cp-v1",
+            "This reading state version is not supported")
+    require(isinstance(state["source_sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", state["source_sha256"]), "The reading source SHA is invalid")
+    require(type(state["source_length"]) is int and 0 < state["source_length"] <= 500_000, "The reading source length is invalid")
+    require(type(state["revision"]) is int and 0 <= state["revision"] <= 9_007_199_254_740_991, "The reading revision is invalid")
+    marks = state["marks"]
+    require(isinstance(marks, list) and len(marks) <= READING_MAX_MARKS, "Too many reading marks")
+    anchors = {(p["start"], p["end"]) for p in paragraphs(document["text"])} if reading_source_matches(document) else None
+    seen = set()
+    for mark in marks:
+        require(isinstance(mark, dict) and set(mark) == {"start", "end", "status"}, "The reading mark format is invalid")
+        start, end = mark["start"], mark["end"]
+        require(type(start) is int and type(end) is int and 0 <= start < end <= state["source_length"], "The reading range is invalid")
+        require(mark["status"] in ("read", "revisit"), "The reading status is invalid")
+        require((start, end) not in seen and (anchors is None or (start, end) in anchors), "Reading marks must identify unique whole paragraphs")
+        seen.add((start, end))
+    ordered = sorted(seen)
+    require(all(a[1] <= b[0] for a, b in zip(ordered, ordered[1:])), "Reading marks overlap")
+
+
+def validate_reading_capacity(project):
+    require(sum(len(d["reading_state"]["marks"]) for d in project["documents"]) <= READING_MAX_MARKS, "Too many reading marks in this project")
+    require(len(project["audit"]) <= 100_000, "The audit limit has been reached; reading changes were not saved")
+    require(len(json.dumps(project, ensure_ascii=False).encode("utf-8")) <= READING_MAX_BYTES,
+            "The project exceeds the reading-state size limit; changes were not saved")
 
 CODE_STATUSES = ("emergent", "provisional", "final")
 
@@ -70,6 +119,10 @@ def migrate(project):
     v3 -> v4 records which capability blocks the project uses, so a researcher
     can assemble the tool they need rather than receiving everything at once.
 
+    v4 -> v5 adds neutral, source-bound manual reading metadata. Reading a
+    project only upgrades this in-memory value; Store checks a persisted old
+    recovery point before its first explicit write.
+
     Every added value is a neutral default, so an existing project keeps its
     codes, annotations and character offsets untouched.
     """
@@ -95,6 +148,10 @@ def migrate(project):
     if version < 4:
         project.setdefault("blocks", list(DEFAULT_BLOCKS))
         version = 4
+    if version < 5:
+        for document in project.get("documents", []):
+            document["reading_state"] = empty_reading_state(document)
+        version = 5
     project["schema_version"] = version
     return project
 
@@ -182,6 +239,7 @@ def add_document(project, name, text):
     doc = {"id": uid(), "name": string(name, "Document name", 200), "text": text,
            "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "created_at": now(),
            "memo": "", "attributes": {}}
+    doc["reading_state"] = empty_reading_state(doc)
     project["documents"].append(doc)
     event(project, "document_import", document_id=doc["id"], sha256=doc["sha256"])
     return doc
@@ -445,6 +503,7 @@ def validate_project(project):
         string(d.get("name"), "Document name", 200)
         require(isinstance(d.get("text"), str) and 0 < len(d["text"]) <= 500000, "The document text is invalid")
         require(d.get("sha256") == hashlib.sha256(d["text"].encode()).hexdigest(), "Document integrity validation failed")
+        validate_reading_state(d)
         require(isinstance(d.get("memo", ""), str) and len(d["memo"]) <= 20000, "The document reading note is invalid")
         attributes = d.get("attributes", {})
         require(isinstance(attributes, dict) and len(attributes) <= 50, "The document attributes are invalid")
@@ -487,6 +546,7 @@ def validate_project(project):
         else:
             string(a.get("code_name"), "Suggested code", 160)
             require(a.get("status") in {"pending", "accepted", "rejected"}, "The suggestion status is invalid")
+    validate_reading_capacity(project)
     return project
 
 
@@ -586,7 +646,13 @@ class Store:
             self.last_backup = {"project_id": project["id"], "name": name,
                                 "written_at": now()}
             self.backup_error = None
+            return folder / name
         except (OSError, TypeError, ValueError) as exc:
+            if "tmp" in locals():
+                try:
+                    tmp.unlink(missing_ok=True)
+                except OSError:
+                    pass
             # The recorded state is what the interface reads; the stderr line
             # exists so a failure is visible when nobody is looking at the
             # header. Once, per failure, not per frame.
@@ -608,6 +674,15 @@ class Store:
             except OSError:
                 continue
         return rows
+
+    def _checked_snapshot(self, project):
+        """An upgrade/reset must not discard the last recoverable old state."""
+        path = self._snapshot(project)
+        try:
+            require(path is not None and json.loads(path.read_text(encoding="utf-8")) == project,
+                    "A recovery snapshot could not be verified; no changes were saved")
+        except (OSError, TypeError, ValueError):
+            raise ValueError("A recovery snapshot could not be verified; no changes were saved") from None
 
     def backup_status(self):
         """Enough for the interface to say whether protection is actually working."""
@@ -647,12 +722,6 @@ class Store:
         worse than the first: the researcher would lose both the current state
         and the recovery point in one move. A copy is always safe to try.
         """
-        # Snapshot the live project first, so the state being restored over
-        # is not the one thing a recovery loses.
-        try:
-            self._snapshot(self.get(project_id))
-        except (ValueError, KeyError, OSError, TypeError):
-            pass
         folder = self.backup_dir / require_valid_id(project_id)
         # `Path(name).name` drops any directory part, so a caller cannot walk out
         # of the folder with `../`. Note this is deliberately not `safe_id`:
@@ -661,11 +730,19 @@ class Store:
         require(candidate.parent == folder.resolve() and candidate.is_file(),
                 "That snapshot does not exist")
         loaded = json.loads(candidate.read_text(encoding="utf-8"))
+        validate_project(loaded)
         loaded["id"] = uuid.uuid4().hex
         loaded["name"] = f"{loaded.get('name', 'Project')} (restored {now()[:16].replace('T', ' ')})"
         loaded["created_at"] = now()
         loaded["updated_at"] = now()
         event(loaded, "project_restore", source="snapshot", snapshot=name)
+        validate_reading_capacity(loaded)
+        # Validate the complete restored state before producing any side effect.
+        # Preserve the existing live recovery point for a valid restore only.
+        try:
+            self._snapshot(self.get(project_id))
+        except (ValueError, KeyError, OSError, TypeError):
+            pass
         return self.create(loaded)
 
     @contextmanager
@@ -689,6 +766,7 @@ class Store:
         return migrate(json.loads(row[0]))
 
     def create(self, project):
+        migrate(project)
         with self.connect() as conn:
             conn.execute("INSERT INTO projects VALUES (?,?)", (project["id"], json.dumps(project, ensure_ascii=False)))
             self._snapshot(project)
@@ -705,15 +783,87 @@ class Store:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
             require(row is not None, "The project does not exist")
+            original = json.loads(row[0])
             project = migrate(json.loads(row[0]))
             result = operation(project)
             project["updated_at"] = now()
+            if original.get("schema_version", 1) < 5:
+                validate_reading_capacity(project)
+                self._checked_snapshot(original)
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
             # Inside a batch the block writes one snapshot on exit, so a
             # per-change write here would be the burst it exists to avoid.
             if snapshot and not getattr(self, "_batch_depth", 0):
                 self._snapshot(project)
         return result
+
+    def change_reading(self, project_id, body, reset=False):
+        """Immediate project metadata, without rotating research-edit snapshots.
+
+        All validation, revision checks and capacity checks precede filesystem or
+        database mutation. Request IDs live in the same committed audit row.
+        """
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
+            require(row is not None, "The project does not exist")
+            original = json.loads(row[0])
+            project = migrate(json.loads(row[0]))
+            document = find(project["documents"], body.get("document_id"))
+            validate_reading_state(document)
+            state = document["reading_state"]
+            request_id = body.get("request_id")
+            require(isinstance(request_id, str) and re.fullmatch(r"[a-f0-9]{32}", request_id), "The reading request ID is invalid")
+            require(type(body.get("expected_revision")) is int, "The reading revision is invalid")
+            if not reset:
+                require(type(body.get("start")) is int and type(body.get("end")) is int, "The reading range is invalid")
+                require(body.get("status") in ("unmarked", "read", "revisit"), "The reading status is invalid")
+            action = "reading_marks_reset" if reset else "reading_mark_set"
+            signature = {k: body.get(k) for k in ("document_id", "source_sha256", "expected_revision")}
+            signature.update({"confirmed": body.get("confirmed")} if reset else {k: body.get(k) for k in ("start", "end", "status")})
+            previous = next((e for e in reversed(project["audit"]) if e.get("request_id") == request_id), None)
+            def response(changed=False, before=None):
+                return {"document_id": document["id"], "reading_state": document["reading_state"],
+                        "changed": changed, "before": before, "updated_at": project["updated_at"],
+                        "audit_event": next((e for e in reversed(project["audit"]) if e.get("request_id") == request_id), None)}
+            if previous:
+                require(previous.get("action") == action and previous.get("request") == signature,
+                        "This reading request ID was already used for another operation")
+                return response()
+            if body["expected_revision"] != state["revision"]:
+                raise ReadingConflict("Project marks changed elsewhere. Review the latest state and choose again.")
+            if body.get("source_sha256") != document["sha256"] or (not reset and not reading_source_matches(document)):
+                raise ReadingConflict("The reading source changed. Marks need rechecking before they can be edited.")
+            require(state["revision"] < 9_007_199_254_740_991, "The reading revision limit has been reached")
+            before = None
+            if reset:
+                require(body.get("confirmed") is True, "Confirm resetting project reading marks")
+                require(not reading_source_matches(document), "These reading marks do not need resetting")
+                document["reading_state"] = empty_reading_state(document, state["revision"]+1)
+            else:
+                start, end, status = body.get("start"), body.get("end"), body.get("status")
+                require(type(start) is int and type(end) is int and any(p["start"] == start and p["end"] == end for p in paragraphs(document["text"])),
+                        "Choose one complete nonempty paragraph")
+                require(status in ("unmarked", "read", "revisit"), "The reading status is invalid")
+                mark = next((m for m in state["marks"] if (m["start"], m["end"]) == (start, end)), None)
+                before = mark["status"] if mark else "unmarked"
+                if before == status:
+                    return response(before=before)
+                state["marks"] = [m for m in state["marks"] if (m["start"], m["end"]) != (start, end)]
+                if status != "unmarked":
+                    state["marks"].append({"start": start, "end": end, "status": status})
+                state["marks"].sort(key=lambda m: m["start"])
+                state["revision"] += 1
+            event(project, action, document_id=document["id"], source_sha256=document["sha256"],
+                  request_id=request_id, request=signature, before=before, after=body.get("status") if not reset else "unmarked",
+                  start=body.get("start") if not reset else None, end=body.get("end") if not reset else None,
+                  revision=document["reading_state"]["revision"])
+            project["updated_at"] = now()
+            validate_reading_capacity(project)
+            if reset or original.get("schema_version", 1) < 5:
+                self._checked_snapshot(original)
+            conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
+            return response(changed=True, before=before)
 
     def migrate_legacy_demo_projects(self):
         """Replace only QualiCraft's known Chinese fixtures; preserve all user projects."""
@@ -999,6 +1149,10 @@ def methods_narrative(project):
     add("- Every document carries a SHA-256 digest; all "
         + str(len(documents)) + " verified on load.")
     add("- " + str(len(audit)) + " audit entries recorded.")
+    reading_events = sum(e.get("action") in {"reading_mark_set", "reading_marks_reset"} for e in audit)
+    if reading_events or any(d.get("reading_state", {}).get("marks") for d in documents):
+        add("- Manual project reading marks are workflow metadata, not evidence of understanding, familiarisation or reading order. They do not affect codings or analysis.")
+        add("- " + str(reading_events) + " audit entries concern reading-mark workflow actions; their timestamps record button actions, not reading duration.")
     add("- Codings are anchored to character offsets, not to text markup, so the "
         "source can be re-imported without losing alignment.")
     add("")

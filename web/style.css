@@ -711,3 +711,33 @@ button:disabled{cursor:default}
  .nav button{min-height:44px;min-width:44px;padding:10px;justify-content:center}
  .nav button svg{margin:0}
 }
+/* UX-32A: manual project marks, separate from coding colours and navigation. */
+.reading-marks{display:flex;align-items:center;gap:8px;min-width:0;margin-top:5px;flex-wrap:wrap}
+.reading-marks select,.reading-marks button{min-width:44px;min-height:44px;font-size:12px}
+.reading-marks select{max-width:140px;min-width:0;padding:6px;background:#fff;border:1px solid var(--strong)}
+.reading-marks button{padding-inline:10px}
+#reading-mark-save{font-size:11px;color:#67502e;overflow-wrap:anywhere}
+.reading-marks [hidden]{display:none}
+.reading-marks-help{margin:0;padding:8px 24px;color:#465064;font-size:12px;line-height:1.65;max-width:80ch}
+.reading-mark-badge{display:block;font:10px/1.4 system-ui,sans-serif;overflow-wrap:anywhere;margin-top:5px;color:#376c59}
+.reading-mark-badge[hidden]{display:none}
+[data-reading-mark="revisit"] .reading-mark-badge{color:#805b21}
+.reading-mark-target{box-shadow:inset 3px 0 #4b607c}
+.reading-marks button:focus-visible,.reading-marks select:focus-visible,.paragraph:focus-visible{outline:2px solid #324964;outline-offset:2px}
+.reading-context{height:34px;margin-top:3px}
+@media(max-width:800px){
+ .reading-primary{display:flex;gap:5px}
+ #reading-document{flex:1;width:0;font-size:12px}
+ #reading-position{display:none}
+ .reading-primary button{flex:none;font-size:11px;padding-inline:7px}
+ .reading-primary .coding-codebook-entry{font-size:10px}
+ .reading-marks{gap:5px;margin-top:3px;flex-wrap:wrap}
+ .reading-marks select{flex:1;max-width:122px;font-size:12px}
+ .reading-marks button{padding-inline:7px;font-size:11px}
+ #reading-mark-save:not(:empty){flex-basis:100%;font-size:11px}
+ .reading-context{height:29px;font-size:11px;margin-top:1px}
+ #reading-path-label{max-width:52px;font-size:9px}
+ .reading-marks-help{padding-inline:14px}
+ .reading-mark-badge{font-size:9px}
+ .shell--coding .paragraph{scroll-margin-top:150px}
+}

@@ -160,7 +160,7 @@ class HTTPTests(unittest.TestCase):
         self.assertIn("codings_removed", deleted)
 
         project = self.request(root)
-        self.assertEqual(project["schema_version"], 4)
+        self.assertEqual(project["schema_version"], 5)
         self.assertNotIn(other["id"], [c["id"] for c in project["codes"]])
         self.assertTrue(any(a["action"] == "code_delete" for a in project["audit"]))
 

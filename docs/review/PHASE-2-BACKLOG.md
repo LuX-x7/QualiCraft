@@ -1,5 +1,7 @@
 # Phase 2 backlog
 
+后续更新（UX-32A）：手动项目级 Unmarked／Read／Revisit、保存／撤销、JSON v5 与快照规则已实现并技术验收，见 [32A](UX-32A-READING-MARKS.md)。32B 两轨概览与范围列表仍待做，本文件原方案／旧状态按历史保留；浏览器位置仍独立，不因滚动自动已读。Windows 暂缓，不推送、不部署。
+
 Maintained from the director's rulings. Each item is closed by a commit or by a
 recorded decision, never by a note alone.
 

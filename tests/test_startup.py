@@ -49,7 +49,10 @@ class StartupTests(unittest.TestCase):
             copies = [request('/api/projects', {'kind': 'bologna'}, token) for _ in range(2)]
             self.assertEqual(len({p['id'] for p in copies} | {original['id']}), 3)
             for p in copies:
-                for key in ['schema_version', 'documents', 'codes', 'annotations', 'suggestions', 'blocks', 'provenance']:
+                self.assertEqual(p['schema_version'], 5)
+                self.assertTrue(all(not d['reading_state']['marks'] for d in p['documents']))
+                self.assertEqual([{k:v for k,v in d.items() if k!='reading_state'} for d in p['documents']], original['documents'])
+                for key in ['codes', 'annotations', 'suggestions', 'blocks', 'provenance']:
                     self.assertEqual(p[key], original[key], key)
                 self.assertEqual(p['audit'][:-1], original['audit'])
                 self.assertEqual(p['audit'][-1]['action'], 'example_copy')

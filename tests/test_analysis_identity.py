@@ -32,7 +32,7 @@ class IdentityTests(unittest.TestCase):
         self.assertEqual([r['code'] for r in rows], ['Shared', 'Shared'])
         self.assertEqual(project, before)
         validate_project(project)
-        self.assertEqual(project['schema_version'], 4)
+        self.assertEqual(project['schema_version'], 5)
 
     def test_identical_span_counts_distinct_ids_in_every_statistic(self):
         project, first, *_ = duplicates()

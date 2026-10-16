@@ -153,12 +153,12 @@ class CoreTests(unittest.TestCase):
             document.pop("attributes", None)
         p["schema_version"] = 1
         validate_project(p)
-        self.assertEqual(p["schema_version"], 4)
+        self.assertEqual(p["schema_version"], 5)
         self.assertEqual(len(p["annotations"]), 1)
         self.assertEqual(p["annotations"][0]["quote"], quote)
         self.assertIsNone(p["codes"][0]["parent_id"])
         self.assertEqual(p["codes"][0]["status"], "final")
-        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 4)
+        self.assertEqual(migrate(json.loads(json.dumps(p)))["schema_version"], 5)
 
     def test_code_hierarchy_and_paths(self):
         p = new_project("Hierarchy")
@@ -242,7 +242,7 @@ class CoreTests(unittest.TestCase):
             document.pop("memo", None)
         p["schema_version"] = 2
         validate_project(p)
-        self.assertEqual(p["schema_version"], 4)
+        self.assertEqual(p["schema_version"], 5)
         self.assertEqual(p["documents"][0]["memo"], "")
 
     def test_document_reading_note_round_trip(self):
@@ -280,12 +280,12 @@ class CoreTests(unittest.TestCase):
         self.assertIn("_No model was used on this project._", text)
 
 
-    def test_schema_v3_migrates_to_v4_with_capability_blocks(self):
+    def test_schema_v3_migrates_to_current_with_capability_blocks(self):
         p = new_project("V3")
         p.pop("blocks", None)
         p["schema_version"] = 3
         validate_project(p)
-        self.assertEqual(p["schema_version"], 4)
+        self.assertEqual(p["schema_version"], 5)
         self.assertIn("hierarchy", p["blocks"])
         self.assertNotIn("plotting", p["blocks"])
 

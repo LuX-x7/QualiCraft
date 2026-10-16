@@ -1,34 +1,27 @@
-# QT | Supervisor review
+# QT · Supervisor review — 16 October 2026
 
-16 October 2026 · Running product UX-30 · Design note UX-31 · 10–15 minutes
+**Local candidate: UX-32A.** Manual paragraph marks now work in Coding and travel with JSON format 5. Windows remains deferred and unverified. Nothing has been pushed or deployed.
 
-**Status:** UX17-01–05 have closure evidence. This round reviews and proposes reading marks/range overview; it implements no feature. The workbench remains format 4 with browser-only position memory. Current-QT recordings and original diagrams/figures remain. Broader visual/device acceptance and release gates are open. Bologna CC0 only. Windows deferred and unverified; no push/deployment.
+## Demonstration order · about 12 minutes
 
-## Demonstration order
+1. **Website → report (2 min):** inspect the five modules, permanent passage–code–theme network, exact CSV/table readings and movable heatmap lens. Report data is the fixed Bologna example, not live workbench edits.
+2. **Import → Coding (4 min):** use an editable Bologna copy. Show the imported document, calm highlights and Theme › Code hierarchy. Select a paragraph and demonstrate Unmarked → Read → Revisit, Clear (Unmarked) and Undo. Scrolling and coding do not mark reading. Resume remembers browser position separately.
+3. **Save → recover (2 min):** refresh or switch documents to confirm saved project marks. Download JSON and restore it as a new project; marks survive. A stale tab must review the latest state after a conflict.
+4. **Relationships → figures → export (4 min):** expand a source node, return to its quotation, inspect the five figures and phone original-size view, then download JSON/CSV/matrix/methods. Confirm the actual file download. Website clips are the prior UX-29 demonstration; current reading controls are shown live and in UX-32A screenshots.
 
-1. **Website (2 min):** scroll the five steps and circular network; hover/focus saved evidence. Optional current-QT recordings and authentic stills remain under “Workbench recording & steps”.
-2. **Coding (3 min):** explicitly open an editable Bologna copy. Inspect Themes & codes ancestry, code a source passage, locate it through the relationship map and return. Switch documents and resume. **Resume remembers position; it does not mark reading.** Current interview02 has 31 paragraphs, 53 codings and 52 distinct source ranges.
-3. **Figures/report/export (4 min):** inspect the five figures, phone original-size viewer, exact CSV/table selection and heatmap lens; inspect actual JSON/CSV/matrix/methods downloads. The report is a fixed 19-document/874-coding example, not live edits. “Sent to browser” alone is not OS completion.
-4. **Proposed interface (3 min):** open UX-31-READING-MOCKUP.html and compare Compact (default) with Overview expanded. These are labelled design sketches, not working reading controls. Read/Revisit examples are hypothetical; Bologna source and coding ranges are real.
+## Important rules and discussion
 
-## Recommended design and decisions
+- Marks are manual, shared project workflow metadata. Unmarked does not mean unread; timestamps do not establish reading duration, comprehension or familiarisation before coding.
+- JSON is now **format 5**. Older QT versions cannot open it. Loading format 4 is neutral and read-only; its first write requires a verified recovery snapshot of the original stored format 4 project.
+- Marks save immediately to SQLite. Reading-only actions do not rotate research-edit snapshots; the next research edit includes them. **Export JSON to preserve the current state now.** Restoring an older snapshot restores only that snapshot’s marks.
+- Coding CSV, matrix, statistics, figures and source text keep their meanings. Methods adds only a separate workflow caveat and truthful audit information.
 
-Keep three meanings independent: current browser position; manually Unmarked/Read/Revisit paragraphs; and saved coding ranges. Scrolling, coding or AI suggestions never mark Read. Unmarked does not mean unread. A mark timestamp records a button action, not reading duration, comprehension or familiarisation before coding.
+Discuss whether manual whole-paragraph marks and this snapshot policy fit the research workflow, and whether the compact desktop/phone controls are clear enough. The underlying unit is each nonempty physical line, not an arbitrary selected quotation.
 
-The compact dock retains document/paragraph, read action and existing code path. An optional non-sticky overview has two aligned tracks—manual marks and saved coding—with an accessible paragraph/range list. No completion percentage or new analysis. Two codes on the same span remain two codings/one source range.
+## Remaining work and review boundary
 
-Recommend project-level marks in future JSON format 5, independent of browser memory and memos. JSON/restore carries marks; current coding/matrix CSVs and figures keep their meanings. Old applications reject format 5, so neutral migration and a verified format 4 recovery point are required. These are proposed rules; current projects remain format 4.
+**Next planned slice: 32B**, the optional two-track reading/coding overview, exact paragraph/source-range list and accessible jumps. No overview or completion percentage is included yet. Remaining W03 visual refinements, owner/supervisor acceptance, current-feature VoiceOver and physical-device checks, and release gates remain open. Earlier device checks are historical. Windows remains unverified.
 
-Reading-only changes should commit immediately to SQLite but enter the next ordinary research snapshot, avoiding 31 clicks displacing the 30 retained research recovery points. Export JSON preserves current marks now; this snapshot lag must be stated clearly. Source mismatch, conflicts and save failures must never look like success.
+Evidence: UX-32A-READING-MARKS.md, screenshots and raw/ux-32a in this package. Current technical checks pass: 163 Python tests (3 skipped), 129 Node tests, 10 main Chrome cases, compatibility checks and a direct Next build. npm is unavailable; its exit 127 is retained alongside the successful equivalent build.
 
-- Are the three meanings and compact/expanded layouts clear?
-- Accept project-level portable marks and format 5 compatibility cost, or revise before implementation?
-- Accept the explicit snapshot lag, or require a separate backup policy before implementation?
-
-## Evidence and remaining work
-
-This review uses unchanged 19/317/874 Bologna copies: 31 DOM anchors match the source; no mutating requests or normal console/HTTP errors at desktop/390px. Static sketches render without overflow. All 251 non-document files and ten manifest assets match baseline. No functional test/build rerun; UX-30’s 155 Python (3 skipped), 122 Node and direct production build remain prior evidence.
-
-T03 implementation and all 18 proposed acceptance gates remain open. Next suggested slice: reliable marks/storage/JSON/snapshot rules; then range overview/navigation. Remaining W03, owner/physical-device/VoiceOver/system-motion/download and release gates remain open. Windows stays deferred.
-
-[Website](http://127.0.0.1:4445/) · [Report](http://127.0.0.1:4445/report) · [Workbench](http://127.0.0.1:4445/w?lang=en). Review UX-31-READING-STATE-DESIGN.md and package COMMITS.md. Earlier candidates/PDFs are historical.
+Local entries: [Website](http://127.0.0.1:4445/), [Report](http://127.0.0.1:4445/report), [Workbench](http://127.0.0.1:4445/w?lang=en). Use a disposable copy when editing; these loopback links are not a public deployment.

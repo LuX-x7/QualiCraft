@@ -18,6 +18,7 @@ from pathlib import Path
 
 from . import analyze, ingest, plotting
 from .ai import Analyzer
+from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -278,6 +279,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         project["id"] = uid()
                         project["updated_at"] = now()
                         event(project, "project_restore")
+                        validate_reading_capacity(project)
                     elif kind == "empty":
                         project = new_project(body.get("name", "Untitled research project"))
                     else:
@@ -285,6 +287,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                     return self.send(store.create(project))
                 if len(parts) == 4 and parts[:2] == ["api", "projects"]:
                     project_id, action = parts[2:]
+                    if action in {"reading-mark", "reading-reset"}:
+                        return self.send(store.change_reading(project_id, body, reset=action == "reading-reset"))
                     if action == "preview":
                         return self.send(analyzer.preview(project_id, body))
                     if action == "restore-snapshot":
@@ -340,6 +344,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         raise ValueError("The requested action does not exist")
                     return self.send(store.change(project_id, operation))
                 return self.send({"error": "The API endpoint does not exist"}, status=404)
+            except ReadingConflict as exc:
+                return self.send({"error": str(exc)}, status=409)
             except ValueError as exc:
                 return self.send({"error": str(exc)}, status=400)
             except (KeyError, TypeError, AttributeError, OverflowError):
