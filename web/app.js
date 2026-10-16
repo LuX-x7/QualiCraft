@@ -80,6 +80,14 @@ Object.assign(_T.zh, {
   codeFilterLabel:'编码筛选', codePathLabel:'已保存的编码路径', overlapCodings:'与此范围重叠的标注',
   codingHighlight:'已编码', codingHighlightFocus:'当前聚焦标注', codingKeyHint:'悬浮或聚焦标注以查看所属路径。',
 });
+Object.assign(_T.zh, {
+  readingNavigation:'阅读定位', readingDocument:'当前文档', readingPosition:'阅读位置',
+  readingResumeHint:'返回本浏览器保存的段落。位置不表示已读。',readingResume:'返回位置',
+  readingPaths:'当前位置的编码路径',readingHere:'此处编码',readingFocused:'聚焦编码',readingFilter:'筛选',
+  readingNoCoding:'此处没有已保存标注',readingNoMatch:'没有匹配段落',readingParagraph:'段落',
+  readingDetails:'文档详情与笔记',readingParagraphs:'段落',readingTools:'编码工具',
+  readingMemoryNote:'仅记忆位置 · 保存在本机浏览器，不进入项目导出。滚动不会标记为已读。',
+});
 function QT(k,fb){const d=_T[QT_LANG];return(d&&d[k])||fb||k;}
 document.documentElement.lang = QT_LANG === 'zh' ? 'zh-CN' : 'en';
 if(QT_LANG==='zh'){document.title='QualiCraft \u00b7 \u8d28\u6027\u7814\u7a76\u5de5\u4f5c\u53f0';}
@@ -224,6 +232,100 @@ function previewCoding(ids=[]) {
   document.querySelectorAll('.pill[data-code-id]').forEach(pill=>pill.classList.toggle('coding-active',chosen.has(pill.dataset.id)));
   document.querySelectorAll('.margin-tags').forEach(margin=>{const label=margin.querySelector('.coding-preview-path');if(!label)return;const own=[...margin.querySelectorAll('.pill[data-code-id]')].filter(el=>chosen.has(el.dataset.id)),names=[...new Set(own.map(el=>{const c=state.project.codes.find(c=>c.id===el.dataset.codeId);return c?codeIdentity(c):''}))];const first=margin.querySelector('.pill[data-code-id]'),fallback=first&&state.project.codes.find(c=>c.id===first.dataset.codeId);label.textContent=names.join(' · ')||(fallback?codeIdentity(fallback):'');});
   document.querySelectorAll('[data-coding-node],[data-code-node]').forEach(node=>node.classList.toggle('coding-path-active',path.has(node.dataset.codingNode||node.dataset.codeNode)));
+  updateReadingPath();
+}
+// Browser-local navigation only. No transcript, quote, read-completion state or
+// project mutation is stored. A changed source invalidates its paragraph anchor.
+function readingSignature(text) {
+  let hash=2166136261;
+  for(const char of text)hash=Math.imul(hash^char.codePointAt(0),16777619);
+  return (hash>>>0).toString(16);
+}
+function readingKey(projectId,documentId) { return 'qt.reading.v1:'+JSON.stringify([projectId,documentId]); }
+function readReadingPosition(project,document) {
+  try {
+    const saved=JSON.parse(localStorage.getItem(readingKey(project.id,document.id)));
+    return saved?.version===1&&saved.length===cp(document.text).length&&saved.signature===readingSignature(document.text)&&Number.isInteger(saved.start)&&segments(document.text).some(p=>p.start===saved.start)?saved:null;
+  }catch(_){return null;}
+}
+function writeReadingPosition(project,document,start) {
+  if(!segments(document.text).some(p=>p.start===start))return false;
+  try {
+    localStorage.setItem(readingKey(project.id,document.id),JSON.stringify({version:1,start,length:cp(document.text).length,signature:readingSignature(document.text)}));
+    localStorage.setItem(readingKey(project.id,null),JSON.stringify(document.id));return true;
+  }catch(_){return false;}
+}
+function preferredReadingDocument(project) {
+  try {const id=JSON.parse(localStorage.getItem(readingKey(project.id,null)));if(project.documents.some(d=>d.id===id))return id;}catch(_){}
+  return project.documents[0]?.id;
+}
+function codingReadingPaths(start,ids=[]) {
+  const d=doc();if(!d)return [];
+  if(state.codeFilter){const c=state.project.codes.find(c=>c.id===state.codeFilter);return c?[codeIdentity(c)]:[];}
+  const paragraph=segments(d.text).find(p=>p.start===start),chosen=new Set(ids);
+  const annotations=state.project.annotations.filter(a=>a.document_id===d.id&&(chosen.size?chosen.has(a.id):paragraph&&a.start<paragraph.end&&a.end>paragraph.start));
+  return [...new Set(annotations.map(a=>codesFor(a)).filter(Boolean).map(codeIdentity))];
+}
+let readingMounted=null,readingFrame=0;
+function readingParagraph() {
+  const pane=$('#document-pane'),dock=$('.reading-dock');if(!pane||!dock)return null;
+  const tools=$('.document-tools'),toolsBottom=tools&&getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0;
+  const top=Math.max(dock.getBoundingClientRect().bottom,pane.getBoundingClientRect().top,toolsBottom);
+  const paragraphs=[...document.querySelectorAll('#reader .paragraph')];
+  return paragraphs.find(p=>p.getBoundingClientRect().bottom>top+2)||paragraphs.at(-1)||null;
+}
+function captureReadingPosition() {
+  if(!readingMounted||readingMounted.filtered)return;
+  const paragraph=readingParagraph();if(!paragraph)return;
+  writeReadingPosition({id:readingMounted.projectId},readingMounted.document,Number(paragraph.dataset.start));
+}
+function updateReadingPath() {
+  const target=$('#reading-code-path');if(!target||!readingMounted)return;
+  const paths=codingReadingPaths(readingMounted.start,codingPreview.length?codingPreview:(state.sourceFocus?[state.sourceFocus]:[]));
+  target.textContent=paths.join('\n')||QT('readingNoCoding','No saved coding at this position');
+  const label=$('#reading-path-label');if(label)label.textContent=QT(state.codeFilter?'readingFilter':codingPreview.length||state.sourceFocus?'readingFocused':'readingHere',state.codeFilter?'Filter':codingPreview.length||state.sourceFocus?'Focused coding':'Codings here');
+}
+function updateReadingPosition() {
+  if(!readingMounted||!$('#reading-document'))return;
+  const paragraph=readingParagraph(),start=paragraph?Number(paragraph.dataset.start):null;
+  const all=segments(doc().text),index=all.findIndex(p=>p.start===start),output=$('#reading-position');
+  readingMounted.start=start;
+  if(output)output.textContent=index<0?QT('readingNoMatch','No matching paragraph'):`${QT('readingParagraph','Paragraph')} ${index+1} / ${all.length}`;
+  captureReadingPosition();updateReadingPath();
+  const resume=$('[data-action="reading-resume"]');if(resume)resume.disabled=!readReadingPosition(state.project,doc());
+}
+function scrollReadingParagraph(start,focus=false) {
+  const paragraph=[...document.querySelectorAll('#reader .paragraph')].find(p=>Number(p.dataset.start)===start),pane=$('#document-pane'),dock=$('.reading-dock');
+  if(!paragraph||!pane||!dock)return;
+  // A phone's dock enters sticky positioning during the first movement.
+  // Re-measure once so restoration aligns with its final viewport position.
+  for(let pass=0;pass<2;pass++) {
+    const tools=$('.document-tools'),toolsBottom=tools&&getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0;
+    const top=Math.max(dock.getBoundingClientRect().bottom,pane.getBoundingClientRect().top,toolsBottom),delta=paragraph.getBoundingClientRect().top-top;
+    if(getComputedStyle(pane).overflowY==='auto')pane.scrollTop+=delta;else window.scrollBy({top:delta,behavior:'instant'});
+  }
+  if(focus){paragraph.tabIndex=-1;paragraph.focus({preventScroll:true});}
+}
+function mountReading(restore=true) {
+  readingMounted=null;codingPreview=[];
+  if(state.view!=='coding'||!doc()||!$('#reading-document'))return;
+  readingMounted={projectId:state.project.id,document:doc(),filtered:!!(state.search||state.codeFilter),start:null};
+  const saved=readReadingPosition(state.project,doc());
+  if(restore&&!readingMounted.filtered&&!state.sourceFocus){
+    if(saved)scrollReadingParagraph(saved.start);else if(window.innerWidth<=800)window.scrollTo({top:0,behavior:'instant'});
+  }
+  updateReadingPosition();
+}
+function scheduleReadingPosition(event) {
+  if(event&&event.type==='scroll'&&event.target!==document&&event.target!==$('#document-pane'))return;
+  if(readingFrame||!readingMounted)return;
+  readingFrame=requestAnimationFrame(()=>{readingFrame=0;updateReadingPosition();});
+}
+function switchReadingDocument(id) {
+  if(!state.project.documents.some(d=>d.id===id))return;
+  state.sourceFocus=null;state.networkReturn=null;state.docId=id;state.selection=null;state.search='';state.codeFilter=null;state.view='coding';render();
+  $('#reading-document')?.focus({preventScroll:true});
+  const announcement=$('#reading-announcement');if(announcement)announcement.textContent=`${doc().name} · ${$('#reading-position').textContent}`;
 }
 function codeDescendants(id) {
   const out=new Set(); const stack=[id];
@@ -346,7 +448,8 @@ function segments(text) {
   });
 }
 async function loadProject(id) {
-  state.project=await api(`/api/projects/${id}`); state.docId=state.project.documents[0]?.id;
+  captureReadingPosition();
+  state.project=await api(`/api/projects/${id}`); state.docId=preferredReadingDocument(state.project);
   state.selection=null; state.search=''; state.codeFilter=null; state.sourceFocus=null; state.networkReturn=null; NET.restoreFocus=false; state.insightsTab='map'; await loadBackups(); render();
 }
 // Snapshots are written on every change, so the indicator reports how many exist
@@ -386,6 +489,7 @@ function modal(title, body, footer='') {
 function closeModal() { $('#dialog').close(); $('#dialog').innerHTML=''; }
 function errorDisplay(error) { if($('#dialog').open && $('#modal-error')) { $('#modal-error').className='inline-error'; $('#modal-error').textContent=error.message; } else toast(error.message,true); }
 function render() {
+  captureReadingPosition();
   const p=state.project; if(!p) return;
   const pending=p.suggestions.filter(s=>s.status==='pending').length;
   const titles={coding:QT('navCoding','Coding workspace'),insights:QT('navInsights','Insights'),audit:QT('navAudit','Audit trail'),plotting:QT('navPlotting','Figures')};
@@ -409,6 +513,7 @@ function render() {
   loadPlotPreview();
   loadNetwork();
   focusNetworkSource();
+  mountReading();
   previewCoding();
 }
 function highlight(text, start, annotations) {
@@ -428,10 +533,13 @@ function highlight(text, start, annotations) {
 
 function codingView() {
   const d=doc(); if(!d) return `<div class="no-doc"><div class="eyebrow">${QT('noDocEyebrow','A SPACE FOR YOUR QUESTIONS')}</div><h2>${QT('noDocTitle','Start with a conversation')}</h2><p>Import TXT, DOCX, or paste a transcript.<br>Build a codebook, code by hand, or connect a model for suggestions.</p><button class="primary" data-action="import"${demoLock()}>${QT('importDlg','Import interview')}</button> <button data-action="code"${demoLock()}>${QT('createCode','Create code')}</button> <button data-action="enable-all-blocks"${demoLock()}>${QT('enableAllBlocks','Enable figure workflow')}</button> <span class="muted tiny-label" style="border:0;background:transparent;padding:0">${QT('enableAllBlocksHint','Adds theme grouping, Insights, Figures and Audit to this project. Other blocks keep their current settings.')}</span></div>`;
-  return `${networkSourceTrailHtml()}<div class="tabs-bar"><div class="doc-tab">${icon('doc')}<span>${esc(d.name)}</span><span class="tab-close">×</span></div><input id="search" class="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"></div>
-  <div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript"><div class="document-tools"><div class="coding-tools-label"><span class="panel-kicker">${QT('documentLabel','DOCUMENT')}</span><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button></div><div class="tool-group"><span class="selection-hint">${QT('selectHint','Select text to code a passage')}</span><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
-  ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div><div class="margin-label">${QT('codebookTree')}</div></div>
-  <div class="reading-note${hasBlock('memos')?'':' block-off'}"><span class="reading-note-label">${QT('readingNotes','READING NOTES')}</span><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div>
+  return `${networkSourceTrailHtml()}<section class="reading-dock" aria-label="${QT('readingNavigation','Reading navigation')}">
+    <div class="reading-primary"><label class="reading-document-label" for="reading-document">${icon('doc')}<span class="sr-only">${QT('readingDocument','Current document')}</span></label><select id="reading-document" aria-label="${QT('readingDocument','Current document')}">${state.project.documents.map(item=>`<option value="${esc(item.id)}" ${item.id===d.id?'selected':''}>${esc(item.name)}</option>`).join('')}</select><output id="reading-position" aria-label="${QT('readingPosition','Reading position')}"></output><button data-action="reading-resume" title="${QT('readingResumeHint','Return to the saved paragraph in this browser. Position is not a read mark.')}">${QT('readingResume','Resume')}</button><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button></div>
+    <div class="reading-context" tabindex="0" role="region" aria-label="${QT('readingPaths','Coding paths at this position')}"><span id="reading-path-label">${QT('readingHere','Codings here')}</span><span id="reading-code-path"></span></div><span id="reading-announcement" class="sr-only" role="status"></span>
+  </section><div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript">
+  <div class="document-tools"><input id="search" class="search" type="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"><button class="mobile-only reading-tools-toggle" data-action="reading-tools" aria-expanded="false" aria-controls="reading-coding-tools">${QT('readingTools','Coding tools')}</button><div class="tool-group" id="reading-coding-tools"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
+  ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<details class="reading-details"><summary>${QT('readingDetails','Document details & notes')}<span>${segments(d.text).length} ${QT('readingParagraphs','paragraphs')} · ${state.project.annotations.filter(a=>a.document_id===d.id).length} ${QT('savedCodings')}</span></summary><div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div></div>
+  <p class="reading-memory-note">${QT('readingMemoryNote','Position only · stored in this browser, outside project exports. Scrolling does not mark text as read.')}</p><div class="reading-note${hasBlock('memos')?'':' block-off'}"><label class="reading-note-label" for="doc-memo">${QT('readingNotes','READING NOTES')}</label><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div></details>
   <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">${QT('aiReview','AI REVIEW')}</div><div class="review-title"><h3>${QT('suggestions','Suggestions')}</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">${QT('reviewSubtitle','Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.')}</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending',QT('pending','Pending review')],['accepted',QT('reviewAccepted','Accepted')],['rejected',QT('reviewRejected','Rejected')]].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
 }
 function readerHtml() {
@@ -878,6 +986,7 @@ function importedDocument(id) {
 }
 function focusImportedDocument() {
   const heading=$('.reader-heading');if(!heading)return;
+  const details=heading.closest('details');if(details)details.open=true;
   heading.focus({preventScroll:true});
   if(window.innerWidth<=800)heading.scrollIntoView({block:'start'});
 }
@@ -1030,7 +1139,9 @@ async function action(button) {
   if(a==='net-return'){returnToNetwork();return;}
   if(a==='net-dismiss'){state.sourceFocus=null;state.networkReturn=null;render();return;}
   if(a==='view'){state.view=button.dataset.view;state.selection=null;render();return;}
-  if(a==='doc'){state.sourceFocus=null;state.docId=button.dataset.id;state.selection=null;state.search='';state.codeFilter=null;state.view='coding';render();return;}
+  if(a==='doc'){switchReadingDocument(button.dataset.id);return;}
+  if(a==='reading-resume'){const saved=readReadingPosition(state.project,doc());if(saved){state.search='';state.codeFilter=null;state.sourceFocus=null;render();scrollReadingParagraph(saved.start,true);updateReadingPosition();}return;}
+  if(a==='reading-tools'){const pane=$('#document-pane'),open=pane.classList.toggle('reading-tools-open');button.setAttribute('aria-expanded',String(open));return;}
   if(a==='coding-codebook')return showMobileCodebook();
   if(a==='filter-code'){const inBook=button.closest('#mobile-codebook-list');const fromTree=button.closest('.codebook-tree'),id=button.dataset.id;if(inBook){delete $('#dialog').dataset.codingCodebook;closeModal();}state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();if(inBook)$('.reader-code-filter button')?.focus();else if(fromTree)[...document.querySelectorAll('#side-list [data-action="filter-code"]')].find(el=>el.dataset.id===id)?.focus({preventScroll:true});return;}
   if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);refreshCodebooks(id,'toggle-code',button.closest('#mobile-codebook-list')?'mobile':'side');return;}
@@ -1038,7 +1149,7 @@ async function action(button) {
   if(a==='code-edit'){showCodeEdit(button.dataset.id);$('#dialog').dataset.codingEdit=button.dataset.id;return;}
   if(a==='code-delete-ask')return showCodeDeleteAsk(button.dataset.id);
   if(a==='code-merge-ask')return showMergeAsk(button.dataset.id);
-  if(a==='clear-filter'){state.codeFilter=null;state.search='';render();$('.reader-heading')?.focus({preventScroll:true});return;}
+  if(a==='clear-filter'){state.codeFilter=null;state.search='';render();$('#reading-document')?.focus({preventScroll:true});return;}
   if(a==='import')return showImport();
   if(a==='code')return showCode();
   if(a==='tools')return showTools();
@@ -1197,6 +1308,7 @@ document.addEventListener('change',async e=>{
 
   try{
     if(e.target.id==='network-select'){if(!e.target.value)clearNetworkSelection();else if(NET.selected!==e.target.value)toggleNetworkNode(e.target.value);return;}
+    if(e.target.id==='reading-document'){switchReadingDocument(e.target.value);return;}
     if(e.target.id==='project-select')await loadProject(e.target.value);
     if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;render();}
     if(e.target.id==='send-confirm')$('[data-action="start-analysis"]').disabled=!e.target.checked;
@@ -1204,7 +1316,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){captureReadingPosition();state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
 // Preview changes CSS only: no re-render, source text insertion or server write.
 document.addEventListener('pointerover',event=>{
   if(event.pointerType!=='mouse')return;
@@ -1226,29 +1338,31 @@ document.addEventListener('close',event=>{
   if(id){const button=[...document.querySelectorAll('.pill')].find(el=>el.dataset.id===id);button?.focus({preventScroll:true});previewCoding(button?[id]:[]);}
   if(event.target.dataset.codingCodebook)document.querySelector('[data-action="coding-codebook"]')?.focus({preventScroll:true});
 },true);
-let docMemoTimer=null;
+const docMemoTimers=new Map();
 document.addEventListener('input',e=>{
   if(e.target.id!=='doc-memo')return;
-  const doc=state.project.documents.find(d=>d.id===state.docId);
-  if(doc)doc.memo=e.target.value;
-  const badge=$('#doc-memo-state');
-  if(badge)badge.textContent='\u2026';
-  clearTimeout(docMemoTimer);
-  docMemoTimer=setTimeout(async()=>{
-    const target=$('#doc-memo-state');
+  const projectId=state.project.id,documentId=state.docId,value=e.target.value,document=doc();
+  if(document)document.memo=value;
+  const badge=$('#doc-memo-state');if(badge)badge.textContent='…';
+  const key=readingKey(projectId,documentId);clearTimeout(docMemoTimers.get(key));
+  docMemoTimers.set(key,setTimeout(async()=>{
+    docMemoTimers.delete(key);
+    const target=state.project.id===projectId&&state.docId===documentId?$('#doc-memo-state'):null;
     try{
-      await api(projectUrl('document-update'),{id:state.docId,changes:{memo:e.target.value}});
-      if(target){target.textContent='saved';setTimeout(()=>{if(target.isConnected)target.textContent='';},1600);}
-    }catch(error){
-      if(target)target.textContent='not saved';
-    }
-  },900);
+      await api(`/api/projects/${projectId}/document-update`,{id:documentId,changes:{memo:value}});
+      if(target?.isConnected){target.textContent='saved';setTimeout(()=>{if(target.isConnected)target.textContent='';},1600);}
+    }catch(error){if(target?.isConnected)target.textContent='not saved';}
+  },900));
 });
 document.addEventListener('mouseup',e=>{if(e.target.closest('#reader'))selectionUpdate();});
 document.addEventListener('keyup',e=>{if(e.shiftKey&&e.target.closest('#reader'))selectionUpdate();});
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#code-popup')&&!e.target.closest('#reader')&&!e.target.closest('dialog'))closeCodePopup();});
 window.addEventListener('scroll',()=>positionCodePopup(),true);
 window.addEventListener('resize',()=>positionCodePopup());
+window.addEventListener('scroll',scheduleReadingPosition,true);
+window.addEventListener('resize',()=>{if(readingMounted&&!readingMounted.filtered&&readingMounted.start!==null)scrollReadingParagraph(readingMounted.start);scheduleReadingPosition();});
+window.addEventListener('pagehide',captureReadingPosition);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')captureReadingPosition();});
 async function init(){try{const boot=await api('/api/bootstrap');state.token=boot.token;state.projects=boot.projects;state.config=boot.config;await loadProject(state.projects[0].id);state.jobs=await api('/api/jobs');renderJob();if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(error){$('#app').innerHTML=`<div class="loading">Could not open workspace: ${esc(error.message)}. Check that the local server is running, then refresh.</div>`;}}
 init();
 
