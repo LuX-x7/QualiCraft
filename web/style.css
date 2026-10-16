@@ -94,6 +94,22 @@ button.danger:hover{border-color:var(--danger);background:#fdf3f3}
 .plot-controls select,.plot-controls input[type=text]{width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--ink)}
 .plot-stage{min-height:340px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:0;background:#fff;padding:16px;overflow:auto}
 .plot-preview{max-width:100%;height:auto;display:block}
+.plot-preview-wrap{min-width:0}
+.plot-preview-tools{display:flex;justify-content:flex-end;margin-bottom:8px}
+.plot-preview-tools button{min-height:44px;font-size:13px}
+html.plot-viewer-open,html.plot-viewer-open body{overflow:hidden}
+#plot-viewer{width:min(1180px,calc(100% - 24px));height:calc(100dvh - 24px);max-width:none;max-height:calc(100dvh - 24px)}
+#plot-viewer[open]{display:flex;flex-direction:column}
+.plot-viewer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.plot-viewer-head h2{margin:0;font-size:16px;line-height:1.3;min-width:0}
+.plot-viewer-head button{flex:none;width:44px;min-height:44px;font-size:24px}
+.plot-viewer-tools{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:8px 12px}
+.plot-viewer-tools button,.plot-viewer-tools a{min-width:44px;min-height:44px;font-size:13px}
+.plot-viewer-tools a{display:inline-flex;align-items:center;padding:0 8px;color:var(--accent)}
+.plot-viewer-tools output{font:12px var(--mono);min-width:44px;text-align:center}
+#plot-viewer-hint{margin:0;padding:0 14px 10px;color:var(--muted);font-size:12px;line-height:1.5}
+.plot-viewer-viewport{flex:1;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;background:#fff;border-top:1px solid var(--line)}
+.plot-viewer-image{display:block;max-width:none;max-height:none;height:auto}
 .plot-empty{max-width:34rem;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
 .plot-empty strong{display:block;color:var(--ink);font-size:13px;margin-bottom:6px}
 .plot-empty pre{margin:12px 0 0;padding:9px 12px;background:#f8f7f4;border-radius:0;font:11px var(--mono);color:#3a4454;text-align:left;overflow:auto}

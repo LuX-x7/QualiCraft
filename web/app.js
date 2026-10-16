@@ -44,6 +44,10 @@ Object.assign(_T.en, {
   exportMethodsName:'Methods', exportMethodsUse:'Recorded research steps', exportChoose:'Your file will appear here.',
   exportPreparing:'Preparing file…', exportSent:'Sent to browser', exportCheck:'Check your browser’s downloads for completion.',
   exportPreview:'Preview · first lines', exportPrivate:'Project JSON includes the source text.',
+  plotEnlarge:'Enlarge figure', plotViewer:'Figure viewer', plotActual:'Actual size (100%)',
+  plotFit:'Fit width', plotZoomIn:'Zoom in', plotZoomOut:'Zoom out', plotPan:'Scrollable figure',
+  plotViewHint:'Swipe or scroll to explore. Arrow keys move; + / − zoom; 0 resets.',
+  plotSvg:'Download SVG', plotClose:'Close figure', plotScale:'Magnification',
 });
 Object.assign(_T.zh, {
   importFileMode:'选择文件', importPasteMode:'粘贴文本', importShort:'将文档加入当前项目。',
@@ -56,6 +60,10 @@ Object.assign(_T.zh, {
   exportMethodsName:'方法', exportMethodsUse:'已记录的研究步骤', exportChoose:'文件结果将显示在这里。',
   exportPreparing:'正在准备文件…', exportSent:'已发送至浏览器', exportCheck:'请在浏览器下载列表中确认完成。',
   exportPreview:'预览 · 文件开头', exportPrivate:'项目 JSON 包含源文档文本。',
+  plotEnlarge:'放大查看图表', plotViewer:'图表查看器', plotActual:'原尺寸（100%）',
+  plotFit:'适应宽度', plotZoomIn:'放大', plotZoomOut:'缩小', plotPan:'可滚动图表',
+  plotViewHint:'滑动或滚动查看。方向键移动；+ / − 缩放；0 恢复原尺寸。',
+  plotSvg:'下载 SVG', plotClose:'关闭图表', plotScale:'缩放比例',
 });
 function QT(k,fb){const d=_T[QT_LANG];return(d&&d[k])||fb||k;}
 document.documentElement.lang = QT_LANG === 'zh' ? 'zh-CN' : 'en';
@@ -418,6 +426,84 @@ function insightsView() {
   return `<div class="view-body insights-body">${nav}${state.insightsTab==='frequency'?frequency:state.insightsTab==='matrix'?matrix:map}</div>`;
 }
 let plotBlobUrl = null;
+const plotPreviewSources = new WeakMap();
+
+function showPlotViewer(opener) {
+  const preview = document.getElementById('plot-preview');
+  const source = preview && plotPreviewSources.get(preview);
+  if (!source || !preview.complete || !preview.naturalWidth || document.getElementById('plot-viewer')) return;
+  // Own this URL until close: a background refresh must not revoke this view.
+  const url = URL.createObjectURL(source);
+  const dialog = document.createElement('dialog');
+  dialog.id = 'plot-viewer';
+  dialog.setAttribute('aria-labelledby', 'plot-viewer-title');
+  dialog.setAttribute('aria-describedby', 'plot-viewer-hint');
+  dialog.innerHTML = `<div class="plot-viewer-head"><h2 id="plot-viewer-title">${esc(preview.alt)} · ${QT('plotViewer')}</h2><button type="button" data-plot-view="close" aria-label="${QT('plotClose')}">×</button></div>
+    <div class="plot-viewer-tools" role="group" aria-label="${QT('plotScale')}">
+      <button type="button" data-plot-view="out" aria-label="${QT('plotZoomOut')}">−</button>
+      <button type="button" data-plot-view="in" aria-label="${QT('plotZoomIn')}">+</button>
+      <button type="button" data-plot-view="actual" aria-label="${QT('plotActual')}" aria-pressed="true">100%</button>
+      <button type="button" data-plot-view="fit" aria-pressed="false">${QT('plotFit')}</button>
+      <output aria-label="${QT('plotScale')}" aria-live="polite">100%</output>
+      <a href="${esc(url)}" download="qualicraft-${esc(state.plotOptions.kind)}.svg">${QT('plotSvg')}</a>
+    </div>
+    <p id="plot-viewer-hint">${QT('plotViewHint')}</p>
+    <div class="plot-viewer-viewport" tabindex="0" role="region" aria-label="${QT('plotPan')}" aria-describedby="plot-viewer-hint"><img class="plot-viewer-image" src="${esc(url)}" alt="${esc(preview.alt)}"></div>`;
+  document.body.append(dialog);
+  const viewport = dialog.querySelector('.plot-viewer-viewport');
+  const image = dialog.querySelector('img');
+  const steps = [.25, .5, .75, 1, 1.5, 2, 3, 4];
+  let scale = 1, mode = 'actual';
+  function zoom(next, nextMode, reset = false) {
+    const x = (viewport.scrollLeft + viewport.clientWidth / 2) / (preview.naturalWidth * scale);
+    const y = (viewport.scrollTop + viewport.clientHeight / 2) / (preview.naturalHeight * scale);
+    scale = next; mode = nextMode;
+    image.style.width = (preview.naturalWidth * scale) + 'px';
+    dialog.querySelector('output').textContent = Math.round(scale * 100) + '%';
+    dialog.querySelector('[data-plot-view="out"]').disabled = scale <= steps[0];
+    dialog.querySelector('[data-plot-view="in"]').disabled = scale >= steps.at(-1);
+    dialog.querySelector('[data-plot-view="actual"]').setAttribute('aria-pressed', String(Math.abs(scale - 1) < .001));
+    dialog.querySelector('[data-plot-view="fit"]').setAttribute('aria-pressed', String(mode === 'fit'));
+    viewport.scrollLeft = reset ? 0 : x * preview.naturalWidth * scale - viewport.clientWidth / 2;
+    viewport.scrollTop = reset ? 0 : y * preview.naturalHeight * scale - viewport.clientHeight / 2;
+  }
+  function control(name) {
+    if (name === 'close') { dialog.close(); return; }
+    if (name === 'actual') zoom(1, 'actual', true);
+    if (name === 'fit') zoom(viewport.clientWidth / preview.naturalWidth, 'fit');
+    if (name === 'in' && scale < steps.at(-1)) zoom(steps.find(value => value > scale + .001) ?? steps.at(-1), 'zoom');
+    if (name === 'out' && scale > steps[0]) zoom(steps.findLast(value => value < scale - .001) ?? steps[0], 'zoom');
+  }
+  dialog.addEventListener('click', event => {
+    const button = event.target.closest('[data-plot-view]');
+    if (button && !button.disabled) control(button.dataset.plotView);
+  });
+  dialog.addEventListener('keydown', event => {
+    if (event.key === 'Tab') {
+      const items = [...dialog.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]')];
+      const edge = event.shiftKey ? items[0] : items.at(-1);
+      if (document.activeElement === edge) {
+        event.preventDefault(); (event.shiftKey ? items.at(-1) : items[0]).focus();
+      }
+      return;
+    }
+    if (event.target !== viewport) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const key = {'+':'in', '=':'in', '-':'out', '−':'out', '0':'actual'}[event.key];
+    if (key) { event.preventDefault(); control(key); }
+  });
+  const resize = () => { if (mode === 'fit') control('fit'); };
+  window.addEventListener('resize', resize);
+  dialog.addEventListener('close', () => {
+    window.removeEventListener('resize', resize);
+    document.documentElement.classList.remove('plot-viewer-open');
+    dialog.remove(); URL.revokeObjectURL(url);
+    if (opener?.isConnected && !opener.disabled) opener.focus({preventScroll:true});
+  }, {once:true});
+  document.documentElement.classList.add('plot-viewer-open');
+  dialog.showModal(); zoom(1, 'actual', true); viewport.focus();
+}
+
 async function loadPlotPreview() {
   const img = document.getElementById('plot-preview');
   if (!img) return;
@@ -429,7 +515,13 @@ async function loadPlotPreview() {
       const problem = await response.json().catch(() => ({error: 'The figure could not be produced.'}));
       throw new Error(problem.error || 'The figure could not be produced.');
     }
-    plotBlobUrl = URL.createObjectURL(await response.blob());
+    const source = await response.blob();
+    plotPreviewSources.set(img, source);
+    plotBlobUrl = URL.createObjectURL(source);
+    img.addEventListener('load', () => {
+      const button = document.querySelector('[data-action="plot-view"]');
+      if (img.isConnected && img.naturalWidth && button) button.disabled = false;
+    }, {once:true});
     img.src = plotBlobUrl;
     img.classList.remove('loading');
   } catch (error) {
@@ -516,7 +608,9 @@ function plottingView() {
 
   return `<div class="view-body"><section class="panel"><h2>${QT('navPlotting','Figures')}</h2>`
     + `<p>${QT('plotDesc','The figure is drawn by a script on the server, not in the browser, so the preview you see is exactly what the exported script produces.')}</p>`
-    + '<div class="plot-grid">' + controls + '<div class="plot-stage">' + stage + '</div></div>'
+    + '<div class="plot-grid">' + controls + '<div class="plot-preview-wrap">'
+    + (ready ? `<div class="plot-preview-tools"><button type="button" data-action="plot-view" disabled>${QT('plotEnlarge')}</button></div>` : '')
+    + '<div class="plot-stage">' + stage + '</div></div></div>'
     + '<div class="plot-actions">'
     + '<button class="primary" data-action="plot-export"' + (ready ? '' : ' disabled') + `>${QT('plotExportBtn','Download figure + script')}</button>`
     + `<span class="muted">${QT('plotExportNote','A folder with the counts as CSV, the script, and the figure as SVG, PDF and 300 dpi PNG.')}</span>`
@@ -1010,6 +1104,7 @@ async function action(button) {
   if(a==='benchmark-project')return createProject({kind:'benchmark'});
   if(a==='reference-project')return createProject({kind:'reference'});
   if(a==='restore-pick'){$('#restore-file').click();return;}
+  if(a==='plot-view')return showPlotViewer(button);
   if(a==='plot-export'){
     const response=await fetch(projectUrl('plot-bundle')+'?'+plotQuery(),{headers:{'X-QualiCraft-Token':state.token}});
     if(!response.ok){
