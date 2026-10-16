@@ -4,6 +4,7 @@ import SketchGlyph from './SketchGlyph'
 import RelationshipSketch from './RelationshipSketch'
 import CodingSketch from './CodingSketch'
 import type { SavedCoding } from '@/lib/site/record-network'
+import type { ChartTable } from '@/lib/report/chart-model'
 import type { CodingExample } from './CodingEvidence'
 
 const EXPORTS=[{name:'Project',suffix:'.json',detail:'Documents, codebook, codings and audit trail. Restore as a new project.'},{name:'Codings',suffix:'.csv',detail:'Saved coding records with document, code path, exact quotation and character range.'},{name:'Matrix',suffix:'.csv',detail:'Documents by codes, with recorded coding counts.'},{name:'Methods',suffix:'.md',detail:'A reviewable record of saved notes, changes, AI use and counting rules.'}]
@@ -15,11 +16,11 @@ function FileStructure({index}:{index:number}) {
    :<><path d="M20 14H99M20 29H99M20 43H85M29 53H91"/><path className="format-trace" d="M10 11V18M7 14H14M10 26V33M7 29H14M10 40V47M7 43H14"/></>}
  </svg>
 }
-export default function SketchScene({kind,example,records=[]}:{kind:string;example:CodingExample|null;records?:SavedCoding[]}) {
+export default function SketchScene({kind,example,records=[],pairs,credit}:{kind:string;example:CodingExample|null;records?:SavedCoding[];pairs?:ChartTable;credit?:string}) {
  const [part,setPart]=useState(0)
  if(!example)return <p role="status">The source illustration is unavailable. Open the verified example report.</p>
  if(kind==='coding')return <CodingSketch example={example}/>
- if(kind==='analysis')return <RelationshipSketch records={records} initial={example}/>
+ if(kind==='analysis')return <RelationshipSketch records={records} initial={example} pairs={pairs} credit={credit}/>
  if(kind==='import')return <div className="import-sketch">
    <div className="import-journey"><button type="button" className={`sketch-object${part===0?' is-current':''}`} aria-pressed={part===0} onPointerEnter={()=>setPart(0)} onFocus={()=>setPart(0)} onClick={()=>setPart(0)}><SketchGlyph kind="import"/><span className="mono">01 / SOURCE FILE</span><strong>{example.document_name}</strong></button><span className="journey-arrow" aria-hidden="true">→</span><button type="button" className={`sketch-object sketch-document${part===1?' is-current':''}`} aria-pressed={part===1} onPointerEnter={()=>setPart(1)} onFocus={()=>setPart(1)} onClick={()=>setPart(1)}><span className="mono sketch-label">02 / READABLE DOCUMENT</span><span className="document-ruling" aria-hidden="true"><i/><i/><i/></span><span className="import-quote" lang="it">{example.quote}</span><span className="document-ruling" aria-hidden="true"><i/><i/></span></button></div>
    <button type="button" className={`import-range${part===2?' is-current':''}`} aria-pressed={part===2} onPointerEnter={()=>setPart(2)} onFocus={()=>setPart(2)} onClick={()=>setPart(2)}><span className="mono">03 / SOURCE COORDINATES</span><svg viewBox="0 0 620 48" fill="none" aria-hidden="true"><path className="range-baseline" d="M20 24H600M20 18V30M600 18V30M50 21V27M90 21V27M130 21V27M170 21V27M210 21V27M250 21V27M290 21V27M330 21V27M370 21V27M410 21V27M450 21V27M490 21V27M530 21V27M570 21V27"/><path className="range-selection" d="M20 10V38M20 10H30M20 38H30M600 10V38M590 10H600M590 38H600M31 24C180 22 440 26 589 24"/></svg><span><strong>{example.start}</strong><em>Exact words · original position</em><strong>{example.end}</strong></span></button>

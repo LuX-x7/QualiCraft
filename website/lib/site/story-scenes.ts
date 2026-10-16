@@ -1,8 +1,8 @@
 /** Reading order only: plotting is five scroll scenes, never a timer or a tab gate. */
 export const STORY_SCENES = [
  {id:'import',module:'import',no:'01',title:'Start with the source.',body:'Bring a document into a readable workspace. Keep the original words and their source ranges.'},
- {id:'coding',module:'coding',no:'02',title:'Select words. Attach meaning.',body:'Explore the highlighted source, its saved code and its codebook position. The original words and Unicode range stay together.'},
- {id:'analysis',module:'analysis',no:'03',title:'Explore the relationship network.',body:'Hover a theme, code or source node. Trace its real saved links and read the highlighted passage behind them. Change themes to explore other existing examples.'},
+ {id:'coding',module:'coding',no:'02',title:'One passage. One assignment.',body:'Select the original words. Inspect the attached code and its saved position in the codebook.'},
+ {id:'analysis',module:'analysis',no:'03',title:'Follow the evidence.',body:'Trace highlighted passages through codes to their theme. Hover, focus or tap any node to follow its saved connections.'},
  {id:'plotting',module:'plotting',plot:'frequency',no:'04.1',title:'Which codes occur most?',body:'Each bar reads one exported CSV row. Explore the original counts without treating frequency as importance.'},
  {id:'plotting-coverage',module:'plotting',plot:'coverage',no:'04.2',title:'Across which interviews?',body:'Read large cells in a detail window. The overview keeps the full 19 × 15 matrix in view; every value comes from the saved CSV.'},
  {id:'plotting-cooccurrence',module:'plotting',plot:'cooccurrence',no:'04.3',title:'Which codes overlap?',body:'Inspect the exported pairs. Blank cells have no exported value; no diagonal or reverse pair is invented.'},

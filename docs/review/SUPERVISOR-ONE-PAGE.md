@@ -1,32 +1,26 @@
 # QT | Supervisor review
 
-16 October 2026 · Local candidate UX-19 · 10–15 minutes
+16 October 2026 · Local candidate UX-21 · 10–15 minutes
 
-**Status:** the main workflow passed joint review. Hierarchy labels are repaired; phone figures now have an original-size viewer. Direct mobile document switching remains open. This candidate is suitable for discussion, with owner visual acceptance still pending. Bologna CC0 only; no AI service is required. No push or deployment. Windows remains deferred and unverified.
+**Status:** the website now keeps Coding and Analysis visible in its reading sequence. Coding explains one saved assignment; Analysis is a circular relationship network with source evidence. The owner has not yet approved the overall visual experience. Bologna CC0 only. No push or deployment; Windows remains deferred and unverified.
 
 ## Demonstration order
 
-1. **Website (2 min):** explore the five modules; compare Coding's highlighted document with Analysis's saved Theme ↔ Code ↔ Passage network.
-2. **Workbench (4 min):** import a Bologna document into a disposable copy, inspect the saved document, apply existing codes, then use Insights to locate a full quotation and return to the map.
-3. **Figures and report (4 min):** generate the five figure types. On a phone, use **Enlarge figure**, swipe/zoom the original SVG and download it or the full bundle. Try keyboard controls on desktop. On `/report`, select values and locate their exact CSV rows and saved sources. The report remains a fixed 19-document/874-coding example; it does not automatically absorb workbench edits.
-4. **Export (2 min):** compare project JSON, codings CSV, matrix CSV and methods Markdown. Open a real download and the standalone figure script.
+1. **Website (3 min):** scroll naturally from Import to Coding and Analysis. Compare the highlighted document/assignment with the network of themes, codes and source nodes. Hover or select a node, drag it, expand a code's sources and read the exact quotation. Try keyboard arrows and phone zoom/panning. These are explanatory views of saved records, not new project edits.
+2. **Workbench (4 min):** use a disposable Bologna copy. Import a document, inspect its text, apply existing codes, then use Insights to locate a full quotation and return to the map.
+3. **Figures and report (4 min):** inspect all five types. On a phone, use **Enlarge figure**, zoom/pan the original SVG and download it or the complete bundle. On `/report`, match selected values to CSV rows and saved examples. The report is a fixed 19-document/874-coding snapshot; workbench edits do not automatically update it.
+4. **Export (2 min):** compare project JSON, codings CSV, matrix CSV and methods Markdown. Open a real file and the standalone figure script.
 
-## What changed and was checked
+## Checks and limits
 
-This round changes figure viewing only. The SVG stays proportional and fully scrollable; 100%/fit/zoom and direct SVG download retain the original content. All 25 SVG/PDF/PNG/CSV/Python members of five real bundles match the pre-change baseline byte-for-byte. Statistics and report assets are unchanged. The preceding hierarchy label repair remains in place.
+UX-21: **77 Node tests, nine project-only Chrome checks, all 594 CSV readouts and the Next production build pass**. Actual mouse hover/drag, keyboard traversal, simulated phone touch/pan, responsive layouts and reduced motion were checked; normal console/HTTP errors are empty. The network uses 389 existing report examples and 16 exported overlap pairs. It is a subset of the project's codings; node size indicates type and layout is explanatory. Workbench code, data, CSVs and report assets are unchanged. npm is unavailable; the direct production build succeeds and the literal command failure is retained.
 
-Current checks: **150 Python tests (3 skipped), 74 Node tests, five controlled Chrome checks**, desktop/390px touch context, keyboard, actual downloads and empty normal console/HTTP errors. The Next production build passes; the literal npm command is unavailable on this machine and its failure is retained. Mobile simulation does not establish physical-device acceptance.
+## Questions and remaining work
 
-## Questions for discussion
+- Can a reader distinguish **assigning a code** from **exploring saved relationships**, and verify the exact source?
+- Does this structure support the intended concise, scientific visual style? Further visual refinement and owner acceptance remain open.
+- Which analytic method fits the study? Counts do not establish importance, agreement or saturation; two approaches do not require analyzing the dataset twice by default.
+- The heatmap magnifier, other visual refinements and workbench hierarchy/highlights, reading-location header, startup states and optional guide remain planned. UX17-03 mobile document switching and UX17-04/05 follow-ups remain open. The owner's header screenshot is a future layout proposal only.
+- Fresh physical-device/VoiceOver/OS motion/download confirmation and release gates remain separate. The earlier hierarchy and mobile figure-viewer repairs remain in place.
 
-- Is the passage–code–theme relationship clear, and is returning to the exact source straightforward?
-- Does the current homepage/report achieve the intended visual balance? Which information should remain visible by default?
-- Which analytic method fits the study? Shared tools support different analytic decisions; the dataset need not be analyzed twice by default. Counts do not establish importance, agreement or saturation.
-
-## Remaining work
-
-- **UX17-03:** direct mobile document switching is missing. UX17-01/02 are closed; this round does not change document navigation.
-- **UX17-04/05:** recordings show earlier UI; the startup health probe can misleadingly report 404 while actual endpoints work.
-- Owner QT trial/visual approval and fresh physical-phone, VoiceOver, OS motion/download confirmation with device details remain open. Windows is deferred. Public release/hosting gates remain separate.
-
-Local links on this Mac: [website](http://127.0.0.1:4445/) · [report](http://127.0.0.1:4445/report) · [workbench](http://127.0.0.1:4445/w?lang=en). UX-19's isolated copy is on port 4452 (19 documents/874 codings). These are not public sharing links. The evidence package requires the checkout; it is not an installer. See UX-19-MOBILE-FIGURE-VIEWER.md and the package's COMMITS.md for scope, original outputs, screenshots and complete commit hashes. Earlier PDFs are historical.
+Local links: [Coding](http://127.0.0.1:4445/#story-coding) · [Network](http://127.0.0.1:4445/#story-analysis) · [Report](http://127.0.0.1:4445/report) · [Workbench](http://127.0.0.1:4445/w?lang=en). These are local review links, not public URLs. See UX-21-PERMANENT-NETWORK.md and the package's COMMITS.md for evidence and full hashes. Earlier PDFs are historical.
