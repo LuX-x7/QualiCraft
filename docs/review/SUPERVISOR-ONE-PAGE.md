@@ -1,24 +1,34 @@
 # QT | Supervisor review
 
-16 October 2026 · Local candidate UX-30 · 10–15 minutes
+16 October 2026 · Running product UX-30 · Design note UX-31 · 10–15 minutes
 
-**Status:** the startup health-check mismatch (UX17-05) is fixed, with real failure reporting retained. All five current-QT recordings and authentic still alternatives from UX-29 remain. UX17-01–05 are closed by their respective acceptance records; broader visual/device acceptance, read marks/range design and release gates remain open. Bologna CC0 only. Windows deferred and unverified; no push or deployment.
+**Status:** UX17-01–05 have closure evidence. This round reviews and proposes reading marks/range overview; it implements no feature. The workbench remains format 4 with browser-only position memory. Current-QT recordings and original diagrams/figures remain. Broader visual/device acceptance and release gates are open. Bologna CC0 only. Windows deferred and unverified; no push/deployment.
 
 ## Demonstration order
 
-1. **Website (2 min):** scroll through Import, Coding, Analysis and the circular network. The left illustration stays fixed. Hover/focus saved relationships. Open “Workbench recording & steps” → “Real workspace recording” to inspect current QT clips, or choose a recorded/full-size still. Original diagrams and all five figures remain.
-2. **Import → code → evidence (4 min):** explicitly create an editable Bologna copy. Import a Bologna document and assign existing codes to a passage. Inspect Themes & codes ancestry, locate the exact quotation through the relationship map and return. On phone, switch documents; refresh to resume. The guide can be skipped/reopened. Position memory does not mark text as read.
-3. **Five figures → report (4 min):** inspect frequency, coverage, co-occurrence, hierarchy and accumulation; try the original-size phone viewer. Open `/report`, select exact CSV values/table rows and move the heatmap lens. **The report is a fixed 19-document/874-coding example, not a live report of workbench edits.** This startup test uses unchanged 19/317/874 copies. The separate UX-29 recording copy has 20 documents/875 codings; its added assignment is a UI test, not a research finding.
-4. **Export (2 min):** download JSON, coding CSV, matrix CSV and methods Markdown. Inspect actual files and QT’s filename/size/content preview. The Export recording shows the native panel after a verified JSON download; “Sent to browser” alone does not prove OS completion.
+1. **Website (2 min):** scroll the five steps and circular network; hover/focus saved evidence. Optional current-QT recordings and authentic stills remain under “Workbench recording & steps”.
+2. **Coding (3 min):** explicitly open an editable Bologna copy. Inspect Themes & codes ancestry, code a source passage, locate it through the relationship map and return. Switch documents and resume. **Resume remembers position; it does not mark reading.** Current interview02 has 31 paragraphs, 53 codings and 52 distinct source ranges.
+3. **Figures/report/export (4 min):** inspect the five figures, phone original-size viewer, exact CSV/table selection and heatmap lens; inspect actual JSON/CSV/matrix/methods downloads. The report is a fixed 19-document/874-coding example, not live edits. “Sent to browser” alone is not OS completion.
+4. **Proposed interface (3 min):** open UX-31-READING-MOCKUP.html and compare Compact (default) with Overview expanded. These are labelled design sketches, not working reading controls. Read/Revisit examples are hypothetical; Bologna source and coding ranges are real.
 
-## Evidence and discussion
+## Recommended design and decisions
 
-The revised startup diagnostic checks the same `/w/api/bootstrap` as the existing proxy, including JSON shape. It waits at most three attempts, each limited to five seconds, with one-second intervals. A waking backend logs waiting then ready; persistent connection, HTTP, timeout or malformed responses log failed. Next starts independently. Redirects are not followed; bootstrap tokens/project metadata are not logged. This is a bounded startup check, not continuous monitoring. The website’s own `/api/health` remains its liveness endpoint, not a combined backend-status API.
+Keep three meanings independent: current browser position; manually Unmarked/Read/Revisit paragraphs; and saved coding ranges. Scrolling, coding or AI suggestions never mark Read. Unmarked does not mean unread. A mark timestamp records a button action, not reading duration, comprehension or familiarisation before coding.
 
-Fourteen targeted regressions fail before and pass after; nine real Next startup cases pass. Delayed Bologna startup recovers on attempt 3; a persistent timeout reports failure after about 17 seconds. Normal console/HTTP are clean. 155 Python tests (3 skipped), 122 Node, syntax and direct Next production build pass; npm was unavailable. All 16 registered fronts report ready on their first probe, including normal 4445. Only startup diagnostics change product behaviour; workbench/statistics/rendering, media, report assets and Bologna database bytes remain unchanged. Earlier UX-28/29 route and media evidence remains available.
+The compact dock retains document/paragraph, read action and existing code path. An optional non-sticky overview has two aligned tracks—manual marks and saved coding—with an accessible paragraph/range list. No completion percentage or new analysis. Two codes on the same span remain two codings/one source range.
 
-- Is source ancestry and the five-step presentation clear enough for independent use?
-- Decide explicit read-mark/range states and storage/export semantics before implementing them.
-- Still open: remaining W03 visual refinement, fresh owner/physical-device/VoiceOver/OS-motion/download sign-off and release gates. Counts do not establish importance, agreement or saturation. Windows remains deferred.
+Recommend project-level marks in future JSON format 5, independent of browser memory and memos. JSON/restore carries marks; current coding/matrix CSVs and figures keep their meanings. Old applications reject format 5, so neutral migration and a verified format 4 recovery point are required. These are proposed rules; current projects remain format 4.
 
-[Website](http://127.0.0.1:4445/) · [Report](http://127.0.0.1:4445/report) · [Workbench](http://127.0.0.1:4445/w?lang=en). Current evidence: UX-30-STARTUP-HEALTH.md and package COMMITS.md. Earlier PDFs/candidates are historical.
+Reading-only changes should commit immediately to SQLite but enter the next ordinary research snapshot, avoiding 31 clicks displacing the 30 retained research recovery points. Export JSON preserves current marks now; this snapshot lag must be stated clearly. Source mismatch, conflicts and save failures must never look like success.
+
+- Are the three meanings and compact/expanded layouts clear?
+- Accept project-level portable marks and format 5 compatibility cost, or revise before implementation?
+- Accept the explicit snapshot lag, or require a separate backup policy before implementation?
+
+## Evidence and remaining work
+
+This review uses unchanged 19/317/874 Bologna copies: 31 DOM anchors match the source; no mutating requests or normal console/HTTP errors at desktop/390px. Static sketches render without overflow. All 251 non-document files and ten manifest assets match baseline. No functional test/build rerun; UX-30’s 155 Python (3 skipped), 122 Node and direct production build remain prior evidence.
+
+T03 implementation and all 18 proposed acceptance gates remain open. Next suggested slice: reliable marks/storage/JSON/snapshot rules; then range overview/navigation. Remaining W03, owner/physical-device/VoiceOver/system-motion/download and release gates remain open. Windows stays deferred.
+
+[Website](http://127.0.0.1:4445/) · [Report](http://127.0.0.1:4445/report) · [Workbench](http://127.0.0.1:4445/w?lang=en). Review UX-31-READING-STATE-DESIGN.md and package COMMITS.md. Earlier candidates/PDFs are historical.
