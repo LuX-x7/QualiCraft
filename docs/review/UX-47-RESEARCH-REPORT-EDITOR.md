@@ -4,7 +4,7 @@
 
 ## Available now
 
-Open [the local review workbench](http://127.0.0.1:52755/w/?lang=en), choose **Bologna · editable report review**, then **Export → Write / edit research report**. These URLs require this computer and its running local services. [Website](http://127.0.0.1:52755/) and [original report](http://127.0.0.1:52755/report) use the same production build and proxy.
+Open [the local review workbench](http://127.0.0.1:52755/w/?lang=en), choose **Bologna · supervisor report sample**, then **Export → Write / edit research report**. These URLs require this computer and its running local services. [Website](http://127.0.0.1:52755/) and [original report](http://127.0.0.1:52755/report) use the same production build and proxy.
 
 - Choose the full name Thematic Analysis or Qualitative Content Analysis. Each has its own manual review checklist. Changing method keeps writing and rows, resets confirmations and is recorded on Save. These checks record researcher decisions, not automatic method certification. Comparative QCA remains a separate unavailable workflow.
 - Write the research question, case / analysis unit, analytic approach, method decisions, reflexivity, quality notes, narrative, counterexamples, limitations and disclosure. There is no generated interpretation or model request.
@@ -57,3 +57,5 @@ This closes the product's saved table / narrative editor gap, not the complete f
 ## UX-47A source identity follow-up
 
 Final review found that a frozen report quotation could still jump to a live annotation after that annotation was reassigned to another code or document with the same text / range. The jump now checks both document ID and code ID before closing the report or changing filters. Six meaningful Node regressions cover reassignment, document movement, quotation / fingerprint / range changes and deletion. Before the fix, two failed and four passed; after it all six pass and the full Node suite is 187 / 187. Raw outputs: `raw/report-evidence-red.txt`, `raw/node-evidence-final.txt`. The report Chrome workflow was rerun in `browser-evidence/`; normal editing and source jumps remain valid. Python, report output formats, website source and the previously successful production build are unchanged by this narrow browser guard.
+
+Clean reviewer sample: `ux-47/samples/research-report.docx` and `word-sample/` are the final 2-page sample, with the unmodified original Bologna codebook and an explicitly authored technical narrative. Browser regression downloads remain separate historical test versions. See `raw/curated-sample.json`.

@@ -1,5 +1,7 @@
 # Product UX-44 · Coded transcript export · 2026-10-17
 
+2026-10-17 最新（UX-49／47A）：**原生可编辑 Word 树、工作台表格／叙述报告与限定 1／2／100 文档负载已有本地验收。** 100 档为 1,565,190 字符／4,615 关联，31,700 矩阵单元、五脚本字节复现、恢复和手机／关系图检查通过；技术复制件不等于独立受访者，也不是百文件批量导入吞吐测试。新增报告原句跳转完整身份守卫，187 Node 通过；Python 189（3 跳过）与同源 Next 构建保持，58 项不同 Chrome 场景累计通过。见 [容量、边界与命令](UX-49-BOLOGNA-CAPACITY.md)、[报告及47A](UX-47-RESEARCH-REPORT-EDITOR.md)。当前干净演示为 52755 → Bologna · supervisor report sample。Comparative 引擎、持久语义角色、报告图资产嵌入、进一步容量／中断与研究者／设备／supervisor 接受仍开放；不是全部最终标准完成。只用 Bologna，不推送、不部署；Windows 暂缓。
+
 2026-10-17 最新（UX-47）：**Export 内可编辑 Analysis Table／Narrative Analysis 已实现并保存到项目，支持版本比较／恢复、精确引文、证据过期／明确刷新及 HTML／Word 下载。** TA／内容分析有独立人工审核清单；报告标签不改码本。189 Python（3 跳过）、181 Node、49 生产代理 Chrome 场景和隔离 Next 构建通过；32 个统计／绘图／原资产／数据／部署保护文件不变。UX-46 的原生可编辑 Word 树保留。见 [实现与边界](UX-47-RESEARCH-REPORT-EDITOR.md)。Comparative QCA、持久语义角色、百份容量和研究者／设备／supervisor 接受仍开放；不能称全部最终标准完成。本机当前入口 52755；只用 Bologna 临时副本，不推送、不部署，Windows 暂缓。下方旧状态按历史保留。
 
 2026-10-17 最新（UX-46）：**编码原文 Word 已使用原生可编辑树线与文字，不是插入截图。** 全文高亮、完整祖先关系、清楚角色标签与短叶节点跨页保留；15 页样例检查、12 导出回归及 14 浏览器场景通过。见 [Word 树与证据](UX-46-EDITABLE-WORD-TREE.md)。报告编辑器为独立 UX-47 工作流，仍在验收；Comparative、容量与研究者接受未关闭。只用 Bologna 临时副本，不推送、不部署，Windows 暂缓。
