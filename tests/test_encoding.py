@@ -33,7 +33,7 @@ def text_calls_without_encoding(source):
             # helpers, which take their own text handling.
             if re.search(r"""['"](rb|wb|ab)['"]""", line):
                 continue
-            if re.search(r"(urlopen|opener\.open|webbrowser|os\.open)", line):
+            if re.search(r"(urlopen|opener\.open|webbrowser|os\.open|Image\.open\(io\.BytesIO)", line):
                 continue
             offenders.append((number, line.strip()))
     return offenders
@@ -95,6 +95,11 @@ class EncodingTests(unittest.TestCase):
         self.assertIn("共享 · condivisione", text)
         self.assertIn("memo à è", text)
         self.assertIn(SAMPLE[:20], text)
+
+    def test_binary_image_decoding_does_not_disable_text_encoding_checks(self):
+        self.assertEqual(text_calls_without_encoding('with Image.open(io.BytesIO(payload)) as image:'), [])
+        self.assertTrue(text_calls_without_encoding('with open("interview.txt") as source:'))
+        self.assertEqual(text_calls_without_encoding('with open("interview.txt", encoding="utf-8") as source:'), [])
 
     def test_no_text_call_site_is_missing_its_encoding(self):
         offenders = []

@@ -9,7 +9,7 @@ export const STORY_SCENES = [
  {id:'plotting-cooccurrence',module:'plotting',plot:'cooccurrence',no:'04.3',title:'Which codes overlap?',body:'Magnify the original matrix and inspect exported pairs. Cells without a CSV row are labelled explicitly.'},
  {id:'plotting-hierarchy',module:'plotting',plot:'hierarchy',no:'04.4',title:'Where does each code belong?',body:'Read the saved code rows under each theme. Browse eight named bars at a time, or select any of the 259 exported rows.'},
  {id:'plotting-accumulation',module:'plotting',plot:'accumulation',no:'04.5',title:'What changes as you read?',body:'Follow all 19 interview steps. Read cumulative and newly encountered codes directly from the saved CSV.'},
- {id:'export',module:'export',no:'05',title:'Take the record with you.',body:'Take full text, highlights and the saved tree into HTML or editable Word. Project, coding table, matrix and methods exports remain available.'},
+ {id:'export',module:'export',no:'05',title:'Take the record with you.',body:'Keep highlighted source and its tree in editable Word. Save your report with figures, captions, counts and code. Original exports remain available.'},
 ] as const
 
 /** Page keys inside an illustration advance the story; native form controls keep theirs. */

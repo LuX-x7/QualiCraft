@@ -89,7 +89,7 @@ export const MODULES = [
       'Export coded HTML or Word.',
       'Write and version your Analysis Table and Narrative Analysis in Export.',
     ],
-    see: 'A coded source notebook, plus your saved research report in HTML or editable Word.',
+    see: 'A coded source notebook and an editable report, with saved figures, captions, counts and code.',
   },
 ] as const
 
@@ -136,7 +136,7 @@ export const METHODS = {
       ],
     },
   ],
-  writing: 'Available in Export: edit an Analysis Table and Narrative Analysis, choose saved quotations, compare and restore versions, and download HTML or editable Word. Project JSON preserves retained report versions. Changed coding is flagged; evidence refresh is explicit. Word edits stay in Word.',
+  writing: 'Available in Export: edit an Analysis Table and Narrative Analysis, choose saved quotations, compare and restore versions, and download HTML or editable Word. Save up to five figures with editable captions, frozen counts and code; download the complete report bundle. Project JSON preserves retained versions and shared figure assets. Changed coding is flagged; evidence refresh is explicit. Word edits stay in Word.',
   planned: [
     {
       name: 'Comparative QCA',

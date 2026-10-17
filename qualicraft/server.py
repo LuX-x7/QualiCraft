@@ -16,7 +16,7 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import analyze, ingest, plotting, transcript, reporting
+from . import analyze, ingest, plotting, transcript, reporting, report_figures
 from .ai import Analyzer
 from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
@@ -163,14 +163,15 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                                               "status": store.backup_status()})
                         if len(parts) == 4 and parts[3] == "export":
                             fmt = urllib.parse.parse_qs(parsed.query).get("format", ["json"])[0]
-                            if fmt in {'report-html','report-docx','report-json'}:
+                            if fmt in {'report-html','report-docx','report-json','report-zip'}:
                                 query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
                                 version = query.get('version_id', [None])
                                 require(len(version)==1, 'Choose one report version')
                                 entry, stale = reporting.selected(project, version[0])
                                 suffix = fmt.removeprefix('report-')
-                                payload = reporting.html_export(entry, stale) if suffix=='html' else reporting.docx_export(entry, stale) if suffix=='docx' else json.dumps(entry,ensure_ascii=False,indent=2).encode()
-                                mime = 'text/html; charset=utf-8' if suffix=='html' else 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' if suffix=='docx' else 'application/json'
+                                assets = project['research_report'].get('assets',{})
+                                payload = reporting.html_export(entry, stale, assets) if suffix=='html' else reporting.docx_export(entry, stale, assets) if suffix=='docx' else reporting.bundle_export(entry,assets,stale) if suffix=='zip' else json.dumps(reporting.export_record(entry,assets),ensure_ascii=False,indent=2).encode()
+                                mime = 'text/html; charset=utf-8' if suffix=='html' else 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' if suffix=='docx' else 'application/zip' if suffix=='zip' else 'application/json'
                                 return self.send(payload,mime,filename=f"qt-research-report-{entry['id'][:12]}.{suffix}")
                             if fmt in {"coded-html", "coded-docx", "coded-version"}:
                                 query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
@@ -329,6 +330,13 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         # point in one move.
                         require(not public_demo, "The public demonstration is read-only")
                         return self.send(store.restore(project_id, body.get("name", "")))
+                    if action == 'report-save':
+                        # Render on a detached project before acquiring a writer lock.
+                        # Recheck report revision and coding identity at the short commit.
+                        candidate=store.get(project_id);stamp=reporting.source_version(candidate)
+                        revision=candidate.get('research_report',{}).get('revision',0)
+                        prepared=reporting.save(candidate,body)
+                        return self.send(store.change(project_id,lambda p:reporting.install_prepared(p,prepared,revision,stamp)))
                     def operation(project):
                         if action in {'report-save','report-restore'}:
                             return reporting.save(project,body,restore=action=='report-restore')
@@ -372,6 +380,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         raise ValueError("The requested action does not exist")
                     return self.send(store.change(project_id, operation))
                 return self.send({"error": "The API endpoint does not exist"}, status=404)
+            except report_figures.FigureRenderError as exc:
+                return self.send({"error": str(exc)}, status=500)
             except (ReadingConflict, reporting.ReportConflict) as exc:
                 return self.send({"error": str(exc)}, status=409)
             except ValueError as exc:

@@ -825,3 +825,6 @@ button:disabled{cursor:default}
 #report-preview{width:100%;height:720px;border:1px solid var(--line);margin-top:20px;background:#fff}
 #dialog[data-workflow=report] select{max-width:100%;min-width:0;white-space:normal}#dialog[data-workflow=report] option{overflow-wrap:anywhere}#report-panel{min-width:0}
 @media(max-width:600px){#dialog[data-workflow=report] .modal-body{padding:16px}.report-toolbar{top:-16px}.report-row-labels,.report-compare{grid-template-columns:1fr}.report-tabs button{flex:1 1 40%;min-height:44px}.report-add{display:block}.report-add button{margin:10px 8px 0 0}#dialog[data-workflow=report] button{min-height:42px}}
+
+/* Frozen report figures retain their source aspect ratio. */
+.report-figure{border-top:1px solid var(--line);padding:20px 0}.report-figure img{display:block;max-width:100%;height:auto;background:white;margin:16px auto}.report-figure pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.report-figure h3{font-size:18px}
