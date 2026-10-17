@@ -190,12 +190,13 @@ def word_tag(parent, name, attrs=None):
     return ET.SubElement(parent, f'{{{W}}}{name}', {f'{{{W}}}{k}': str(v) for k, v in (attrs or {}).items()})
 
 
-def word_run(p, text, shade=False, size=None, bold=False, color=None):
+def word_run(p, text, shade=False, size=None, bold=False, color=None, font=None):
     r = word_tag(p, 'r'); props = word_tag(r, 'rPr')
     if shade: word_tag(props, 'shd', {'fill': 'EEE0AC', 'val': 'clear'})
     if size: word_tag(props, 'sz', {'val': size})
     if bold: word_tag(props, 'b')
     if color: word_tag(props, 'color', {'val': color})
+    if font: word_tag(props, 'rFonts', {'ascii': font, 'hAnsi': font})
     for part in re.split('(\n|\t)', text):
         if part == '\n': word_tag(r, 'br')
         elif part == '\t': word_tag(r, 'tab')
@@ -247,7 +248,7 @@ def docx_export(data):
                 cp = word_tag(cell, 'tcPr'); word_tag(cp, 'tcW', {'w': width, 'type': 'dxa'}); word_tag(cp, 'vAlign', {'val': 'top'})
             p(left, f"¶ {b['number']:02d}  {' '.join(b['keys'])}", size=17)
             para = p(left); para.set(f'{{{W}}}rsidR', '00000001')
-            for t in b['tokens']: word_run(para, t['text'], bool(t['keys']))
+            for t in b['tokens']: word_run(para, t['text'], bool(t['keys']), font='Georgia')
             if not b['keys']: p(right, 'No saved codings', size=19)
             roots = {}
             for key in b['keys']:
@@ -256,22 +257,55 @@ def docx_export(data):
                     node = level.setdefault(n['id'], {'node': n, 'children': {}, 'items': []})
                     level = node['children']
                 node['items'].append(a)
-            def tree(nodes, depth=0):
+            max_depth = max((len(a['path']) for a in d['annotations']), default=1)
+            gutter = min(220, max(40, 2200 // max_depth))
+            def tree(parent, nodes, width):
                 for node in nodes.values():
                     n = node['node']
                     role = n['role']
                     symbol = {'Theme': '◆', 'Category': '○', 'Code': '•', 'Group': '◇'}[role]
-                    para = p(right, '', keep=True)
-                    word_tag(para.find(f'{{{W}}}pPr'), 'ind', {'left': min(depth, 8)*220})
-                    word_run(para, symbol+' '+role.upper()+'  ', size=16, bold=True, color={'Theme':'8F3222','Category':'53684B'}.get(role,'4B607C'))
-                    word_run(para, n['name'], size=21, bold=role=='Theme')
-                    if n.get('memo'): p(right, 'Memo: '+n['memo'], size=18)
+                    color = {'Theme':'8F3222','Category':'53684B'}.get(role,'4B607C')
+                    para = p(parent, '', keep=True)
+                    spacing = para.find(f'{{{W}}}pPr/{{{W}}}spacing')
+                    spacing.set(f'{{{W}}}after', '0')
+                    word_run(para, symbol+' '+role.upper(), size=15, color=color, font='Courier New')
+                    para = p(parent, '', keep=True)
+                    word_tag(para.find(f'{{{W}}}pPr'), 'keepLines')
+                    word_run(para, n['name'], size=22, bold=role=='Theme', color=color, font='Georgia')
                     for a in node['items']:
-                        para=p(right, f"{a['key']}  [{a['start']}, {a['end']})", size=17)
-                        word_tag(para.find(f'{{{W}}}pPr'), 'ind', {'left': min(depth, 8)*220+120})
-                        if a.get('memo'): p(right, 'Memo: '+a['memo'], size=18)
-                    tree(node['children'], depth+1)
-            tree(roots)
+                        word_run(para, '\n'+a['key']+'  ↩', size=16)
+                    if n.get('memo'): p(parent, 'Memo: '+n['memo'], size=18)
+                    for a in node['items']:
+                        if a.get('memo'): p(parent, 'Memo: '+a['memo'], size=18)
+                    if node['children']:
+                        # Native borders form the branch guides. All node text
+                        # remains editable; no image, bracket glyph or overlay.
+                        branch = word_tag(parent, 'tbl'); bp = word_tag(branch, 'tblPr')
+                        word_tag(bp, 'tblW', {'w': width, 'type': 'dxa'})
+                        word_tag(bp, 'tblLayout', {'type': 'fixed'})
+                        borders = word_tag(bp, 'tblBorders')
+                        for side in ['top','left','bottom','right','insideH','insideV']: word_tag(borders, side, {'val':'nil'})
+                        margins = word_tag(bp, 'tblCellMar')
+                        for side in ['top','left','bottom','right']: word_tag(margins, side, {'w':0,'type':'dxa'})
+                        grid = word_tag(branch, 'tblGrid')
+                        for w in [gutter, width-gutter]: word_tag(grid, 'gridCol', {'w':w})
+                        for child_id, child in node['children'].items():
+                            row = word_tag(branch, 'tr')
+                            if not child['children'] and len(child['items']) <= 8:
+                                word_tag(word_tag(row, 'trPr'), 'cantSplit')
+                            guide = word_tag(row, 'tc'); cp = word_tag(guide, 'tcPr')
+                            word_tag(cp, 'tcW', {'w':gutter,'type':'dxa'})
+                            word_tag(word_tag(cp, 'tcBorders'), 'left', {'val':'single','sz':4,'color':'8194A5'})
+                            stub = p(guide); pp = stub.find(f'{{{W}}}pPr')
+                            word_tag(word_tag(pp, 'pBdr'), 'bottom', {'val':'single','sz':4,'color':'8194A5','space':0})
+                            spacing = pp.find(f'{{{W}}}spacing')
+                            spacing.set(f'{{{W}}}line', '90'); spacing.set(f'{{{W}}}lineRule','exact'); spacing.set(f'{{{W}}}after','0')
+                            cell = word_tag(row, 'tc'); cp = word_tag(cell, 'tcPr')
+                            word_tag(cp, 'tcW', {'w':width-gutter,'type':'dxa'})
+                            tree(cell, {child_id:child}, width-gutter)
+                        end = p(parent); spacing = end.find(f'{{{W}}}pPr/{{{W}}}spacing')
+                        spacing.set(f'{{{W}}}line','20'); spacing.set(f'{{{W}}}lineRule','exact'); spacing.set(f'{{{W}}}after','0')
+            tree(right, roots, 4180)
         p(body)
     p(body, 'Record details', 'Heading1')
     p(body, f"Generated {data['generated_at']}\nProject {data['project_id']} · Schema v{data['schema_version']}\nEvidence SHA256 {data['version']}", size=16)

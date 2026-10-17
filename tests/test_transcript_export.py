@@ -159,6 +159,21 @@ class TranscriptTests(unittest.TestCase):
             self.assertIn('Record details', transcript.word_plain(xml))
             self.assertNotIn('└─', transcript.word_plain(xml))
 
+    def test_word_tree_has_editable_branches_and_no_raster_diagram(self):
+        data = transcript.freeze(self.p, [self.d['id']], role_labels='theme-category-code')
+        with zipfile.ZipFile(io.BytesIO(transcript.docx_export(data))) as z:
+            root = ET.fromstring(z.read('word/document.xml')); ns = {'w': transcript.W}
+            guides = root.findall('.//w:tcBorders/w:left', ns)
+            self.assertTrue(guides, 'Word needs actual editable tree guides')
+            self.assertTrue(all(g.get('{'+transcript.W+'}val') == 'single' for g in guides))
+            self.assertTrue(root.findall('.//w:pBdr/w:bottom', ns), 'Word needs horizontal branch connectors')
+            self.assertTrue(root.findall('.//w:trPr/w:cantSplit', ns), 'Short leaf labels and references stay together')
+            self.assertFalse(root.findall('.//w:drawing', ns))
+            self.assertFalse(any(n.startswith('word/media/') for n in z.namelist()))
+            self.assertEqual(''.join(transcript.word_plain(p) for p in root.findall('.//w:p[@w:rsidR="00000001"]', ns)), self.d['text'])
+            self.assertIn('THEME', transcript.word_plain(root)); self.assertIn('CATEGORY', transcript.word_plain(root))
+            self.assertEqual(json.loads(ET.fromstring(z.read('customXml/item1.xml')).text), data)
+
 
 class TranscriptHTTPTests(unittest.TestCase):
     def test_download_auth_scope_headers_and_original_exports_unchanged(self):
