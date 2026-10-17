@@ -53,3 +53,7 @@ All 49 production-proxy browser checks pass; normal console / HTTP / outside-pro
 4. Current physical-device / VoiceOver / system-motion / download feedback, researcher interpretation and supervisor acceptance. GitHub remains local-only by the owner's latest decision after the earlier workflow-permission rejection.
 
 This closes the product's saved table / narrative editor gap, not the complete final acceptance standard. Existing statistics and plotting definitions / outputs are unchanged.
+
+## UX-47A source identity follow-up
+
+Final review found that a frozen report quotation could still jump to a live annotation after that annotation was reassigned to another code or document with the same text / range. The jump now checks both document ID and code ID before closing the report or changing filters. Six meaningful Node regressions cover reassignment, document movement, quotation / fingerprint / range changes and deletion. Before the fix, two failed and four passed; after it all six pass and the full Node suite is 187 / 187. Raw outputs: `raw/report-evidence-red.txt`, `raw/node-evidence-final.txt`. The report Chrome workflow was rerun in `browser-evidence/`; normal editing and source jumps remain valid. Python, report output formats, website source and the previously successful production build are unchanged by this narrow browser guard.

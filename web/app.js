@@ -1502,7 +1502,7 @@ function showProjects() {
 
 async function locateReportEvidence(evidence) {
   const project=await api(projectUrl()),annotation=project.annotations.find(a=>a.id===evidence.id),source=project.documents.find(d=>d.id===evidence.document_id);
-  if(!annotation||!source||source.sha256!==evidence.sha256||annotation.quote!==evidence.quote||annotation.start!==evidence.start||annotation.end!==evidence.end)throw new Error(QT('sourceUnavailable'));
+  if(!annotation||!source||annotation.document_id!==evidence.document_id||annotation.code_id!==evidence.code_id||source.sha256!==evidence.sha256||annotation.quote!==evidence.quote||annotation.start!==evidence.start||annotation.end!==evidence.end)throw new Error(QT('sourceUnavailable'));
   closeModal();state.project=project;state.docId=source.id;state.view='coding';state.search='';state.codeFilter=null;state.sourceFocus=null;state.networkReturn=null;readingOverviewNav=null;render();
   const mark=[...document.querySelectorAll('.passage mark[data-coding-ids]')].find(el=>JSON.parse(el.dataset.codingIds).includes(annotation.id));
   if(mark){mark.setAttribute('tabindex','-1');mark.scrollIntoView({block:'center'});mark.focus({preventScroll:true});previewCoding([annotation.id]);}
