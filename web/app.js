@@ -475,8 +475,8 @@ function focusReadingOverviewSource(){
   updateReadingPosition();
 }
 function keepOverviewPosition(){
-  const start=readingMounted?.start;readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;renderReadingOverview();$('#reader').innerHTML=readerHtml();previewCoding();$('[data-action="reading-overview"]')?.setAttribute('aria-expanded','false');scrollReadingParagraph(start,true);updateReadingPosition();
-  const kept=writeReadingPosition(state.project,doc(),readingMounted?.start),message=QT(kept?'ovPositionSaved':'ovStorageUnavailable',kept?'Browser reading position saved.':'Browser storage is unavailable; this position cannot be remembered.');
+  const start=overviewPreviewNavigation()?readingOverviewNav.start:readingMounted?.start;readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;renderReadingOverview();$('#reader').innerHTML=readerHtml();previewCoding();$('[data-action="reading-overview"]')?.setAttribute('aria-expanded','false');scrollReadingParagraph(start,true);updateReadingPosition();
+  const kept=writeReadingPosition(state.project,doc(),start),message=QT(kept?'ovPositionSaved':'ovStorageUnavailable',kept?'Browser reading position saved.':'Browser storage is unavailable; this position cannot be remembered.');
   announceMark(message);toast(message,!kept);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&readingOverview.open&&(e.target.closest?.('#reading-overview')||e.target.closest?.('[data-action="reading-overview"]'))){e.preventDefault();toggleReadingOverview(false);}});
@@ -484,10 +484,13 @@ document.addEventListener('click',e=>{const map=e.target.closest?.('#reading-ove
 document.addEventListener('change',e=>{if(e.target.id==='overview-source-scope'){readingOverview.sourceScope=e.target.value;readingOverview.sourcePage=0;renderReadingOverview();}});
 
 let readingMounted=null,readingFrame=0;
-function readingParagraph() {
+function readingViewportTop() {
   const pane=$('#document-pane'),dock=$('.reading-dock');if(!pane||!dock)return null;
   const tools=$('.document-tools'),toolsBottom=tools&&getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0;
-  const top=Math.max(dock.getBoundingClientRect().bottom,pane.getBoundingClientRect().top,toolsBottom);
+  return Math.max(dock.getBoundingClientRect().bottom,pane.getBoundingClientRect().top,toolsBottom);
+}
+function readingParagraph() {
+  const top=readingViewportTop();if(top===null)return null;
   const paragraphs=[...document.querySelectorAll('#reader .paragraph')];
   return paragraphs.find(p=>p.getBoundingClientRect().bottom>top+2)||paragraphs.at(-1)||null;
 }
@@ -509,7 +512,9 @@ function updateReadingPosition() {
   const start=readingOverview.open&&!inView?readingMounted.start:paragraph?Number(paragraph.dataset.start):null;
   const all=segments(doc().text),index=all.findIndex(p=>p.start===start),output=$('#reading-position');
   readingMounted.start=start;readingMounted.paragraph=all[index]||null;
-  if(overviewPreviewNavigation()&&inView&&Number.isInteger(start))readingOverviewNav.start=start;
+  // Revealing an overview control can expose the first source paragraph below
+  // the reading line. Only actual reading at that line advances the Keep anchor.
+  if(overviewPreviewNavigation()&&inView&&box.top<=readingViewportTop()+2&&Number.isInteger(start))readingOverviewNav.start=start;
   if(output)output.textContent=index<0?QT('readingNoMatch','No matching paragraph'):`${QT('readingParagraph','Paragraph')} ${index+1} / ${all.length}`;
   captureReadingPosition();updateReadingPath();
   updateProjectMarks();updateReadingOverviewPosition();
