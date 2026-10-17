@@ -53,7 +53,7 @@ export const MODULES = [
       'Type a code name, press Enter.',
       'Code the same stretch twice if two ideas share it.',
     ],
-    see: 'The saved coding keeps its source range and full theme path.',
+    see: 'Keep the exact source range and full path. Assign Theme, Category or Code explicitly; the role stays with the saved node.',
   },
   {
     no: '03',

@@ -341,7 +341,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                                     raise ValueError("The DOCX file could not be parsed. Use a valid Word document under 8 MB.") from None
                             return add_document(project, body.get("name"), text)
                         if action == "codes":
-                            return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"))
+                            return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"), body.get("research_role"))
                         if action == "document-update":
                             return update_document(project, body.get("id"), body.get("changes"))
                         if action == "blocks":

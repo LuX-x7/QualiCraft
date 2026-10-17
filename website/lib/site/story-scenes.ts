@@ -1,7 +1,7 @@
 /** Reading order only: plotting is five scroll scenes, never a timer or a tab gate. */
 export const STORY_SCENES = [
  {id:'import',module:'import',no:'01',title:'Start with the source.',body:'Bring a document into a readable workspace. Keep the original words and their source ranges.'},
- {id:'coding',module:'coding',no:'02',title:'One passage. One assignment.',body:'Select the original words. Inspect the attached code and its saved position in the codebook.'},
+ {id:'coding',module:'coding',no:'02',title:'One passage. One assignment.',body:'Select the original words. Save the code’s path and choose its Theme, Category or Code role.'},
  {id:'analysis',module:'analysis',no:'03',title:'Follow the evidence.',body:'Trace highlighted passages through codes to their theme. Hover, focus or tap any node to follow its saved connections.'},
  {id:'network',module:'analysis',no:'03.2',title:'One path. A wider network.',body:'Explore saved connections across themes. Select a code to trace its highlighted source.'},
  {id:'plotting',module:'plotting',plot:'frequency',no:'04.1',title:'Which codes occur most?',body:'Each bar reads one exported CSV row. Explore the original counts without treating frequency as importance.'},

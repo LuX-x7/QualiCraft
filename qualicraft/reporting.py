@@ -31,7 +31,8 @@ def digest(value):
 def source_version(project):
     # Stable across a JSON restore to a new project ID and reading-only edits.
     return digest({'documents':[{k:d[k] for k in ('id','name','text')} for d in project['documents']],
-        'codes':[{k:c.get(k) for k in ('id','name','parent_id','definition','memo','inclusion','exclusion','status')} for c in project['codes']],
+        'codes':[{**{k:c.get(k) for k in ('id','name','parent_id','definition','memo','inclusion','exclusion','status')},
+                  **({'research_role':c['research_role']} if 'research_role' in c else {})} for c in project['codes']],
         'annotations':project['annotations']})
 
 

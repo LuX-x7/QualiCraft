@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+const context=vm.createContext({window:{addEventListener(){}}});vm.runInContext(readFileSync(new URL('../web/report-editor.js',import.meta.url),'utf8'),context);
+const labels=c=>JSON.parse(JSON.stringify(context.window.QTReport.startingLabels(c,'leaf')));
+const codes=[{id:'root',name:'Saved root',parent_id:null},{id:'middle',name:'Saved middle',parent_id:'root'},{id:'leaf',name:'Saved leaf',parent_id:'middle'}];
+test('legacy starting labels retain the explicitly chosen hierarchy preset',()=>assert.deepEqual(labels(codes),{theme:'Saved root',category:'Saved middle'}));
+test('explicit roles select report labels by role rather than depth',()=>assert.deepEqual(labels(codes.map((c,i)=>({...c,research_role:['code','theme','category'][i]}))),{theme:'Saved middle',category:'Saved leaf'}));
+test('partly assigned paths do not invent categories or themes for unassigned nodes',()=>assert.deepEqual(labels(codes.map((c,i)=>i===2?{...c,research_role:'code'}:c)),{theme:'',category:''}));
+test('nested explicit themes retain full order without changing the source codebook',()=>{const input=codes.map((c,i)=>({...c,research_role:i===2?'code':'theme'})),before=JSON.stringify(input);assert.deepEqual(labels(input),{theme:'Saved root > Saved middle',category:''});assert.equal(JSON.stringify(input),before)});

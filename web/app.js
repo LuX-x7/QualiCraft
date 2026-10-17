@@ -67,6 +67,7 @@ Object.assign(_T.zh, {
 });
 // UX-24: roles describe saved tree positions, not a new analytic classification.
 Object.assign(_T.en, {
+  researchTheme:'Theme',researchCategory:'Category',researchRole:'Research role',roleUnassigned:'Not assigned',researchRoleHint:'You choose the role. It stays when the node moves and does not change counts.',
   importedCoding:'IMPORTED', codebookTree:'Themes & codes', themeGroup:'Theme / group', parentCode:'Parent code', codeRole:'Code',
   ungroupedCode:'Ungrouped code', codebookHint:'Saved parent relationships · counts include descendants',
   codebookFind:'Find a code', savedCodings:'saved codings', overlappingRanges:'Overlapping ranges',
@@ -75,6 +76,7 @@ Object.assign(_T.en, {
   popupChoosePath:'Several codes match this name or path. Choose one with ↑ / ↓ and Enter, or select its full path.',
 });
 Object.assign(_T.zh, {
+  researchTheme:'主题',researchCategory:'类别',researchRole:'研究角色',roleUnassigned:'未指定',researchRoleHint:'由你指定角色；移动节点时保留，不改变计数。',
   importedCoding:'已导入', codebookTree:'主题与编码', themeGroup:'主题／分组', parentCode:'父编码', codeRole:'编码',
   ungroupedCode:'未归组编码', codebookHint:'已保存的父子关系 · 计数包含后代编码',
   codebookFind:'查找编码', savedCodings:'条已保存标注', overlappingRanges:'存在重叠范围',
@@ -195,6 +197,7 @@ function codeLineage(code) {
 }
 function codePath(code) { return codeLineage(code).map(c=>c.name).join(' > '); }
 function codeRole(code) {
+  if(['theme','category','code'].includes(code.research_role))return {theme:QT('researchTheme','Theme'),category:QT('researchCategory','Category'),code:QT('codeRole','Code')}[code.research_role];
   const grouped=state.project.codes.some(c=>c.id===code.parent_id), parent=state.project.codes.some(c=>c.parent_id===code.id);
   return QT(!grouped?(parent?'themeGroup':'ungroupedCode'):(parent?'parentCode':'codeRole'));
 }
@@ -1312,7 +1315,7 @@ async function applyCodeById(codeId) {
   toast(QT('toastCoded','Coded.'));
 }
 async function createAndApplyCode(name) {
-  const code=await api(projectUrl(QT('codeCount','codes')),{name,definition:'',color:null});
+  const code=await api(projectUrl('codes'),{name,definition:'',color:null});
   await refresh();
   await applyCodeById(code.id);
   toast(QT('toastCodeCreated','Created “%s” and coded it.').replace('%s',name));
@@ -1434,7 +1437,20 @@ function showTools() {
 }
 function showCode(parentId=null) {
   const parents=state.project.codes;
-  modal(QT('createCode','Create code'),`<label class="field">${QT('codeName','Code name')}<input id="code-name" maxlength="160" placeholder="${QT('codeNamePlaceholder','e.g. Information barriers')}"></label><label class="field">${QT('codeDef','Definition and inclusion criteria')}<textarea id="code-definition" rows="4" placeholder="${QT('codeDefPlaceholder','Describe when to use this code and when to exclude it.')}"></textarea></label>${parents.length&&hasBlock('hierarchy')?`<label class="field">${QT('groupUnder','Group under (optional)')}<select id="code-parent"><option value="">${QT('topLevel','— top level —')}</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>${QT('groupHint','Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.')}</small></label>`:''}<label class="field">${QT('color','Color')}<input id="code-color" type="color" value="#427d77"></label>`, `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="save-code">${QT('saveCode','Save code')}</button>`);
+  modal(QT('createCode','Create code'),`<label class="field">${QT('codeName','Code name')}<input id="code-name" maxlength="160" placeholder="${QT('codeNamePlaceholder','e.g. Information barriers')}"></label>${researchRoleField('code-role')}<label class="field">${QT('codeDef','Definition and inclusion criteria')}<textarea id="code-definition" rows="4" placeholder="${QT('codeDefPlaceholder','Describe when to use this code and when to exclude it.')}"></textarea></label>${parents.length&&hasBlock('hierarchy')?`<label class="field">${QT('groupUnder','Group under (optional)')}<select id="code-parent"><option value="">${QT('topLevel','— top level —')}</option>${parents.map(c=>`<option value="${c.id}" ${parentId===c.id?'selected':''}>${esc(codePath(c))}</option>`).join('')}</select><small>${QT('groupHint','Choosing a parent makes this a sub-code. Grouping codes under a theme is what turns a flat tag list into a codebook.')}</small></label>`:''}<label class="field">${QT('color','Color')}<input id="code-color" type="color" value="#427d77"></label>`, `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="save-code">${QT('saveCode','Save code')}</button>`);
+}
+function researchRoleField(id,value=null) {
+  const labels=[['',QT('roleUnassigned','Not assigned')],['theme',QT('researchTheme','Theme')],['category',QT('researchCategory','Category')],['code',QT('codeRole','Code')]];
+  return `<label class="field">${QT('researchRole','Research role')}<select id="${id}">${labels.map(([v,label])=>`<option value="${v}" ${v===(value||'')?'selected':''}>${label}</option>`).join('')}</select><small>${QT('researchRoleHint','You choose the role. It stays when the node moves and does not change counts.')}</small></label>`;
+}
+function codeEditValues() {
+  return {name:$('#ec-name').value,definition:$('#ec-definition').value,color:$('#ec-color').value,
+    parent_id:$('#ec-parent').value||null,status:$('#ec-status').value,memo:$('#ec-memo').value,
+    inclusion:$('#ec-inclusion').value,exclusion:$('#ec-exclusion').value,
+    anchor_examples:$('#ec-anchors').value.split('\n').map(x=>x.trim()).filter(Boolean),research_role:$('#ec-role').value||null};
+}
+function codeEditChanges(values,baseline) {
+  return Object.fromEntries(Object.entries(values).filter(([key,value])=>JSON.stringify(value)!==JSON.stringify(baseline[key])));
 }
 function showCodeEdit(id) {
   const c=state.project.codes.find(x=>x.id===id); if(!c) return;
@@ -1443,6 +1459,7 @@ function showCodeEdit(id) {
   const others=state.project.codes.filter(x=>x.id!==id);
   modal(QT('editCode','Edit code'), `
     <label class="field">Name<input id="ec-name" maxlength="160" value="${esc(c.name)}"></label>
+    ${researchRoleField('ec-role',c.research_role)}
     <label class="field">Definition<textarea id="ec-definition" rows="3" placeholder="What this code means.">${esc(c.definition)}</textarea></label>
     <div class="form-row">
       <label class="field${hasBlock('hierarchy')?'':' block-off'}">Group under<select id="ec-parent"><option value="">${QT('topLevel','— top level —')}</option>${others.map(o=>`<option value="${o.id}"${c.parent_id===o.id?' selected':''}${blocked.has(o.id)?' disabled':''}>${esc(codePath(o))}${blocked.has(o.id)?' — its own sub-code':''}</option>`).join('')}</select></label>
@@ -1457,6 +1474,7 @@ function showCodeEdit(id) {
     <label class="field">Colour<input id="ec-color" type="color" value="${esc(c.color)}"></label>
     <div class="notice">${own.get(id)||0} direct coding(s) · ${total.get(id)||0} including sub-codes · ${blocked.size} sub-code(s).</div>`,
     `<button class="danger" data-action="code-delete-ask" data-id="${id}">Delete</button>${others.length?`<button data-action="code-merge-ask" data-id="${id}">Merge into…</button>`:''}<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="code-save" data-id="${id}">Save changes</button>`);
+  $('#dialog').codeEditBaseline=codeEditValues();
 }
 function showCodeDeleteAsk(id) {
   const c=state.project.codes.find(x=>x.id===id); if(!c) return;
@@ -1509,7 +1527,7 @@ async function locateReportEvidence(evidence) {
 }
 
 let lastTranscriptExport=null;
-Object.assign(_T.zh,{writeReport:'撰写／编辑研究报告',ctTitle:'编码原文对照',methodStatusTitle:'方法与报告写作状态',methodStatusNow:'当前支持原文编码、层级、备忘录、描述性计数、图表和编码原文导出。研究报告编辑器可保存、比较和恢复 Analysis Table／Narrative Analysis；TA 与内容分析有各自的人工审核清单。',methodStatusPlanned:'待实现：Comparative QCA 的校准、真值表和最简化。编码计数与共现不能代替配置分析。Word 内修改不会回写 QT。',ctLabels:'树形展示标签',ctSavedLabels:'保存的分组／编码',ctResearchLabels:'Theme 主题 → Category 类别 → Code 编码',ctRoleChoice:'选择适合码本的展示标签。三层样式分别标记有子项的根、中间组和叶节点；不改变已保存编码，也不自动形成研究主题。',ctIntro:'完整正文、精确高亮与已保存的编码树。Group／Code 只描述结构，不自动认定 Theme／Category 角色。',ctScope:'导出文档范围',ctCurrentDoc:'当前文档',ctAll:'全部文档',ctSelected:'选择多份文档',ctFullText:'完整正文，包含未编码语境',ctMemos:'包含文档、标注和编码备忘录',ctPrivate:'文件包含完整访谈正文，请私有保存。不含待采纳建议或阅读标记。',ctHtml:'下载 HTML',ctWord:'下载可编辑 Word',ctChecking:'正在核对旧导出版本…',ctCurrent:'编码证据版本一致。',ctStale:'证据已变化，请重新导出；旧文件保持原样。',ctCheckFailed:'无法核对旧导出，请检查范围并重新导出。',ctCheck:'核对上次导出版本',ctChoose:'请至少选择一份文档。',ctFrozen:'这是正文和编码树的冻结副本，项目编辑不会更新已有文件。'});
+Object.assign(_T.zh,{writeReport:'撰写／编辑研究报告',ctTitle:'编码原文对照',methodStatusTitle:'方法与报告写作状态',methodStatusNow:'当前支持原文编码、层级、备忘录、描述性计数、图表和编码原文导出。研究报告编辑器可保存、比较和恢复 Analysis Table／Narrative Analysis；TA 与内容分析有各自的人工审核清单。',methodStatusPlanned:'待实现：Comparative QCA 的校准、真值表和最简化。编码计数与共现不能代替配置分析。Word 内修改不会回写 QT。',ctLabels:'树形展示标签',ctSavedLabels:'研究角色／未指定分组',ctResearchLabels:'Theme 主题 → Category 类别 → Code 编码',ctRoleChoice:'已保存研究角色优先。未指定的节点可选结构标签或三层展示预设，不自动形成研究主题，也不改变计数。',ctIntro:'完整正文、精确高亮与已保存的编码树。Group／Code 只描述结构，不自动认定 Theme／Category 角色。',ctScope:'导出文档范围',ctCurrentDoc:'当前文档',ctAll:'全部文档',ctSelected:'选择多份文档',ctFullText:'完整正文，包含未编码语境',ctMemos:'包含文档、标注和编码备忘录',ctPrivate:'文件包含完整访谈正文，请私有保存。不含待采纳建议或阅读标记。',ctHtml:'下载 HTML',ctWord:'下载可编辑 Word',ctChecking:'正在核对旧导出版本…',ctCurrent:'编码证据版本一致。',ctStale:'证据已变化，请重新导出；旧文件保持原样。',ctCheckFailed:'无法核对旧导出，请检查范围并重新导出。',ctCheck:'核对上次导出版本',ctChoose:'请至少选择一份文档。',ctFrozen:'这是正文和编码树的冻结副本，项目编辑不会更新已有文件。'});
 function transcriptSelection() {
   const scope=$('#coded-scope').value;
   return scope==='all'?null:scope==='current'?[state.docId]:[...document.querySelectorAll('[name="coded-document"]:checked')].map(el=>el.value);
@@ -1540,7 +1558,7 @@ async function checkTranscriptVersion() {
 function showExport() {
   const formats=[['json','JSON','exportProjectName','exportProjectUse'],['csv','CSV','exportCodingsName','exportCodingsUse'],['matrix','CSV','exportMatrixName','exportMatrixUse'],['methods','MD','exportMethodsName','exportMethodsUse']];
   modal(QT('exportTitle'),`<p class="io-intro">${QT('exportShort')}</p><button data-action="write-report">${QT('writeReport','Write / edit research report')}</button><p class="reading-marks-help">${QT('markExport','JSON v5 includes project reading marks. Older QT versions cannot open v5. Reading-only changes enter the next research-edit snapshot; export JSON to keep them now.')}</p><div class="option-grid io-export-options">${formats.map(([format,ext,title,use])=>`<button class="option-card io-export-card" data-action="download" data-format="${format}"><span class="io-file-icon" aria-hidden="true">${icon('doc')}<b>${ext}</b></span><span><strong>${QT(title)}</strong><span>${QT(use)}</span></span><span class="io-download-icon" aria-hidden="true">↓</span></button>`).join('')}</div>
-    <fieldset class="coded-export"><legend>${QT('ctTitle','Coded transcript')}</legend><p>${QT('ctIntro','Full source text, precise highlights and the saved code tree. Group / Code labels describe structure; Theme / Category roles are not inferred.')}</p><label class="field" for="coded-scope">${QT('ctScope','Documents to export')}<select id="coded-scope">${doc()?`<option value="current">${QT('ctCurrentDoc','Current document')} · ${esc(doc().name)}</option>`:''}<option value="all">${QT('ctAll','All documents')}</option><option value="selected">${QT('ctSelected','Choose documents')}</option></select></label><div id="coded-document-list" class="coded-document-list" hidden>${state.project.documents.map(d=>`<label><input type="checkbox" name="coded-document" value="${esc(d.id)}" ${d.id===state.docId?'checked':''}>${esc(d.name)}</label>`).join('')}</div><p id="coded-scope-summary" class="tiny-label"></p><label class="field" for="coded-roles">${QT('ctLabels','Tree display labels')}<select id="coded-roles"><option value="saved">${QT('ctSavedLabels','Saved Groups / Codes')}</option><option value="theme-category-code">${QT('ctResearchLabels','Theme → Category → Code')}</option></select></label><p class="reading-marks-help">${QT('ctRoleChoice','Choose the labels that fit your codebook. The three-label layout uses grouped roots, inner groups and leaves; it does not change saved codes or establish research themes.')}</p><label class="coded-memo-option"><input id="coded-memos" type="checkbox">${QT('ctMemos','Include document, coding and code memos')}</label><p class="tiny-label">${QT('ctPrivate','Contains full interview text. Keep the downloaded files private. Pending suggestions and reading marks are excluded.')}</p><div class="coded-export-actions"><button data-action="download-coded" data-format="coded-html">${QT('ctHtml','Download HTML')}</button><button data-action="download-coded" data-format="coded-docx">${QT('ctWord','Download editable Word')}</button></div><p id="coded-version-status" role="status" aria-live="polite"></p>${lastTranscriptExport?.projectId===state.project.id?`<button class="link" data-action="check-coded-export">${QT('ctCheck','Check previous export version')}</button>`:''}</fieldset><details class="report-status"><summary>${QT('methodStatusTitle','Methods and report writing')}</summary><p>${QT('methodStatusNow','Available: coding, hierarchy, memos, descriptive counts, figures and coded transcripts. The research report editor saves, compares and restores your Analysis Table and Narrative Analysis, with method-specific TA and Content Analysis review checklists.')}</p><p>${QT('methodStatusPlanned','Planned: Comparative QCA calibration, truth tables and minimisation. Coding counts and co-occurrence cannot replace configuration analysis. Word edits do not update QT.')}</p></details><div id="export-result" class="io-export-result" role="status" aria-live="polite"><div class="io-result-empty">${icon('down')}<span>${QT('exportChoose')}</span></div></div><p class="io-privacy">${QT('exportPrivate')}</p>`);
+    <fieldset class="coded-export"><legend>${QT('ctTitle','Coded transcript')}</legend><p>${QT('ctIntro','Full source text, precise highlights and the saved code tree. Group / Code labels describe structure; Theme / Category roles are not inferred.')}</p><label class="field" for="coded-scope">${QT('ctScope','Documents to export')}<select id="coded-scope">${doc()?`<option value="current">${QT('ctCurrentDoc','Current document')} · ${esc(doc().name)}</option>`:''}<option value="all">${QT('ctAll','All documents')}</option><option value="selected">${QT('ctSelected','Choose documents')}</option></select></label><div id="coded-document-list" class="coded-document-list" hidden>${state.project.documents.map(d=>`<label><input type="checkbox" name="coded-document" value="${esc(d.id)}" ${d.id===state.docId?'checked':''}>${esc(d.name)}</label>`).join('')}</div><p id="coded-scope-summary" class="tiny-label"></p><label class="field" for="coded-roles">${QT('ctLabels','Tree display labels')}<select id="coded-roles"><option value="saved">${QT('ctSavedLabels','Saved roles / unassigned Groups')}</option><option value="theme-category-code">${QT('ctResearchLabels','Theme → Category → Code')}</option></select></label><p class="reading-marks-help">${QT('ctRoleChoice','Saved research roles take precedence. Unassigned nodes use structural labels or the chosen display preset; this does not establish themes or change counts.')}</p><label class="coded-memo-option"><input id="coded-memos" type="checkbox">${QT('ctMemos','Include document, coding and code memos')}</label><p class="tiny-label">${QT('ctPrivate','Contains full interview text. Keep the downloaded files private. Pending suggestions and reading marks are excluded.')}</p><div class="coded-export-actions"><button data-action="download-coded" data-format="coded-html">${QT('ctHtml','Download HTML')}</button><button data-action="download-coded" data-format="coded-docx">${QT('ctWord','Download editable Word')}</button></div><p id="coded-version-status" role="status" aria-live="polite"></p>${lastTranscriptExport?.projectId===state.project.id?`<button class="link" data-action="check-coded-export">${QT('ctCheck','Check previous export version')}</button>`:''}</fieldset><details class="report-status"><summary>${QT('methodStatusTitle','Methods and report writing')}</summary><p>${QT('methodStatusNow','Available: coding, hierarchy, memos, descriptive counts, figures and coded transcripts. The research report editor saves, compares and restores your Analysis Table and Narrative Analysis, with method-specific TA and Content Analysis review checklists.')}</p><p>${QT('methodStatusPlanned','Planned: Comparative QCA calibration, truth tables and minimisation. Coding counts and co-occurrence cannot replace configuration analysis. Word edits do not update QT.')}</p></details><div id="export-result" class="io-export-result" role="status" aria-live="polite"><div class="io-result-empty">${icon('down')}<span>${QT('exportChoose')}</span></div></div><p class="io-privacy">${QT('exportPrivate')}</p>`);
   $('#dialog').dataset.workflow='export';
   refreshTranscriptScope();
   if(lastTranscriptExport?.projectId===state.project.id)checkTranscriptVersion();
@@ -1687,14 +1705,11 @@ async function action(button) {
     if(file){if(file.size>8_000_000)throw new Error('File exceeds 8 MB.'); if(/\.docx$/i.test(file.name)){const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));body.docx_base64=btoa(binary);delete body.text;}else if(/\.txt$/i.test(file.name)){body.text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());}else throw new Error('Choose a TXT or DOCX file.');}
     const d=await api(projectUrl('documents'),body);importedDocument(d.id);closeModal();await refresh();focusImportedDocument();toast(QT('interviewImported','Interview imported.'));return;
   }
-  if(a==='save-code'){await api(projectUrl(QT('codeCount','codes')),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null});closeModal();await refresh();toast(QT('codeSaved','Code saved.'));return;}
+  if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null,research_role:$('#code-role').value||null});closeModal();await refresh();toast(QT('codeSaved','Code saved.'));return;}
   if(a==='code-save'){
     const id=button.dataset.id;
-    await api(projectUrl('code-update'),{id,changes:{
-      name:$('#ec-name').value, definition:$('#ec-definition').value, color:$('#ec-color').value,
-      parent_id:$('#ec-parent').value||null, status:$('#ec-status').value, memo:$('#ec-memo').value,
-      inclusion:$('#ec-inclusion').value, exclusion:$('#ec-exclusion').value,
-      anchor_examples:$('#ec-anchors').value.split('\n').map(x=>x.trim()).filter(Boolean)}});
+    const changes=codeEditChanges(codeEditValues(),$('#dialog').codeEditBaseline);
+    if(Object.keys(changes).length)await api(projectUrl('code-update'),{id,changes});
     closeModal();await refresh();toast(QT('codeUpdated','Code updated.'));return;
   }
   if(a==='code-delete'){

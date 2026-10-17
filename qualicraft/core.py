@@ -70,6 +70,12 @@ def validate_reading_capacity(project):
             "The project exceeds the reading-state size limit; changes were not saved")
 
 CODE_STATUSES = ("emergent", "provisional", "final")
+RESEARCH_ROLES = ("theme", "category", "code")
+
+
+def validate_research_role(value):
+    require(value is None or isinstance(value, str) and value in RESEARCH_ROLES,
+            "Choose Theme, Category, Code or leave the research role unassigned")
 
 # Capability blocks. The core is always on; everything here is opt-in, so a
 # researcher assembles the tool they need instead of getting everything at once.
@@ -263,7 +269,8 @@ def update_document(project, document_id, changes):
     return doc
 
 
-def add_code(project, name, definition="", color=None, parent_id=None):
+def add_code(project, name, definition="", color=None, parent_id=None, research_role=None):
+    validate_research_role(research_role)
     name = string(name, "Code name", 160)
     # Uniqueness is scoped to the parent, not the whole codebook. Two themes
     # each having a "Challenges" sub-code is ordinary qualitative practice, and
@@ -278,15 +285,19 @@ def add_code(project, name, definition="", color=None, parent_id=None):
     code = {"id": uid(), "name": name, "definition": definition, "color": color, "parent_id": parent_id,
             "memo": "", "anchor_examples": [], "inclusion": "", "exclusion": "", "status": "final",
             "order": len([c for c in project["codes"] if c.get("parent_id") == parent_id])}
+    if research_role is not None:code["research_role"] = research_role
     project["codes"].append(code)
-    event(project, "code_create", code_id=code["id"], name=name, parent_id=parent_id)
+    event(project, "code_create", code_id=code["id"], name=name, parent_id=parent_id,
+          **({"research_role": research_role} if research_role is not None else {}))
     return code
 
 
 def update_code(project, code_id, changes):
     """Rename, redefine, recolour, re-parent or annotate a single code."""
     require(isinstance(changes, dict), "The code changes are invalid")
+    if "research_role" in changes:validate_research_role(changes["research_role"])
     code = find(project["codes"], code_id)
+    previous_role = code.get("research_role")
     if "name" in changes:
         name = string(changes["name"], "Code name", 160)
         require(not any(c["id"] != code_id and c["name"].casefold() == name.casefold() for c in project["codes"]),
@@ -328,7 +339,11 @@ def update_code(project, code_id, changes):
             require(parent_id not in descendants(project["codes"], code_id),
                     "A code cannot be moved under one of its own descendants")
         code["parent_id"] = parent_id
-    event(project, "code_update", code_id=code_id, fields=sorted(changes))
+    if "research_role" in changes:
+        if changes["research_role"] is None:code.pop("research_role", None)
+        else:code["research_role"] = changes["research_role"]
+    event(project, "code_update", code_id=code_id, fields=sorted(changes),
+          **({"research_role_before": previous_role, "research_role_after": code.get("research_role")} if "research_role" in changes else {}))
     return code
 
 
@@ -523,6 +538,9 @@ def validate_project(project):
         require(isinstance(c.get("color"), str) and bool(re.fullmatch(r"#[0-9a-fA-F]{6}", c["color"])), "The code color is invalid")
         require(isinstance(c.get("definition"), str) and len(c["definition"]) <= 5000, "The code definition is invalid")
         require(c.get("status") in CODE_STATUSES, "The code status is invalid")
+        if "research_role" in c:
+            require(isinstance(c["research_role"], str) and c["research_role"] in RESEARCH_ROLES,
+                    "The saved research role is invalid")
         for field, limit in (("memo", 20000), ("inclusion", 5000), ("exclusion", 5000)):
             require(isinstance(c.get(field, ""), str) and len(c[field]) <= limit, f"The code {field} is invalid")
         examples = c.get("anchor_examples", [])

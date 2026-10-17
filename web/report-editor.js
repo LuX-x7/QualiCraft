@@ -47,7 +47,7 @@
     function add(codeId) {
       if(!codeId)return;
       const row={id:crypto.randomUUID().replaceAll('-',''),theme:'',category:'',code_ids:[codeId],interpretation:'',evidence_ids:[]};
-      if(e.useHierarchy){const by=new Map(env.project.codes.map(c=>[c.id,c]));const path=[];let n=by.get(codeId);while(n){path.unshift(n.name);n=by.get(n.parent_id);}row.theme=path.length>1?path[0]:'';row.category=path.slice(1,-1).join(' > ');}
+      if(e.useHierarchy)Object.assign(row,startingLabels(env.project.codes,codeId));
       e.draft.rows.push(row);e.activeRow=row.id;dirty();
     }
     async function lockedSave(action) {
@@ -107,5 +107,11 @@
     render();
   }
   window.addEventListener('beforeunload',event=>{if(editor?.dirty||editor?.saving){event.preventDefault();event.returnValue='';}});
-  window.QTReport={open,blank};
+  function startingLabels(codes,codeId) {
+    const by=new Map(codes.map(c=>[c.id,c])),path=[],seen=new Set();let n=by.get(codeId);
+    while(n&&!seen.has(n.id)){seen.add(n.id);path.unshift(n);n=by.get(n.parent_id);}
+    if(path.some(c=>['theme','category','code'].includes(c.research_role)))return {theme:path.filter(c=>c.research_role==='theme').map(c=>c.name).join(' > '),category:path.filter(c=>c.research_role==='category').map(c=>c.name).join(' > ')};
+    return {theme:path.length>1?path[0].name:'',category:path.slice(1,-1).map(c=>c.name).join(' > ')};
+  }
+  window.QTReport={open,blank,startingLabels};
 })();

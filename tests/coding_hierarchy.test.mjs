@@ -53,3 +53,22 @@ test('all presentation paths and highlight splits leave saved records unchanged'
 test('imported codings are labelled by saved provenance, never inferred as AI-reviewed',()=>{const w=workspace();assert.equal(w.run("codingSourceLabel({source:'imported'})"),'IMPORTED');assert.equal(w.run("codingSourceLabel({source:'ai_reviewed'})"),'AI · REVIEWED');assert.equal(w.run("codingSourceLabel({source:'manual'})"),'HUMAN')})
 
 test('identical display paths expose full IDs without renaming stored codes',()=>{const w=workspace();w.run("state.project.codes.push({id:'another',name:'Same',parent_id:'branch',color:'#ff0000',status:'final'})");assert.equal(w.run("codeIdentity(state.project.codes.find(c=>c.id==='leaf'))"),'Group <one> > Parent > Same · leaf');assert.equal(w.run("codeIdentity(state.project.codes.find(c=>c.id==='another'))"),'Group <one> > Parent > Same · another');assert.equal(w.run("state.project.codes.find(c=>c.id==='leaf').name"),'Same')})
+
+test('saved research roles take precedence over tree depth without changing parentage or counts',()=>{
+ const w=workspace(),before=w.json('[...codeCounts().total]');
+ w.run("state.project.codes[0].research_role='code';state.project.codes[1].research_role='theme';state.project.codes[2].research_role='category'");
+ assert.equal(w.run('codeRole(state.project.codes[0])'),'Code');
+ assert.equal(w.run('codeRole(state.project.codes[1])'),'Theme');
+ assert.equal(w.run('codeRole(state.project.codes[2])'),'Category');
+ assert.deepEqual(w.json('[...codeCounts().total]'),before);
+ const html=w.run('marginHtml(state.project.annotations)');assert.match(html,/Category/);assert.match(html,/Theme/);
+ assert.equal(w.run('codePath(state.project.codes[2])'),'Group <one> > Parent > Same');
+ w.run('delete state.project.codes[1].research_role');assert.equal(w.run('codeRole(state.project.codes[1])'),'Parent code');
+})
+
+test('a role-only edit submits no untouched colour, name or method fields',()=>{
+ const w=workspace();w.run("formBefore={name:'Same',color:'#009e73',definition:'',research_role:null};formAfter={...formBefore,research_role:'category'}");
+ assert.deepEqual(w.json('codeEditChanges(formAfter,formBefore)'),{research_role:'category'});
+ assert.deepEqual(w.json('codeEditChanges(formBefore,formBefore)'),{});
+ w.run("formAfter.name='Renamed'");assert.deepEqual(w.json('codeEditChanges(formAfter,formBefore)'),{name:'Renamed',research_role:'category'});
+})

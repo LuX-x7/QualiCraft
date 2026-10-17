@@ -42,7 +42,11 @@ def freeze(project, document_ids=None, include_memos=False, role_labels='saved')
             seen.add(node['id'])
             item = {'id': node['id'], 'name': node['name'], 'parent_id': node.get('parent_id'),
                     'role': 'Group' if node['id'] in parents else 'Code'}
-            if role_labels == 'theme-category-code' and node['id'] in parents:
+            if node.get('research_role') is not None:
+                require(node['research_role'] in ('theme','category','code'), 'The saved research role is invalid.')
+                item['role']=node['research_role'].title()
+                item['research_role']=node['research_role']
+            elif role_labels == 'theme-category-code' and node['id'] in parents:
                 item['role'] = 'Category' if node.get('parent_id') else 'Theme'
             if include_memos: item['memo'] = node.get('memo', '')
             path.insert(0, item)
@@ -172,14 +176,24 @@ def html_export(data):
     policy = f"default-src 'none'; script-src 'sha256-{digest}'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; connect-src 'none'"
     nav = ''.join(f'<a href="#{d["key"]}">{escaped(d["name"])}</a>' for d in data['documents'])
     roles = data.get('role_labels', 'saved')
-    role_note = ('Theme / Category / Code are display labels chosen by the exporter: grouped roots, inner groups and leaves. Saved ancestry is unchanged.' if roles == 'theme-category-code' else 'Group / Code are the saved structural labels. Theme / Category display labels can be chosen at export.')
-    legend = '<div class="role-key"><span><i class="theme"></i>THEME</span><span><i class="category"></i>CATEGORY</span><span><i></i>CODE</span></div>' if roles == 'theme-category-code' else '<div class="role-key"><span>GROUP → SAVED CHILDREN → CODE</span></div>'
+    role_note = role_description(data)
+    legend = '<div class="role-key"><span><i class="theme"></i>THEME</span><span><i class="category"></i>CATEGORY</span><span><i></i>CODE</span></div>' if roles == 'theme-category-code' or has_saved_roles(data) else '<div class="role-key"><span>GROUP → SAVED CHILDREN → CODE</span></div>'
     output = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="{policy}"><title>Coded transcript</title><style>{CSS}</style></head><body><header><small>QT / SOURCE NOTEBOOK</small><h1>Coded transcript</h1><p>{escaped(data['project_name'])}</p><p class="meta">{len(data['documents'])} documents · {data['association_count']} saved associations · {data['range_count']} source ranges</p>{legend}<p class="notice">Read the source on the left. Follow its coding tree on the right.</p><details class="export-meta"><summary>Export details · {escaped(data['generated_at'][:10])} · {data['version'][:12]}</summary><p class="notice">{role_note} {NOTICE} Select a highlight or tree reference to trace the source. Repeated A labels identify the same saved association.</p><p class="meta">Generated {escaped(data['generated_at'])}<br>Project {escaped(data['project_id'])} · Schema v{data['schema_version']}<br>Evidence version SHA256 {data['version']}<br>Memos {"included" if data['include_memos'] else "excluded"}</p></details><nav aria-label="Documents">{nav}</nav><p class="selected-path" id="selected-path" role="status" aria-live="polite"></p></header><main>{''.join(parts) or '<p>No documents in this project.</p>'}</main><template id="frozen-evidence">{escaped(canonical(data))}</template><script>{SCRIPT}</script></body></html>'''
     return output.encode('utf-8')
 
 
 def note(item):
     return f'<p class="note">Memo: {escaped(item["memo"])}</p>' if item.get('memo') else ''
+
+
+def has_saved_roles(data):
+    return any('research_role' in n for d in data['documents'] for a in d['annotations'] for n in a['path'])
+
+
+def role_description(data):
+    fallback=('Unassigned grouped roots / inner groups / leaves use the chosen Theme / Category / Code display preset.' if data.get('role_labels')=='theme-category-code' else 'Unassigned nodes use structural Group / Code labels.')
+    if has_saved_roles(data):return 'Saved researcher roles take precedence. '+fallback+' Ancestry is unchanged.'
+    return ('Theme / Category / Code are display labels chosen by the exporter: grouped roots, inner groups and leaves. Saved ancestry is unchanged.' if data.get('role_labels')=='theme-category-code' else 'Group / Code are structural labels. Theme / Category display labels can be chosen at export.')
 
 
 W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
@@ -256,7 +270,7 @@ def docx_export(data):
     p(body, data['project_name'], 'Subtitle')
     p(body, f"Full source · {len(data['documents'])} document(s) · {data['association_count']} associations · {data['range_count']} distinct source ranges", 'Meta')
     p(body, 'Read the source on the left. Follow its saved coding tree on the right.', size=21)
-    p(body, ('Display labels chosen at export: Theme for grouped roots, Category for inner groups, Code for leaves.' if data.get('role_labels') == 'theme-category-code' else 'Group and Code preserve the saved structural labels.') + ' Memos ' + ('included.' if data['include_memos'] else 'excluded.') + ' Full record details follow the transcript.', 'Meta')
+    p(body, role_description(data) + ' Memos ' + ('included.' if data['include_memos'] else 'excluded.') + ' Full record details follow the transcript.', 'Meta')
     p(body, 'Verbatim source is italic. Explicit questions retain their original markers and are bold italic. Paragraph labels separate the source blocks.', 'Meta')
     if not data['documents']: p(body, 'No documents in this project.')
     for d in data['documents']:
