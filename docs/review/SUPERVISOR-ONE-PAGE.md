@@ -1,6 +1,6 @@
 # QT · Supervisor review — 17 October 2026
 
-**Current status:** the submitted assignment uses Qualitative Content Analysis. The owner retains three final product paths: TA, Content Analysis and a separately developed Comparative Analysis. The template and frozen first-case result have been compared; the second case passes source/count/plot/export checks in isolation. Interpretation still needs researcher review, and the second case was already exposed to the reference. UX40-01 remains open. Report editing, full method-specific workflows and 100-file capacity are not yet implemented. Windows deferred/unverified; no push/deployment.
+**Current status:** the submitted assignment uses Qualitative Content Analysis. The owner retains three final product paths: TA, Content Analysis and a separately developed Comparative Analysis. The template and frozen first-case result have been compared; the second case passes source/count/plot/export checks in isolation. Interpretation still needs researcher review, and the second case was already exposed to the reference. UX40-01 remains open. A new required deliverable is the complete coded transcript with precise highlights and an adjacent saved Code/Category/Theme tree, for narrative writing. It is specified in UX-42, not implemented. Report editing, full method-specific workflows and 100-file capacity also remain open. Windows deferred/unverified; no push/deployment.
 
 ## Demonstration order · about 12–15 minutes
 
@@ -14,7 +14,7 @@
 
 Does the new visual hierarchy communicate a simple, traceable workflow? Is the distinction between a saved coding, a source range and a manual reading mark clear? Is the network useful at full-theme density, or should a focused theme view be preferred? Selected names/source paths remain available; the phone overview does not show every node name at once.
 
-Remaining: reconcile meaning-unit references, quotation versions and interpretive differences in the private report; implement an editable report without losing the four exports; develop and verify the three method paths and capacity; UX40-01 leaf-name/Enter regression and recheck; owner/supervisor acceptance; VoiceOver, system reduced motion and operating-system download feedback; other phone paths not covered by this report; device metadata and formal release gates. The five preserved UX-29 recordings predate reading controls, so demonstrate those controls live. Technical checks do not sign off aesthetics, accessibility on untested devices or research interpretation.
+Remaining: reconcile meaning-unit references, quotation versions and interpretive differences in the private report; implement the full coded-transcript/adjacent-tree export and editable report without losing the four exports; develop and verify the three method paths and capacity; UX40-01 leaf-name/Enter regression and recheck; owner/supervisor acceptance; VoiceOver, system reduced motion and operating-system download feedback; other phone paths not covered by this report; device metadata and formal release gates. The five preserved UX-29 recordings predate reading controls, so demonstrate those controls live. Technical checks do not sign off aesthetics, accessibility on untested devices or research interpretation.
 
 ## Evidence and local access
 
