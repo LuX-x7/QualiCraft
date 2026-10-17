@@ -783,3 +783,14 @@ button:disabled{cursor:default}
  .overview-heading{display:block}.overview-heading>span{font-size:11px}
  .overview-source-detail{padding:10px}
 }
+
+/* Coded transcript export keeps full-document scope explicit on every screen. */
+.coded-export{margin:24px 0 16px;padding:16px;border:1px solid var(--line,#bbc0c5);min-width:0}
+.coded-export legend{font-weight:650;padding:0 8px}
+.coded-export p{overflow-wrap:anywhere}
+.coded-export select{max-width:100%}
+.coded-document-list{max-height:200px;overflow:auto;border:1px solid var(--line,#bbc0c5);padding:10px}
+.coded-document-list label,.coded-memo-option{display:flex;gap:10px;align-items:flex-start;margin:8px 0;overflow-wrap:anywhere}
+.coded-document-list input,.coded-memo-option input{width:auto;flex:none;margin-top:4px}
+.coded-export-actions{display:flex;gap:10px;flex-wrap:wrap}
+#coded-version-status{font-size:14px;overflow-wrap:anywhere}

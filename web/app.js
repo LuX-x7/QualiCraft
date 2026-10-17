@@ -1499,11 +1499,41 @@ function showProjects() {
   modal(QT('projectsTitle','Research projects'),`${state.projects.length?`<label class="field">${QT('existingProjects','Existing projects')}<select id="modal-project-select">${state.projects.map(p=>`<option value="${p.id}" ${p.id===state.project?.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><button data-action="switch-project">${QT('openProject','Open project')}</button>`:''}<hr class="project-divider"><label class="field">${QT('newProjectName','New project name')}<input id="new-project-name" placeholder="${QT('untitledProject','Untitled research project')}" maxlength="160"></label><div class="project-dialog-actions"><button class="primary" data-action="new-project"${demoLock()}>${QT('createProject','Create project')}</button>${state.config.bologna_example_available?`<button data-action="bologna-project"${demoLock()}>${QT('startExample','Try Bologna')}</button>`:''}<button data-action="restore-pick"${demoLock()}>${QT('restoreProject','Restore project JSON')}</button></div><details class="project-more"><summary>${QT('moreProjectSources','Other example sources')}</summary><div class="option-grid"><button class="option-card" data-action="grounded-project"><strong>${QT('groundedProject','Tian 2021 · software architecture interviews')}</strong><span>${QT('groundedDesc','Import 8 semi-structured practitioner interviews. IP1–IP2 pair Chinese responses with English translations; IP3–IP8 are in English.')}</span></button><button class="option-card" data-action="demo-project"><strong>${QT('demoProject','Fictional care interview')}</strong><span>${QT('demoDesc','Explore a fictional transcript, sample coding, and fixed review suggestions.')}</span></button><button class="option-card" data-action="benchmark-project"><strong>${QT('benchmarkProject','TU Delft · blind workspace')}</strong><span>${QT('benchmarkDesc','Import 7 transcripts and 54 codes, without reference annotations.')}</span></button><button class="option-card" data-action="reference-project"><strong>${QT('referenceProject','TU Delft · researcher reference')}</strong><span>${QT('referenceDesc','Explore 377 researcher annotations for comparison. These are not model predictions.')}</span></button></div><p>${QT('guideNote','Guide collections are imported from the local Guide directory and retain source provenance in the project audit trail.')}</p></details><input id="restore-file" type="file" accept=".json" hidden>`,`<button data-action="workspace-home">${QT('backStart','Back to start')}</button><button data-action="close">${QT('close','Close')}</button>`);
 }
 
+let lastTranscriptExport=null;
+Object.assign(_T.zh,{ctTitle:'编码原文对照',ctIntro:'完整正文、精确高亮与已保存的编码树。Group／Code 只描述结构，不自动认定 Theme／Category 角色。',ctScope:'导出文档范围',ctCurrentDoc:'当前文档',ctAll:'全部文档',ctSelected:'选择多份文档',ctFullText:'完整正文，包含未编码语境',ctMemos:'包含文档、标注和编码备忘录',ctPrivate:'文件包含完整访谈正文，请私有保存。不含待采纳建议或阅读标记。',ctHtml:'下载 HTML',ctWord:'下载可编辑 Word',ctChecking:'正在核对旧导出版本…',ctCurrent:'编码证据版本一致。',ctStale:'证据已变化，请重新导出；旧文件保持原样。',ctCheckFailed:'无法核对旧导出，请检查范围并重新导出。',ctCheck:'核对上次导出版本',ctChoose:'请至少选择一份文档。',ctFrozen:'这是正文和编码树的冻结副本，项目编辑不会更新已有文件。'});
+function transcriptSelection() {
+  const scope=$('#coded-scope').value;
+  return scope==='all'?null:scope==='current'?[state.docId]:[...document.querySelectorAll('[name="coded-document"]:checked')].map(el=>el.value);
+}
+function transcriptParams(format,ids,memos) {
+  const query=new URLSearchParams({format,memos:memos?'1':'0'});
+  if(ids!==null)ids.forEach(id=>query.append('document_id',id));
+  return query.toString();
+}
+function refreshTranscriptScope() {
+  const ids=transcriptSelection(),all=ids===null,chosen=all?state.project.documents:state.project.documents.filter(d=>ids.includes(d.id));
+  $('#coded-document-list').hidden=$('#coded-scope').value!=='selected';
+  $('#coded-scope-summary').textContent=QT('ctFullText','Full text, including uncoded context')+' · '+chosen.length+' · '+chosen.map(d=>d.name).join(' / ');
+  document.querySelectorAll('[data-action="download-coded"]').forEach(button=>button.disabled=!chosen.length);
+}
+async function checkTranscriptVersion() {
+  const output=$('#coded-version-status'),saved=lastTranscriptExport;
+  if(!output||!saved||saved.projectId!==state.project.id)return;
+  output.textContent=QT('ctChecking','Checking saved export version…');
+  try{
+    const response=await fetch(projectUrl('export')+'?'+transcriptParams('coded-version',saved.ids,saved.memos),{headers:{'X-QualiCraft-Token':state.token}});
+    if(!response.ok)throw new Error('The saved export scope cannot be checked.');
+    const data=await response.json();
+    if(output.isConnected)output.textContent=saved.filename+' · '+(data.version===saved.version?QT('ctCurrent','Current evidence version.'):QT('ctStale','Evidence changed. Re-export to update; the old file is unchanged.'));
+  }catch(_){if(output.isConnected)output.textContent=QT('ctCheckFailed','Could not verify the old export. Check its scope and export again.');}
+}
 function showExport() {
   const formats=[['json','JSON','exportProjectName','exportProjectUse'],['csv','CSV','exportCodingsName','exportCodingsUse'],['matrix','CSV','exportMatrixName','exportMatrixUse'],['methods','MD','exportMethodsName','exportMethodsUse']];
   modal(QT('exportTitle'),`<p class="io-intro">${QT('exportShort')}</p><p class="reading-marks-help">${QT('markExport','JSON v5 includes project reading marks. Older QT versions cannot open v5. Reading-only changes enter the next research-edit snapshot; export JSON to keep them now.')}</p><div class="option-grid io-export-options">${formats.map(([format,ext,title,use])=>`<button class="option-card io-export-card" data-action="download" data-format="${format}"><span class="io-file-icon" aria-hidden="true">${icon('doc')}<b>${ext}</b></span><span><strong>${QT(title)}</strong><span>${QT(use)}</span></span><span class="io-download-icon" aria-hidden="true">↓</span></button>`).join('')}</div>
-    <div id="export-result" class="io-export-result" role="status" aria-live="polite"><div class="io-result-empty">${icon('down')}<span>${QT('exportChoose')}</span></div></div><p class="io-privacy">${QT('exportPrivate')}</p>`);
+    <fieldset class="coded-export"><legend>${QT('ctTitle','Coded transcript')}</legend><p>${QT('ctIntro','Full source text, precise highlights and the saved code tree. Group / Code labels describe structure; Theme / Category roles are not inferred.')}</p><label class="field" for="coded-scope">${QT('ctScope','Documents to export')}<select id="coded-scope">${doc()?`<option value="current">${QT('ctCurrentDoc','Current document')} · ${esc(doc().name)}</option>`:''}<option value="all">${QT('ctAll','All documents')}</option><option value="selected">${QT('ctSelected','Choose documents')}</option></select></label><div id="coded-document-list" class="coded-document-list" hidden>${state.project.documents.map(d=>`<label><input type="checkbox" name="coded-document" value="${esc(d.id)}" ${d.id===state.docId?'checked':''}>${esc(d.name)}</label>`).join('')}</div><p id="coded-scope-summary" class="tiny-label"></p><label class="coded-memo-option"><input id="coded-memos" type="checkbox">${QT('ctMemos','Include document, coding and code memos')}</label><p class="tiny-label">${QT('ctPrivate','Contains full interview text. Keep the downloaded files private. Pending suggestions and reading marks are excluded.')}</p><div class="coded-export-actions"><button data-action="download-coded" data-format="coded-html">${QT('ctHtml','Download HTML')}</button><button data-action="download-coded" data-format="coded-docx">${QT('ctWord','Download editable Word')}</button></div><p id="coded-version-status" role="status" aria-live="polite"></p>${lastTranscriptExport?.projectId===state.project.id?`<button class="link" data-action="check-coded-export">${QT('ctCheck','Check previous export version')}</button>`:''}</fieldset><div id="export-result" class="io-export-result" role="status" aria-live="polite"><div class="io-result-empty">${icon('down')}<span>${QT('exportChoose')}</span></div></div><p class="io-privacy">${QT('exportPrivate')}</p>`);
   $('#dialog').dataset.workflow='export';
+  refreshTranscriptScope();
+  if(lastTranscriptExport?.projectId===state.project.id)checkTranscriptVersion();
 }
 function exportResultHtml(filename,bytes,text) {
   const excerpt=cp(text.split('\n').slice(0,8).join('\n')).slice(0,1000).join('');
@@ -1516,6 +1546,23 @@ async function createProject(body) {
 }
 async function action(button) {
   const a=button.dataset.action;
+  if(a==='check-coded-export')return checkTranscriptVersion();
+  if(a==='download-coded'){
+    const ids=transcriptSelection();if(ids!==null&&!ids.length)throw new Error(QT('ctChoose','Choose at least one document.'));
+    const memos=$('#coded-memos').checked,projectId=state.project.id,result=$('#export-result');
+    button.disabled=true;result.textContent=QT('exportPreparing');
+    try{
+      const response=await fetch(projectUrl('export')+'?'+transcriptParams(button.dataset.format,ids,memos),{headers:{'X-QualiCraft-Token':state.token}});
+      if(!response.ok)throw new Error((await response.json()).error||'Export failed.');
+      const blob=await response.blob(),version=response.headers.get('X-QT-Evidence-Version'),filename='qt-coded-transcript-'+version.slice(0,12)+(button.dataset.format==='coded-html'?'.html':'.docx');
+      const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      lastTranscriptExport={projectId,ids,memos,version,filename};
+      if(result.isConnected)result.innerHTML=exportResultHtml(filename,blob.size,'Evidence SHA256 '+version+'\n'+QT('ctFrozen','Frozen source and coding tree. Existing files do not update after editing.'));
+      toast(QT('exportSent')+': '+filename);
+    }catch(error){if(result.isConnected)result.textContent='';throw error;}
+    finally{if(button.isConnected)refreshTranscriptScope();}
+    return;
+  }
   if(state.config.public_demo&&WRITE_ACTIONS.has(a)){toast(DEMO_LOCK(),true);return;}
   if(a==='close'){closeModal();return;}
   if(a==='workspace-home'){closeModal();showWorkspaceStart();return;}
@@ -1725,6 +1772,7 @@ document.addEventListener('click',e=>{
   const state_=brick.querySelector('.brick-state'); if(state_) state_.textContent=on?QT('added','Added'):QT('add','Add');
 });
 document.addEventListener('change',async e=>{
+  if(e.target.id==='coded-scope'||e.target.name==='coded-document'){refreshTranscriptScope();return;}
   if(e.target.dataset&&e.target.dataset.plot){state.plotOptions[e.target.dataset.plot]=e.target.value;render();return;}
 
   try{

@@ -16,7 +16,7 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import analyze, ingest, plotting
+from . import analyze, ingest, plotting, transcript
 from .ai import Analyzer
 from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
@@ -161,6 +161,19 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                                               "status": store.backup_status()})
                         if len(parts) == 4 and parts[3] == "export":
                             fmt = urllib.parse.parse_qs(parsed.query).get("format", ["json"])[0]
+                            if fmt in {"coded-html", "coded-docx", "coded-version"}:
+                                query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+                                memo = query.get('memos', ['0'])
+                                require(memo in (['0'], ['1']), 'Memo selection is invalid.')
+                                frozen = transcript.freeze(project, query.get('document_id'), memo == ['1'])
+                                headers = [('X-QT-Evidence-Version', frozen['version']),
+                                           ('X-QT-Exported-At', frozen['generated_at'])]
+                                if fmt == 'coded-version':
+                                    return self.send({'version': frozen['version']}, extra_headers=headers)
+                                suffix = 'html' if fmt == 'coded-html' else 'docx'
+                                payload = transcript.html_export(frozen) if suffix == 'html' else transcript.docx_export(frozen)
+                                mime = 'text/html; charset=utf-8' if suffix == 'html' else 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                                return self.send(payload, mime, filename=f"qt-coded-transcript-{frozen['version'][:12]}.{suffix}", extra_headers=headers)
                             if fmt in {"csv", "matrix"}:
                                 return self.send(csv_export(project, fmt == "matrix"), "text/csv; charset=utf-8", filename=f"qualicraft-{fmt}.csv")
                             if fmt == "methods":
