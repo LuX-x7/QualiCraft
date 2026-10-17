@@ -30,6 +30,9 @@ def main():
   stage='.story-stage--sequence'
   def visit(scene):
    page.locator('#story-'+scene+' .story-step-title').click();page.mouse.move(1430,65);page.wait_for_selector(stage+'[data-scene="'+scene+'"]')
+  def network_options(tab):
+   options=tab.locator('.relationship-settings')
+   if options.count() and options.get_attribute('open') is None:options.locator('summary').click()
   def navigate(kind):
    scene='plotting' if kind=='frequency' else 'plotting-'+kind
    visit(scene);page.locator(f'[data-story-art="{scene}"]').get_by_role('button',name='Explore counts',exact=True).click()
@@ -81,7 +84,7 @@ def main():
   root=saved[0]['code_path'][0]['id'];candidate=next(e for e in saved if e['code_path'][0]['id']==root and len(e['code_path'])>1);code_id='code:'+candidate['code_id']
   def hover_and_drag():
    visit('network')
-   page.get_by_label('Network theme',exact=True).select_option(root);page.get_by_label('Network node',exact=True).select_option(code_id)
+   network_options(page);page.get_by_label('Network theme',exact=True).select_option(root);page.get_by_label('Network node',exact=True).select_option(code_id)
    circle=page.locator(f'[data-network-node="{code_id}"] .force-node-dot');circle.scroll_into_view_if_needed();page.mouse.move(1430,65);page.evaluate('window.__qtClicks=0');before=page.evaluate('scrollY');circle.hover()
    assert page.locator(f'[data-network-node="{code_id}"]').get_attribute('aria-pressed')=='true';assert page.evaluate('window.__qtClicks')==0 and abs(page.evaluate('scrollY')-before)<1
    aid=page.locator('[data-story-art="network"] .network-evidence').get_attribute('data-selected-annotation');assert page.locator('[data-story-art="network"] .network-evidence mark').inner_text()==by_annotation[aid]['quote']
@@ -92,7 +95,7 @@ def main():
   check('real hover reads saved words and mouse drag moves a circular node',hover_and_drag)
   def keyboard():
    visit('network')
-   page.get_by_label('Network node',exact=True).select_option(code_id);node=page.locator(f'[data-network-node="{code_id}"]');node.focus();before=page.locator('[data-network-node^="passage:"]').count();node.press('Enter')
+   network_options(page);page.get_by_label('Network node',exact=True).select_option(code_id);node=page.locator(f'[data-network-node="{code_id}"]');node.focus();before=page.locator('[data-network-node^="passage:"]').count();node.press('Enter')
    after=page.locator('[data-network-node^="passage:"]').count();assert before!=after
    node.press('Home');assert page.evaluate('document.activeElement.dataset.networkNode').startswith('theme:')
    page.keyboard.press('End');assert page.evaluate('document.activeElement.hasAttribute("data-network-node")');page.keyboard.press('ArrowLeft');assert page.evaluate('document.activeElement.getAttribute("aria-pressed")')=='true'
@@ -108,13 +111,13 @@ def main():
    assert tab.locator('.relationship-force-svg').is_visible();assert tab.evaluate('innerWidth')==390;assert tab.evaluate('document.documentElement.scrollWidth-innerWidth')==0
    snapshot(tab,'analysis','analysis-path-phone');snapshot(tab,'network','network-phone-overview');snapshot(tab,'coding','coding-phone')
    tab.locator('[data-story-art="coding"] .coding-code').tap();assert tab.locator('[data-story-art="coding"] .coding-code').get_attribute('aria-pressed')=='true'
-   tab.get_by_label('Network theme',exact=True).select_option(root);tab.get_by_label('Network node',exact=True).select_option(code_id)
+   network_options(tab);tab.get_by_label('Network theme',exact=True).select_option(root);tab.get_by_label('Network node',exact=True).select_option(code_id)
    reveal=tab.get_by_role('button',name='Show source nodes',exact=True)
    if reveal.count():reveal.tap()
    sources=tab.locator('[data-network-node^="passage:"]');assert sources.count()>0
    source_id=sources.first.get_attribute('data-network-node');tab.get_by_label('Network node',exact=True).select_option(source_id);aid=source_id.removeprefix('passage:');assert tab.locator('[data-story-art="network"] .network-evidence mark').inner_text()==by_annotation[aid]['quote']
    tab.get_by_role('button',name='Zoom in network',exact=True).tap();tab.get_by_role('button',name='Zoom in network',exact=True).tap()
-   viewport=tab.locator('.relationship-viewport');viewport.scroll_into_view_if_needed();box=viewport.bounding_box();pan_y=max(80,box['y']+20);client=phone_ctx.new_cdp_session(tab)
+   viewport=tab.locator('.relationship-viewport');viewport.scroll_into_view_if_needed();box=viewport.bounding_box();pan_y=max(100,box['y']+box['height']/2);client=phone_ctx.new_cdp_session(tab)
    for kind,x in [('touchStart',box['x']+box['width']-25),('touchMove',box['x']+box['width']-100),('touchMove',box['x']+25),('touchEnd',None)]:
     client.send('Input.dispatchTouchEvent',{'type':kind,'touchPoints':[] if x is None else [{'x':x,'y':pan_y}]});tab.wait_for_timeout(70)
    pan=viewport.evaluate('(el)=>el.scrollLeft');assert pan>0,{'viewport':box,'y':pan_y,'scrollWidth':viewport.evaluate('(el)=>el.scrollWidth')}
@@ -125,7 +128,7 @@ def main():
   check('phone retains connected nodes, readable source, touch controls and native panning',phone)
   def persistence():
    visit('network')
-   page.get_by_label('Network node',exact=True).select_option(code_id);chosen=page.locator('[data-story-art="network"] .network-evidence').get_attribute('data-selected-annotation');navigate('coverage')
+   network_options(page);page.get_by_label('Network node',exact=True).select_option(code_id);chosen=page.locator('[data-story-art="network"] .network-evidence').get_attribute('data-selected-annotation');navigate('coverage')
    assert page.locator('[data-story-art="analysis"]').count()==1;assert page.locator('[data-story-art="network"] .network-evidence').get_attribute('data-selected-annotation')==chosen
    for width in [1000,1001,1300,1366,1440]:
     page.set_viewport_size({'width':width,'height':768});page.wait_for_timeout(100);assert page.evaluate('document.documentElement.scrollWidth-innerWidth')==0,width

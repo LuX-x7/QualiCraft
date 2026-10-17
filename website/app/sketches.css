@@ -904,3 +904,111 @@
  .lens-overview { grid-row:1; max-width:360px; width:100%; }
  .lens-coordinate p { font-size:20px; }
 }
+
+/* UX-37 · quieter frames; the drawing leads and exact labels stay at text size. */
+.story-stage .record-drawing-heading { display:none; }
+.story-stage .story-art { padding:16px 20px; }
+.story-inline .record-drawing-heading { padding-bottom:12px; margin-bottom:16px; }
+.story-inline .record-drawing-heading > .mono { margin-bottom:6px; }
+.story-inline .record-drawing-heading > strong { font-size:23px; line-height:1.2; }
+.analysis-network > .record-drawing-heading { display:none; }
+.relationship-selection { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; margin:0 0 12px; min-height:30px; }
+.relationship-selection > .mono { color:var(--rust); font-size:11px; }
+.relationship-selection > strong { font:500 18px/1.4 var(--serif); overflow-wrap:anywhere; }
+.analysis-network .relationship-network-key { gap:8px 16px; padding-bottom:10px; font-size:11px; }
+.analysis-network .relationship-viewport { height:clamp(190px,calc(100dvh - 390px),430px); max-height:none; background:var(--paper-raised); }
+.analysis-network .relationship-force-svg { min-width:0; min-height:0; aspect-ratio:auto; }
+.relationship-settings { margin-top:8px; border-block:1px solid var(--rule); }
+.relationship-settings > summary { min-height:44px; padding:12px 0; cursor:pointer; font:12px/20px var(--mono); color:var(--accent); }
+.relationship-settings .relationship-toolbar { gap:12px; margin:4px 0 12px; }
+.relationship-settings .relationship-toolbar select { min-height:44px; margin-top:4px; padding:6px 8px; font-size:16px; }
+.relationship-settings .relationship-help { margin:8px 0 14px; font-size:12px; }
+.analysis-network .relationship-actions { gap:6px; margin-top:8px; }
+.analysis-network .relationship-actions button { padding:6px 10px; font-size:12px; }
+.relationship-settings > summary:focus-visible { outline:2px solid var(--rust); outline-offset:3px; }
+.analysis-network .relationship-readout { margin-top:12px; padding-top:12px; }
+.analysis-network .relationship-readout > strong { font-size:20px; }
+
+.engineering-plate { color:var(--accent-deep); }
+.engineering-caption { color:var(--ink-muted); font-size:11px; line-height:1.5; letter-spacing:.06em; margin:0 0 16px; }
+.engineering-plate .import-journey { min-height:0; grid-template-columns:minmax(0,.72fr) 28px minmax(0,1.4fr); gap:20px; align-items:stretch; }
+.engineering-plate .sketch-object { position:relative; border:1px solid var(--rule); border-radius:2px 5px 3px 2px; padding:14px; text-align:left; background:var(--paper-raised); transition:border-color 160ms ease-out; }
+.engineering-plate .sketch-object > .mono { font-size:11px; margin:0 0 10px; }
+.engineering-plate .sketch-object > strong { display:block; font:500 18px/1.4 var(--serif); overflow-wrap:anywhere; }
+.engineering-plate .sketch-object .sketch-glyph { width:124px; max-width:100%; margin:0 auto 8px; }
+.engineering-plate .sketch-document { min-height:0; transform:none; box-shadow:3px 3px 0 var(--paper-sunken); }
+.engineering-plate .sketch-object:is(:hover,:focus-visible),.engineering-plate .sketch-object.is-current { border-color:var(--rust); }
+.engineering-plate .journey-arrow { align-self:center; text-align:center; font-size:24px; }
+.engineering-note { display:block; color:var(--ink-soft); font:14px/1.5 var(--serif); margin-top:8px; }
+.import-record { display:block; width:100%; color:var(--accent); margin:12px 0 14px; }
+.engineering-outline { stroke:var(--rule-strong); stroke-width:1; stroke-linecap:round; stroke-linejoin:round; }
+.engineering-field { fill:var(--ink-soft); font:14px var(--mono); }
+.engineering-value { fill:var(--accent-deep); font:13px var(--mono); stroke:var(--accent); stroke-width:.4; }
+.engineering-value path { fill:none; stroke-width:1.2; }
+.engineering-joint { fill:var(--paper); stroke:var(--rust); stroke-width:1.4; }
+.engineering-plate .import-quote { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font:18px/1.45 var(--serif); color:var(--ink); }
+.engineering-plate .import-range { margin-top:20px; padding:12px 16px; background:transparent; border-color:var(--rule-strong); }
+.engineering-plate .import-range.is-current { border-color:var(--rust); }
+.engineering-plate .sketch-readout { min-height:56px; font-size:17px; line-height:1.45; margin:12px 0 0; padding-top:12px; border-top:1px solid var(--rule); }
+.engineering-source { color:var(--ink-soft); border-top:1px solid var(--rule); margin-top:12px; }
+.engineering-source > summary { cursor:pointer; min-height:44px; padding:12px 0; font:12px/20px var(--mono); }
+.engineering-source blockquote { font:19px/1.5 var(--serif); margin:12px 0; color:var(--ink); }
+.engineering-source dl { font:12px/1.6 var(--mono); overflow-wrap:anywhere; }
+.engineering-source dd { margin:4px 0 14px; }
+.engineering-source p { font-size:14px; }
+.export-board { position:relative; display:grid; grid-template-columns:minmax(120px,.65fr) minmax(0,1.9fr); align-items:center; gap:36px; }
+.engineering-plate .export-package { position:relative; z-index:1; width:100%; max-width:none; margin:0; text-align:left; }
+.engineering-plate .export-package .sketch-glyph { width:120px; max-width:100%; margin:0 auto 12px; }
+.export-record { border-top:1px solid var(--rule); padding-top:10px; }
+.export-record > .mono { font-size:11px; }
+.export-record > svg { display:block; width:100%; max-width:190px; margin-top:10px; }
+.export-wiring { position:absolute; z-index:0; inset:0; width:100%; height:100%; stroke:var(--rule-strong); stroke-width:1; stroke-linejoin:round; pointer-events:none; }
+.export-wiring circle { fill:var(--paper); stroke:var(--rust); }
+.export-wiring .engineering-trace { stroke:var(--rust); opacity:.6; }
+.engineering-plate .export-files { grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; padding:0; }
+.engineering-plate .export-files::before,.engineering-plate .export-file::before { display:none; }
+.engineering-plate .export-file { z-index:1; gap:6px; min-height:152px; padding:16px 12px 12px; background:var(--paper-raised); font-size:18px; transform:none; transition:border-color 160ms ease-out,background 160ms ease-out; }
+.engineering-plate .export-file:is(:hover,:focus-visible),.engineering-plate .export-file.is-current { transform:none; border-color:var(--rust); background:var(--paper); }
+.engineering-plate .export-file > strong { font-size:17px; }
+.engineering-plate .file-structure { width:100%; max-width:132px; height:66px; margin:0 auto; }
+.export-fields { color:var(--ink-muted); font-size:10px; line-height:1.5; }
+.engineering-plate .sketch-note { font-size:11px; line-height:1.5; }
+.story-art:not(.is-static) .engineering-trace { stroke-dasharray:1; animation:sketch-trace 1000ms ease-out both; }
+@media(max-width:1000px) {
+ .analysis-network .relationship-viewport { height:260px; }
+ .relationship-selection > strong { font-size:18px; }
+ .relationship-settings .relationship-toolbar { flex-direction:column; }
+ .engineering-plate .import-journey { gap:12px; }
+}
+@media(max-width:600px) {
+ .analysis-network .relationship-viewport { height:230px; }
+ .relationship-force-svg .force-node text { display:none; }
+ .relationship-selection { display:block; margin-bottom:14px; }
+ .relationship-selection > .mono { display:block; margin-bottom:5px; }
+ .relationship-selection > strong { display:block; font-size:18px; line-height:1.45; }
+ .engineering-plate .import-journey { grid-template-columns:1fr; }
+ .engineering-plate .sketch-object:not(.sketch-document) { display:grid; grid-template-columns:86px minmax(0,1fr); gap:4px 14px; align-items:center; }
+ .engineering-plate .sketch-object:not(.sketch-document) > .mono { grid-column:1/-1; }
+ .engineering-plate .sketch-object .sketch-glyph { grid-row:2/4; width:86px; margin:0; }
+ .engineering-plate .sketch-object .engineering-note { margin:0; }
+ .export-board { grid-template-columns:1fr; gap:22px; }
+ .engineering-plate .export-package { display:flex; align-items:center; justify-content:center; gap:24px; }
+ .engineering-plate .export-package .sketch-glyph { width:105px; margin:0; }
+ .export-record { width:150px; border:0; padding:0; }
+ .export-wiring { display:none; }
+ .engineering-plate .export-files { gap:12px; }
+ .engineering-plate .export-file { min-height:154px; font-size:18px; }
+ .engineering-plate .export-fields { font-size:10px; }
+ .engineering-plate .import-range { padding:12px; }
+ .engineering-plate .import-range em { font-size:13px; }
+}
+@media(prefers-reduced-motion:reduce) { .engineering-plate *, .story-art .engineering-trace { animation:none!important; transition:none!important; } }
+[data-reduced-motion="true"] .engineering-plate *,[data-reduced-motion="true"] .engineering-trace { animation:none!important; transition:none!important; }
+.import-record { max-width:380px; margin-inline:auto; }
+.engineering-value text { stroke:none; }
+.engineering-plate .sketch-object .sketch-glyph { width:168px; }
+.analysis-network .relationship-readout > .mono:first-child,.analysis-network .relationship-readout > strong { display:none; }
+@media(max-width:600px) {
+ .analysis-network .relationship-selection { position:sticky; top:56px; z-index:2; padding:8px 0; background:var(--paper); border-bottom:1px solid var(--rule); }
+ .engineering-plate .sketch-object .sketch-glyph { width:86px; }
+}
