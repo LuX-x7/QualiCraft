@@ -475,7 +475,7 @@ function focusReadingOverviewSource(){
   updateReadingPosition();
 }
 function keepOverviewPosition(){
-  const start=overviewPreviewNavigation()?readingOverviewNav.start:readingMounted?.start;readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;renderReadingOverview();$('#reader').innerHTML=readerHtml();previewCoding();$('[data-action="reading-overview"]')?.setAttribute('aria-expanded','false');scrollReadingParagraph(start,true);updateReadingPosition();
+  const start=overviewPreviewNavigation()?readingOverviewNav.start:readingMounted?.start;readingSearchReturn=null;readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;renderReadingOverview();$('#reader').innerHTML=readerHtml();previewCoding();$('[data-action="reading-overview"]')?.setAttribute('aria-expanded','false');scrollReadingParagraph(start,true);updateReadingPosition();
   const kept=writeReadingPosition(state.project,doc(),start),message=QT(kept?'ovPositionSaved':'ovStorageUnavailable',kept?'Browser reading position saved.':'Browser storage is unavailable; this position cannot be remembered.');
   announceMark(message);toast(message,!kept);
 }
@@ -483,7 +483,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&readingOverview.ope
 document.addEventListener('click',e=>{const map=e.target.closest?.('#reading-overview-map');if(!map)return;const box=map.getBoundingClientRect(),data=readingOverviewData(state.project,doc()),offset=Math.max(0,Math.min(data.length,(e.clientX-box.left)/Math.max(1,box.width)*data.length));selectReadingOverviewParagraph(overviewParagraphAt(data.paragraphs,offset));});
 document.addEventListener('change',e=>{if(e.target.id==='overview-source-scope'){readingOverview.sourceScope=e.target.value;readingOverview.sourcePage=0;renderReadingOverview();}});
 
-let readingMounted=null,readingFrame=0;
+let readingMounted=null,readingFrame=0,readingSearchReturn=null;
 function readingViewportTop() {
   const pane=$('#document-pane'),dock=$('.reading-dock');if(!pane||!dock)return null;
   const tools=$('.document-tools'),toolsBottom=tools&&getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0;
@@ -494,8 +494,52 @@ function readingParagraph() {
   const paragraphs=[...document.querySelectorAll('#reader .paragraph')];
   return paragraphs.find(p=>p.getBoundingClientRect().bottom>top+2)||paragraphs.at(-1)||null;
 }
+function readingSearchPosition(project=state.project,d=doc()) {
+  const saved=readingSearchReturn;
+  return saved&&project&&d&&saved.key===markKey(project.id,d.id)&&saved.text===d.text&&segments(d.text).some(p=>p.start===saved.start)?saved:null;
+}
+function beginReadingSearch() {
+  const d=doc();if(!readingMounted||!d||readingMounted.projectId!==state.project?.id||readingMounted.document.id!==d.id)return;
+  if(readingSearchPosition())return;
+  let start=readingMounted.readingStart??readReadingPosition(state.project,d)?.start??readingMounted.start;
+  const paragraph=readingParagraph(),box=paragraph?.getBoundingClientRect(),top=readingViewportTop();
+  if(!readingMounted.filtered&&box&&top!==null&&box.top<=top+2&&box.bottom>top+2)start=Number(paragraph.dataset.start);
+  if(!segments(d.text).some(p=>p.start===start))return;
+  // Keep the source-bound return only in memory. It is also usable when browser
+  // storage is blocked; no project record or exported field is introduced.
+  readingSearchReturn={key:markKey(state.project.id,d.id),text:d.text,start};
+  writeReadingPosition(state.project,d,start);
+}
+function readingSearchGesture(event) {
+  // A compositor scroll can retarget wheel/touch events to metadata now under
+  // the pointer. It is still an intentional scroll of the source pane.
+  const region=['wheel','touchmove','touchend'].includes(event.type)?'#document-pane':'#reader';
+  if(!readingMounted||readingMounted.filtered||!event.target.closest?.(region)||event.target.closest('button,input,textarea,select,.document-tools,#reading-overview'))return;
+  if((event.type==='keydown'||event.type==='keyup')&&(!['Home','End','PageUp','PageDown','ArrowUp','ArrowDown',' '].includes(event.key)||event.target.isContentEditable))return;
+  if(document.activeElement?.id==='search')document.activeElement.blur();
+  readingSearchReturn=null;const mounted=readingMounted;
+  const sample=()=>{
+    if(readingMounted!==mounted||mounted.projectId!==state.project?.id||mounted.document.id!==doc()?.id||mounted.document.text!==doc()?.text||mounted.filtered||state.search||state.codeFilter||readingSearchPosition()||document.activeElement?.id==='search')return;
+    mounted.readingScroll=true;updateReadingPosition();
+  };
+  sample();requestAnimationFrame(sample);
+}
+function scheduleSearchReadingRestore(start) {
+  const mounted=readingMounted;
+  requestAnimationFrame(()=>{
+    if(readingMounted!==mounted||mounted.projectId!==state.project?.id||mounted.document.id!==doc()?.id||mounted.document.text!==doc()?.text||state.search||state.codeFilter||state.sourceFocus||readingOverview.open||overviewPreviewNavigation()||document.activeElement?.id!=='search')return;
+    scrollReadingParagraph(start);updateReadingPosition();
+  });
+}
+document.addEventListener('focusin',event=>{if(event.target.id==='search')beginReadingSearch();});
+document.addEventListener('pointerdown',readingSearchGesture);
+document.addEventListener('wheel',readingSearchGesture,{passive:true});
+document.addEventListener('touchmove',readingSearchGesture,{passive:true});
+document.addEventListener('touchend',readingSearchGesture,{passive:true});
+document.addEventListener('keydown',readingSearchGesture);
+document.addEventListener('keyup',readingSearchGesture);
 function captureReadingPosition() {
-  if(!readingMounted||readingMounted.filtered||readingOverview.open||overviewPreviewNavigation())return;
+  if(!readingMounted||readingMounted.filtered||readingOverview.open||overviewPreviewNavigation()||document.activeElement?.id==='search'||readingSearchPosition({id:readingMounted.projectId},readingMounted.document))return;
   const paragraph=readingParagraph();if(!paragraph)return;
   writeReadingPosition({id:readingMounted.projectId},readingMounted.document,Number(paragraph.dataset.start));
 }
@@ -512,6 +556,10 @@ function updateReadingPosition() {
   const start=readingOverview.open&&!inView?readingMounted.start:paragraph?Number(paragraph.dataset.start):null;
   const all=segments(doc().text),index=all.findIndex(p=>p.start===start),output=$('#reading-position');
   readingMounted.start=start;readingMounted.paragraph=all[index]||null;
+  // A browser can scroll to a search input before delivering its focus event.
+  // Remember the last actual reading line separately from that viewport move.
+  if(!readingMounted.filtered&&!readingSearchPosition()&&document.activeElement?.id!=='search'&&Number.isInteger(start)&&(readingMounted.readingStart==null||readingMounted.readingScroll||(inView&&box.top<=readingViewportTop()+2)))readingMounted.readingStart=start;
+  readingMounted.readingScroll=false;
   // Revealing an overview control can expose the first source paragraph below
   // the reading line. Only actual reading at that line advances the Keep anchor.
   if(overviewPreviewNavigation()&&inView&&box.top<=readingViewportTop()+2&&Number.isInteger(start))readingOverviewNav.start=start;
@@ -537,7 +585,8 @@ function mountReading(restore=true) {
   readingMarkTarget=null;readingFocusedStart=null;
   if(state.view!=='coding'||!doc()||!$('#reading-document'))return;
   readingMounted={projectId:state.project.id,document:doc(),filtered:!!(state.search||state.codeFilter),start:null};
-  const saved=readReadingPosition(state.project,doc());
+  const search=readingSearchPosition();if(readingSearchReturn&&!search)readingSearchReturn=null;
+  const saved=search||readReadingPosition(state.project,doc());readingMounted.readingStart=saved?.start??null;
   if(restore&&!state.sourceFocus&&overviewPreviewNavigation()){scrollReadingParagraph(readingOverviewNav.start);}
   else if(restore&&!readingMounted.filtered&&!state.sourceFocus){
     if(saved)scrollReadingParagraph(saved.start);else if(window.innerWidth<=800)window.scrollTo({top:0,behavior:'instant'});
@@ -545,6 +594,12 @@ function mountReading(restore=true) {
   updateReadingPosition();
   if(readingOverview.open)renderReadingOverview();
   if(overviewPreviewNavigation())focusReadingOverviewSource();
+  if(restore&&!readingMounted.filtered&&search&&!state.sourceFocus&&!overviewPreviewNavigation()){
+    // Native input handling can reveal the caret after this synchronous mount.
+    // Restore once more after that handling, unless navigation has moved on.
+    if(document.activeElement?.id==='search')scheduleSearchReadingRestore(search.start);
+    readingSearchReturn=null;
+  }
 }
 function scheduleReadingPosition(event) {
   if(event&&event.type==='scroll'&&event.target!==document&&event.target!==$('#document-pane'))return;
@@ -1665,7 +1720,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){captureReadingPosition();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
 // Preview changes CSS only: no re-render, source text insertion or server write.
 document.addEventListener('pointerover',event=>{
   if(event.pointerType!=='mouse')return;

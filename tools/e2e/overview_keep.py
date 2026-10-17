@@ -149,10 +149,9 @@ def main():
                 if p.evaluate('document.activeElement.id')=='search':break
             assert p.evaluate('document.activeElement.id')=='search'
             after=p.evaluate('readReadingPosition(state.project,doc()).start')
-            assert before==872 and after==0,(before,after)
-            result['known_open'].append({'id':'UX33-01','before':before,'after':after,'status':'unchanged; not fixed this round'})
-            c.close();return {'known_open_only':'UX33-01 remains; this observation is not acceptance of its behaviour'}
-        check('scope observation: UX33-01 remains open and unchanged',search_gap)
+            assert before==872 and after==872,(before,after)
+            c.close();return {'search_focus_preserves_anchor':872,'UX33_01_regression':True}
+        check('phone search focus preserves the saved anchor alongside Keep',search_gap)
         def unchanged():
             assert get(api)==baseline and get(api+'/backups')['items']==snapshots
             assert not result['ui_posts'] and not result['console'] and not result['http'],result
