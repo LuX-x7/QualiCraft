@@ -188,15 +188,17 @@ def docx_export(entry, stale=False):
     frozen={'project_name':'','documents':[],'association_count':0,'range_count':0,'include_memos':False,'project_id':'report','schema_version':5,'version':entry['source_version'],'generated_at':entry['saved_at']}
     with zipfile.ZipFile(io.BytesIO(transcript.docx_export(frozen))) as z:files={n:z.read(n) for n in z.namelist()}
     root=ET.fromstring(files['word/document.xml']);W=transcript.W;tag=transcript.word_tag;run=transcript.word_run;body=root.find('{'+W+'}body');section=copy.deepcopy(body.find('{'+W+'}sectPr'));body.clear()
-    def p(s,style=None,size=22):
-        para=tag(body,'p');pp=tag(para,'pPr');tag(pp,'spacing',{'after':140,'line':300,'lineRule':'auto'})
-        if style:tag(pp,'pStyle',{'val':style});tag(pp,'keepNext')
+    def p(s,style='Normal',size=None):
+        para=tag(body,'p');pp=tag(para,'pPr');tag(pp,'pStyle',{'val':style})
         run(para,s,size=size);return para
-    d=entry['draft'];b=entry['bindings'];p(d['title'],'Title',36);p(METHODS[d['method']],size=24)
-    p(f"Researcher-edited draft · version {entry['revision']} · {entry['saved_at']}",size=18)
-    p('Evidence changed; frozen quotations are retained.' if stale else 'Evidence matches the current coding record.',size=18)
-    for key,title in [('research_question','Research question'),('case_unit','Case definition'),('analysis_unit','Analysis unit'),('approach','Analytic approach'),('method_notes','Method and decisions')]:p(title,'Heading1');p(citation_text(entry,d[key]) or 'Not yet written.')
-    p('Analysis Table Themes Categories and Codes','Heading1')
+    def prose(value):
+        return [p(paragraph) for paragraph in (citation_text(entry,value) or 'Not yet written.').split('\n\n')]
+    d=entry['draft'];b=entry['bindings'];p(d['title'],'Title');p(METHODS[d['method']],'Subtitle')
+    p(f"Researcher-edited draft · version {entry['revision']} · {entry['saved_at']}",'Meta')
+    p('Evidence changed; frozen quotations are retained.' if stale else 'Evidence matches the current coding record.','Meta')
+    p('Research design','Heading1')
+    for key,title in [('research_question','Research question'),('case_unit','Case definition'),('analysis_unit','Analysis unit'),('approach','Analytic approach'),('method_notes','Method and decisions')]:p(title,'Heading2');prose(d[key])
+    p('Analysis Table','Heading1');p('Themes Categories and Codes','Meta')
     table=tag(body,'tbl');pr=tag(table,'tblPr');tag(pr,'tblW',{'w':10260,'type':'dxa'});tag(pr,'tblLayout',{'type':'fixed'});borders=tag(pr,'tblBorders')
     for side in ['top','left','bottom','right','insideH','insideV']:tag(borders,side,{'val':'single','sz':4,'color':'D9D9D9'})
     margins=tag(pr,'tblCellMar')
@@ -205,20 +207,34 @@ def docx_export(entry, stale=False):
     for width in [3000,3000,4260]:tag(grid,'gridCol',{'w':width})
     for i,values in enumerate([['Themes','Categories','Codes']]+[[r['theme'],r['category'],'\n'.join(b['codes'][id]['name'] for id in r['code_ids'])] for r in d['rows']]):
         row=tag(table,'tr')
-        if i==0:tag(tag(row,'trPr'),'tblHeader')
+        row_props=tag(row,'trPr')
+        if i==0:tag(row_props,'tblHeader')
+        if sum(len(v) for v in values)<=400:tag(row_props,'cantSplit')
         for width,value in zip([3000,3000,4260],values):
             cell=tag(row,'tc');cp=tag(cell,'tcPr');tag(cp,'tcW',{'w':width,'type':'dxa'})
             if i==0:tag(cp,'shd',{'fill':'EEEEEE','val':'clear'})
-            para=tag(cell,'p');run(para,value,size=20,bold=i==0)
+            para=tag(cell,'p')
+            if i==0:tag(tag(para,'pPr'),'keepNext')
+            run(para,value,size=21,bold=i==0,font='Calibri' if i==0 else 'Georgia')
     labels={id:'E'+str(i) for i,id in enumerate(b['evidence'],1)}
-    p('Narrative Analysis','Heading1');p(citation_text(entry,d['narrative']) or 'Not yet written.')
+    p('Narrative Analysis','Heading1');prose(d['narrative'])
     for i,r in enumerate(d['rows'],1):
-        if r['interpretation'] or r['evidence_ids']:p('Row '+str(i),'Heading1');p(citation_text(entry,r['interpretation']) or 'No row interpretation.');p(' · '.join(labels[id] for id in r['evidence_ids']),size=17)
-    for key,title in [('reflexivity','Reflexivity'),('quality_notes','Quality and review'),('counterexamples','Counterexamples and variation'),('limitations','Limitations'),('disclosure','Research and assistance disclosure')]:p(title,'Heading1');p(citation_text(entry,d[key]) or 'Not yet written.')
+        if r['interpretation'] or r['evidence_ids']:
+            p('Row '+str(i),'Heading2');paragraphs=prose(r['interpretation'] or 'No row interpretation.')
+            tag(paragraphs[-1].find('{'+W+'}pPr'),'keepNext')
+            p('Evidence '+(' · '.join(labels[id] for id in r['evidence_ids']) or 'not selected'),'Meta')
+    p('Method review and limitations','Heading1')
+    for key,title in [('reflexivity','Reflexivity'),('quality_notes','Quality and review'),('counterexamples','Counterexamples and variation'),('limitations','Limitations'),('disclosure','Research and assistance disclosure')]:p(title,'Heading2');prose(d[key])
+    p('Review checklist','Heading2')
+    for key,value in d['checks'].items():p(key.replace('-',' ').capitalize()+': '+('confirmed by researcher' if value else 'not confirmed'),'Meta')
     p('Selected evidence','Heading1')
-    for id,a in b['evidence'].items():p(labels[id],'Heading1');p(a['quote']);p(f"{a['document_name']} · [{a['start']}, {a['end']})\nAnnotation {id} · Document {a['document_id']}\nSHA256 {a['sha256']}\nCode {a['code_id']} · source {a['source']}",size=17)
-    p('Review checklist','Heading1');p('\n'.join(k+': '+('confirmed by researcher' if v else 'not confirmed') for k,v in d['checks'].items()))
-    p('Record details','Heading1');p(f"Report {entry['id']}\nContent SHA256 {entry['content_hash']}\nEvidence SHA256 {entry['source_version']}\nExternal edits do not update QT.",size=17)
+    p('Verbatim quotations are italic. Interpretation remains in upright text.','Meta')
+    for id,a in b['evidence'].items():
+        p(labels[id]+' '+a['document_name'],'Heading2');quote=p(a['quote'],'EvidenceQuote');tag(quote.find('{'+W+'}pPr'),'keepNext')
+        p(f"{a['document_name']} · [{a['start']}, {a['end']})",'Meta')
+    record=p('Record details','Heading1');tag(record.find('{'+W+'}pPr'),'pageBreakBefore')
+    p(f"Report {entry['id']}\nContent SHA256 {entry['content_hash']}\nEvidence SHA256 {entry['source_version']}\nExternal edits do not update QT.",'Meta')
+    for id,a in b['evidence'].items():p(labels[id],'Heading2');p(f"Annotation {id}\nDocument {a['document_id']}\nSHA256 {a['sha256']}\nCode {a['code_id']} · source {a['source']}",'Meta')
     body.append(section);files['word/document.xml']=ET.tostring(root,encoding='utf-8',xml_declaration=True)
     files['customXml/item1.xml']=('<report>'+transcript.escaped(transcript.canonical(entry))+'</report>').encode()
     buffer=io.BytesIO()

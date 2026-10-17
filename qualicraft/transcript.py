@@ -190,11 +190,13 @@ def word_tag(parent, name, attrs=None):
     return ET.SubElement(parent, f'{{{W}}}{name}', {f'{{{W}}}{k}': str(v) for k, v in (attrs or {}).items()})
 
 
-def word_run(p, text, shade=False, size=None, bold=False, color=None, font=None):
+def word_run(p, text, shade=False, size=None, bold=False, color=None, font=None, italic=False, hidden=False):
     r = word_tag(p, 'r'); props = word_tag(r, 'rPr')
     if shade: word_tag(props, 'shd', {'fill': 'EEE0AC', 'val': 'clear'})
     if size: word_tag(props, 'sz', {'val': size})
     if bold: word_tag(props, 'b')
+    if italic: word_tag(props, 'i')
+    if hidden: word_tag(props, 'vanish')
     if color: word_tag(props, 'color', {'val': color})
     if font: word_tag(props, 'rFonts', {'ascii': font, 'hAnsi': font})
     for part in re.split('(\n|\t)', text):
@@ -208,6 +210,39 @@ def word_plain(p):
     return ''.join(n.text or '' if n.tag == f'{{{W}}}t' else '\n' if n.tag == f'{{{W}}}br' else '\t' if n.tag == f'{{{W}}}tab' else '' for n in p.iter())
 
 
+def word_styles():
+    """Shared native Word hierarchy; exports inherit styles, not fixed run sizes."""
+    root=ET.Element(f'{{{W}}}styles')
+    defaults=word_tag(word_tag(word_tag(root,'docDefaults'),'rPrDefault'),'rPr')
+    word_tag(defaults,'rFonts',{'ascii':'Georgia','hAnsi':'Georgia'});word_tag(defaults,'sz',{'val':22});word_tag(defaults,'color',{'val':'000000'})
+    def style(id,name,size,font='Calibri',before=0,after=120,line=300,bold=False,italic=False,level=None,based='Normal',color='000000',keep=False,indent=0):
+        s=word_tag(root,'style',{'type':'paragraph','styleId':id,**({'default':1} if id=='Normal' else {})});word_tag(s,'name',{'val':name})
+        if id!='Normal':word_tag(s,'basedOn',{'val':based});word_tag(s,'next',{'val':'Normal'})
+        pp=word_tag(s,'pPr');word_tag(pp,'spacing',{'before':before,'after':after,'line':line,'lineRule':'auto'});word_tag(pp,'widowControl')
+        if keep:word_tag(pp,'keepNext');word_tag(pp,'keepLines')
+        if level is not None:word_tag(pp,'outlineLvl',{'val':level})
+        if indent:word_tag(pp,'ind',{'left':indent,'right':indent})
+        rp=word_tag(s,'rPr');word_tag(rp,'rFonts',{'ascii':font,'hAnsi':font})
+        if bold:word_tag(rp,'b')
+        if italic:word_tag(rp,'i')
+        word_tag(rp,'color',{'val':color});word_tag(rp,'sz',{'val':size})
+        return s
+    style('Normal','Normal',22,font='Georgia',after=140,line=320)
+    style('Title','Title',48,bold=True,after=260,line=270,keep=True)
+    style('Subtitle','Subtitle',25,after=200,color='465566',keep=True)
+    style('Heading1','heading 1',34,bold=True,before=340,after=160,line=280,level=0,keep=True)
+    style('Heading2','heading 2',26,bold=True,before=230,after=100,line=280,level=1,keep=True)
+    style('Heading3','heading 3',23,bold=True,before=180,after=90,line=280,level=2,keep=True)
+    style('Meta','Record metadata',17,after=110,line=280,color='465566')
+    style('SourceText','Verbatim source',22,font='Georgia',after=180,line=300,italic=True)
+    question=style('SourceQuestion','Explicit question',22,font='Georgia',after=180,line=300,bold=True,based='SourceText')
+    word_tag(question.find(f'{{{W}}}pPr'),'keepLines')
+    quote=style('EvidenceQuote','Verbatim evidence',22,font='Georgia',before=100,after=180,line=320,italic=True,indent=240)
+    word_tag(word_tag(quote.find(f'{{{W}}}pPr'),'pBdr'),'left',{'val':'single','sz':8,'color':'8194A5','space':9})
+    style('PassageLabel','Source paragraph label',17,bold=True,before=240,after=90,line=240,color='3C4F63')
+    return ET.tostring(root,encoding='unicode')
+
+
 def docx_export(data):
     """Minimal standard OOXML, entirely editable, with no extra installation."""
     doc = ET.Element(f'{{{W}}}document'); body = word_tag(doc, 'body')
@@ -215,13 +250,14 @@ def docx_export(data):
         para = word_tag(parent, 'p'); props = word_tag(para, 'pPr')
         if style: word_tag(props, 'pStyle', {'val': style})
         if keep: word_tag(props, 'keepNext')
-        word_tag(props, 'spacing', {'after': '65', 'line': '290', 'lineRule': 'auto'})
+        if not style:word_tag(props, 'spacing', {'after': '65', 'line': '290', 'lineRule': 'auto'})
         word_run(para, text, size=size, bold=bold); return para
     p(body, 'Coded transcript', 'Title')
-    p(body, data['project_name'], size=24)
-    p(body, f"Full source · {len(data['documents'])} document(s) · {data['association_count']} associations · {data['range_count']} distinct source ranges", size=20)
+    p(body, data['project_name'], 'Subtitle')
+    p(body, f"Full source · {len(data['documents'])} document(s) · {data['association_count']} associations · {data['range_count']} distinct source ranges", 'Meta')
     p(body, 'Read the source on the left. Follow its saved coding tree on the right.', size=21)
-    p(body, ('Display labels chosen at export: Theme for grouped roots, Category for inner groups, Code for leaves.' if data.get('role_labels') == 'theme-category-code' else 'Group and Code preserve the saved structural labels.') + ' Memos ' + ('included.' if data['include_memos'] else 'excluded.') + ' Full record details follow the transcript.', size=18)
+    p(body, ('Display labels chosen at export: Theme for grouped roots, Category for inner groups, Code for leaves.' if data.get('role_labels') == 'theme-category-code' else 'Group and Code preserve the saved structural labels.') + ' Memos ' + ('included.' if data['include_memos'] else 'excluded.') + ' Full record details follow the transcript.', 'Meta')
+    p(body, 'Verbatim source is italic. Explicit questions retain their original markers and are bold italic. Paragraph labels separate the source blocks.', 'Meta')
     if not data['documents']: p(body, 'No documents in this project.')
     for d in data['documents']:
         p(body, d['name'], 'Heading1')
@@ -238,18 +274,30 @@ def docx_export(data):
         for width in [5860, 4400]: word_tag(grid, 'gridCol', {'w': width})
         header = word_tag(table, 'tr'); word_tag(word_tag(header, 'trPr'), 'tblHeader')
         for title, width in [('Full source text', 5860), ('Saved coding tree', 4400)]:
-            cell = word_tag(header, 'tc'); cp = word_tag(cell, 'tcPr'); word_tag(cp, 'tcW', {'w': width, 'type': 'dxa'}); p(cell, title, size=18, bold=True)
-            p(cell, d['name'] if width == 5860 else 'Continue by paragraph and A reference', size=15)
+            cell = word_tag(header, 'tc'); cp = word_tag(cell, 'tcPr'); word_tag(cp, 'tcW', {'w': width, 'type': 'dxa'}); p(cell, title, 'Meta', size=18, bold=True)
+            p(cell, d['name'] if width == 5860 else 'Continue by paragraph and A reference', 'Meta', size=15)
         anns = {a['key']: a for a in d['annotations']}
         for b in d['blocks']:
             row = word_tag(table, 'tr')  # row splitting allowed; long source/tree can continue
+            raw=''.join(t['text'] for t in b['tokens']).strip()
+            if not b['keys'] and len(raw)<=600:
+                word_tag(word_tag(row,'trPr'),'cantSplit')
             left, right = [word_tag(row, 'tc') for _ in range(2)]
             for cell, width in [(left, 5860), (right, 4400)]:
                 cp = word_tag(cell, 'tcPr'); word_tag(cp, 'tcW', {'w': width, 'type': 'dxa'}); word_tag(cp, 'vAlign', {'val': 'top'})
-            p(left, f"¶ {b['number']:02d}  {' '.join(b['keys'])}", size=17)
-            para = p(left); para.set(f'{{{W}}}rsidR', '00000001')
-            for t in b['tokens']: word_run(para, t['text'], bool(t['keys']), font='Georgia')
-            if not b['keys']: p(right, 'No saved codings', size=19)
+            p(left, f"¶ {b['number']:02d}  {' '.join(b['keys'])}", 'PassageLabel')
+            style='SourceQuestion' if re.fullmatch(r'\*\*.+\*\*',raw,re.S) else 'SourceText'
+            para = p(left,style=style); para.set(f'{{{W}}}rsidR', '00000001')
+            # Native paragraphs already supply the paragraph separation. Keep
+            # their original terminal line breaks in the editable XML/evidence,
+            # without laying out additional empty source lines at a page edge.
+            full=''.join(t['text'] for t in b['tokens']);visible_end=len(full.rstrip('\r\n'));offset=0
+            for t in b['tokens']:
+                cut=max(0,min(len(t['text']),visible_end-offset))
+                if cut:word_run(para,t['text'][:cut],bool(t['keys']),font='Georgia')
+                if cut<len(t['text']):word_run(para,t['text'][cut:],bool(t['keys']),font='Georgia',hidden=True)
+                offset+=len(t['text'])
+            if not b['keys']: p(right, 'No saved codings', 'Meta', size=19)
             roots = {}
             for key in b['keys']:
                 a = anns[key]; level = roots
@@ -259,6 +307,11 @@ def docx_export(data):
                 node['items'].append(a)
             max_depth = max((len(a['path']) for a in d['annotations']), default=1)
             gutter = min(220, max(40, 2200 // max_depth))
+            def small_branch(node):
+                nodes=[node];pending=list(node['children'].values())
+                while pending and len(nodes)<=3:
+                    child=pending.pop();nodes.append(child);pending.extend(child['children'].values())
+                return not pending and len(nodes)<=3 and sum(len(n['node']['name']) for n in nodes)<=350 and sum(len(n['items']) for n in nodes)<=8
             def tree(parent, nodes, width):
                 for node in nodes.values():
                     n = node['node']
@@ -269,7 +322,9 @@ def docx_export(data):
                     spacing = para.find(f'{{{W}}}pPr/{{{W}}}spacing')
                     spacing.set(f'{{{W}}}after', '0')
                     word_run(para, symbol+' '+role.upper(), size=15, color=color, font='Courier New')
-                    para = p(parent, '', keep=True)
+                    # Do not chain the name to an arbitrarily tall nested tree
+                    # (or to the following source row at a leaf).
+                    para = p(parent, '')
                     word_tag(para.find(f'{{{W}}}pPr'), 'keepLines')
                     word_run(para, n['name'], size=22, bold=role=='Theme', color=color, font='Georgia')
                     for a in node['items']:
@@ -291,7 +346,7 @@ def docx_export(data):
                         for w in [gutter, width-gutter]: word_tag(grid, 'gridCol', {'w':w})
                         for child_id, child in node['children'].items():
                             row = word_tag(branch, 'tr')
-                            if not child['children'] and len(child['items']) <= 8:
+                            if small_branch(child):
                                 word_tag(word_tag(row, 'trPr'), 'cantSplit')
                             guide = word_tag(row, 'tc'); cp = word_tag(guide, 'tcPr')
                             word_tag(cp, 'tcW', {'w':gutter,'type':'dxa'})
@@ -306,20 +361,19 @@ def docx_export(data):
                         end = p(parent); spacing = end.find(f'{{{W}}}pPr/{{{W}}}spacing')
                         spacing.set(f'{{{W}}}line','20'); spacing.set(f'{{{W}}}lineRule','exact'); spacing.set(f'{{{W}}}after','0')
             tree(right, roots, 4180)
-        p(body)
-    p(body, 'Record details', 'Heading1')
-    p(body, f"Generated {data['generated_at']}\nProject {data['project_id']} · Schema v{data['schema_version']}\nEvidence SHA256 {data['version']}", size=16)
-    p(body, NOTICE + ' This frozen file does not update or write external edits back to QT.', size=18)
+    details=p(body, 'Record details', 'Heading1');word_tag(details.find(f'{{{W}}}pPr'),'pageBreakBefore')
+    p(body, f"Generated {data['generated_at']}\nProject {data['project_id']} · Schema v{data['schema_version']}\nEvidence SHA256 {data['version']}", 'Meta')
+    p(body, NOTICE + ' This frozen file does not update or write external edits back to QT.', 'Meta', size=18)
     for d in data['documents']:
-        p(body, d['name'], 'Heading1')
-        p(body, f"Document {d['id']}\nSource SHA256 {d['sha256']}", size=16)
+        p(body, d['name'], 'Heading2')
+        p(body, f"Document {d['id']}\nSource SHA256 {d['sha256']}", 'Meta', size=16)
         for a in d['annotations']:
-            p(body, f"{a['key']} · [{a['start']}, {a['end']}) · {a['label']}", size=17, bold=True, keep=True)
-            p(body, f"Annotation {a['id']} · Code {a['code_id']}\nSource {a['source']} · {a['created_at']}", size=16)
+            p(body, f"{a['key']} · [{a['start']}, {a['end']}) · {a['label']}", 'Meta', size=17, bold=True, keep=True)
+            p(body, f"Annotation {a['id']} · Code {a['code_id']}\nSource {a['source']} · {a['created_at']}", 'Meta', size=16)
     section = word_tag(body, 'sectPr')
     word_tag(section, 'pgSz', {'w': '11906', 'h': '16838'})
     word_tag(section, 'pgMar', {'top': '900', 'right': '823', 'bottom': '900', 'left': '823', 'header': '400', 'footer': '400'})
-    styles = f'''<w:styles xmlns:w="{W}"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:color w:val="000000"/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="36"/><w:color w:val="000000"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/></w:pPr><w:rPr><w:b/><w:sz w:val="28"/><w:color w:val="000000"/></w:rPr></w:style></w:styles>'''
+    styles = word_styles()
     content_types = '''<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'''
     relationships = '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">{}</Relationships>'
     buf = io.BytesIO()

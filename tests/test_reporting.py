@@ -81,6 +81,22 @@ class ReportTests(unittest.TestCase):
             tree=ET.fromstring(z.read('word/document.xml'));plain=''.join(tree.itertext());self.assertIn(self.a['quote'],plain)
             self.assertEqual(json.loads(ET.fromstring(z.read('customXml/item1.xml')).text),entry)
             self.assertNotIn(b'<w:drawing',z.read('word/document.xml'))
+
+    def test_word_hierarchy_effectively_changes_sizes_and_separates_verbatim_evidence(self):
+        entry=self.save()['current'];ns={'w':reporting.transcript.W};W='{'+reporting.transcript.W+'}'
+        with zipfile.ZipFile(io.BytesIO(reporting.docx_export(entry))) as z:
+            styles=ET.fromstring(z.read('word/styles.xml'));doc=ET.fromstring(z.read('word/document.xml'))
+            def size(name):
+                s=styles.find("w:style[@w:styleId='"+name+"']/w:rPr/w:sz",ns)
+                return int(s.get(W+'val'))
+            self.assertGreater(size('Title'),size('Heading1'));self.assertGreater(size('Heading1'),size('Heading2'));self.assertGreater(size('Heading2'),size('Normal'))
+            h1=[p for p in doc.findall('.//w:p',ns) if p.find("w:pPr/w:pStyle[@w:val='Heading1']",ns) is not None]
+            self.assertTrue(h1)
+            for p in h1:self.assertFalse(p.findall('w:r/w:rPr/w:sz',ns),'A direct run size must not flatten a semantic heading')
+            quotes=[p for p in doc.findall('.//w:p',ns) if p.find("w:pPr/w:pStyle[@w:val='EvidenceQuote']",ns) is not None]
+            self.assertEqual([reporting.transcript.word_plain(p) for p in quotes],[self.a['quote']])
+            quote_style=styles.find("w:style[@w:styleId='EvidenceQuote']/w:rPr",ns);self.assertIsNotNone(quote_style.find('w:i',ns))
+            self.assertNotIn(self.d['narrative'],[reporting.transcript.word_plain(p) for p in quotes])
     def test_reading_capacity_failure_is_atomic(self):
         before=copy.deepcopy(self.p)
         from unittest.mock import patch

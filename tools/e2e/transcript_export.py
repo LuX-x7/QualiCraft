@@ -82,7 +82,7 @@ def main():
                     if c.pages: c.pages[-1].screenshot(path=str(shots/('failure-'+str(len(results['checks']))+'.png')))
             save()
         _, p=workspace()
-        before=get(root); before_backups=get(root+'/backups')
+        before=get(root); before_backups=get(root+'/backups')['items']
         def desktop_download():
             p.locator('[data-action="export"]').click(); expect(p.locator('#coded-scope')).to_have_value('current')
             assert doc['name'] in p.locator('#coded-scope-summary').inner_text()
@@ -175,7 +175,9 @@ def main():
                 dl=event.value;target=out/dl.suggested_filename;dl.save_as(target);assert target.read_bytes()==response.body();evidence[fmt]=len(response.body())
             return evidence
         check('all four original export downloads remain byte-identical to their endpoints',legacy)
-        check('exporting does not mutate project audit, snapshots, text or reading state',lambda: {'project_unchanged':get(root)==before,'backups_unchanged':get(root+'/backups')==before_backups} if get(root)==before and get(root+'/backups')==before_backups else (_ for _ in ()).throw(AssertionError('project mutated')))
+        # Snapshot items belong to this project. The service-wide backup status
+        # can legitimately change when another isolated review copy is saved.
+        check('exporting does not mutate project audit, snapshots, text or reading state',lambda: {'project_unchanged':get(root)==before,'project_snapshots_unchanged':get(root+'/backups')['items']==before_backups} if get(root)==before and get(root+'/backups')['items']==before_backups else (_ for _ in ()).throw(AssertionError('project mutated')))
         def stale():
             # Frozen file remains unchanged when one codebook name changes in this copy.
             old=Path(results['html']);digest=hashlib.sha256(old.read_bytes()).hexdigest()

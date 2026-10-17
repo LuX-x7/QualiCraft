@@ -129,6 +129,39 @@ class TranscriptTests(unittest.TestCase):
             self.assertEqual(saved, data)
             self.assertNotIn(b'TargetMode="External"', b''.join(z.read(n) for n in z.namelist() if n.endswith('.rels')))
 
+    def test_word_distinguishes_verbatim_source_from_question_and_metadata(self):
+        data=transcript.freeze(self.p,[self.d['id']])
+        ns={'w':transcript.W}
+        with zipfile.ZipFile(io.BytesIO(transcript.docx_export(data))) as z:
+            styles=ET.fromstring(z.read('word/styles.xml'));doc=ET.fromstring(z.read('word/document.xml'))
+            sources=doc.findall('.//w:p[@w:rsidR="00000001"]',ns)
+            self.assertEqual(''.join(transcript.word_plain(p) for p in sources),self.d['text'])
+            for paragraph in sources:
+                for run in paragraph.findall('w:r',ns):
+                    if run.find('w:rPr/w:vanish',ns) is not None:
+                        self.assertFalse(transcript.word_plain(run).strip('\r\n'),'Only redundant terminal paragraph breaks may be hidden')
+            source_styles={p.find('w:pPr/w:pStyle',ns).get('{'+transcript.W+'}val') for p in sources}
+            self.assertEqual(source_styles,{'SourceText','SourceQuestion'})
+            source_style=styles.find("w:style[@w:styleId='SourceText']/w:rPr",ns)
+            self.assertIsNotNone(source_style.find('w:i',ns))
+            question=styles.find("w:style[@w:styleId='SourceQuestion']",ns)
+            self.assertEqual(question.find('w:basedOn',ns).get('{'+transcript.W+'}val'),'SourceText')
+            self.assertIsNotNone(question.find('w:rPr/w:b',ns))
+            self.assertIsNotNone(question.find('w:pPr/w:keepLines',ns))
+            # The guide distinguishes paragraph boundaries without changing any
+            # source characters or turning source text into an image.
+            self.assertEqual(len(doc.findall(".//w:pPr/w:pStyle[@w:val='PassageLabel']",ns)),len(data['documents'][0]['blocks']))
+            # A kept label would chain its whole parallel source/tree row in
+            # some Word readers. Short unannotated questions stay in one row;
+            # long source and nested trees may continue across pages.
+            label=styles.find("w:style[@w:styleId='PassageLabel']",ns)
+            self.assertIsNone(label.find('w:pPr/w:keepNext',ns))
+            rows=doc.findall('./w:body/w:tbl/w:tr',ns)[1:]
+            for block,row in zip(data['documents'][0]['blocks'],rows):
+                raw=''.join(t['text'] for t in block['tokens']).strip()
+                if not block['keys'] and len(raw)<=600:
+                    self.assertIsNotNone(row.find('w:trPr/w:cantSplit',ns))
+
     def test_explicit_display_roles_preserve_ancestry_evidence_and_source(self):
         before = copy.deepcopy(self.p)
         plain = transcript.freeze(self.p, [self.d['id']])
