@@ -1,8 +1,8 @@
 # QT — Supervisor review · 17 October 2026
 
-**Status:** Review candidate, not the completed final product. The owner has authorised a source push to the existing public repository’s `t7-site` branch. This does not deploy the hosted demos or change `main`. Windows remains deferred and unverified.
+**Status:** Review candidate, not the completed final product. The owner has authorised a source push to the existing public repository’s `t7-site` branch. The actual push was rejected because the saved Git credential lacks `workflow` permission; verified SSH authentication is also unavailable. The owner then chose to keep the commits local; no retry is pending. This does not deploy the hosted demos or change `main`. Windows remains deferred and unverified.
 
-**Start here:** [Current review source](https://github.com/LuX-x7/QualiCraft/tree/t7-site). On the developer’s computer, open [Website](http://127.0.0.1:49277/), then [Workbench](http://127.0.0.1:49277/w/?lang=en); choose **Bologna · QT notebook review**. These local URLs require that computer. Hosted demos linked in the repository can run an earlier commit.
+**Start here:** [Repository](https://github.com/LuX-x7/QualiCraft) (the current review is not pushed yet). On the developer’s computer, open [Website](http://127.0.0.1:49277/), then [Workbench](http://127.0.0.1:49277/w/?lang=en); choose **Bologna · QT notebook review**. These local URLs require that computer. Hosted demos linked in the repository can run an earlier commit.
 
 ## Demonstration · about 12 minutes
 

@@ -53,3 +53,13 @@
 `render.yaml` 两项 `autoDeployTrigger: 'off'` 保持字节相同；本轮不部署、不发送邮件。GitHub 源码分支与在线站点是两个不同交付物。
 
 最终标准仍开放：**可编辑 Analysis Table／Narrative Analysis、持久语义角色设置、完整方法流程与独立 Comparative QCA、百份容量／失败恢复实测**，以及研究者／supervisor 接受、当前 VoiceOver／实体设备／下载反馈。独立固定分页 PDF 单列后续；现有图表 PDF 不受影响。按 [最终验收标准](FINAL-ACCEPTANCE-V2.md) 一项项实现与验证，不能将当前代码审核推送称为产品全部完成。
+
+### 实际推送结果：权限阻塞，未发布
+
+功能提交 `3710a05df86e44940aa3216f1469e747291924d3`。`git push --dry-run origin HEAD:refs/heads/t7-site` 退出 0，但实际 `git push origin HEAD:refs/heads/t7-site` 被 GitHub 服务端拒绝：现有 Personal Access Token 缺 `workflow` scope，不能发布待推送历史中 UX-09 的 `.github/workflows/test.yml` 更新。这是 GitHub 凭据限制，不是本机自动审批拒绝或测试失败。没有把 dry-run 成功当作实际成功。
+
+第一次 SSH 因本机没有已知主机密钥拒绝连接；使用 [GitHub 官方公开指纹／主机密钥](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints) 在临时 known_hosts 中严格验证后，再次返回 `Permission denied (publickey)`。未改全局配置、未显示令牌／私钥。只读远端检查显示没有 `t7-site` 分支，main 保持原哈希。原始输出见 `raw/push.txt`、`raw/ssh-auth-verified-host.txt`、`raw/remote-after-rejection.txt`。
+
+需要用户在本机为当前 Git 凭据补齐 workflow 权限，或配置已有权限的 SSH 登录，然后重试同一审核分支。完整候选保留；不删除 CI 文件、不改写现有审核历史来绕过限制。当前只能提供本地预览／审核包，不能声称 GitHub 更新或新站部署完成。
+
+用户在拒绝后明确选择“暂时保留本地提交”。因此本轮停止远端重试，按本地审核候选交付；后续重新推送需要用户新指示。

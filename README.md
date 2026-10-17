@@ -25,11 +25,11 @@
 
 <p align="center"><em>English first · 中文在下半部分</em></p>
 
-> **Current review branch:** [t7-site](https://github.com/LuX-x7/QualiCraft/tree/t7-site). This is a review candidate, not the completed final scope. Hosted demos above can run an earlier commit; pushing source does not deploy them. See the [current plan](docs/review/EXPERIENCE-ROADMAP.md) and [UX-45 evidence](docs/review/UX-45-REVIEW-FINISH.md).
+> **Current review candidate:** local branch `t7-site`; GitHub rejected its push for missing `workflow` permission, and the owner has chosen to keep it local for now. The remote review branch has not been created. This is a review candidate, not the completed final scope. Hosted demos above can run an earlier commit; pushing source does not deploy them. See the [current plan](docs/review/EXPERIENCE-ROADMAP.md) and [UX-45 evidence](docs/review/UX-45-REVIEW-FINISH.md).
 >
 > **Available:** QT satellite start screen, manual coding and reading marks, relationship exploration, five reproducible figures, and coded transcript HTML / editable Word alongside the four existing project exports. **Still planned:** an editable Analysis Table / Narrative Analysis report, complete method-specific workflows, Comparative QCA calibration / truth tables / minimisation, and a defined 100-interview capacity test. Windows is deferred and unverified.
 >
-> **当前审核版：** 新起步页、编码原文 HTML／Word 已接通；完整报告编辑器、Comparative QCA 与百份容量验收仍待做。上方在线演示可能仍是旧版本，源码推送不会自动部署。请从 `t7-site` 查看当前代码；Windows 暂缓，不能称最终版。
+> **当前审核版：** 新起步页、编码原文 HTML／Word 已接通；完整报告编辑器、Comparative QCA 与百份容量验收仍待做。上方在线演示可能仍是旧版本，源码推送不会自动部署。当前代码在本机 `t7-site`；GitHub 因令牌缺 workflow 权限拒绝推送，远端审核分支尚未创建。Windows 暂缓，不能称最终版。
 
 
 ---
