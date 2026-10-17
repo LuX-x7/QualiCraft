@@ -55,7 +55,7 @@ export default async function HomeView() {
     </div></section>
     <section className="section home-method" id="method" aria-labelledby="method-title"><div className="wrap">
       <MethodSketch/>
-      <details className="home-details"><summary>Planned / unavailable · QCA &amp; report writing</summary><dl className="method-plans">{METHODS.planned.map(item=><div key={item.name}><dt>{item.name}</dt><dd>{item.detail}</dd></div>)}</dl></details>
+      <details className="home-details"><summary>Report writing &amp; method status</summary><p>{METHODS.writing}</p><dl className="method-plans">{METHODS.planned.map(item=><div key={item.name}><dt>{item.name}</dt><dd>{item.detail}</dd></div>)}</dl></details>
       <details className="home-details"><summary>Full comparison &amp; references</summary><h3>{METHODS.title}</h3><p>{METHODS.body}</p>
         <div className="table-scroll"><table className="methods"><caption className="mono">Thematic analysis and qualitative content analysis</caption><thead><tr><th scope="col">Approach</th>{METHODS.columns.map(column=><th key={column} scope="col">{column}</th>)}</tr></thead><tbody>{METHODS.rows.map(row=><tr key={row.approach}><th scope="row">{row.approach}</th>{row.cells.map((cell,index)=><td key={index}>{cell}</td>)}</tr>)}</tbody></table></div>
         <ol className="citations__list">{METHODS.citations.map(citation=><li key={citation}>{citation}</li>)}</ol>

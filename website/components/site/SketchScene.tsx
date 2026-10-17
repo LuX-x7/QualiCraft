@@ -43,7 +43,7 @@ export default function SketchScene({kind,example,records=[]}:{kind:string;examp
    <details className="engineering-source"><summary>Source excerpt &amp; identity</summary><blockquote lang="it">{example.quote}</blockquote><dl><dt>Document ID</dt><dd>{example.document_id}</dd><dt>Document SHA-256</dt><dd>{example.document_sha256}</dd></dl><p>Bologna CC0 · explanatory structure from a saved record.</p></details>
  </div>
  return <div className="export-sketch engineering-plate" data-flow-active={part}>
-  <p className="engineering-caption mono">ONE PROJECT → SIX OUTPUT STRUCTURES</p>
+  <p className="engineering-caption mono">CODING EVIDENCE → YOUR RESEARCH REPORT</p>
   <div className="export-board">
    <div className="export-package"><SketchGlyph kind="export"/><div data-export-record="true" className="export-record"><span className="mono">PROJECT RECORD</span><svg viewBox="0 0 190 132" fill="none" aria-hidden="true"><path className="engineering-outline" d="M8 7L180 4L183 125L6 127Z M22 28V106M22 38H44M22 70H44M22 102H44"/><g className="engineering-field"><text x="51" y="43">documents</text><text x="51" y="75">codes</text><text x="51" y="107">annotations</text></g><circle className="engineering-joint" cx="22" cy="70" r="3"/></svg></div></div>
    <svg className="export-wiring" viewBox="0 0 600 320" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M140 160H188V78H575M188 160V244H575M235 78V92M405 78V92M575 78V92M235 244V258M405 244V258M575 244V258"/><circle cx="188" cy="160" r="4"/><path className="engineering-trace" pathLength="1" d="M140 160H188V78H575M188 160V244H575"/></svg>

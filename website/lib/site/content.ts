@@ -87,9 +87,9 @@ export const MODULES = [
     steps: [
       'Choose the document scope.',
       'Export coded HTML or Word.',
-      'Keep project, coding, matrix and methods exports.',
+      'Write and version your Analysis Table and Narrative Analysis in Export.',
     ],
-    see: 'Full text, highlights and the saved tree alongside each coding.',
+    see: 'A coded source notebook, plus your saved research report in HTML or editable Word.',
   },
 ] as const
 
@@ -120,7 +120,7 @@ export const METHODS = {
         'Themes with defining quotations; a written narrative of each theme.',
         'For reflexive TA, inter-coder agreement is not the quality criterion; show reflexive engagement and a coherent interpretation. (Braun & Clarke, 2019)',
         'Central. The researcher’s stance is part of the analysis and belongs in the write-up. (Braun & Clarke, 2019)',
-        'Carries the mechanics — passages to codes, codes to themes, memos, the record. The reflexive writing is yours: it happens in the memo fields, which are enabled in new projects.',
+        'Carries the mechanics, memos and evidence. In Export, choose Thematic Analysis and write, save and restore your report with a method-specific review checklist. Theme development and interpretation remain researcher decisions.',
       ],
     },
     {
@@ -132,18 +132,15 @@ export const METHODS = {
         'Categories with contextual interpretation; descriptive counts or matrices where justified.',
         'Conventional, directed and summative approaches have different coding and trustworthiness considerations. (Hsieh & Shannon, 2005)',
         'Describe how the analyst developed categories and inclusion rules and interpreted their context.',
-        'Carries the counting directly — frequency, document × code, and the whole codebook exported for an appendix. Agreement across coders is not computed here; export the codings and compute it where you report it.',
+        'Carries saved coding, descriptive counts and evidence. In Export, choose Qualitative Content Analysis to edit the Analysis Table, interpretation, method decisions and narrative. Agreement across coders is not computed here.',
       ],
     },
   ],
+  writing: 'Available in Export: edit an Analysis Table and Narrative Analysis, choose saved quotations, compare and restore versions, and download HTML or editable Word. Project JSON preserves retained report versions. Changed coding is flagged; evidence refresh is explicit. Word edits stay in Word.',
   planned: [
     {
       name: 'Comparative QCA',
       detail: 'Qualitative Comparative Analysis is planned and unavailable. Calibration, truth tables and minimisation are not implemented. Coding counts and co-occurrence cannot stand in for this workflow.',
-    },
-    {
-      name: 'Report writing',
-      detail: 'An in-workbench Analysis Table and Narrative Analysis editor is planned and unavailable. Current coded transcripts provide full text, highlights and the saved Group/Code tree in HTML or editable Word. Write in your own editor; changes to the Word file do not update QT.',
     },
   ],
   citations: [

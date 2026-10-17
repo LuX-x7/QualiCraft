@@ -546,6 +546,9 @@ def validate_project(project):
         else:
             string(a.get("code_name"), "Suggested code", 160)
             require(a.get("status") in {"pending", "accepted", "rejected"}, "The suggestion status is invalid")
+    if 'research_report' in project:
+        from .reporting import validate_state
+        validate_state(project['research_report'])
     validate_reading_capacity(project)
     return project
 

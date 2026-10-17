@@ -16,7 +16,7 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import analyze, ingest, plotting, transcript
+from . import analyze, ingest, plotting, transcript, reporting
 from .ai import Analyzer
 from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
@@ -152,6 +152,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         project = store.get(parts[2])
                         if len(parts) == 3:
                             return self.send(project)
+                        if len(parts) == 4 and parts[3] == 'report':
+                            return self.send(reporting.context(project))
                         if len(parts) == 4 and parts[3] == "backups":
                             # Snapshots written automatically on every change,
                             # plus whether writing them is still working. The
@@ -161,6 +163,15 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                                               "status": store.backup_status()})
                         if len(parts) == 4 and parts[3] == "export":
                             fmt = urllib.parse.parse_qs(parsed.query).get("format", ["json"])[0]
+                            if fmt in {'report-html','report-docx','report-json'}:
+                                query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+                                version = query.get('version_id', [None])
+                                require(len(version)==1, 'Choose one report version')
+                                entry, stale = reporting.selected(project, version[0])
+                                suffix = fmt.removeprefix('report-')
+                                payload = reporting.html_export(entry, stale) if suffix=='html' else reporting.docx_export(entry, stale) if suffix=='docx' else json.dumps(entry,ensure_ascii=False,indent=2).encode()
+                                mime = 'text/html; charset=utf-8' if suffix=='html' else 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' if suffix=='docx' else 'application/json'
+                                return self.send(payload,mime,filename=f"qt-research-report-{entry['id'][:12]}.{suffix}")
                             if fmt in {"coded-html", "coded-docx", "coded-version"}:
                                 query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
                                 memo = query.get('memos', ['0'])
@@ -219,7 +230,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 if path == "/config.js":
                     return self.send(('window.QT_BASE=' + json.dumps(base_path) + ';').encode(),
                                      "application/javascript; charset=utf-8")
-                files = {"/": "index.html", "/app.js": "app.js", "/welcome-orbit.js": "welcome-orbit.js",
+                files = {"/": "index.html", "/app.js": "app.js", "/welcome-orbit.js": "welcome-orbit.js", "/report-editor.js":"report-editor.js",
                          "/style.css": "style.css",
                          "/landing.html": "landing.html", "/landing.css": "landing.css"}
                 if path not in files:
@@ -230,7 +241,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 # the page is served at /w with no trailing slash. Rewrite them to
                 # absolute paths that include the prefix.
                 if base_path and file.suffix == ".html":
-                    for name in ("style.css", "config.js", "welcome-orbit.js", "app.js", "landing.css"):
+                    for name in ("style.css", "config.js", "welcome-orbit.js", "report-editor.js", "app.js", "landing.css"):
                         payload = payload.replace(f'"{name}"'.encode(), f'"{base_path}/{name}"'.encode())
                 return self.send(payload, (mimetypes.guess_type(file.name)[0] or "text/plain") + "; charset=utf-8")
             except (ValueError, KeyError, TypeError):
@@ -319,6 +330,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         require(not public_demo, "The public demonstration is read-only")
                         return self.send(store.restore(project_id, body.get("name", "")))
                     def operation(project):
+                        if action in {'report-save','report-restore'}:
+                            return reporting.save(project,body,restore=action=='report-restore')
                         if action == "documents":
                             text = body.get("text")
                             if body.get("docx_base64"):
@@ -359,7 +372,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         raise ValueError("The requested action does not exist")
                     return self.send(store.change(project_id, operation))
                 return self.send({"error": "The API endpoint does not exist"}, status=404)
-            except ReadingConflict as exc:
+            except (ReadingConflict, reporting.ReportConflict) as exc:
                 return self.send({"error": str(exc)}, status=409)
             except ValueError as exc:
                 return self.send({"error": str(exc)}, status=400)

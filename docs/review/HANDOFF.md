@@ -1,5 +1,7 @@
 # Product UX-44 · Coded transcript export · 2026-10-17
 
+2026-10-17 最新（UX-47）：**Export 内可编辑 Analysis Table／Narrative Analysis 已实现并保存到项目，支持版本比较／恢复、精确引文、证据过期／明确刷新及 HTML／Word 下载。** TA／内容分析有独立人工审核清单；报告标签不改码本。189 Python（3 跳过）、181 Node、49 生产代理 Chrome 场景和隔离 Next 构建通过；32 个统计／绘图／原资产／数据／部署保护文件不变。UX-46 的原生可编辑 Word 树保留。见 [实现与边界](UX-47-RESEARCH-REPORT-EDITOR.md)。Comparative QCA、持久语义角色、百份容量和研究者／设备／supervisor 接受仍开放；不能称全部最终标准完成。本机当前入口 52755；只用 Bologna 临时副本，不推送、不部署，Windows 暂缓。下方旧状态按历史保留。
+
 2026-10-17 最新（UX-46）：**编码原文 Word 已使用原生可编辑树线与文字，不是插入截图。** 全文高亮、完整祖先关系、清楚角色标签与短叶节点跨页保留；15 页样例检查、12 导出回归及 14 浏览器场景通过。见 [Word 树与证据](UX-46-EDITABLE-WORD-TREE.md)。报告编辑器为独立 UX-47 工作流，仍在验收；Comparative、容量与研究者接受未关闭。只用 Bologna 临时副本，不推送、不部署，Windows 暂缓。
 
 2026-10-17 推送结果补记（UX-45R）：本轮功能提交为 `3710a05df86e44940aa3216f1469e747291924d3`，本地干净。**实际 GitHub 推送未成功**：现有 HTTPS PAT 缺 `workflow` 权限，GitHub 拒绝待推送历史中 UX-09 的测试工作流更新；严格核验 GitHub 官方主机密钥后，SSH 也返回 `Permission denied (publickey)`。远端未创建 `t7-site`，main 未改；没有删除工作流或改写审核历史绕过权限。用户随后明确选择“暂时保留本地提交”；停止远端重试，后续收到新指示再处理授权和推送。截图、产物、完整提交和拒绝原始输出已收进本地审核包；不冒称已上线／已发布。没有产品代码新改动，无需因本次记录重复功能测试。Windows 仍暂缓，不部署。

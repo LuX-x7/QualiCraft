@@ -2,7 +2,7 @@
 export const EXPORT_FORMATS = [
   { name: 'Project', label: 'Project JSON', suffix: '.json', fields: 'documents · codebook · codings',
     title: 'A portable project',
-    detail: 'Documents, codebook, codings, reading marks and audit trail. Restore as a new project.',
+    detail: 'Documents, codebook, codings, reading marks, saved report versions and audit trail. Restore as a new project.',
     items: ['Source documents', 'Codebook and codings', 'Suggestions and audit trail'],
     note: 'Restore this file as a new project to continue the work. It includes the source text.' },
   { name: 'Codings', label: 'Codings CSV', suffix: '.csv', fields: 'document · code · range',
@@ -29,5 +29,5 @@ export const EXPORT_FORMATS = [
     title: 'Continue writing in Word',
     detail: 'Editable full text, highlights and the saved Group/Code tree. Changes in Word stay in that file and do not update QT.',
     items: ['Editable full text and saved tree', 'Exact highlights and stable coding identifiers', 'The same document scope as HTML'],
-    note: 'Use this evidence document in your own writing process. An in-workbench Analysis Table and Narrative Analysis editor is still planned.' },
+    note: 'The separate research report editor in Export saves your Analysis Table, Narrative Analysis and selected evidence, with editable Word and HTML downloads. Native notebook tree text and branches can also be edited in Word.' },
 ] as const

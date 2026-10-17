@@ -89,7 +89,8 @@ def main():
             c,p=ctx(width);p.goto(base+'/w/?lang=en',wait_until='networkidle')
             p.locator('#start-project-select').select_option(copy['id']);p.locator('[data-action="start-open"]').click()
             p.locator('[data-action="export"]').click();p.locator('#coded-roles').select_option('theme-category-code')
-            p.locator('.report-status summary').click();expect(p.locator('.report-status')).to_contain_text('not available in this version')
+            p.locator('.report-status summary').click();expect(p.locator('.report-status')).to_contain_text('research report editor saves')
+            expect(p.locator('.report-status')).to_contain_text('Planned: Comparative QCA')
             p.screenshot(path=str(shots/f'export-{width}.png'))
             files={}
             for fmt in ['coded-html','coded-docx']:
@@ -133,6 +134,7 @@ def main():
             overflow(p);p.screenshot(path=str(shots/f'site-six-outputs-{width}.png'))
             p.locator('#method .home-details').first.locator('summary').click()
             expect(p.locator('.method-plans')).to_contain_text('planned and unavailable')
+            expect(p.locator('#method .home-details').first).to_contain_text('Available in Export: edit an Analysis Table and Narrative Analysis')
             p.locator('#method').scroll_into_view_if_needed();overflow(p)
             p.screenshot(path=str(shots/f'site-method-status-{width}.png'))
             c.close()
