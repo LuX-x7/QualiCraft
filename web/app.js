@@ -72,6 +72,7 @@ Object.assign(_T.en, {
   codebookFind:'Find a code', savedCodings:'saved codings', overlappingRanges:'Overlapping ranges',
   codeFilterLabel:'Code filter', codePathLabel:'Saved code path', overlapCodings:'Codings overlapping this range',
   codingHighlight:'Saved coding', codingHighlightFocus:'Focused coding', codingKeyHint:'Hover or focus a coding to trace its path.',
+  popupChoosePath:'Several codes match this name or path. Choose one with ↑ / ↓ and Enter, or select its full path.',
 });
 Object.assign(_T.zh, {
   importedCoding:'已导入', codebookTree:'主题与编码', themeGroup:'主题／分组', parentCode:'父编码', codeRole:'编码',
@@ -79,6 +80,7 @@ Object.assign(_T.zh, {
   codebookFind:'查找编码', savedCodings:'条已保存标注', overlappingRanges:'存在重叠范围',
   codeFilterLabel:'编码筛选', codePathLabel:'已保存的编码路径', overlapCodings:'与此范围重叠的标注',
   codingHighlight:'已编码', codingHighlightFocus:'当前聚焦标注', codingKeyHint:'悬浮或聚焦标注以查看所属路径。',
+  popupChoosePath:'有多个编码匹配此名称或路径。请用 ↑ / ↓ 后按 Enter 明确选择，或选择完整路径。',
 });
 Object.assign(_T.zh, {
   readingNavigation:'阅读定位', readingDocument:'当前文档', readingPosition:'阅读位置',
@@ -1203,8 +1205,18 @@ function closeCodePopup() {
 function codePopupMatches(query) {
   const needle=query.trim().toLowerCase();
   const all=state.project.codes.map(c=>({code:c, path:codePath(c)}));
+  const paths=new Map();
+  all.forEach(m=>paths.set(m.path,(paths.get(m.path)||0)+1));
+  all.forEach(m=>{
+    m.identity=paths.get(m.path)>1?`${m.path} · ${m.code.id}`:m.path;
+    const full=needle&&(m.path.toLowerCase()===needle||m.identity.toLowerCase()===needle);
+    const name=needle&&m.code.name.toLowerCase()===needle;
+    m.exact=!!(full||name);
+    m.rank=full?0:name?1:2;
+  });
   if(!needle) return all.slice(0,8);
-  return all.filter(x=>x.path.toLowerCase().includes(needle)).slice(0,8);
+  // Rank before the display cap so a saved exact name cannot be hidden by parents.
+  return all.filter(m=>m.exact||m.identity.toLowerCase().includes(needle)).sort((a,b)=>a.rank-b.rank).slice(0,8);
 }
 function showCodePopup() {
   removeCodePopupDom();
@@ -1231,7 +1243,7 @@ function showCodePopup() {
   const input=$('#code-search');
   if(input) {
     input.focus();
-    input.addEventListener('input',e=>renderCodeSuggest(e.target.value));
+    input.addEventListener('input',e=>{renderCodeSuggest(e.target.value);positionCodePopup();});
     input.addEventListener('keydown',e=>{
       if(e.key==='Enter'){ e.preventDefault(); submitCodePopup(); }
       else if(e.key==='Escape'){ e.preventDefault(); closeCodePopup(); }
@@ -1266,24 +1278,28 @@ function renderCodeSuggest(query) {
   const needle=query.trim();
   const matches=codePopupMatches(needle);
   const depth=codeDepthMap();
-  const exact=matches.some(m=>m.path.toLowerCase()===needle.toLowerCase());
+  const exact=matches.some(m=>m.exact);
+  const ambiguous=matches.filter(m=>m.exact).length>1;
   state.popupMatches=matches;
   state.popupCursor=0;
+  state.popupCursorMoved=false;
   const rows=matches.map((m,i)=>`<button class="suggest-row${i===0?' active':''}" data-action="popup-apply" data-id="${m.code.id}">
       <span class="dot" style="background:${esc(m.code.color)}"></span>
-      <span class="suggest-name">${esc(m.path)}</span>
+      <span class="suggest-name">${esc(m.identity)}</span>
       ${(depth.get(m.code.id)||0)>0?`<span class="suggest-tag">${QT('subLevel','sub-level')}</span>`:''}
     </button>`).join('');
   const createRow=(needle&&!exact)
     ? `<button class="suggest-row create" data-action="popup-create" data-name="${esc(needle)}">${esc(QT('createCodeTpl','＋ Create “%s” and code it').replace('%s',needle))}</button>`
     : '';
-  box.innerHTML=(rows+createRow)||'<div class="suggest-empty">'+esc(QT('noCodesYet','No codes yet — type a keyword to create one'))+'</div>';
+  const hint=ambiguous?`<div class="suggest-empty" role="status">${esc(QT('popupChoosePath'))}</div>`:'';
+  box.innerHTML=(hint+rows+createRow)||'<div class="suggest-empty">'+esc(QT('noCodesYet','No codes yet — type a keyword to create one'))+'</div>';
 }
 function movePopupCursor(delta) {
   const rows=[...document.querySelectorAll('#code-suggest .suggest-row')];
   if(!rows.length) return;
   const next=Math.max(0,Math.min(rows.length-1,(state.popupCursor||0)+delta));
   state.popupCursor=next;
+  state.popupCursorMoved=true;
   rows.forEach((r,i)=>r.classList.toggle('active',i===next));
   rows[next].scrollIntoView({block:'nearest'});
 }
@@ -1304,8 +1320,10 @@ async function submitCodePopup() {
   const input=$('#code-search'); if(!input) return;
   const q=input.value.trim();
   const matches=state.popupMatches||[];
-  const exact=matches.find(m=>m.path.toLowerCase()===q.toLowerCase());
-  const pick=exact||matches[state.popupCursor||0];
+  if(!state.popupCursorMoved&&matches.filter(m=>m.exact).length>1){
+    toast(QT('popupChoosePath'),true);return;
+  }
+  const pick=matches[state.popupCursor||0];
   if(pick) return applyCodeById(pick.code.id);
   if(q) return createAndApplyCode(q);
   toast(QT('toastNeedKeyword','Type a keyword first, or pick a code from the list.'),true);
