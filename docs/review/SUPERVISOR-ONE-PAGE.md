@@ -1,23 +1,21 @@
-# QT Supervisor review 17 October 2026
+# QT — Supervisor review · 17 October 2026
 
-**Current status:** Coded transcript export is available as self-contained HTML and editable Word. It preserves full selected source text, precise highlights and the saved ancestry of every coding. Group and Code are structural labels; the product does not infer research Theme or Category roles. Statistical definitions, plotting and original Bologna data are unchanged. Windows is deferred and unverified. No push or deployment.
+**Status:** Review candidate, not the completed final product. The owner has authorised a source push to the existing public repository’s `t7-site` branch. This does not deploy the hosted demos or change `main`. Windows remains deferred and unverified.
 
-## Demonstration order about 12 to 15 minutes
+**Start here:** [Current review source](https://github.com/LuX-x7/QualiCraft/tree/t7-site). On the developer’s computer, open [Website](http://127.0.0.1:49277/), then [Workbench](http://127.0.0.1:49277/w/?lang=en); choose **Bologna · QT notebook review**. These local URLs require that computer. Hosted demos linked in the repository can run an earlier commit.
 
-1. **Website and import:** scroll the five modules, then open the local Bologna QA copy. Import a Bologna document if needed and confirm the saved text.
-2. **Coding and reading:** select a short range, enter a complete leaf-code name and press Enter. Check the target and saved tree. Demonstrate Read or Revisit, Undo, both overview tracks, filtered jumps, Keep and Resume.
-3. **Relationships and figures:** trace a code back to its original passage; inspect all five original figures, the phone viewer, report readouts and heatmap lens. The fixed report remains a 19-document, 874-coding Bologna snapshot.
-4. **Coded transcript:** choose Export, then current, selected or all documents. Download HTML and Word with memos initially off. In HTML, hover, touch or use the keyboard to trace highlights and saved tree entries in both directions. Check uncoded context, overlapping codings, stable IDs and full paths. Word keeps selectable and editable text in adjacent source and tree columns, with continuation headers.
-5. **Export and recover:** existing JSON, coding CSV, matrix CSV and Methods remain available. Restore JSON into a separate copy. Reopen Export after editing the codebook to see the old evidence version flagged; the old downloaded file is retained.
+## Demonstration · about 12 minutes
 
-## Questions and remaining work
+1. **Start and import.** Check the QT satellite entry, Pause and the explicit empty project / independent Bologna example choices. Import public Bologna text and confirm the saved document.
+2. **Code and return.** Select text, enter a full leaf-code name and check the saved target. Try Read / Revisit, Undo, the dual-track overview, filtered jumps, Keep and Resume.
+3. **Trace evidence.** Follow a node back to its source, inspect the five figures and their counts, then the [report](http://127.0.0.1:49277/report) readouts and movable heatmap lens.
+4. **Read the coded transcript.** Export the current / selected / all documents to linked HTML or editable Word. The text and tree use a borderless notebook layout; details remain accessible. Optionally select Theme → Category → Code display labels. These label grouped roots / inner groups / leaves; they do not establish or persist research roles. Trace source and tree with hover, keyboard or touch.
+5. **Keep the record.** Existing project JSON, coding CSV, matrix CSV and Methods remain. Restore JSON separately; after changing the codebook, check the previous export version. Word edits stay in Word.
 
-Does the coded source and tree help the author build a narrative without losing context? Are structural Group and Code labels sufficiently clear before explicit Theme and Category roles are configured? Is the Word layout practical for writing, especially when long trees continue across pages?
+## Discuss and decide
 
-Editable Analysis Table and Narrative Analysis, explicit semantic roles, a dedicated PDF export, complete method-specific workflows and 100-file capacity remain separate work. The final product scope retains TA, Content Analysis and separately developed Comparative Analysis. No new research interpretation was made in this round. Owner and supervisor acceptance, current physical-device and VoiceOver checks, OS reduced motion and download feedback, and formal release gates remain open. Earlier owner-reported phone reading checks keep their original scope.
+Is the source-plus-tree clear enough for narrative writing? Does it preserve enough context and distinguish analytic roles without implying that structure alone creates themes? Is the text-led layout, including long trees across pages, useful to the author?
 
-## Evidence and local entry
+**Remaining work:** editable Analysis Table / Narrative Analysis with saved versions; explicit persistent semantic roles; full method-specific workflows; separately validated Comparative QCA; a defined 100-interview load / recovery test. Current physical-device, VoiceOver, OS reduced-motion / download feedback and researcher / supervisor acceptance remain open. Dedicated transcript PDF is a separate follow-up; existing figure PDFs remain.
 
-UX-44: 9 export Python tests and 7 frontend tests; 172 Python tests pass with 3 skipped, and 155 Node tests pass. Fourteen production-proxy browser cases pass with zero console, HTTP or outside-project request errors. Word samples were checked across 14 full-source pages and 3 edited-sample pages. The isolated Next build passes; npm is unavailable. Environment and collector failures are retained in raw evidence. Phone checks are Chrome touch emulation, not physical-device sign-off.
-
-Start at [Website](http://127.0.0.1:4445/#workflow), then [Current Bologna QA](http://127.0.0.1:64232/w/?lang=en), choosing **Bologna · UX44 review copy**. Continue to [Report](http://127.0.0.1:64232/report). These are temporary local services and require this computer. Only Bologna text and screenshots are included in this round's shareable evidence; private interview materials remain excluded.
+**This round’s evidence:** 174 Python tests (3 skipped), 181 Node tests, 38 Chrome scenarios and an isolated Next production build pass. Full source and all 874 Bologna associations remain; all 594 report CSV readouts and the 10 original figure/data assets plus 10 recordings/stills are preserved. Normal console / HTTP errors are zero. The 15-page Word layout was checked. Phone and motion checks are browser emulation, not device sign-off. npm is unavailable locally; direct Next build uses the existing dependency copy. See [UX-45](UX-45-REVIEW-FINISH.md). Only public Bologna material enters this shareable evidence; private interviews stay excluded.

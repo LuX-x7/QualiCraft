@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import type { CodingExample } from './CodingEvidence'
 import type { ManifestFigure } from '@/lib/report/read'
+import { EXPORT_FORMATS } from '@/lib/site/export-formats'
 
 export type WorkflowData = {
   frequency: { label: string; count: string }[]
@@ -10,16 +11,6 @@ export type WorkflowData = {
   frequencyCsv: string
   figures: ManifestFigure[]
 }
-const FORMATS = [
-  { label: 'Project JSON', suffix: '.json', title: 'A portable project',
-    items: ['Source documents', 'Codebook and codings', 'Suggestions and audit trail'], note: 'Restore this file as a new project to continue the work. It includes the source text.' },
-  { label: 'Codings CSV', suffix: '.csv', title: 'A row for each saved coding',
-    items: ['Document and code path', 'Start, end and exact quotation', 'Memo and recorded source'], note: 'Inspect coding records in another tool. The separate matrix export places documents against codes.' },
-  { label: 'Matrix CSV', suffix: '.csv', title: 'A document × code table',
-    items: ['One document per row', 'One code per column', 'Recorded coding counts in each cell'], note: 'Inspect the full document-by-code matrix in another tool. It is a separate CSV from the coding records.' },
-  { label: 'Methods Markdown', suffix: '.md', title: 'A record for review',
-    items: ['Saved notes and codebook changes', 'Recorded AI use and review', 'Counting rules and limitations'], note: 'Review this record against your actual research process. It does not infer when notes were written.' },
-]
 
 export default function WorkflowIllustration({ kind, example, data }: {
   kind: string; example: CodingExample | null; data: WorkflowData
@@ -28,7 +19,7 @@ export default function WorkflowIllustration({ kind, example, data }: {
   const refs = useRef<Array<HTMLButtonElement | null>>([])
   const labels = kind === 'import' ? ['File', 'Original text', 'Source range']
     : kind === 'analysis' ? data.frequency.map(row => row.label)
-      : kind === 'plotting' ? data.figures.map(f => f.label) : FORMATS.map(f => f.label)
+      : kind === 'plotting' ? data.figures.map(f => f.label) : EXPORT_FORMATS.map(f => f.label)
   const choose = (index: number, focus = false) => {
     const next = Math.max(0, Math.min(labels.length - 1, index)); setSelected(next)
     if (focus) refs.current[next]?.focus({ preventScroll: true })
@@ -41,7 +32,7 @@ export default function WorkflowIllustration({ kind, example, data }: {
     }
   }
   if (!example || !labels.length) return <p role="status">This illustration is unavailable until its source export can be verified.</p>
-  const format = FORMATS[selected] ?? FORMATS[0]
+  const format = EXPORT_FORMATS[selected] ?? EXPORT_FORMATS[0]
   const figure = data.figures[selected] ?? data.figures[0]
   const row = data.frequency[selected] ?? data.frequency[0]
   return <div className={`workflow-illustration workflow-illustration--${kind}`}>

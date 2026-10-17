@@ -165,7 +165,9 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                                 query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
                                 memo = query.get('memos', ['0'])
                                 require(memo in (['0'], ['1']), 'Memo selection is invalid.')
-                                frozen = transcript.freeze(project, query.get('document_id'), memo == ['1'])
+                                roles = query.get('role_labels', ['saved'])
+                                require(len(roles) == 1, 'Hierarchy label selection is invalid.')
+                                frozen = transcript.freeze(project, query.get('document_id'), memo == ['1'], roles[0])
                                 headers = [('X-QT-Evidence-Version', frozen['version']),
                                            ('X-QT-Exported-At', frozen['generated_at'])]
                                 if fmt == 'coded-version':
@@ -217,7 +219,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 if path == "/config.js":
                     return self.send(('window.QT_BASE=' + json.dumps(base_path) + ';').encode(),
                                      "application/javascript; charset=utf-8")
-                files = {"/": "index.html", "/app.js": "app.js",
+                files = {"/": "index.html", "/app.js": "app.js", "/welcome-orbit.js": "welcome-orbit.js",
                          "/style.css": "style.css",
                          "/landing.html": "landing.html", "/landing.css": "landing.css"}
                 if path not in files:
@@ -228,7 +230,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 # the page is served at /w with no trailing slash. Rewrite them to
                 # absolute paths that include the prefix.
                 if base_path and file.suffix == ".html":
-                    for name in ("style.css", "config.js", "app.js", "landing.css"):
+                    for name in ("style.css", "config.js", "welcome-orbit.js", "app.js", "landing.css"):
                         payload = payload.replace(f'"{name}"'.encode(), f'"{base_path}/{name}"'.encode())
                 return self.send(payload, (mimetypes.guess_type(file.name)[0] or "text/plain") + "; charset=utf-8")
             except (ValueError, KeyError, TypeError):

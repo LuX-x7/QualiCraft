@@ -41,6 +41,6 @@ export const CLIPS: Partial<Record<string, {
     poster: '/clips/export.png?v=cc45cd786378',
     width: 696,
     height: 696,
-    description: 'The current QT export panel after a verified project JSON download: filename, bytes and content preview.',
+    description: 'A verified project JSON download in QT: filename, bytes and content preview. This recording predates coded transcript HTML and Word.',
   },
 }

@@ -80,13 +80,14 @@ def main():
         check('import explains source identity, text record and exact coordinates',import_flow)
         def export_flow():
             _,p=opened();visit(p,'export');assert p.locator('[data-export-record]').count()==1,'Missing common project structure'
-            buttons=p.locator('[data-story-art="export"] .export-file');assert buttons.count()==4
-            for i in range(4):
+            buttons=p.locator('[data-story-art="export"] .export-file');assert buttons.count()==6
+            assert buttons.all_text_contents()[:4] and [buttons.nth(i).get_attribute('aria-label') for i in range(4)]==['Project JSON','Codings CSV','Matrix CSV','Methods Markdown']
+            for i in range(6):
                 buttons.nth(i).hover();expect(buttons.nth(i)).to_have_attribute('aria-pressed','true');buttons.nth(i).press('Enter')
-            assert p.locator('[data-story-art="export"] .file-structure').count()==4
+            assert p.locator('[data-story-art="export"] .file-structure').count()==6
             assert p.locator('[data-story-art="export"] [data-schematic="export"]').count()==1
-            shot(p,'desktop-export-engineering');return {'formats':4,'original_structures_retained':4,'real_hover_and_keyboard':True}
-        check('export links one saved record to all four existing file structures',export_flow)
+            shot(p,'desktop-export-engineering');return {'formats':6,'original_structures_retained':4,'real_hover_and_keyboard':True}
+        check('export retains the four original structures and adds coded HTML and Word',export_flow)
         def responsive():
             rows=[]
             for width,height in [(320,740),(844,390)]:

@@ -25,6 +25,13 @@
 
 <p align="center"><em>English first · 中文在下半部分</em></p>
 
+> **Current review branch:** [t7-site](https://github.com/LuX-x7/QualiCraft/tree/t7-site). This is a review candidate, not the completed final scope. Hosted demos above can run an earlier commit; pushing source does not deploy them. See the [current plan](docs/review/EXPERIENCE-ROADMAP.md) and [UX-45 evidence](docs/review/UX-45-REVIEW-FINISH.md).
+>
+> **Available:** QT satellite start screen, manual coding and reading marks, relationship exploration, five reproducible figures, and coded transcript HTML / editable Word alongside the four existing project exports. **Still planned:** an editable Analysis Table / Narrative Analysis report, complete method-specific workflows, Comparative QCA calibration / truth tables / minimisation, and a defined 100-interview capacity test. Windows is deferred and unverified.
+>
+> **当前审核版：** 新起步页、编码原文 HTML／Word 已接通；完整报告编辑器、Comparative QCA 与百份容量验收仍待做。上方在线演示可能仍是旧版本，源码推送不会自动部署。请从 `t7-site` 查看当前代码；Windows 暂缓，不能称最终版。
+
+
 ---
 
 <a id="english"></a>
@@ -126,7 +133,7 @@ These are independent capability blocks, not a mandatory wizard. Enable the modu
 | 2 | **Coding** | Select source text, apply hierarchical codes, add memos, and keep a provenance trail. Human codings and model suggestions are distinguishable. |
 | 3 | **Analyse** | Inspect code frequency, document × code counts, coverage, co-occurrence, accumulation, and the theme–code–passage relationship map. |
 | 4 | **Plot** | Render figures from the same tidy analysis table, each captioned with the counting unit. Adjust grouping, palette, font, clustering, and labels beside the preview. |
-| 5 | **Export** | Export the full project JSON, codings CSV, document × code matrix, a methods record, or a figure bundle with CSV, script, SVG, PDF and PNG. |
+| 5 | **Export** | Export full project JSON, codings CSV, document × code matrix, a methods record, full coded transcripts as linked HTML or editable Word, or a figure bundle with CSV, script, SVG, PDF and PNG. |
 
 ### The relationship map
 
@@ -343,7 +350,7 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 | 2 | **编码** | 选择原文、应用层级编码、添加备忘录并保留来源记录；人工编码与模型建议可区分。 |
 | 3 | **分析** | 查看编码频次、文档 × 编码计数、覆盖、共现、累计趋势，以及主题—编码—文本片段关系网图。 |
 | 4 | **绘图** | 基于同一张整洁分析表生成期刊风格图表，可在预览旁调节分组、配色、字号、聚类和标注。 |
-| 5 | **导出** | 导出项目 JSON、编码 CSV、文档 × 编码矩阵、方法记录，或包含 CSV、脚本、SVG、PDF、PNG 的图包。 |
+| 5 | **导出** | 导出项目 JSON、编码 CSV、文档 × 编码矩阵、方法记录、全文高亮与归属树 HTML／可编辑 Word，或包含 CSV、脚本、SVG、PDF、PNG 的图包。 |
 
 ### 关系网图
 

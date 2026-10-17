@@ -129,6 +129,36 @@ class TranscriptTests(unittest.TestCase):
             self.assertEqual(saved, data)
             self.assertNotIn(b'TargetMode="External"', b''.join(z.read(n) for n in z.namelist() if n.endswith('.rels')))
 
+    def test_explicit_display_roles_preserve_ancestry_evidence_and_source(self):
+        before = copy.deepcopy(self.p)
+        plain = transcript.freeze(self.p, [self.d['id']])
+        named = transcript.freeze(self.p, [self.d['id']], role_labels='theme-category-code')
+        self.assertEqual(self.p, before)
+        self.assertNotEqual(plain['version'], named['version'])
+        self.assertEqual(plain['association_count'], named['association_count'])
+        for a, b in zip(plain['documents'][0]['annotations'], named['documents'][0]['annotations']):
+            self.assertEqual(a['id'], b['id'])
+            self.assertEqual([n['id'] for n in a['path']], [n['id'] for n in b['path']])
+            self.assertEqual(a['quote'], b['quote'])
+        self.assertEqual({n['role'] for a in named['documents'][0]['annotations'] for n in a['path']}, {'Theme', 'Category', 'Code'})
+        with self.assertRaises(ValueError):
+            transcript.freeze(self.p, role_labels='automatic-analysis')
+
+    def test_notebook_layout_has_clear_roles_and_separate_record_details(self):
+        data = transcript.freeze(self.p, [self.d['id']], role_labels='theme-category-code')
+        output = transcript.html_export(data).decode()
+        self.assertIn('class="node-heading" data-role="Category"', output)
+        self.assertIn('<details class="evidence-meta">', output)
+        self.assertNotIn('<table', output)
+        with zipfile.ZipFile(io.BytesIO(transcript.docx_export(data))) as z:
+            xml = ET.fromstring(z.read('word/document.xml'))
+            ns = {'w': transcript.W}
+            borders = xml.findall('.//w:tblBorders/*', ns)
+            self.assertTrue(borders)
+            self.assertTrue(all(b.get('{'+transcript.W+'}val') == 'nil' for b in borders))
+            self.assertIn('Record details', transcript.word_plain(xml))
+            self.assertNotIn('└─', transcript.word_plain(xml))
+
 
 class TranscriptHTTPTests(unittest.TestCase):
     def test_download_auth_scope_headers_and_original_exports_unchanged(self):
@@ -147,7 +177,7 @@ class TranscriptHTTPTests(unittest.TestCase):
                         self.assertEqual(response.status, 200)
                         self.assertEqual(len(response.headers['X-QT-Evidence-Version']), 64)
                         if fmt != 'coded-version': self.assertIn('attachment', response.headers['Content-Disposition'])
-                for suffix in ['coded-html&document_id=missing', 'coded-docx&memos=invalid', 'coded-html&document_id=']:
+                for suffix in ['coded-html&document_id=missing', 'coded-docx&memos=invalid', 'coded-html&document_id=', 'coded-html&role_labels=invalid', 'coded-html&role_labels=saved&role_labels=saved']:
                     with self.assertRaises(urllib.error.HTTPError) as caught:
                         urllib.request.urlopen(urllib.request.Request(root+suffix, headers={'X-QualiCraft-Token': token}))
                     self.assertEqual(caught.exception.code, 400)

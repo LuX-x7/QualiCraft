@@ -794,3 +794,19 @@ button:disabled{cursor:default}
 .coded-document-list input,.coded-memo-option input{width:auto;flex:none;margin-top:4px}
 .coded-export-actions{display:flex;gap:10px;flex-wrap:wrap}
 #coded-version-status{font-size:14px;overflow-wrap:anywhere}
+
+/* The same QT satellite notebook opens the local workbench; reading stays plain. */
+.shell--welcome{background-color:var(--paper);background-image:linear-gradient(#4b607c0b 1px,transparent 1px),linear-gradient(90deg,#4b607c0b 1px,transparent 1px);background-size:28px 28px}
+.welcome-sheet{position:relative;max-width:1440px;border:0;background:transparent;isolation:isolate}
+.welcome-header{position:relative;z-index:2;background:transparent}
+.welcome-orbit{position:absolute;left:0;top:140px;width:54%;height:620px;max-height:70vh}
+.welcome-orbit canvas{position:absolute;inset:0;width:100%;height:100%}
+.welcome-orbit-qt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:26px;background:var(--paper);border-radius:50%}
+.welcome-orbit-qt .qtmark{width:180px;height:auto}
+.welcome-orbit [data-satellite]{position:absolute;transform:translate(-50%,18px);font:11px ui-monospace,monospace;color:var(--accent);pointer-events:none;background:var(--paper)}
+.welcome-orbit>button{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:12px;background:var(--paper);min-height:36px}
+.welcome-content{position:relative;width:47%;margin-left:52%;padding:44px 36px 32px;background:var(--paper)}
+.welcome-options{grid-template-columns:1fr;gap:18px}
+.welcome-options section{padding:16px}
+@media(max-width:800px){.welcome-orbit{position:relative;top:0;width:100%;height:280px;max-height:none}.welcome-orbit-qt .qtmark{width:105px}.welcome-orbit-qt{padding:16px}.welcome-orbit>button{bottom:12px}.welcome-content{width:100%;margin:0;padding:28px 20px}.welcome-options{grid-template-columns:1fr}.welcome-header{background:var(--paper)}}
+.report-status{margin:18px 0;color:var(--muted);font-size:13px}.report-status summary{cursor:pointer;font-weight:600}.report-status p{line-height:1.6}

@@ -3,17 +3,18 @@ import { useRef, useState, type KeyboardEvent } from 'react'
 import SketchGlyph from './SketchGlyph'
 import SavedPathSketch from './SavedPathSketch'
 import { networkExamples } from '@/lib/site/record-network'
+import { EXPORT_FORMATS } from '@/lib/site/export-formats'
 import CodingSketch from './CodingSketch'
 import type { SavedCoding } from '@/lib/site/record-network'
 import type { CodingExample } from './CodingEvidence'
 
-const EXPORTS=[{name:'Project',suffix:'.json',fields:'documents · codebook · codings',detail:'Documents, codebook, codings, reading marks and audit trail. Restore as a new project.'},{name:'Codings',suffix:'.csv',fields:'document · code · range',detail:'Saved coding records with document, code path, exact quotation and character range.'},{name:'Matrix',suffix:'.csv',fields:'document × code',detail:'Documents by codes, with recorded coding counts.'},{name:'Methods',suffix:'.md',fields:'notes · changes · rules',detail:'A reviewable record of saved notes, changes, AI use and counting rules.'}]
 function FileStructure({index}:{index:number}) {
  return <svg className="file-structure" viewBox="0 0 120 64" fill="none" stroke="currentColor" strokeWidth="1.1" aria-hidden="true">
   {index===0?<><path d="M22 8H30V56H22M98 8H90V56H98M30 32H48M62 17V47M48 32H62M62 17H86M62 47H86"/><circle cx="49" cy="32" r="4"/><path d="M70 12V22M77 12V22M70 42V52M77 42V52"/></>
    :index===1?<><path d="M12 10H108V54H12Z M12 23H108M36 10V54M68 10V54M12 38H108"/><path className="format-trace" d="M17 31H30M43 31H61M73 31H102M17 46H30M43 46H61M73 46H102"/></>
    :index===2?<><path d="M25 9H105V55H25Z M25 23H105M25 39H105M45 9V55M65 9V55M85 9V55M12 16H18M12 31H18M12 47H18"/><path className="format-trace" d="M48 26H62V36H48Z M87 42H102V52H87Z"/></>
-   :<><path d="M20 14H99M20 29H99M20 43H85M29 53H91"/><path className="format-trace" d="M10 11V18M7 14H14M10 26V33M7 29H14M10 40V47M7 43H14"/></>}
+   :index===3?<><path d="M20 14H99M20 29H99M20 43H85M29 53H91"/><path className="format-trace" d="M10 11V18M7 14H14M10 26V33M7 29H14M10 40V47M7 43H14"/></>
+   :<><path d="M7 7H69V57H7Z M15 16H61M15 25H57M15 34H61M15 43H60M15 50H48M83 12V49M83 18H104M83 33H104M83 48H104"/><path className="format-trace" d="M14 28H59V38H14Z M69 33H83"/><circle cx="106" cy="18" r="3"/><circle cx="106" cy="33" r="3"/><circle cx="106" cy="48" r="3"/></>}
  </svg>
 }
 export default function SketchScene({kind,example,records=[]}:{kind:string;example:CodingExample|null;records?:SavedCoding[]}) {
@@ -42,12 +43,12 @@ export default function SketchScene({kind,example,records=[]}:{kind:string;examp
    <details className="engineering-source"><summary>Source excerpt &amp; identity</summary><blockquote lang="it">{example.quote}</blockquote><dl><dt>Document ID</dt><dd>{example.document_id}</dd><dt>Document SHA-256</dt><dd>{example.document_sha256}</dd></dl><p>Bologna CC0 · explanatory structure from a saved record.</p></details>
  </div>
  return <div className="export-sketch engineering-plate" data-flow-active={part}>
-  <p className="engineering-caption mono">ONE PROJECT → FOUR OUTPUT STRUCTURES</p>
+  <p className="engineering-caption mono">ONE PROJECT → SIX OUTPUT STRUCTURES</p>
   <div className="export-board">
    <div className="export-package"><SketchGlyph kind="export"/><div data-export-record="true" className="export-record"><span className="mono">PROJECT RECORD</span><svg viewBox="0 0 190 132" fill="none" aria-hidden="true"><path className="engineering-outline" d="M8 7L180 4L183 125L6 127Z M22 28V106M22 38H44M22 70H44M22 102H44"/><g className="engineering-field"><text x="51" y="43">documents</text><text x="51" y="75">codes</text><text x="51" y="107">annotations</text></g><circle className="engineering-joint" cx="22" cy="70" r="3"/></svg></div></div>
-   <svg className="export-wiring" viewBox="0 0 600 320" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M140 160H188V78H235M188 160V244H235M188 78H420M188 244H420"/><circle cx="188" cy="160" r="4"/><path className="engineering-trace" pathLength="1" d="M140 160H188V78H420M188 160V244H420"/></svg>
-   <div className="export-files" role="group" aria-label="Explore export formats">{EXPORTS.map((format,index)=><button type="button" key={format.name} aria-pressed={part===index} className={`export-file${part===index?' is-current':''}`} {...activate(index,4)}><span className="file-fold" aria-hidden="true"/><strong className="mono">{format.suffix}</strong><FileStructure index={index}/><span>{format.name}</span><span className="export-fields mono">{format.fields}</span></button>)}</div>
+   <svg className="export-wiring" viewBox="0 0 600 320" preserveAspectRatio="none" fill="none" aria-hidden="true"><path d="M140 160H188V78H575M188 160V244H575M235 78V92M405 78V92M575 78V92M235 244V258M405 244V258M575 244V258"/><circle cx="188" cy="160" r="4"/><path className="engineering-trace" pathLength="1" d="M140 160H188V78H575M188 160V244H575"/></svg>
+   <div className="export-files" role="group" aria-label="Explore export formats">{EXPORT_FORMATS.map((format,index)=><button type="button" key={format.name} aria-label={format.label} aria-pressed={part===index} className={`export-file${part===index?' is-current':''}`} {...activate(index,EXPORT_FORMATS.length)}><span className="file-fold" aria-hidden="true"/><strong className="mono">{format.suffix}</strong><FileStructure index={index}/><span>{format.name}</span><span className="export-fields mono">{format.fields}</span></button>)}</div>
   </div>
-  <p className="sketch-readout" role="status" aria-live="polite"><span className="mono">{EXPORTS[part].name.toUpperCase()}</span>{EXPORTS[part].detail}</p><p className="sketch-note mono">FORMAT GUIDE · DOWNLOAD YOUR FILES FROM THE WORKBENCH</p>
+  <p className="sketch-readout" role="status" aria-live="polite"><span className="mono">{EXPORT_FORMATS[part].name.toUpperCase()}</span>{EXPORT_FORMATS[part].detail}</p><p className="sketch-note mono">FORMAT GUIDE · DOWNLOAD YOUR FILES FROM THE WORKBENCH</p>
  </div>
 }

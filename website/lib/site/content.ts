@@ -83,13 +83,13 @@ export const MODULES = [
     no: '05',
     key: 'export',
     title: 'Export',
-    goal: 'Carry the research record with you.',
+    goal: 'Carry the evidence into your writing.',
     steps: [
-      'Export the project JSON.',
-      'Export the codings CSV.',
-      'Export the methods record.',
+      'Choose the document scope.',
+      'Export coded HTML or Word.',
+      'Keep project, coding, matrix and methods exports.',
     ],
-    see: 'Project, coding table, matrix and methods record, each with a clear purpose.',
+    see: 'Full text, highlights and the saved tree alongside each coding.',
   },
 ] as const
 
@@ -100,7 +100,7 @@ export const METHODS = {
   label: 'Method',
   title: 'Two ways to read the same transcript.',
   body:
-    'Choose the approach that fits the research question. The tool records the mechanics; interpretation, reflexivity and reporting remain your work.',
+    'TA and qualitative content analysis share passage coding, saved hierarchies and memos. Choose the approach that fits the research question; interpretation, reflexivity and reporting remain your work.',
   columns: [
     'Research question',
     'Unit of analysis',
@@ -134,6 +134,16 @@ export const METHODS = {
         'Describe how the analyst developed categories and inclusion rules and interpreted their context.',
         'Carries the counting directly — frequency, document × code, and the whole codebook exported for an appendix. Agreement across coders is not computed here; export the codings and compute it where you report it.',
       ],
+    },
+  ],
+  planned: [
+    {
+      name: 'Comparative QCA',
+      detail: 'Qualitative Comparative Analysis is planned and unavailable. Calibration, truth tables and minimisation are not implemented. Coding counts and co-occurrence cannot stand in for this workflow.',
+    },
+    {
+      name: 'Report writing',
+      detail: 'An in-workbench Analysis Table and Narrative Analysis editor is planned and unavailable. Current coded transcripts provide full text, highlights and the saved Group/Code tree in HTML or editable Word. Write in your own editor; changes to the Word file do not update QT.',
     },
   ],
   citations: [
