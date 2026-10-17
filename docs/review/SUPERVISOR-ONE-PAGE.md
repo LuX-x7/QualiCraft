@@ -1,6 +1,6 @@
 # QT · Supervisor review — 17 October 2026
 
-**Post-W03 joint acceptance: 54/54 Chrome checks pass, with no new functional defect found in the exercised workflow.** This is a local review candidate. Owner/supervisor visual acceptance, current physical-device/accessibility checks and release gates remain open. Windows is deferred and unverified; no push or deployment.
+**The owner now confirms that phone Read/Revisit, Undo, Keep and Resume pass, including retention after document switching and refresh.** This is a user-reported result on the tested phone; model, OS and browser details are pending. Historical UX-38 automated acceptance remains54/54. Overall visual/workflow acceptance, the remaining manual checks and release gates stay open. Windows is deferred and unverified; no push or deployment.
 
 ## Demonstration order · about 12–15 minutes
 
@@ -14,10 +14,10 @@
 
 Does the new visual hierarchy communicate a simple, traceable workflow? Is the distinction between a saved coding, a source range and a manual reading mark clear? Is the network useful at full-theme density, or should a focused theme view be preferred? Selected names/source paths remain available; the phone overview does not show every node name at once.
 
-Remaining: owner/supervisor acceptance; current physical-phone touch, VoiceOver, system reduced motion and operating-system download feedback; formal release gates. The five preserved UX-29 recordings predate reading controls, so demonstrate those controls live. Technical checks do not sign off aesthetics, accessibility on untested devices or research interpretation.
+Remaining: owner/supervisor acceptance; VoiceOver, system reduced motion and operating-system download feedback; other phone paths not covered by this report; device metadata and formal release gates. The five preserved UX-29 recordings predate reading controls, so demonstrate those controls live. Technical checks do not sign off aesthetics, accessibility on untested devices or research interpretation.
 
 ## Evidence and local access
 
-This round: 11 main + 10 story + 7 W03 + 7 heatmap + 7 visual + 5 phone supplement + 3 navigation + 4 phone follow-up = **54 passed**; console/HTTP errors 0. All 594 report rows, 301 heatmap mappings, 25 real plot-bundle members and four byte-verified exports pass; v5 recovery retains marks. 23 project previews are healthy. Original Bologna data, product code, report assets and media are unchanged. Only review documents change; no full unit tests or build are rerun. Historical evidence: UX-37 Node153 and direct Next build pass (npm unavailable,127 retained); UX-35 Python163,3 skipped.
+Historical automated evidence (UX-38, not rerun for this result update): 11 main + 10 story + 7 W03 + 7 heatmap + 7 visual + 5 phone supplement + 3 navigation + 4 phone follow-up = **54 passed**; console/HTTP errors 0. All 594 report rows, 301 heatmap mappings, 25 real plot-bundle members and four byte-verified exports pass; v5 recovery retains marks. 23 project previews are healthy. Original Bologna data, product code, report assets and media are unchanged. The UX-39 result update changes review documents only; no new automated tests or build are run. Historical evidence: UX-37 Node153 and direct Next build pass (npm unavailable,127 retained); UX-35 Python163,3 skipped.
 
-See UX-38-JOINT-ACCEPTANCE.md, SCREENSHOTS-UX38.md and raw/ux-38. Local [Website](http://127.0.0.1:4445/#workflow) · [Report](http://127.0.0.1:4445/report) · [Fresh Bologna QA](http://127.0.0.1:4470/w?lang=en). In QA choose Bologna · example copy and Bologna · UX38 joint review. Loopback links require this computer.
+See UX-39-MOBILE-MANUAL-ACCEPTANCE.md and raw/ux-39 for the owner report; UX-38-JOINT-ACCEPTANCE.md, SCREENSHOTS-UX38.md and raw/ux-38 retain the automated evidence. Local [Website](http://127.0.0.1:4445/#workflow) · [Report](http://127.0.0.1:4445/report) · [Fresh Bologna QA](http://127.0.0.1:4470/w?lang=en). In QA choose Bologna · example copy and Bologna · UX38 joint review. Loopback links require this computer.
