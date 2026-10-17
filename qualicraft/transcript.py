@@ -243,7 +243,7 @@ def word_styles():
         return s
     style('Normal','Normal',22,font='Georgia',after=140,line=320)
     style('Title','Title',48,bold=True,after=260,line=270,keep=True)
-    style('Subtitle','Subtitle',25,after=200,color='465566',keep=True)
+    style('Subtitle','Subtitle',25,after=180,color='000000',keep=True)
     style('Heading1','heading 1',34,bold=True,before=340,after=160,line=280,level=0,keep=True)
     style('Heading2','heading 2',26,bold=True,before=230,after=100,line=280,level=1,keep=True)
     style('Heading3','heading 3',23,bold=True,before=180,after=90,line=280,level=2,keep=True)
@@ -253,7 +253,13 @@ def word_styles():
     word_tag(question.find(f'{{{W}}}pPr'),'keepLines')
     quote=style('EvidenceQuote','Verbatim evidence',22,font='Georgia',before=100,after=180,line=320,italic=True,indent=240)
     word_tag(word_tag(quote.find(f'{{{W}}}pPr'),'pBdr'),'left',{'val':'single','sz':8,'color':'8194A5','space':9})
-    style('PassageLabel','Source paragraph label',17,bold=True,before=240,after=90,line=240,color='3C4F63')
+    style('PassageLabel','Source paragraph label',17,bold=True,before=140,after=70,line=240,color='3C4F63')
+    style('TreeRole','Coding tree role',16,bold=True,after=30,line=240,keep=True)
+    style('TreeName','Coding tree name',21,font='Georgia',after=100,line=280)
+    style('FigureCaption','Figure caption',21,font='Georgia',before=80,after=100,line=280)
+    style('PageFooter','Page navigation',17,after=0,line=240,color='465566')
+    style('ChapterNote','Chapter guide',19,after=140,line=280,color='465566')
+    style('RecordHeading','Record heading',21,bold=True,before=100,after=50,line=260,level=2,keep=True)
     return ET.tostring(root,encoding='unicode')
 
 
@@ -266,12 +272,11 @@ def docx_export(data):
         if keep: word_tag(props, 'keepNext')
         if not style:word_tag(props, 'spacing', {'after': '65', 'line': '290', 'lineRule': 'auto'})
         word_run(para, text, size=size, bold=bold); return para
-    p(body, 'Coded transcript', 'Title')
+    p(body, 'Source notebook', 'Title')
     p(body, data['project_name'], 'Subtitle')
     p(body, f"Full source · {len(data['documents'])} document(s) · {data['association_count']} associations · {data['range_count']} distinct source ranges", 'Meta')
-    p(body, 'Read the source on the left. Follow its saved coding tree on the right.', size=21)
-    p(body, role_description(data) + ' Memos ' + ('included.' if data['include_memos'] else 'excluded.') + ' Full record details follow the transcript.', 'Meta')
-    p(body, 'Verbatim source is italic. Explicit questions retain their original markers and are bold italic. Paragraph labels separate the source blocks.', 'Meta')
+    p(body, 'Transcript on the left. Coding tree on the right. Match each paragraph and A reference.', 'ChapterNote')
+    p(body, 'Original words are italic; highlights retain the saved source ranges. Tree text remains editable.', 'Meta')
     if not data['documents']: p(body, 'No documents in this project.')
     for d in data['documents']:
         p(body, d['name'], 'Heading1')
@@ -288,13 +293,15 @@ def docx_export(data):
         for width in [5860, 4400]: word_tag(grid, 'gridCol', {'w': width})
         header = word_tag(table, 'tr'); word_tag(word_tag(header, 'trPr'), 'tblHeader')
         for title, width in [('Full source text', 5860), ('Saved coding tree', 4400)]:
-            cell = word_tag(header, 'tc'); cp = word_tag(cell, 'tcPr'); word_tag(cp, 'tcW', {'w': width, 'type': 'dxa'}); p(cell, title, 'Meta', size=18, bold=True)
-            p(cell, d['name'] if width == 5860 else 'Continue by paragraph and A reference', 'Meta', size=15)
+            cell = word_tag(header, 'tc'); cp = word_tag(cell, 'tcPr'); word_tag(cp, 'tcW', {'w': width, 'type': 'dxa'}); p(cell, (title+' · '+d['name']) if width==5860 else 'Saved coding tree · paragraph / A reference', 'TreeRole')
         anns = {a['key']: a for a in d['annotations']}
         for b in d['blocks']:
-            row = word_tag(table, 'tr')  # row splitting allowed; long source/tree can continue
+            row = word_tag(table, 'tr')  # Long source/tree rows can continue across pages.
             raw=''.join(t['text'] for t in b['tokens']).strip()
-            if not b['keys'] and len(raw)<=600:
+            nodes={n['id']:n for key in b['keys'] for n in anns[key]['path']}
+            # Keep short source/tree pairs together, without forcing tall trees
+            # into an indivisible row that could overflow a page.
+            if len(raw)<=600 and len(nodes)<=6 and sum(len(n['name']) for n in nodes.values())<=350 and len(b['keys'])<=8:
                 word_tag(word_tag(row,'trPr'),'cantSplit')
             left, right = [word_tag(row, 'tc') for _ in range(2)]
             for cell, width in [(left, 5860), (right, 4400)]:
@@ -331,16 +338,14 @@ def docx_export(data):
                     n = node['node']
                     role = n['role']
                     symbol = {'Theme': '◆', 'Category': '○', 'Code': '•', 'Group': '◇'}[role]
-                    color = {'Theme':'8F3222','Category':'53684B'}.get(role,'4B607C')
-                    para = p(parent, '', keep=True)
-                    spacing = para.find(f'{{{W}}}pPr/{{{W}}}spacing')
-                    spacing.set(f'{{{W}}}after', '0')
-                    word_run(para, symbol+' '+role.upper(), size=15, color=color, font='Courier New')
+                    color = '000000' if role in ('Theme','Category','Group') else '30465E'
+                    para = p(parent, '', 'TreeRole', keep=True)
+                    word_run(para, symbol+' '+role.upper(), color=color, font='Calibri')
                     # Do not chain the name to an arbitrarily tall nested tree
                     # (or to the following source row at a leaf).
-                    para = p(parent, '')
+                    para = p(parent, '', 'TreeName')
                     word_tag(para.find(f'{{{W}}}pPr'), 'keepLines')
-                    word_run(para, n['name'], size=22, bold=role=='Theme', color=color, font='Georgia')
+                    word_run(para, n['name'], bold=role in ('Theme','Category','Group'), color=color)
                     for a in node['items']:
                         word_run(para, '\n'+a['key']+'  ↩', size=16)
                     if n.get('memo'): p(parent, 'Memo: '+n['memo'], size=18)
@@ -378,6 +383,7 @@ def docx_export(data):
     details=p(body, 'Record details', 'Heading1');word_tag(details.find(f'{{{W}}}pPr'),'pageBreakBefore')
     p(body, f"Generated {data['generated_at']}\nProject {data['project_id']} · Schema v{data['schema_version']}\nEvidence SHA256 {data['version']}", 'Meta')
     p(body, NOTICE + ' This frozen file does not update or write external edits back to QT.', 'Meta', size=18)
+    p(body, role_description(data) + ' Memos ' + ('included.' if data['include_memos'] else 'excluded.') + ' Explicit question markers are preserved; questions are bold italic.', 'Meta')
     for d in data['documents']:
         p(body, d['name'], 'Heading2')
         p(body, f"Document {d['id']}\nSource SHA256 {d['sha256']}", 'Meta', size=16)
@@ -399,4 +405,34 @@ def docx_export(data):
                               'word/document.xml': ET.tostring(doc, encoding='unicode').replace('\r', '&#13;'),
                               'customXml/item1.xml': '<evidence>'+escaped(canonical(data))+'</evidence>'}.items():
             z.writestr(name, '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+payload)
-    return buf.getvalue()
+    return word_footer(buf.getvalue(), 'QT Source notebook')
+
+
+def word_package_xml(root,namespace):
+    plain=ET.Element(root.tag.split('}')[-1],{'xmlns':namespace})
+    for child in root:ET.SubElement(plain,child.tag.split('}')[-1],child.attrib)
+    return ET.tostring(plain,encoding='utf-8',xml_declaration=True)
+
+
+def word_footer(payload,label):
+    """Page navigation uses native fields and never floats over source content."""
+    R='http://schemas.openxmlformats.org/officeDocument/2006/relationships';ET.register_namespace('r',R)
+    with zipfile.ZipFile(io.BytesIO(payload)) as z:files={n:z.read(n) for n in z.namelist()}
+    document=ET.fromstring(files['word/document.xml']);section=document.find('.//{'+W+'}sectPr')
+    for ref in list(section.findall('{'+W+'}footerReference')):section.remove(ref)
+    section.insert(0,ET.Element('{'+W+'}footerReference',{'{'+W+'}type':'default','{'+R+'}id':'qtFooter'}))
+    ftr=ET.Element('{'+W+'}ftr');p=word_tag(ftr,'p');pr=word_tag(p,'pPr');word_tag(pr,'pStyle',{'val':'PageFooter'});word_tag(pr,'jc',{'val':'right'})
+    word_run(p,label+' · ');field=word_tag(p,'fldSimple',{'instr':'PAGE'});word_run(field,'1')
+    files['word/footer1.xml']=ET.tostring(ftr,encoding='utf-8',xml_declaration=True)
+    namespace='http://schemas.openxmlformats.org/package/2006/relationships';rels=ET.fromstring(files['word/_rels/document.xml.rels'])
+    for ref in list(rels):
+        if ref.get('Id')=='qtFooter':rels.remove(ref)
+    ET.SubElement(rels,'{'+namespace+'}Relationship',{'Id':'qtFooter','Type':R+'/footer','Target':'footer1.xml'})
+    files['word/_rels/document.xml.rels']=word_package_xml(rels,namespace)
+    namespace='http://schemas.openxmlformats.org/package/2006/content-types';types=ET.fromstring(files['[Content_Types].xml'])
+    if not any(e.get('PartName')=='/word/footer1.xml' for e in types):ET.SubElement(types,'{'+namespace+'}Override',{'PartName':'/word/footer1.xml','ContentType':'application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml'})
+    files['[Content_Types].xml']=word_package_xml(types,namespace);files['word/document.xml']=ET.tostring(document,encoding='utf-8',xml_declaration=True).replace(b'\r',b'&#13;')
+    output=io.BytesIO()
+    with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as z:
+        for name,value in files.items():z.writestr(name,value)
+    return output.getvalue()

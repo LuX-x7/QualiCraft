@@ -223,93 +223,121 @@ def citation_text(entry, value):
 
 
 def html_export(entry, stale=False, assets=None):
-    assets=report_figures.selected_assets(entry,assets or {})
-    esc=transcript.escaped;d=entry['draft'];b=entry['bindings']
+    assets=report_figures.selected_assets(entry,assets or {});esc=transcript.escaped;d=entry['draft'];b=entry['bindings']
     labels={id:'E'+str(i) for i,id in enumerate(b['evidence'],1)}
-    def prose(s):return '<p>'+esc(citation_text(entry,s)).replace('\n','<br>')+'</p>' if s else '<p class="muted">Not yet written.</p>'
-    rows=''.join('<tr><td>'+esc(r['theme'])+'</td><td>'+esc(r['category'])+'</td><td>'+ '<br>'.join(esc(b['codes'][id]['name']) for id in r['code_ids'])+'</td></tr>' for r in d['rows'])
-    sections=''.join(f'<section><h2>{title}</h2>{prose(d[key])}</section>' for key,title in [('research_question','Research question'),('case_unit','Case definition'),('analysis_unit','Analysis unit'),('approach','Analytic approach'),('method_notes','Method and decisions')])
-    interpretations=''.join(f'<h3>Row {i}</h3>{prose(r["interpretation"])}<p class="meta">'+esc(' · '.join(labels[id] for id in r['evidence_ids']))+'</p>' for i,r in enumerate(d['rows'],1) if r['interpretation'] or r['evidence_ids'])
-    evidence=''.join(f'<section id="e-{esc(id)}"><h3>{labels[id]}</h3><blockquote>{esc(a["quote"])}</blockquote><p class="meta">{esc(a["document_name"])} · [{a["start"]}, {a["end"]})<br>Annotation {esc(id)} · Code {esc(a["code_id"])}<br>Document {esc(a["document_id"])} · SHA256 {a["sha256"]}<br>Saved source {esc(a["source"])}</p></section>' for id,a in b['evidence'].items())
-    tail=''.join(f'<section><h2>{title}</h2>{prose(d[key])}</section>' for key,title in [('reflexivity','Reflexivity'),('quality_notes','Quality and review'),('counterexamples','Counterexamples and variation'),('limitations','Limitations'),('disclosure','Research and assistance disclosure')])
-    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'"><title>{esc(d['title'])}</title><style>body{{max-width:900px;margin:auto;padding:32px 22px;background:#fbfaf7;color:#202a36;font:18px/1.7 Georgia,serif}}h1,h2,h3{{color:#000}}table{{border-collapse:collapse;width:100%;font-size:16px}}td,th{{text-align:left;vertical-align:top;padding:12px;border:1px solid #d9d9d9;overflow-wrap:anywhere}}th{{background:#eee}}.meta,.muted{{font:13px/1.6 system-ui;overflow-wrap:anywhere;color:#526171}}blockquote{{margin:16px 0;padding-left:20px;border-left:2px solid #8194a5;white-space:pre-wrap}}section{{margin:28px 0}}@media print{{body{{background:white;max-width:none}}thead{{display:table-header-group}}}}</style><h1>{esc(d['title'])}</h1><p>{METHODS[d['method']]}</p><p class="meta">Researcher-edited draft · version {entry['revision']} · {esc(entry['saved_at'])}<br>{'Evidence changed since this report was saved. Frozen quotations are retained.' if stale else 'Evidence matches the current coding record.'}</p>{sections}<h2>Analysis Table — Themes Categories and Codes</h2><table><thead><tr><th>Themes</th><th>Categories</th><th>Codes</th></tr></thead><tbody>{rows}</tbody></table><h2>Narrative Analysis</h2>{prose(d['narrative'])}{interpretations}{tail}{report_figures.html(entry,assets)}<h2>Selected evidence</h2>{evidence or '<p>No quotations selected.</p>'}<h2>Review checklist</h2>{prose(chr(10).join(k+': '+('confirmed by researcher' if v else 'not confirmed') for k,v in d['checks'].items()))}<p class="meta">Report {entry['id']} · Content SHA256 {entry['content_hash']}<br>Evidence SHA256 {entry['source_version']}<br>Report text and table labels are authored interpretations; saved quotation records remain separate. External edits do not update QT.</p></html>'''.encode()
+    def prose(value):
+        value=esc(citation_text(entry,value))
+        for id,label in labels.items():value=value.replace('['+label+']','<a href="#e-'+esc(id)+'">['+label+']</a>')
+        return '<p>'+value.replace('\n','<br>')+'</p>' if value else '<p class="muted">Not yet written.</p>'
+    def fields(items):return ''.join('<section><h3>'+title+'</h3>'+prose(d[key])+'</section>' for key,title in items if d[key])
+    design=fields([('research_question','Research question'),('case_unit','Case definition'),('analysis_unit','Analysis unit'),('approach','Analytic approach'),('method_notes','Method and decisions')])
+    rows=''.join('<tr><td>'+esc(r['theme'])+'</td><td>'+esc(r['category'])+'</td><td>'+'<br>'.join(esc(b['codes'][id]['name']) for id in r['code_ids'])+'</td></tr>' for r in d['rows'])
+    interpretations=''.join('<section><h3>'+esc(r['category'] or r['theme'] or 'Interpretation '+str(i))+'</h3>'+prose(r['interpretation'])+'<p class="meta">Table row '+str(i)+' · '+esc(' · '.join(labels[id] for id in r['evidence_ids']))+'</p></section>' for i,r in enumerate(d['rows'],1) if r['interpretation'] or r['evidence_ids'])
+    review=fields([('counterexamples','Counterexamples and variation'),('limitations','Limitations'),('reflexivity','Reflexivity'),('quality_notes','Quality and review'),('disclosure','Research and assistance disclosure')])
+    evidence=''.join('<section id="e-'+esc(id)+'"><h3>'+labels[id]+' '+esc(a['document_name'])+'</h3><blockquote>'+esc(a['quote'])+'</blockquote><p class="meta">['+str(a['start'])+', '+str(a['end'])+')</p><details><summary>Evidence identity</summary><p class="meta">Annotation '+esc(id)+'<br>Code '+esc(a['code_id'])+'<br>Document '+esc(a['document_id'])+'<br>SHA256 '+a['sha256']+'<br>Saved source '+esc(a['source'])+'</p></details></section>' for id,a in b['evidence'].items())
+    nav=[('design','Research design'),('findings','Findings'),('review','Review')]+([('figures','Figures')] if d.get('figures') else [])+[('evidence','Evidence'),('record','Record')]
+    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'"><title>{esc(d['title'])}</title><style>body{{max-width:780px;margin:auto;padding:48px 24px;background:#fff;color:#202a36;font:18px/1.75 Georgia,serif}}h1,h2,h3{{font-family:system-ui,sans-serif;color:#000;line-height:1.25}}h1{{font-size:36px;margin:0 0 18px}}h2{{font-size:27px;margin:52px 0 26px}}h3{{font-size:20px;margin:28px 0 14px}}p{{margin:12px 0 20px}}nav{{display:flex;flex-wrap:wrap;gap:12px 22px;margin:28px 0 42px;font:14px/1.5 system-ui}}a{{color:#30465e;text-underline-offset:4px}}a:focus-visible,summary:focus-visible{{outline:2px solid #202a36;outline-offset:4px}}table{{border-collapse:collapse;width:100%;table-layout:fixed;font-size:16px;margin:22px 0 32px}}td,th{{text-align:left;vertical-align:middle;padding:14px;border:1px solid #d9d9d9;overflow-wrap:anywhere}}th{{background:#263746;color:white;font:600 14px/1.5 system-ui}}tbody tr:nth-child(even){{background:#f6f7f8}}.meta,.muted{{font:13px/1.65 system-ui;color:#526171;overflow-wrap:anywhere}}blockquote{{margin:22px 0 22px 24px;white-space:pre-wrap;font-style:italic}}section{{margin:24px 0}}figure{{margin:32px 0 52px}}figure img{{display:block;max-width:100%;height:auto}}figcaption{{margin-top:16px;font-size:17px}}details{{font:14px/1.7 system-ui;margin:20px 0}}summary{{cursor:pointer}}#record{{border:0}}@media(max-width:500px){{body{{padding:28px 18px}}h1{{font-size:29px}}h2{{font-size:24px}}td,th{{padding:9px}}}}@media print{{body{{max-width:none;padding:0}}nav,details{{display:none}}h2{{break-after:avoid}}figure{{break-before:page;break-inside:avoid}}figure img{{max-height:210mm;width:100%;object-fit:contain}}thead{{display:table-header-group}}}}</style><header><h1>{esc(d['title'])}</h1><p>{METHODS[d['method']]}</p><p class="meta">Saved version {entry['revision']} · {esc(entry['saved_at'][:10])}<br>{'Evidence changed; saved quotations and figures are retained.' if stale else 'Evidence matches the saved coding record.'}</p><nav aria-label="Report chapters">{''.join('<a href="#'+id+'">'+label+'</a>' for id,label in nav)}</nav></header><main><h2 id="design">Research design</h2>{design}<h2 id="findings">Findings</h2><h3>Analysis Table — Themes Categories and Codes</h3><table><colgroup><col style="width:27%"><col style="width:27%"><col style="width:46%"></colgroup><thead><tr><th>Themes</th><th>Categories</th><th>Codes</th></tr></thead><tbody>{rows}</tbody></table><h3>Narrative Analysis</h3>{prose(d['narrative'])}{interpretations}<h2 id="review">Review and limitations</h2>{review}{report_figures.html(entry,assets)}<h2 id="evidence">Evidence appendix</h2>{evidence or '<p>No quotations selected.</p>'}<h2 id="record">Review record</h2><h3>Researcher confirmations</h3>{prose(chr(10).join(k.replace('-',' ')+': '+('confirmed by researcher' if v else 'not confirmed') for k,v in d['checks'].items()))}<details><summary>Saved report identity</summary><p class="meta">Report {entry['id']}<br>Content SHA256 {entry['content_hash']}<br>Evidence SHA256 {entry['source_version']}</p></details><p class="meta">Report text and table labels are authored interpretations; saved quotations and figures remain separate. External edits do not update QT.</p></main></html>'''.encode()
 
 
 def docx_export(entry, stale=False, assets=None):
     assets=report_figures.selected_assets(entry,assets or {})
-    # Reuse the established standalone OOXML package, replacing only its body.
     frozen={'project_name':'','documents':[],'association_count':0,'range_count':0,'include_memos':False,'project_id':'report','schema_version':5,'version':entry['source_version'],'generated_at':entry['saved_at']}
     with zipfile.ZipFile(io.BytesIO(transcript.docx_export(frozen))) as z:files={n:z.read(n) for n in z.namelist()}
     root=ET.fromstring(files['word/document.xml']);W=transcript.W;tag=transcript.word_tag;run=transcript.word_run;body=root.find('{'+W+'}body');section=copy.deepcopy(body.find('{'+W+'}sectPr'));body.clear()
-    def p(s,style='Normal',size=None):
+    def p(value,style='Normal',page=False,keep=False):
         para=tag(body,'p');pp=tag(para,'pPr');tag(pp,'pStyle',{'val':style})
-        run(para,s,size=size);return para
-    def prose(value):
-        return [p(paragraph) for paragraph in (citation_text(entry,value) or 'Not yet written.').split('\n\n')]
-    d=entry['draft'];b=entry['bindings'];p(d['title'],'Title');p(METHODS[d['method']],'Subtitle')
-    p(f"Researcher-edited draft · version {entry['revision']} · {entry['saved_at']}",'Meta')
-    p('Evidence changed; frozen quotations are retained.' if stale else 'Evidence matches the current coding record.','Meta')
+        if page:tag(pp,'pageBreakBefore')
+        if keep:tag(pp,'keepNext')
+        run(para,value);return para
+    def prose(value):return [p(part) for part in (citation_text(entry,value) or 'Not yet written.').split('\n\n')]
+    def field(key,title):
+        if not d[key]:return
+        p(title,'Heading2');prose(d[key])
+    def compact(label,value):
+        para=p('');run(para,label+' ',bold=True);run(para,value)
+    d=entry['draft'];b=entry['bindings'];labels={id:'E'+str(i) for i,id in enumerate(b['evidence'],1)}
+    p(d['title'],'Title');p(METHODS[d['method']],'Subtitle')
+    p('Saved version '+str(entry['revision'])+' · '+entry['saved_at'][:10],'Meta')
+    if stale:p('Coding evidence has changed. This report retains its saved quotations and figures.','Meta')
     p('Research design','Heading1')
-    for key,title in [('research_question','Research question'),('case_unit','Case definition'),('analysis_unit','Analysis unit'),('approach','Analytic approach'),('method_notes','Method and decisions')]:p(title,'Heading2');prose(d[key])
-    p('Analysis Table','Heading1');p('Themes Categories and Codes','Meta')
+    field('research_question','Research question')
+    for key,label in [('case_unit','Case definition'),('analysis_unit','Analysis unit')]:
+        if d[key]:compact(label+' —',d[key])
+    field('approach','Analytic approach');field('method_notes','Method and decisions')
+    p('Findings','Heading1',page=True)
+    p('Analysis Table','Heading2');p('Themes Categories and Codes','ChapterNote')
     table=tag(body,'tbl');pr=tag(table,'tblPr');tag(pr,'tblW',{'w':10260,'type':'dxa'});tag(pr,'tblLayout',{'type':'fixed'});borders=tag(pr,'tblBorders')
     for side in ['top','left','bottom','right','insideH','insideV']:tag(borders,side,{'val':'single','sz':4,'color':'D9D9D9'})
     margins=tag(pr,'tblCellMar')
-    for side in ['top','left','bottom','right']:tag(margins,side,{'w':130,'type':'dxa'})
+    for side in ['top','bottom']:tag(margins,side,{'w':150,'type':'dxa'})
+    for side in ['left','right']:tag(margins,side,{'w':160,'type':'dxa'})
     grid=tag(table,'tblGrid')
-    for width in [3000,3000,4260]:tag(grid,'gridCol',{'w':width})
+    for width in [2800,2800,4660]:tag(grid,'gridCol',{'w':width})
     for i,values in enumerate([['Themes','Categories','Codes']]+[[r['theme'],r['category'],'\n'.join(b['codes'][id]['name'] for id in r['code_ids'])] for r in d['rows']]):
-        row=tag(table,'tr')
-        row_props=tag(row,'trPr')
-        if i==0:tag(row_props,'tblHeader')
-        if sum(len(v) for v in values)<=400:tag(row_props,'cantSplit')
-        for width,value in zip([3000,3000,4260],values):
-            cell=tag(row,'tc');cp=tag(cell,'tcPr');tag(cp,'tcW',{'w':width,'type':'dxa'})
-            if i==0:tag(cp,'shd',{'fill':'EEEEEE','val':'clear'})
-            para=tag(cell,'p')
-            if i==0:tag(tag(para,'pPr'),'keepNext')
-            run(para,value,size=21,bold=i==0,font='Calibri' if i==0 else 'Georgia')
-    labels={id:'E'+str(i) for i,id in enumerate(b['evidence'],1)}
-    p('Narrative Analysis','Heading1');prose(d['narrative'])
-    for i,r in enumerate(d['rows'],1):
-        if r['interpretation'] or r['evidence_ids']:
-            p('Row '+str(i),'Heading2');paragraphs=prose(r['interpretation'] or 'No row interpretation.')
-            tag(paragraphs[-1].find('{'+W+'}pPr'),'keepNext')
-            p('Evidence '+(' · '.join(labels[id] for id in r['evidence_ids']) or 'not selected'),'Meta')
-    p('Method review and limitations','Heading1')
-    for key,title in [('reflexivity','Reflexivity'),('quality_notes','Quality and review'),('counterexamples','Counterexamples and variation'),('limitations','Limitations'),('disclosure','Research and assistance disclosure')]:p(title,'Heading2');prose(d[key])
-    p('Review checklist','Heading2')
-    for key,value in d['checks'].items():p(key.replace('-',' ').capitalize()+': '+('confirmed by researcher' if value else 'not confirmed'),'Meta')
+        row=tag(table,'tr');rp=tag(row,'trPr')
+        if i==0:tag(rp,'tblHeader')
+        if sum(len(v) for v in values)<=400:tag(rp,'cantSplit')
+        for width,value in zip([2800,2800,4660],values):
+            cell=tag(row,'tc');cp=tag(cell,'tcPr');tag(cp,'tcW',{'w':width,'type':'dxa'});tag(cp,'vAlign',{'val':'center'})
+            tag(cp,'shd',{'fill':'263746' if i==0 else 'F6F7F8' if i%2==0 else 'FFFFFF','val':'clear'})
+            para=tag(cell,'p');pp=tag(para,'pPr');tag(pp,'spacing',{'before':0,'after':0,'line':280,'lineRule':'auto'})
+            if i==0:tag(pp,'keepNext')
+            run(para,value,size=21,bold=i==0,color='FFFFFF' if i==0 else '000000',font='Calibri' if i==0 else 'Georgia')
+    tag(body,'p')
+    p('Narrative Analysis','Heading2');prose(d['narrative'])
+    for i,row in enumerate(d['rows'],1):
+        if row['interpretation'] or row['evidence_ids']:
+            p(row['category'] or row['theme'] or 'Interpretation '+str(i),'Heading3')
+            prose(row['interpretation'] or 'No row interpretation.')
+            p('Table row '+str(i)+' · Evidence '+(' · '.join(labels[id] for id in row['evidence_ids']) or 'not selected'),'Meta')
+    if any(d[k] for k in ['counterexamples','limitations','reflexivity','quality_notes','disclosure']):
+        p('Review and limitations','Heading1',page=True)
+        for key,title in [('counterexamples','Counterexamples and variation'),('limitations','Limitations'),('reflexivity','Reflexivity'),('quality_notes','Quality and review'),('disclosure','Research and assistance disclosure')]:field(key,title)
     if d.get('figures'):
-        p('Figures','Heading1')
         for i,figure in enumerate(d['figures'],1):
-            ref=b['figures'][figure['id']];asset=assets[ref['asset_id']];settings=asset['options']
-            payload=report_figures.files(asset)[settings['name']+'.png'];parts=report_figures.word_parts(payload)
+            ref=b['figures'][figure['id']];asset=assets[ref['asset_id']];settings=asset['options'];payload=report_figures.files(asset)[settings['name']+'.png'];parts=report_figures.word_parts(payload)
             for j,crop in enumerate(parts,1):
-                p('Figure '+str(i)+' '+settings['title']+(' part '+str(j)+' of '+str(len(parts)) if len(parts)>1 else ''),'Heading2')
+                if i==1 and j==1:p('Figures','Heading1',page=True)
+                title='Figure '+str(i)+(' · view '+str(j)+' of '+str(len(parts)) if len(parts)>1 else '')
+                p(title,'Heading2',page=not(i==1 and j==1))
                 report_figures.add_word_image(body,files,payload,i*1000+j,settings['title'],crop,len(figure['caption'])<=500)
-                caption=p(figure['caption'] or 'Caption not yet written.','Normal')
+                caption=p('','FigureCaption');run(caption,settings['title']+'. ',bold=True);run(caption,figure['caption'] or 'Caption not yet written.')
                 if len(figure['caption'])<=500:tag(caption.find('{'+W+'}pPr'),'keepNext')
                 p(settings['credit'],'Meta')
-                if len(parts)>1:p('Consecutive view of the unchanged original figure. The complete SVG, PDF and PNG remain in the report ZIP.','Meta')
-    p('Selected evidence','Heading1')
-    p('Verbatim quotations are italic. Interpretation remains in upright text.','Meta')
+                if len(parts)>1:p('Unchanged original · continuous view '+str(j)+' of '+str(len(parts))+'. Complete SVG, PDF and PNG are in the report ZIP.','Meta')
+    p('Evidence appendix','Heading1',page=True)
+    p('Verbatim quotations are italic. The E references connect them to the findings.','ChapterNote')
     for id,a in b['evidence'].items():
-        p(labels[id]+' '+a['document_name'],'Heading2');quote=p(a['quote'],'EvidenceQuote');tag(quote.find('{'+W+'}pPr'),'keepNext')
-        p(f"{a['document_name']} · [{a['start']}, {a['end']})",'Meta')
-    record=p('Record details','Heading1');tag(record.find('{'+W+'}pPr'),'pageBreakBefore')
-    p(f"Report {entry['id']}\nContent SHA256 {entry['content_hash']}\nEvidence SHA256 {entry['source_version']}\nExternal edits do not update QT.",'Meta')
-    for id,a in b['evidence'].items():p(labels[id],'Heading2');p(f"Annotation {id}\nDocument {a['document_id']}\nSHA256 {a['sha256']}\nCode {a['code_id']} · source {a['source']}",'Meta')
+        p(labels[id]+' '+a['document_name'],'Heading2');quote=p(a['quote'],'EvidenceQuote')
+        if len(a['quote'])<=500:tag(quote.find('{'+W+'}pPr'),'keepNext')
+        p(a['document_name']+' · ['+str(a['start'])+', '+str(a['end'])+')','Meta')
+    if not b['evidence']:p('No quotations selected.','Meta')
+    p('Review record','Heading1',page=True)
+    p('Researcher confirmations','Heading2')
+    for key,value in d['checks'].items():p(key.replace('-',' ').capitalize()+' · '+('confirmed' if value else 'not confirmed'),'Meta')
+    p('Evidence identity','Heading2')
+    p('Report '+entry['id']+'\nContent SHA256 '+entry['content_hash']+'\nEvidence SHA256 '+entry['source_version'],'Meta')
+    p('External Word edits stay in Word. Restore the complete workspace from project JSON.','Meta')
+    for id,a in b['evidence'].items():
+        p(labels[id]+' · '+a['document_name'],'RecordHeading')
+        p('Annotation '+id+'\nDocument '+a['document_id']+'\nSHA256 '+a['sha256']+'\nCode '+a['code_id']+' · '+a['source'],'Meta')
+    figure_records={}
     for i,figure in enumerate(d.get('figures',[]),1):
-        ref=b['figures'][figure['id']];asset=assets[ref['asset_id']]
-        p('Figure '+str(i)+' record','Heading2');p('Figure ID '+figure['id']+'\nAsset SHA256 '+ref['asset_id']+'\nEvidence SHA256 '+ref['source_version'],'Meta')
-        p(json.dumps({'parameters':asset['options'],'environment':asset['environment']},ensure_ascii=False),'Meta')
+        ref=b['figures'][figure['id']];asset=assets[ref['asset_id']];o=asset['options'];env=asset['environment']
+        p('Figure '+str(i)+' · '+o['kind'],'RecordHeading')
+        p('Asset SHA256 '+ref['asset_id'],'Meta')
+        p('Level '+o['level']+' · top '+str(o['top'])+' · mode '+o['mode']+' · '+o['palette']+' · '+str(o['dpi'])+' dpi\nPython '+env['python']+' · matplotlib '+env['matplotlib']+' · font '+env['font'],'Meta')
+        figure_records[figure['id']]={'binding':ref,**{k:asset[k] for k in ['options','result','members','environment']}}
+    if figure_records:
+        p('Complete figure settings, numeric results and hashes are embedded in this document and included with the original recipes in the report ZIP.','Meta')
+        files['customXml/item2.xml']=('<figure-records>'+transcript.escaped(transcript.canonical(figure_records))+'</figure-records>').encode()
+        ns='http://schemas.openxmlformats.org/package/2006/relationships';rels=ET.fromstring(files['word/_rels/document.xml.rels']);ET.SubElement(rels,'{'+ns+'}Relationship',{'Id':'qtFigureRecords','Type':'http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml','Target':'../customXml/item2.xml'});files['word/_rels/document.xml.rels']=report_figures.package_xml(rels,ns)
     body.append(section);files['word/document.xml']=ET.tostring(root,encoding='utf-8',xml_declaration=True)
     files['customXml/item1.xml']=('<report>'+transcript.escaped(transcript.canonical(entry))+'</report>').encode()
-    buffer=io.BytesIO()
-    with zipfile.ZipFile(buffer,'w',zipfile.ZIP_DEFLATED) as z:
+    output=io.BytesIO()
+    with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as z:
         for name,payload in files.items():z.writestr(name,payload)
-    return buffer.getvalue()
+    return transcript.word_footer(output.getvalue(),'QT Research report')
 
 
 def export_record(entry,assets):

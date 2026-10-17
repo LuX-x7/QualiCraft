@@ -114,7 +114,7 @@ def html(entry,assets):
             mime='text/csv' if name.endswith('.csv') else 'text/plain' if name.endswith('.py') else 'image/png' if name.endswith('.png') else 'image/svg+xml' if name.endswith('.svg') else 'application/pdf'
             links.append(f'<a download="{esc(name)}" href="data:{mime};base64,{base64.b64encode(payload).decode()}">{esc(name)}</a>')
         items.append(f'<figure><img style="width:100%;height:auto" alt="{esc(settings["title"])}" src="data:image/png;base64,{png}"><figcaption><strong>Figure {i}</strong> {esc(figure["caption"])}</figcaption><p class="meta">{esc(settings["credit"])}</p><details><summary>Frozen data and recipe</summary><p>{" · ".join(links)}</p><p class="meta">Vector and PDF files are included in the complete report ZIP.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">{esc(json.dumps(settings,ensure_ascii=False,indent=2))}</pre><p class="meta">Evidence SHA256 {ref["source_version"]}<br>Asset SHA256 {ref["asset_id"]}</p></details></figure>')
-    return '<h2>Figures</h2>'+''.join(items) if items else ''
+    return '<h2 id="figures">Figures</h2>'+''.join(items) if items else ''
 
 
 def word_parts(payload):
@@ -143,7 +143,7 @@ def word_parts(payload):
 def add_word_image(body,package,payload,index,title,crop=(0,0),keep=True):
     # Native inline DrawingML, constrained by both page width and height.
     W=transcript.W;ns={'wp':'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing','a':'http://schemas.openxmlformats.org/drawingml/2006/main','pic':'http://schemas.openxmlformats.org/drawingml/2006/picture','r':'http://schemas.openxmlformats.org/officeDocument/2006/relationships'}
-    width,height=png_size(payload);visible_height=height*(1-(crop[0]+crop[1])/100000);scale=min(6.9/width,6.8/visible_height);cx,cy=round(width*scale*914400),round(visible_height*scale*914400)
+    width,height=png_size(payload);visible_height=height*(1-(crop[0]+crop[1])/100000);scale=min(6.7/width,6.0/visible_height);cx,cy=round(width*scale*914400),round(visible_height*scale*914400)
     rid='image'+sha(payload)[:24];name=rid+'.png';package['word/media/'+name]=payload
     rels=ET.fromstring(package['word/_rels/document.xml.rels'])
     if not any(e.get('Id')==rid for e in rels):ET.SubElement(rels,'{http://schemas.openxmlformats.org/package/2006/relationships}Relationship',{'Id':rid,'Type':ns['r']+'/image','Target':'media/'+name})
@@ -152,6 +152,8 @@ def add_word_image(body,package,payload,index,title,crop=(0,0),keep=True):
     if not any(e.get('Extension')=='png' for e in types):ET.SubElement(types,T+'Default',{'Extension':'png','ContentType':'image/png'})
     package['[Content_Types].xml']=package_xml(types,'http://schemas.openxmlformats.org/package/2006/content-types')
     para=transcript.word_tag(body,'p');pp=transcript.word_tag(para,'pPr')
+    transcript.word_tag(pp,'spacing',{'before':'0','after':'120','line':'240','lineRule':'auto'})
+    transcript.word_tag(pp,'jc',{'val':'center'});transcript.word_tag(pp,'keepLines')
     if keep:transcript.word_tag(pp,'keepNext')
     run=transcript.word_tag(para,'r');drawing=transcript.word_tag(run,'drawing');inline=ET.SubElement(drawing,'{'+ns['wp']+'}inline')
     ET.SubElement(inline,'{'+ns['wp']+'}extent',{'cx':str(cx),'cy':str(cy)});ET.SubElement(inline,'{'+ns['wp']+'}docPr',{'id':str(index),'name':title,'descr':title})

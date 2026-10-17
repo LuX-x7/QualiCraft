@@ -76,7 +76,14 @@ class ReportTests(unittest.TestCase):
         self.d['title']='<script>window.BAD=1</script>'
         entry=self.save()['current'];html=reporting.html_export(entry).decode()
         self.assertIn('&lt;script&gt;',html);self.assertNotIn('<script>',html);self.assertIn('Narrative Analysis',html)
-        self.assertIn('Test narrative [E1]',html)
+        from html.parser import HTMLParser
+        class VisibleText(HTMLParser):
+            def __init__(self):super().__init__();self.parts=[]
+            def handle_data(self,value):self.parts.append(value)
+        visible=VisibleText();visible.feed(html)
+        self.assertIn('Test narrative [E1]',''.join(visible.parts))
+        self.assertIn('href="#e-'+self.a['id']+'">[E1]</a>',html)
+        self.assertIn('id="e-'+self.a['id']+'"',html)
         with zipfile.ZipFile(io.BytesIO(reporting.docx_export(entry))) as z:
             tree=ET.fromstring(z.read('word/document.xml'));plain=''.join(tree.itertext());self.assertIn(self.a['quote'],plain)
             self.assertEqual(json.loads(ET.fromstring(z.read('customXml/item1.xml')).text),entry)

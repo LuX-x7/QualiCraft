@@ -1,5 +1,7 @@
 # QT Supervisor review 17 October 2026
 
+Current samples (UX53, 18 October): the editable source notebook and research report now have clearer native heading levels, italic verbatim text, page numbers and controlled figure pages. Existing figures, exact quotations, counts and code are unchanged. Start locally at http://127.0.0.1:52755/ → workbench → Bologna · supervisor report sample → Export. The two Word files in samples/ are refreshed. Actual Comparative QCA, wider input/interruption checks and current researcher/device acceptance remain open; this is a review build. Windows is deferred. Local only; no push or deployment.
+
 **Status:** Local review candidate. Editable source trees and saved research reports are available; the full final-product scope is still open. The owner chose to keep commits local after GitHub rejected the earlier push for missing workflow permission. No push retry or deployment; Windows remains deferred and unverified.
 
 **Start here:** [Website](http://127.0.0.1:52755/) → [Workbench](http://127.0.0.1:52755/w/?lang=en) → **Bologna · supervisor report sample**. Local services require the developer’s computer. The [public repository](https://github.com/LuX-x7/QualiCraft) and hosted demos do not yet contain this local candidate.
