@@ -30,6 +30,9 @@
 > **当前 Mac 审核版（UX65）：** 网站已同步批量导入、阅读双轨、独立二元 Comparative QCA、可编辑编码全文树、方法流程图及研究报告／图表代码导出。桌面与最终网站验收通过，手机实机补测和 Windows 暂缓、不记作通过。源码推送已获授权；推送与线上部署必须分别核实。[验收与发布状态](docs/review/UX-65-MAC-SITE-SYNC.md)。
 
 
+> **Push status (UX65R):** The tested candidate is committed locally; GitHub rejected the actual push for missing `workflow` permission. No remote review branch or new deployment has been verified. Update local Git credentials before retrying; the existing hosted URLs still do not represent this candidate.
+
+
 ---
 
 <a id="english"></a>
