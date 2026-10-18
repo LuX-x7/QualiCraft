@@ -20,7 +20,7 @@ Evidence root: `~/qualicraft-review/ux-69/`; working output: `/tmp/qualicraft-ux
 - `scripts-reproduced`: extract and run each of the five downloaded recipes separately; all 15 rendered SVG/PDF/PNG files equal the packaged outputs byte-for-byte.
 - Native project-only Chrome: homepage links, keyboard Enter into public Bologna, read-only disabled uploads, frequency/hierarchy preview, local empty project→complete Bologna paste import→refresh/continue, output shelf→actual Notebook/report HTML, report chapter keyboard navigation, and real Notebook Word download pass. The actual Chrome download matches SHA256 `82254e94ff7ad0f0a94b99c967bf7109739c79b539af1907687b1875b7150a42`. Console errors/warnings: empty for both project tabs.
 - Chrome extension file chooser upload was unavailable without expanding file-URL access; permission was not changed. Native paste import passes; TXT/DOCX parsing and import queues remain covered by the full regression suite. This does not claim a native file-picker upload passed.
-- Bundled LibreOffice rendered Notebook **16 pages** and final report **16 pages**. Page review: no clipping/overlap or broken trees; full hierarchy retains its existing five continuation views. A short illustrative paragraph was shortened to remove an orphaned metadata-only page; no exporter layout was changed. Thumbnails derive from the actual page2 renders.
+- Bundled LibreOffice rendered Notebook **16 pages** and final report **16 pages**. Every page was inspected. Source text and trees stay within the page without overlapping. The full hierarchy retains its existing five continuous views: a tile boundary can split a label across adjacent views; the complete unsliced SVG/PDF/PNG remain in the ZIP. This inherited presentation limit is recorded rather than changing the figure or workbench exporter in this round. A short illustrative paragraph was shortened to remove an orphaned metadata-only page; no exporter layout was changed. Thumbnails derive from the actual page2 renders.
 
 ## Preserved failures and limits
 
@@ -31,3 +31,15 @@ Free-host cold starts remain. Full image bundles still generate raster/PDF on do
 ## Release status
 
 Local implementation and targeted acceptance complete. Remote CI, manual deployments and post-deploy receipts are recorded below after completion.
+
+## Published receipt
+
+Application `2865b1d7fe4d12c5f09628e94c57a2ffc832af93` is pushed to main. [CI 39151731315](https://github.com/LuX-x7/QualiCraft/actions/runs/39151731315) passes both 298-test Python collections (3 existing skips), 247 Node tests, syntax and npm production build. Both existing free services are Live at that source: backend `dep-dbagi8c9v7es738egse0`, website `dep-dbagi9nbtjjs73f3adv0`. Auto-Deploy Off was inspected in both edit selectors and cancelled without saving; no paid upgrade or deployment configuration changed.
+
+Post-deployment `live-http`: all five SVGs preserve the old same-font structure/text and every embedded pixel; the two heatmaps also match their same-server complete export byte-for-byte. Cross-platform embedded PNG compression and derived image IDs can differ without changing the picture. Complete hierarchy preview takes 25.972s then 0.695s on repeat. All 11 website output files match their manifest; /, /report and /about return200; original Bologna project stays equal and public writes return403. All five original /report figure SVG/CSV assets and provenance remain unchanged. Screenshots and console records accompany the receipt. Cold starts and complete image bundles remain slower than cached previews.
+
+The first online Mac/Linux raw-byte assertion on coverage was rejected and retained: embedded PNG compression and derived image IDs differed, while the SVG structure and every decoded pixel matched. The same-host preview/full-export comparison was exact. No product workaround or figure change was made.
+
+The final supervisor archive preserves all UX68 curated samples and adds the new public output files, current guide and explicit UX69 evidence. Its full checksum is recorded externally in packet-verification.json, avoiding a self-referential archive hash in Git. Later documentation-only commits do not require another deployment.
+
+Post-deploy hierarchy PNG verification additionally compares complete RGBA SHA256, not only a bounding-box difference: 3459×15341, DPI299.9994, `be1c90297327c13a737dd4c444c463ba07801a4d7a5e83556252c181f766b786`, equal to the pre-change baseline. The complete bundle/verification takes89.620s and the service remains healthy. `live-original-assets` verifies all11 original manifest/SVG/CSV URLs byte-for-byte.

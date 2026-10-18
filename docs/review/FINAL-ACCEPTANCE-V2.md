@@ -1,3 +1,7 @@
+2026-10-18 最新（UX69）：**公开起步页、SVG 预览提速及完整 worked example 已上线。** Try the workbench 先说明只读 Bologna，再由用户进入；本地上传／新建／继续保持。预览使用同一脚本只保存 SVG，并有输入绑定、有容量上限的临时缓存，完整下载仍为 SVG／PDF／300 dpi PNG／CSV／Python。五类预览及完整输出与同环境旧基线一致；线上完整层级图两次预览 25.97s／0.70s（原线上约88.8s）；免费冷启动及完整下载仍需时间。首页及导航新增 [worked example](https://qualicraft-website.onrender.com/report#sec-outputs)，含一份完整编码 Notebook／可编辑 Word、含方法图与3条证据的 Content 示例报告／Word、五图代码包及可恢复全部19文档的 JSON。该写作为展示样例，不冒称新的实证研究或 QCA 校准结论。298 Python（3 原有跳过，两种 Linux 收集通过）、247 Node、语法／构建、32页 Word、11份线上下载／哈希与隔离恢复通过；原18保护文件保持。源提交 `2865b1d7fe4d12c5f09628e94c57a2ffc832af93` 已正常推 main，两现有免费服务手动部署并 Live；Auto-Deploy 保持 Off。Chrome 原生文件选择因扩展权限未通过，不扩大权限；本地完整粘贴导入／继续已通过，文件解析／队列由回归覆盖。手机补测、Windows 暂缓，原生辅助功能与研究者／supervisor接受不代签。见 [UX69记录](UX-69-START-PREVIEW-OUTPUTS.md)。下方历轮为历史。
+
+---
+
 # 最终验收目标 v2 · 三种方法与可编辑研究报告
 
 2026-10-18 最新（UX68）：**UX67-01 已在现有免费 512MB 实例关闭，未升级付费规格。** 完整层级图先用输出 DPI 的微型 Agg 计算边界，再一次分配最终 PNG；保留全部 259 行、8 主题、300 dpi、尺寸与图形。Mac 独立进程峰值约501→304 MiB（12 pt约350 MiB），同字体修复前后 CSV／SVG／PDF／PNG 逐字节一致；线上默认完整图包连续两次 HTTP200（94.6s / 89.3s），CSV／SVG／PDF 与旧基线一致，PNG 全部像素及尺寸／DPI 一致，项目不变、服务继续健康。首页改为 “Many tools. This one is yours.”，**Pause／Play 原样保留且键盘切换通过**。289 Python（3原有跳过，两种 Linux 收集均通过）、246 Node、语法与构建通过；原10份报告资产／manifest、统计／数据／Coding 行为保持。源码已推 main，两现有服务在 `545560aa07caf0639e23de6a98d73fa7530c2566` 手动部署并 Live；CI测量隔离补记 `7839a4a2304f81471de0614c2e819e7299e0923b` 不改应用，Auto-Deploy 仍 Off。可交 supervisor 做技术／视觉／研究内容审核；公开工作台只读，上传／编码保存用本地版。免费冷启动和大图导出需等待；手机补测／Windows 继续暂缓，当前原生辅助功能和研究者／supervisor 接受不代签。见 [修复、线上证据及发布记录](UX-68-HIERARCHY-MEMORY.md)。下方 UX67 的开放问题及历轮未发布表述是历史记录。

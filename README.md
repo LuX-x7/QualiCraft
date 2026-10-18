@@ -8,7 +8,7 @@
 <p align="center">
   <strong><a href="https://qualicraft-website.onrender.com/">Website</a></strong>
   ·
-  <strong><a href="https://qualicraft-workbench.onrender.com/w">Live workbench</a></strong>
+  <strong><a href="https://qualicraft-website.onrender.com/w?lang=en">Live workbench</a></strong>
 </p>
 
 <p align="center">
@@ -25,9 +25,13 @@
 
 <p align="center"><em>English first · 中文在下半部分</em></p>
 
-> **Current public review (UX68):** The complete Bologna hierarchy export now succeeds on the existing free host with unchanged counts and figure pixels. The homepage describes QT as a research workspace of your own; Pause/Play is retained. Python 289 (3 existing skips, both Linux discovery modes), Node 246, syntax and website build pass. [Release evidence](docs/review/UX-68-HIERARCHY-MEMORY.md) · [Supervisor guide](docs/review/SUPERVISOR-ONE-PAGE.md). The hosted workbench is read-only; use the local application for uploads, coding and saved report/QCA edits. Cold starts and large exports need time. Automatic deployment is off. Phone follow-up and Windows remain deferred.
+> **Current public review (UX69):** The workbench now opens with an explicit read-only Bologna choice. Local upload/continuation remains available. SVG previews are faster with the same figure recipe and a bounded temporary cache. [Worked example](https://qualicraft-website.onrender.com/report#sec-outputs) now includes a coded full-text Notebook, editable Word Research report, five figures with CSV/Python, and restorable project JSON. These are clearly scoped Bologna demonstration outputs. 298 Python (3 existing skips), 247 Node, syntax/build, Word layout, reproduction and online integrity checks pass. [Release evidence](docs/review/UX-69-START-PREVIEW-OUTPUTS.md) · [Supervisor guide](docs/review/SUPERVISOR-ONE-PAGE.md). Automatic deployment remains off; Windows and phone follow-up are deferred.
 
-> **当前公开审核版（UX68）：** 免费实例已能导出完整层级图，统计、CSV 和图形像素保持不变；首页文案已精简，Pause／Play 保留。源码已推 main，现有网站和只读工作台已手动更新。[验收证据与发布状态](docs/review/UX-68-HIERARCHY-MEMORY.md) · [导师审核说明](docs/review/SUPERVISOR-ONE-PAGE.md)。公开入口可供查看、绘图与下载；上传、编码和保存报告请用本地版。免费冷启动及大图导出需要等待。自动部署关闭，手机补测与 Windows 继续暂缓。
+> **当前公开审核版（UX69）：** 起步页已明确区分公开只读 Bologna 与本地上传；同一绘图脚本的 SVG 预览提速，完整下载保留。首页新增 [完整成果示例](https://qualicraft-website.onrender.com/report#sec-outputs)：编码全文 Notebook、可编辑 Word 报告、五图与代码、项目 JSON。298 Python（3 原有跳过）、247 Node、构建和线上核对通过。自动部署关闭，Windows 与手机补测暂缓。
+
+> **Historical public review (UX68):** The complete Bologna hierarchy export now succeeds on the existing free host with unchanged counts and figure pixels. The homepage describes QT as a research workspace of your own; Pause/Play is retained. Python 289 (3 existing skips, both Linux discovery modes), Node 246, syntax and website build pass. [Release evidence](docs/review/UX-68-HIERARCHY-MEMORY.md) · [Supervisor guide](docs/review/SUPERVISOR-ONE-PAGE.md). The hosted workbench is read-only; use the local application for uploads, coding and saved report/QCA edits. Cold starts and large exports need time. Automatic deployment is off. Phone follow-up and Windows remain deferred.
+
+> **此前公开审核版（UX68）：** 免费实例已能导出完整层级图，统计、CSV 和图形像素保持不变；首页文案已精简，Pause／Play 保留。源码已推 main，现有网站和只读工作台已手动更新。[验收证据与发布状态](docs/review/UX-68-HIERARCHY-MEMORY.md) · [导师审核说明](docs/review/SUPERVISOR-ONE-PAGE.md)。公开入口可供查看、绘图与下载；上传、编码和保存报告请用本地版。免费冷启动及大图导出需要等待。自动部署关闭，手机补测与 Windows 继续暂缓。
 
 
 ---
@@ -45,7 +49,7 @@ QualiCraft is a modular workbench for interview studies and other open-ended mat
 ## Try it
 
 - **[Website](https://qualicraft-website.onrender.com/)** — English overview and a walkthrough of all five workflow steps.
-- **[Live workbench](https://qualicraft-workbench.onrender.com/w)** — the real interface, running on the public Bologna corpus. Read-only: no uploads, no edits.
+- **[Live workbench](https://qualicraft-website.onrender.com/w?lang=en)** — the real interface, running on the public Bologna corpus. Read-only: no uploads, no edits.
 - **[Deploy your own](#deploy)** — one blueprint puts both services on the internet from this repository.
 - **[Chinese README](#中文)** — jump to the Chinese translation below.
 
@@ -281,7 +285,7 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 ## 在线查看
 
 - **[网站](https://qualicraft-website.onrender.com/)** —— 英文为主，可切换语言，含五个模块的书面走查。
-- **[在线工作台](https://qualicraft-workbench.onrender.com/w)** —— 真实界面，运行在 Bologna 公开语料上。只读：不能上传、不能修改。
+- **[在线工作台](https://qualicraft-website.onrender.com/w?lang=en)** —— 真实界面，运行在 Bologna 公开语料上。只读：不能上传、不能修改。
 - **[部署你自己的](#部署)** —— 一份蓝图把这个仓库的两个服务放到公网。
 - **[English README](#english)** —— 跳转至上方英文说明。
 
