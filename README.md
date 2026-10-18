@@ -17,6 +17,8 @@
 
 <p align="center"><em>The links above are a read-only demonstration running on the public Bologna corpus — no installation needed. The button deploys your own copy.</em></p>
 
+> Availability update: the website now serves prebuilt pages. A sleeping workbench shows a connection screen and continues when ready; free hosting can still take about a minute after inactivity. [Verification and remaining limits](docs/review/UX-70-AVAILABILITY.md).
+
 <p align="center">
   <a href="#english"><strong>English</strong></a>
   ·
