@@ -1,0 +1,18 @@
+{
+  "project": {
+    "documents": 19,
+    "codes": 317,
+    "codings": 874
+  },
+  "notebook": {
+    "document": "interview02.txt",
+    "characters": 18239,
+    "codings": 53,
+    "tree_labels": "Explicit display convention: root Theme, intermediate Category, leaf Code. Saved names and links are unchanged."
+  },
+  "report": {
+    "method": "Qualitative Content Analysis",
+    "selected_evidence": 3,
+    "status": "Illustrative writing from existing codes; not a newly validated research analysis."
+  }
+}
