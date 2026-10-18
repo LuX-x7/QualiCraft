@@ -40,8 +40,8 @@ export default async function HomeView() {
       <div className="hero__ground" aria-hidden="true"/>
       <div className="wrap hero__composition"><OrbitMark/><div className="hero__inner">
         <p className="hero__eyebrow mono">QT / A LOCAL RESEARCH WORKBENCH</p>
-        <h1 id="hero-title" className="hero__title">Read closely.<br/><em>See the connections.</em></h1>
-        <p className="hero__body">Passages, codes and themes. One traceable record.</p>
+        <h1 id="hero-title" className="hero__title">Many tools.<br/><em>This one is yours.</em></h1>
+        <p className="hero__body">A local workspace for qualitative research. Your passages, codes and decisions.</p>
         <div className="hero__actions"><a className="btn btn--primary" href="/w?lang=en">Try the workbench ↗</a></div>
         <p className="hero__footnote mono">Local files · Human decisions</p>
       </div></div>
