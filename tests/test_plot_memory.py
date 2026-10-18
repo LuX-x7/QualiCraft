@@ -60,12 +60,22 @@ class FullHierarchyMemoryTests(unittest.TestCase):
             (root / 'figure.py').write_text(script, encoding='utf-8')
             # Measure the independent exported script, including imports and
             # all three output backends, rather than the test runner's RSS.
-            probe = ('import json,resource,runpy,sys; runpy.run_path(sys.argv[1]); '
-                     'print(json.dumps({"peak":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}))')
-            run = subprocess.run([sys.executable, '-c', probe, str(root / 'figure.py')],
+            probe = ('import json,resource,runpy,sys; '
+                     'initial=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss; '
+                     'runpy.run_path(sys.argv[1]); '
+                     'print(json.dumps({"initial":initial,"peak":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}))')
+            # On Linux, fork/exec can retain the test runner's high-water
+            # counter. Spawn from a fresh, small interpreter so the measured
+            # script cannot inherit earlier tests' large canvas allocation.
+            launcher = 'import subprocess,sys; raise SystemExit(subprocess.call([sys.executable,"-c",sys.argv[1],sys.argv[2]]))'
+            run = subprocess.run([sys.executable, '-c', launcher, probe, str(root / 'figure.py')],
                                  capture_output=True, text=True, timeout=120)
             self.assertEqual(run.returncode, 0, run.stderr)
-            peak = json.loads(run.stdout)['peak'] * (1 if sys.platform == 'darwin' else 1024)
+            measurement = json.loads(run.stdout)
+            scale = 1 if sys.platform == 'darwin' else 1024
+            self.assertLess(measurement['initial'] * scale, 100 * 1024**2,
+                            'Memory probe inherited its parent high-water counter')
+            peak = measurement['peak'] * scale
             self.assertLess(peak, 430 * 1024**2,
                             f'Full hierarchy used {peak / 1024**2:.1f} MiB; must leave server headroom')
             self.assertEqual((root / 'figure_data.csv').read_bytes(), data)
