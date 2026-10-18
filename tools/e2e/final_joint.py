@@ -1,4 +1,4 @@
-"""UX60 final cross-module audit, not a feature patch. Disposable Bologna only."""
+"""UX63 repaired cross-module audit, not a feature patch. Disposable Bologna only."""
 import argparse,copy,csv,hashlib,io,json,os,re,shutil,subprocess,sys,time,traceback,zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -12,7 +12,7 @@ KINDS=['frequency','coverage','cooccurrence','hierarchy','accumulation']
 ROOT=Path(__file__).resolve().parents[2]
 
 def main():
-    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True);ap.add_argument('--site-build',type=Path,required=True);ap.add_argument('--port',type=int,default=52762);ap.add_argument('--continue-from',type=Path);args=ap.parse_args();out=args.out;out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True);ap.add_argument('--site-build',type=Path,required=True);ap.add_argument('--port',type=int,default=52768);ap.add_argument('--continue-from',type=Path);args=ap.parse_args();out=args.out;out.mkdir(parents=True,exist_ok=True)
     prior=json.loads((args.continue_from/'results.json').read_text()) if args.continue_from else None
     if prior:
         shutil.copytree(args.continue_from/'service',out/'service');store=core.Store(out/'service/qualicraft.sqlite3');seed=store.get(next(p['id'] for p in store.list() if p['name']=='Bologna · final joint audit baseline'));s=Service(out/'service')
@@ -125,12 +125,31 @@ def main():
                     else:
                         if not page.locator('#side-list [data-code-node]').count():page.locator('[data-action="toggle-codebook"]').click()
                         scope='#side-list'
-                    positions.append({'step':'codebook open','memory':memory()});button=page.locator(scope+' [data-action="filter-code"][data-id="'+theme['id']+'"]');desc=set(page.evaluate('(id)=>[...codeDescendants(id)]',theme['id']));expected=sum(a['code_id'] in desc for a in before['annotations']);assert int(button.locator('.count').inner_text())==expected
+                    positions.append({'step':'codebook open','memory':memory()});button=page.locator(scope+' [data-action="filter-code"][data-id="'+theme['id']+'"]');desc=set(page.evaluate('(id)=>[...codeDescendants(id)]',theme['id']));expected=sum(a['code_id']==theme['id'] or a['code_id'] in desc for a in before['annotations']);assert int(button.locator('.count').inner_text())==expected
                     activate(page,button,phone);assert page.evaluate('state.codeFilter')==theme['id'];positions.append({'step':'theme filter','memory':memory()});ids=page.locator('.pill').evaluate_all('(els)=>els.map(e=>e.dataset.id)');assert set(ids)=={a['id'] for a in added};snap('06-theme-descendant-filter');activate(page,page.locator('[data-action="clear-filter"]').first,phone);positions.append({'step':'clear filter','memory':memory()});activate(page,page.locator('[data-action="reading-resume"]'),phone);positions.append({'step':'Resume','memory':memory(),'mounted_start':page.evaluate('readingMounted.start')});preserved=memory()==anchor;assert get()==before
+                    preserved=preserved and all(row['memory']==anchor for row in positions) and positions[-1]['mounted_start']==anchor['start']
                     dump(folder/'theme-filter-memory.json',{'positions':positions,'project_equal':True,'resume_preserved':preserved})
                     if not preserved:result['issues'].append({'id':'UX60-02','severity':'P2','viewport':mode,'message':'Theme filter interaction loses the previously kept reading position','positions':positions,'project_unchanged':True});snap('06-theme-filter-lost-Resume')
                     return {'gate_pass':preserved,'theme_id':theme['id'],'sidebar_global_count':expected,'current_source_codings':2,'filter_contains_descendants':True,'project_unchanged':True,'Resume_unchanged':preserved,'positions':positions}
                 check(mode+' theme filter agrees with descendant counts without changing reading memory',filtering,page)
+                def real_reading():
+                    before=get();old=memory()['start']
+                    if phone:
+                        session=ctx.new_cdp_session(page)
+                        for _ in range(3):
+                            session.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':75,'y':760}]})
+                            for y in [660,560,460,360,260]:
+                                session.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':75,'y':y}]});page.wait_for_timeout(30)
+                            session.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});page.wait_for_timeout(180)
+                        session.detach()
+                    else:
+                        page.mouse.move(600,600);page.mouse.wheel(0,1000);page.wait_for_timeout(300)
+                    new=memory()['start'];assert new>old,(old,new)
+                    if phone:
+                        page.locator('[data-action="coding-codebook"]').tap();assert memory()['start']==new;close(page)
+                    activate(page,page.locator('[data-action="reading-resume"]'),phone);assert memory()['start']==new and page.evaluate('readingMounted.start')==new;assert get()==before;snap('06b-normal-reading-advances-memory')
+                    return {'actual_scroll_from':old,'to':new,'next_codebook_and_Resume_preserved':True,'project_unchanged':True}
+                check(mode+' actual source scrolling advances the next reading return',real_reading,page)
                 def network():
                     before=get();page.locator('[data-action="view"][data-view="insights"]').click();expect(page.locator('#network-select')).to_be_enabled();graph=s.json(root+'/network');nodeids={n['id'] for n in graph['nodes']};assert all(e['source'] in nodeids and e['target'] in nodeids for e in graph['links'])
                     page.locator('#network-select').select_option('code:'+leaf['id']);target=page.locator('[data-action="net-evidence"][data-id="'+added[0]['id']+'"]');target.click();snap('07-network-evidence');activate(page,page.locator('[data-action="net-locate"]'),phone);expect(page.locator('#reading-document')).to_have_value(source['id']);expect(page.locator('.source-target').first).to_be_focused();snap('08-network-source');activate(page,page.locator('[data-action="net-return"]'),phone);expect(page.locator('#network-select')).to_have_value('code:'+leaf['id']);assert get()==before
@@ -230,8 +249,8 @@ def main():
                     page.locator('[data-action="projects"]:visible').first.click()
                     with page.expect_file_chooser() as event:activate(page,page.locator('[data-action="restore-pick"]'),phone)
                     before_projects=s.json('/projects');before_backups=backup_manifest(s.folder,pid)
-                    with page.expect_response(lambda r:r.url==site+'/w/api/projects' and r.request.method=='POST') as response:event.value.set_files(folder/'project-json.json')
-                    resp=response.value;ui_pass=resp.status==200
+                    with page.expect_response(lambda r:r.url==site+'/w/api/projects/restore' and r.request.method=='POST') as response:event.value.set_files(folder/'project-json.json')
+                    resp=response.value;ui_pass=resp.status==200;raw_exact=resp.request.post_data_buffer==(folder/'project-json.json').read_bytes();assert raw_exact
                     if not ui_pass:
                         assert resp.status==400 and 'QCA integrity validation failed' in resp.text();expect(page.locator('#dialog')).to_contain_text('QCA integrity validation failed');snap('15-json-restore-integrity-error')
                         assert get()==exported and s.json('/projects')==before_projects and backup_manifest(s.folder,pid)==before_backups
@@ -248,7 +267,7 @@ def main():
                     open_report();rtab('preview');expect(page.frame_locator('#report-preview').locator('.method-map li')).to_have_count(6);snap('16-restored-method-map');close(page)
                     snapshots=s.json('/projects/'+rid+'/backups')['items'];assert snapshots;recovered=s.json('/projects/'+rid+'/restore-snapshot',{'name':snapshots[0]['name']})
                     for k in ['documents','codes','annotations','comparative_qca','research_report']:assert recovered[k]==restored[k],k
-                    dump(folder/'final-project.json',exported);dump(folder/'restored-project.json',restored);return {'gate_pass':ui_pass,'browser_JSON_restore_pass':ui_pass,'diagnostic_API_preserves_numeric_types_and_all_source_roles_marks_QCA_report_versions_assets':True,'snapshot_copy_equal':True,'restored_project_id':rid,'Resume_is_browser_project_local_not_exported':True,'original_project_untouched':s.json(root)==exported}
+                    dump(folder/'final-project.json',exported);dump(folder/'restored-project.json',restored);return {'gate_pass':ui_pass,'browser_JSON_restore_pass':ui_pass,'restore_request_bytes_exact':raw_exact,'diagnostic_fallback_used':not ui_pass,'all_source_roles_marks_QCA_report_versions_assets_preserved':True,'snapshot_copy_equal':True,'restored_project_id':rid,'Resume_is_browser_project_local_not_exported':True,'original_project_untouched':s.json(root)==exported}
                 check(mode+' full JSON recovery and committed snapshot restore',recovery,page)
                 def website():
                     page.goto(site+'/',wait_until='networkidle');assert not page.evaluate('document.documentElement.scrollWidth>innerWidth');page.locator('#workflow').scroll_into_view_if_needed();snap('17-website-workflow')

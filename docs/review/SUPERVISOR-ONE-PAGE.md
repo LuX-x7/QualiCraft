@@ -1,21 +1,19 @@
 # QT Supervisor Review 18 October 2026
 
-**Status:** Both UX60 issues have passed targeted repairs. Frozen QCA/report JSON restores normally (UX61); opening the phone Themes & Codes keeps the saved reading position through filtering, clearing and Resume (UX62). Actual source scrolling still advances that position. Full joint re-acceptance and current human/researcher acceptance remain pending. Public Bologna only. Windows deferred; no push or deployment.
+**Decision:** The repaired Bologna technical workflow has passed a fresh end-to-end acceptance run. Both UX60 issues are closed in the combined flow: phone reading position survives the codebook and filters; frozen project JSON restores through the normal interface. No new functional defect was found. Current human/accessibility, researcher and user/supervisor acceptance remain open. Windows deferred; no push or deployment.
 
-**Start:** [Website](http://127.0.0.1:52766/) → [Workbench](http://127.0.0.1:52766/w/?lang=en) → **Bologna · codebook position review**. This independent editable sample runs on the developer’s computer: 21 documents after two technical imports; the website snapshot retains 19. Earlier projects and recovery points are intact.
+**Start:** [Website](http://127.0.0.1:52770/) → [Workbench](http://127.0.0.1:52770/w/?lang=en) → **Bologna · repaired final joint review**. This editable, isolated public sample runs on the developer computer. It has 21 documents after two technical imports; the website snapshot retains 19. Previous projects and recovery points are intact.
 
 **Demonstration, about 12 minutes:**
 
-1. Inspect batch-import receipts and duplicate confirmation. Follow a highlight to its saved Code / Category / Theme ancestry.
-2. Review Read, Revisit, Undo and the two-track overview. Keep paragraph 17 in interview02.txt; open Themes & Codes, filter materials, clear and Resume. Read further and repeat to verify the new position.
-3. Follow relationship evidence to the source and back. Read all five figures and exact CSV values on `/report`.
-4. Open Export → Research report: inspect the selected full method, six-step M1, authored decisions, evidence, figures and retained versions. Legacy reports retain their original absent-map state.
-5. Export the notebook, Word, figure/code bundles and JSON. Restore `samples/final-joint/project-json.json`; check frozen records and re-export. Corrupt inputs must remain rejected.
+1. Review two batch-import receipts and duplicate cancellation. Follow an exact highlighted range to its saved Code / Category / Theme ancestry.
+2. Inspect Read, Revisit, Undo and the two-track overview. Keep paragraph 17 in Bologna-joint-A; open Themes & Codes, filter materials, clear and Resume. Preview range [5,28), jump and Resume; read further to check that memory advances.
+3. Follow relationship evidence to its source and back. Inspect all five actual figures, original-size viewing and exact CSV-linked readings on `/report`.
+4. Open Export → Research report: inspect the full selected method, six-step M1, decisions, evidence, figures, frozen QCA and retained versions.
+5. Open the new `samples/repaired-final-joint/`: editable notebook, current v11 report, complete figure/QCA code bundle and project JSON. Restore JSON through the interface and verify marks, ancestry, frozen versions and figures.
 
-**Outputs:** a full highlighted source notebook with saved ancestry (editable Word / offline HTML); five figure bundles (SVG / PDF / PNG, CSV and Python); one method-specific Research report; project JSON. TA / Content provide an analysis table; Comparative adds calibration, truth table, configurations and necessity. Word edits stay in Word. Resume belongs to the browser, not project JSON.
+**Deliverables:** a full highlighted source notebook with editable ancestry (Word / offline HTML); five SVG / PDF / PNG figures with CSV and Python; one method-specific Research report; full project JSON. Comparative results sit inside its Research report. Word edits remain external; Resume is browser-local rather than project JSON.
 
-**Discussion:** Does the method, case unit, calibration and interpretation fit the research question? Are evidence, exceptions, notebook hierarchy and report structure useful for writing? Researcher reference adjudication and user/supervisor acceptance remain explicit decisions; technical QCA labels and a saved method map do not establish research validity.
+**Evidence:** 26 main desktop/phone checks plus 18 website checks passed, all newly executed without carried results or diagnostic recovery. Normal console/HTTP/external errors: zero. Two extra exact-range/jump checks, six independently reproduced scripts and 29 rendered Word pages passed. Current v11 report/Word/ZIP/JSON and notebook project identity agree. 141 product/data/deployment paths and 110 build sources are unchanged; the local production build passed. The unchanged product retains UX62’s 287 Python tests (3 existing skips) and 246 Node tests; these were not rerun this round.
 
-**Latest evidence:** 7 new Node regressions (5 failed before repair), 39 related reading checks, 246 Node and 287 Python tests (3 existing skips), 12 targeted Chrome checks, 10 frozen-JSON recovery checks, syntax and direct Next build pass. Normal console/HTTP/external errors and navigation writes are zero; 4 intentional tamper refusals are separate. 140 protected paths, 110 website sources and all 31 existing samples are unchanged.
-
-**Remaining:** rerun the complete combined workflow on this repaired version; current VoiceOver, OS reduced motion, actual download feedback and unreported physical-phone paths; researcher and user/supervisor acceptance. Windows remains unverified. See UX-62-CODEBOOK-READING-POSITION.md and the roadmap. This packet supports review; it is not release approval.
+**Discuss and finish:** Is the chosen method, case unit, calibration and interpretation appropriate? Are exceptions, source evidence, hierarchy and report layout useful for writing? Technical QCA labels are not empirical findings. Researcher reference adjudication, current VoiceOver, OS reduced motion, real download feedback, unreported physical-phone paths and final user/supervisor acceptance remain explicit gates. Windows remains unverified. The packet is ready for review, not automatic release approval.
