@@ -21,7 +21,7 @@ def main():
         core.validate_project(copy.deepcopy(p))
     assert 'method_map' not in legacy['research_report']['current']
     service=Service(out/'service',source);origin=f'http://127.0.0.1:{args.port}';log=(out/'site.txt').open('w');site=subprocess.Popen([NODE,'start.js'],cwd=args.site_build,env={**os.environ,'PORT':str(args.port),'HOST':'127.0.0.1','QT_WORKBENCH_URL':service.base},stdout=log,stderr=log,start_new_session=True)
-    result={'checks':[],'console':[],'http':[],'external':[],'intentional_rejections':[],'known_deferred':[],'source_project':source['id']};original_points=backup_manifest(service.folder,source['id']);expected_error=[False]
+    result={'checks':[],'console':[],'http':[],'external':[],'intentional_rejections':[],'reading_regressions':[],'source_project':source['id']};original_points=backup_manifest(service.folder,source['id']);expected_error=[False]
     def save():dump(out/'results.json',result)
     def check(name,fn,page):
         print('START '+name,flush=True)
@@ -99,14 +99,14 @@ def main():
                     p=upload(args.legacy,legacy,'07-legacy-project-restored');assert 'method_map' not in p['research_report']['current'];use(page.locator('[data-action="export"]').first);use(page.locator('[data-action="write-report"]'));use(page.locator('[data-report-tab="preview"]'));frame=page.frame_locator('#report-preview');expect(frame.locator('body')).to_contain_text('No method map was saved');assert frame.locator('.method-map').count()==0;shot('08-legacy-map-remains-absent');close();return {'old_map_omission_preserved':True,'QCA_and_figures_unmodified':True}
                 check(mode+' historical pre-M1 project restores without rewriting old versions',old_legacy,page)
                 if phone:
-                    # Scope observation only, not a UX61 fix or acceptance claim.
+                    # UX62 regression: restoration must retain the corrected codebook return.
                     page.locator('#reading-document').select_option(source['documents'][0]['id']);use(page.locator('[data-action="reading-overview"]'))
                     if page.locator('#overview-paragraph-list').get_attribute('open') is None:use(page.locator('#overview-paragraph-list summary'))
                     page.locator('#overview-paragraph-number').fill('17');use(page.locator('[data-action="overview-find-paragraph"]'));use(page.locator('[data-action="overview-jump-paragraph"]'))
                     if page.locator('[data-action="reading-overview"]').get_attribute('aria-expanded')!='true':use(page.locator('[data-action="reading-overview"]'))
-                    use(page.locator('[data-action="overview-keep"]'));before=page.evaluate('readReadingPosition(state.project,doc())');use(page.locator('[data-action="coding-codebook"]'));after=page.evaluate('readReadingPosition(state.project,doc())');assert before['start']==11435 and after['start']==0;result['known_deferred'].append({'id':'UX60-02','before':before,'after':after,'still_open':True});shot('09-UX60-02-remains-open');close()
+                    use(page.locator('[data-action="overview-keep"]'));before=page.evaluate('readReadingPosition(state.project,doc())');use(page.locator('[data-action="coding-codebook"]'));after=page.evaluate('readReadingPosition(state.project,doc())');assert before['start']==11435 and after==before;result['reading_regressions'].append({'id':'UX60-02','before':before,'after':after,'preserved':True});shot('09-codebook-position-preserved');close()
                 assert not page.evaluate('document.documentElement.scrollWidth>innerWidth');context.close()
             browser.close()
-        assert service.json('/projects/'+source['id'])==source;assert backup_manifest(service.folder,source['id'])==original_points;assert not result['console'] and not result['http'] and not result['external'];result['completed']=True;save();print(json.dumps({'checks':len(result['checks']),'normal_errors':0,'deferred':'UX60-02'}))
+        assert service.json('/projects/'+source['id'])==source;assert backup_manifest(service.folder,source['id'])==original_points;assert not result['console'] and not result['http'] and not result['external'];result['completed']=True;save();print(json.dumps({'checks':len(result['checks']),'normal_errors':0,'reading_regression':'UX60-02 preserved'}))
     finally:os.killpg(site.pid,15);site.wait(timeout=15);log.close();service.stop()
 if __name__=='__main__':main()

@@ -548,7 +548,7 @@ function scheduleSearchReadingRestore(start) {
     scrollReadingParagraph(start);updateReadingPosition();
   });
 }
-document.addEventListener('focusin',event=>{if(event.target.id==='search')beginReadingSearch();});
+document.addEventListener('focusin',event=>{if(event.target.id==='search'||event.target.closest?.('[data-action="coding-codebook"]'))beginReadingSearch();});
 document.addEventListener('pointerdown',readingSearchGesture);
 document.addEventListener('wheel',readingSearchGesture,{passive:true});
 document.addEventListener('touchmove',readingSearchGesture,{passive:true});
@@ -722,6 +722,9 @@ function handleCodebookKey(event) {
   event.preventDefault();next?.focus();next?.scrollIntoView({block:'nearest'});
 }
 function showMobileCodebook() {
+  // Revealing this control can scroll a phone away from the source. Share the
+  // source-bound search return until filtering ends or actual reading resumes.
+  beginReadingSearch();
   modal(QT('codebookTree'),`<label class="field">${QT('codebookFind')}<input id="mobile-code-filter" type="search" value="${esc(state.sideFilter)}" autocomplete="off"></label><div id="mobile-codebook-list">${codebookHtml('mobile')}</div>`);
   $('#dialog').dataset.codingCodebook='1';$('#mobile-code-filter').focus();
 }
