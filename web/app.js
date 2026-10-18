@@ -188,12 +188,12 @@ function toast(message, error=false) { const el=$('#toast'); el.textContent=mess
 // When the workbench is proxied behind the site, /config.js sets QT_BASE to the
 // prefix it is mounted at. Standalone, the base is empty and every path is root.
 const QT_BASE = (typeof window !== 'undefined' && window.QT_BASE) || '';
-async function api(path, body) {
+async function api(path, body, {rawJson=false}={}) {
   if (body && state.config.public_demo) {
     throw new Error(QT('publicDemoReadOnly', 'This public demonstration is read-only. Start a local copy to create or change projects.'));
   }
   const url = path.startsWith('/api') ? QT_BASE + path : path;
-  const response = await fetch(url, {method:body ? 'POST':'GET', headers:{'X-QualiCraft-Token':state.token,...(body?{'Content-Type':'application/json'}:{})}, ...(body?{body:JSON.stringify(body)}:{})});
+  const response = await fetch(url, {method:body ? 'POST':'GET', headers:{'X-QualiCraft-Token':state.token,...(body?{'Content-Type':'application/json'}:{})}, ...(body?{body:rawJson?body:JSON.stringify(body)}:{})});
   const data = await response.json(); if(!response.ok) { const error=new Error(data.error || 'Request failed'); error.status=response.status; throw error; } return data;
 }
 const projectUrl = action => `${QT_BASE}/api/projects/${state.project.id}${action?'/'+action:''}`;
@@ -1707,9 +1707,11 @@ function exportResultHtml(filename,bytes,text) {
   const excerpt=cp(text.split('\n').slice(0,8).join('\n')).slice(0,1000).join('');
   return `<div class="io-result-heading">${icon('doc')}<div><span class="io-kicker">${QT('exportSent')}</span><strong data-export-filename>${esc(filename)}</strong><span>${bytes.toLocaleString()} B</span></div><span class="io-result-check" aria-hidden="true">✓</span></div><p>${QT('exportCheck')}</p><details class="io-export-preview"><summary>${QT('exportPreview')}</summary><pre>${esc(excerpt)}</pre></details>`;
 }
-async function createProject(body) {
-  const p=await api('/api/projects',body); state.projects=await api('/api/projects');
-  if(['empty','bologna'].includes(body.kind))setGuidePreference(p.id,'active');
+async function createProject(body, rawJson=false) {
+  // Restore the original text: parsing/stringifying here changes 1.0 to 1 and
+  // invalidates existing frozen report/QCA hashes. The server still validates.
+  const p=await api(rawJson?'/api/projects/restore':'/api/projects',body,{rawJson}); state.projects=await api('/api/projects');
+  if(!rawJson&&['empty','bologna'].includes(body.kind))setGuidePreference(p.id,'active');
   closeModal(); state.view='coding'; await loadProject(p.id); toast(QT('projectCreated','Project created and saved locally.'));
 }
 async function action(button) {
@@ -1969,7 +1971,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;render();}
     if(e.target.id==='send-confirm')$('[data-action="start-analysis"]').disabled=!e.target.checked;
     if(e.target.matches('input[type="file"]')&&e.target.files[0]){const label=document.querySelector('[data-file-name="'+e.target.id+'"]');if(label)label.textContent=e.target.files[0].name;if(e.target.id==='import-file'){$('#document-name').value=e.target.files[0].name.replace(/\.(txt|docx)$/i,'');await updateImportPreview();}}
-    if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
+    if(e.target.id==='restore-file'&&e.target.files[0]){if(!e.target.files[0].size)throw new Error('The project file is empty.');if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject(await e.target.files[0].text(),true);}
   }catch(error){errorDisplay(error);}
 });
 document.addEventListener('input',e=>{if(['document-name','document-text'].includes(e.target.id))resetImportDecision();if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});

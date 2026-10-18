@@ -274,6 +274,12 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 if base_path and raw.startswith(base_path + "/"):
                     raw = raw[len(base_path):]
                 parts = raw.strip("/").split("/")
+                if parts == ["api", "projects", "restore"]:
+                    # Parse the uploaded JSON once, on the server. A browser
+                    # object roundtrip rewrites numbers and breaks old hashes.
+                    # Reuse all project validation, new-ID and snapshot rules.
+                    body = {"kind": "restore", "project": body}
+                    parts = ["api", "projects"]
                 if parts == ["api", "config"]:
                     return self.send(analyzer.configure(body))
                 if parts == ["api", "import"]:

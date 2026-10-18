@@ -1,23 +1,23 @@
 # QT Supervisor Review 18 October 2026
 
-**Status:** final joint acceptance is blocked by **UX60-01 (P1)**: browser restore rejects QT’s own project JSON containing frozen QCA/report records. **UX60-02 (P2)** overwrites a kept phone reading position when Themes & Codes opens. Suitable for discussion with these known issues; not a final release candidate. Public Bologna only. Windows deferred; no push or deployment.
+**Status:** UX60-01 is fixed: frozen QCA/report project JSON now restores through the normal desktop and phone interface. **UX60-02 remains open:** opening Themes & Codes can overwrite a kept phone reading position. The full project is not yet finally accepted. Public Bologna only. Windows deferred; no push or deployment.
 
-**Start:** [Website](http://127.0.0.1:52761/) → [Workbench](http://127.0.0.1:52761/w/?lang=en) → **Bologna · method report review**. These addresses run on the developer’s computer. This sample and the website retain 19 documents; separate disposable audit copies have 21 after two imports. Offline examples: `samples/final-joint/` and `samples/method-reports/`.
+**Start:** [Website](http://127.0.0.1:52763/) → [Workbench](http://127.0.0.1:52763/w/?lang=en) → **Bologna · frozen JSON recovery review**. These addresses run on the developer’s computer. This independent editable sample has 21 documents after two technical imports; the website snapshot retains 19. Earlier projects and recovery points remain intact.
 
 ## Demonstration about 12 minutes
 
-1. Batch-import two public copies; inspect individual receipts and cancel a duplicate.
-2. Code one range twice; trace its ancestry. Try Read, Revisit, Undo, range jumps, Keep and Resume after search, document switching and refresh. Show the recorded phone tree-opening issue.
-3. Follow relationship evidence to the source and back; inspect all five figures and exact CSV readouts on `/report`.
-4. Open Export → Research report. Inspect the saved full method and six-step M1 map, authored decisions, evidence and narrative.
-5. Inspect editable Word, the source notebook and reproducible ZIP. Show the JSON-restore failure: a type-preserving diagnostic recovery and committed snapshots retain content, but normal browser restoration still needs repair.
+1. Inspect batch-import receipts and duplicate confirmation. Follow a highlighted passage to its saved Code / Category / Theme ancestry.
+2. Try Read, Revisit, Undo and the range overview; review the recorded phone tree-opening position issue separately.
+3. Follow relationship evidence to the source and back. Read all five figure types and exact CSV values on `/report`.
+4. Open Export → Research report. Inspect the full method, six-step M1, retained versions, authored decisions and evidence. Legacy reports keep their original absent-map state.
+5. Restore the original `samples/final-joint/project-json.json` through the interface; verify sources, marks, frozen QCA, all report versions and figures. Re-export and restore again. A damaged record must still be rejected.
 
-## Outputs and questions
+## Outputs and discussion
 
-Deliverables are the full highlighted **source notebook** with saved ancestry (Word / offline HTML); **five figure bundles** with SVG / PDF / PNG, CSV and Python; one method-specific **Research report**; and **project JSON**. TA / Content provide an analysis table; Comparative adds calibration, truth table, configurations and necessity. Word edits stay in Word. Browser-local Resume positions are not project exports.
+Deliverables remain the full highlighted **source notebook** with saved ancestry (editable Word / offline HTML); **five figure bundles** with SVG / PDF / PNG, CSV and Python; one method-specific **Research report**; and **project JSON**. TA / Content provide an analysis table; Comparative adds calibration, truth table, configurations and necessity. Word edits stay in Word. Browser-local Resume is not project data.
 
-Do the method, case units and interpretations fit the question? Are calibration and evidence defensible? Do the tree and report support writing? The researcher still needs to adjudicate the two private reference comparisons. Sample QCA memberships are technical test designations, not findings. Switching a report’s method to verify preservation does not perform a new analysis; M1 is not completion certification.
+Do the chosen method, case units, calibration and interpretations fit the question? Do the notebook and report support writing? The researcher still needs to adjudicate the private reference comparisons. Sample QCA memberships are technical test designations, not findings; method selection and M1 do not certify completed research.
 
-**Evidence:** 39 passed / three failed browser checks; 594 CSV rows; six scripts independently reproduced; 29 final Word pages verified; 280 Python tests (three existing skips), 231 Node tests and direct Next build passed. Product/statistical/rendering/data sources stayed unchanged; original projects remain intact.
+**Latest evidence:** eight new Node and seven Python regressions; 287 Python tests (three existing skips), 239 Node tests, ten desktop-keyboard/touch-emulated-phone restore checks, syntax and direct Next build pass. Normal console/HTTP/external errors are zero; four intentional tamper refusals are recorded separately. No statistical/plotting/hash rules changed. Historical UX60 failures remain documented; its full joint suite was not rerun this round.
 
-**Next gates:** fix UX60-01, then UX60-02 and repeat recovery/phone checks; current VoiceOver, OS reduced motion, actual download feedback and unreported physical-phone import/report paths; researcher and user/supervisor acceptance. Prior phone reading-operation results remain recorded only for their tested scope. See UX-60-FINAL-JOINT-ACCEPTANCE.md.
+**Remaining:** UX60-02; current VoiceOver, OS reduced motion, actual download feedback and unreported physical-phone import/report paths; researcher and user/supervisor acceptance. Windows remains unverified. See UX-61-EXACT-JSON-RESTORE.md and the updated roadmap.
