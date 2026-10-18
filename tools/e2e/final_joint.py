@@ -12,14 +12,14 @@ KINDS=['frequency','coverage','cooccurrence','hierarchy','accumulation']
 ROOT=Path(__file__).resolve().parents[2]
 
 def main():
-    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True);ap.add_argument('--site-build',type=Path,required=True);ap.add_argument('--port',type=int,default=52768);ap.add_argument('--continue-from',type=Path);args=ap.parse_args();out=args.out;out.mkdir(parents=True,exist_ok=True)
+    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True);ap.add_argument('--site-build',type=Path,required=True);ap.add_argument('--port',type=int,default=52768);ap.add_argument('--continue-from',type=Path);ap.add_argument('--desktop-only',action='store_true',help='Run desktop scope when phone acceptance is deferred');args=ap.parse_args();out=args.out;out.mkdir(parents=True,exist_ok=True)
     prior=json.loads((args.continue_from/'results.json').read_text()) if args.continue_from else None
     if prior:
         shutil.copytree(args.continue_from/'service',out/'service');store=core.Store(out/'service/qualicraft.sqlite3');seed=store.get(next(p['id'] for p in store.list() if p['name']=='Bologna · final joint audit baseline'));s=Service(out/'service')
     else:
         seed=bologna_example();seed['id']=core.uid();seed['name']='Bologna · final joint audit baseline';s=Service(out/'service',seed)
     site='http://127.0.0.1:'+str(args.port);log=(out/'site.txt').open('w');proc=subprocess.Popen([NODE,'start.js'],cwd=args.site_build,env={**os.environ,'PORT':str(args.port),'HOST':'127.0.0.1','QT_WORKBENCH_URL':s.base},stdout=log,stderr=log,start_new_session=True)
-    result={'checks':[],'console':[],'http':[],'outside':[],'issues':[],'projects':{},'expected_http':[],'runtime':'Chrome desktop and touch emulation; no physical-device or VoiceOver claim'}
+    result={'checks':[],'console':[],'http':[],'outside':[],'issues':[],'projects':{},'expected_http':[],'runtime':'Chrome desktop; phone deferred' if args.desktop_only else 'Chrome desktop and touch emulation; no physical-device or VoiceOver claim'}
     def check(name,fn,page=None):
         if prior:
             previous=next((c for c in prior['checks'] if c['name']==name and c['pass']),None)
@@ -50,7 +50,7 @@ def main():
         else:raise TimeoutError('local site not ready')
         with sync_playwright() as pw:
             browser=pw.chromium.launch(channel='chrome',headless=True)
-            for phone in [False,True]:
+            for phone in ([False] if args.desktop_only else [False,True]):
                 mode='phone' if phone else 'desktop';folder=out/mode
                 if prior and mode in prior['projects']:
                     shutil.copytree(args.continue_from/mode,folder);pid=prior['projects'][mode];p=s.json('/projects/'+pid)

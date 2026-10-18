@@ -25,15 +25,9 @@
 
 <p align="center"><em>English first · 中文在下半部分</em></p>
 
-> **Current review candidate:** local branch `t7-site`; GitHub rejected its push for missing `workflow` permission, and the owner has chosen to keep it local for now. The remote review branch has not been created. This is a review candidate, not the completed final scope. Hosted demos above can run an earlier commit; pushing source does not deploy them. See the [current plan](docs/review/EXPERIENCE-ROADMAP.md) and [UX-45 evidence](docs/review/UX-45-REVIEW-FINISH.md).
+> **Current Mac review candidate (UX65):** website explanations now cover batch import, reading/coding tracks, three methods including binary Comparative QCA, editable coded notebooks, method-specific Research reports and reproducible exports. Fresh desktop 13/13, website 23/23, 287 Python (3 skips), 225 Node and final production build pass. Local review: http://127.0.0.1:52774/ → **Bologna · Mac release review**. [Evidence and remaining gates](docs/review/UX-65-MAC-SITE-SYNC.md). Phone follow-up and Windows are deferred. Push is authorized after checks; remote success and a current public deployment must be verified separately. Automatic deployment stays off.
 
-> **UX59 local update:** Research reports now save the full selected method and a versioned process map in HTML, editable Word, JSON and ZIP. Historical reports/runs are retained. Review at http://127.0.0.1:52761/ → **Bologna · method report review**. [Acceptance and remaining gates](docs/review/UX-59-REPORT-METHOD-MAPS.md). Windows deferred; no push/deployment.
->
-> **UX58 batch import:** select multiple TXT/DOCX files for per-file progress, explicit duplicate choices and failure/retry. Stop/close preserves saved files; refresh resumes after original-file reselection and text fingerprint checks. The limit remains 100 documents per project. See [queue acceptance and limits](docs/review/UX-58-BATCH-IMPORT-QUEUE.md). Report method/process presentation and final human acceptance remain open. Statistics and plotting are unchanged; Windows deferred, local commits only.
->
-> **Available:** QT satellite start screen, manual coding and reading marks, relationship exploration, five reproducible figures, and coded transcript HTML / editable Word alongside the four existing project exports. **Available in the local candidate:** saved, editable Analysis Table / Narrative Analysis reports with frozen figures; explicit research roles; and independent binary Comparative QCA calibration, complete truth tables, conservative configurations and reproducible report/code export. QCA supports up to 100 cases, six conditions and one outcome. Broader input/batch/interruption checks and researcher/device acceptance remain open. Windows is deferred and unverified.
->
-> **当前审核版：** 新起步页、原生树形 Word、报告编辑／冻结五图和独立二元 Comparative QCA 已接通。QCA 最多100案例、6条件、1结果；更广输入／中断与研究者／设备验收仍开放。上方在线演示可能仍是旧版本，源码推送不会自动部署。当前代码在本机 `t7-site`；GitHub 因令牌缺 workflow 权限拒绝推送，远端审核分支尚未创建。Windows 暂缓，不能称最终版。
+> **当前 Mac 审核版（UX65）：** 网站已同步批量导入、阅读双轨、独立二元 Comparative QCA、可编辑编码全文树、方法流程图及研究报告／图表代码导出。桌面与最终网站验收通过，手机实机补测和 Windows 暂缓、不记作通过。源码推送已获授权；推送与线上部署必须分别核实。[验收与发布状态](docs/review/UX-65-MAC-SITE-SYNC.md)。
 
 
 ---

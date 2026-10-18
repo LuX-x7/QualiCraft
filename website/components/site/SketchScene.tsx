@@ -5,6 +5,7 @@ import SavedPathSketch from './SavedPathSketch'
 import { networkExamples } from '@/lib/site/record-network'
 import { EXPORT_FORMATS } from '@/lib/site/export-formats'
 import CodingSketch from './CodingSketch'
+import OutputSketch from './OutputSketch'
 import type { SavedCoding } from '@/lib/site/record-network'
 import type { CodingExample } from './CodingEvidence'
 
@@ -30,6 +31,7 @@ export default function SketchScene({kind,example,records=[]}:{kind:string;examp
  if(kind==='analysis')return <SavedPathSketch records={networkExamples(records,example)} initial={example}/>
  if(kind==='import')return <div className="import-sketch engineering-plate" data-flow-active={part}>
    <p className="engineering-caption mono">FILE → TEXT RECORD → SOURCE RANGE</p>
+   <p className="import-queue-guide mono">BATCH QUEUE → DUPLICATE CHOICE → SAVE / RETRY</p>
    <div className="import-journey">
     <button type="button" data-flow-step="file" className={`sketch-object${part===0?' is-current':''}`} aria-pressed={part===0} {...activate(0,3)}><span className="mono">01 / SOURCE</span><SketchGlyph kind="import"/><strong>{example.document_name}</strong><span className="engineering-note">Keep the document identity.</span></button>
     <span className="journey-arrow" aria-hidden="true">→</span>
@@ -42,7 +44,7 @@ export default function SketchScene({kind,example,records=[]}:{kind:string;examp
    <p className="sketch-readout" role="status" aria-live="polite"><span className="mono">{part===0?'ORIGINAL FILE':part===1?'READABLE SOURCE':'PRESERVED RANGE'}</span>{part===0?example.document_name:part===1?'Original words, stable document identity.':`Unicode [${example.start}, ${example.end})`}</p>
    <details className="engineering-source"><summary>Source excerpt &amp; identity</summary><blockquote lang="it">{example.quote}</blockquote><dl><dt>Document ID</dt><dd>{example.document_id}</dd><dt>Document SHA-256</dt><dd>{example.document_sha256}</dd></dl><p>Bologna CC0 · explanatory structure from a saved record.</p></details>
  </div>
- return <div className="export-sketch engineering-plate" data-flow-active={part}>
+ return <><OutputSketch example={example}/><details className="legacy-export-guide"><summary>All original export formats</summary><div className="export-sketch engineering-plate" data-flow-active={part}>
   <p className="engineering-caption mono">CODING EVIDENCE → YOUR RESEARCH REPORT</p>
   <div className="export-board">
    <div className="export-package"><SketchGlyph kind="export"/><div data-export-record="true" className="export-record"><span className="mono">PROJECT RECORD</span><svg viewBox="0 0 190 132" fill="none" aria-hidden="true"><path className="engineering-outline" d="M8 7L180 4L183 125L6 127Z M22 28V106M22 38H44M22 70H44M22 102H44"/><g className="engineering-field"><text x="51" y="43">documents</text><text x="51" y="75">codes</text><text x="51" y="107">annotations</text></g><circle className="engineering-joint" cx="22" cy="70" r="3"/></svg></div></div>
@@ -50,5 +52,5 @@ export default function SketchScene({kind,example,records=[]}:{kind:string;examp
    <div className="export-files" role="group" aria-label="Explore export formats">{EXPORT_FORMATS.map((format,index)=><button type="button" key={format.name} aria-label={format.label} aria-pressed={part===index} className={`export-file${part===index?' is-current':''}`} {...activate(index,EXPORT_FORMATS.length)}><span className="file-fold" aria-hidden="true"/><strong className="mono">{format.suffix}</strong><FileStructure index={index}/><span>{format.name}</span><span className="export-fields mono">{format.fields}</span></button>)}</div>
   </div>
   <p className="sketch-readout" role="status" aria-live="polite"><span className="mono">{EXPORT_FORMATS[part].name.toUpperCase()}</span>{EXPORT_FORMATS[part].detail}</p><p className="sketch-note mono">FORMAT GUIDE · DOWNLOAD YOUR FILES FROM THE WORKBENCH</p>
- </div>
+ </div></details></>
 }

@@ -79,7 +79,7 @@ def main():
             shot(p,'desktop-import-engineering');return {'three_stages':states,'original_schematic_retained':True}
         check('import explains source identity, text record and exact coordinates',import_flow)
         def export_flow():
-            _,p=opened();visit(p,'export');assert p.locator('[data-export-record]').count()==1,'Missing common project structure'
+            _,p=opened();visit(p,'export');p.locator('.legacy-export-guide > summary').click();assert p.locator('[data-export-record]').count()==1,'Missing common project structure'
             buttons=p.locator('[data-story-art="export"] .export-file');assert buttons.count()==6
             assert buttons.all_text_contents()[:4] and [buttons.nth(i).get_attribute('aria-label') for i in range(4)]==['Project JSON','Codings CSV','Matrix CSV','Methods Markdown']
             for i in range(6):

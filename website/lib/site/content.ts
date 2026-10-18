@@ -37,9 +37,9 @@ export const MODULES = [
     title: 'Import',
     goal: 'Bring the source into view.',
     steps: [
-      'Choose a .txt or .docx file.',
-      'Name the document.',
-      'Watch the paragraphs arrive.',
+      'Queue .txt or .docx files.',
+      'Review progress and duplicate choices.',
+      'Retry failed files; open saved documents.',
     ],
     see: 'Original text in numbered paragraphs, with document and character ranges preserved.',
   },
@@ -62,8 +62,8 @@ export const MODULES = [
     goal: 'Inspect the coding record.',
     steps: [
       'Open the Insights view.',
-      'Read the frequency bars and the document × code matrix.',
-      'Choose Figures → Co-occurrence heatmap.',
+      'Trace the network, counts and source passages.',
+      'For Comparative QCA, calibrate cases and freeze a run.',
     ],
     see: 'Check counts against source passages; a frequent code is not automatically an important one.',
   },
@@ -86,8 +86,8 @@ export const MODULES = [
     goal: 'Carry the evidence into your writing.',
     steps: [
       'Choose the document scope.',
-      'Export coded HTML or Word.',
-      'Write and version your Analysis Table and Narrative Analysis in Export.',
+      'Export the coded notebook as HTML or editable Word.',
+      'Save a Research report with your method, writing, figures and code.',
     ],
     see: 'A coded source notebook and one Research report: your chosen method, process map, writing, saved figures, counts and code.',
   },
@@ -263,10 +263,11 @@ export const ABOUT = {
         'decision is recorded.',
     },
     {
-      name: 'The method writes itself down',
+      name: 'Keep decisions with the evidence',
       detail:
-        'How the codebook changed, where AI helped, what was rejected — exported as ' +
-        'Markdown, not reconstructed from memory a fortnight later.',
+        'Choose TA, qualitative content analysis or binary Comparative QCA. Save method ' +
+        'decisions, an Analysis Table and Narrative Analysis in a versioned Research report. ' +
+        'Export editable Word, the highlighted source notebook, figures, counts and reproducible code.',
     },
     {
       name: 'The interface follows the study',
@@ -282,7 +283,8 @@ export const SEO = {
   title: 'QualiCraft — a researcher-led qualitative coding workbench',
   description:
     'A qualitative research workbench that runs on your own machine. Code transcripts, ' +
-    'group codes into themes, and export a methods record without your data leaving the desk.',
+    'choose TA, content analysis or binary Comparative QCA, and export coded notebooks, ' +
+    'editable research reports, figures and reproducible code.',
   report: {
     title: 'A worked example · figures from the Bologna corpus',
     description:

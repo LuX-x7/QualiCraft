@@ -44,7 +44,7 @@ def main():
    tab.screenshot(path=str(out/(name+'.png')))
   def natural_scroll():
    page.evaluate('window.__qtClicks=0;document.addEventListener("click",()=>window.__qtClicks++)');page.mouse.move(1430,65);seen=set();readings=[]
-   expected=['import','coding','analysis','network','plotting','plotting-coverage','plotting-cooccurrence','plotting-hierarchy','plotting-accumulation','export']
+   expected=['import','coding','analysis','network','qca','plotting','plotting-coverage','plotting-cooccurrence','plotting-hierarchy','plotting-accumulation','export']
    for _ in range(70):
     scene=page.locator(stage).get_attribute('data-scene');box=page.locator(stage).bounding_box()
     if scene not in seen and abs(box['y']-78)<1:
@@ -53,12 +53,12 @@ def main():
     page.mouse.wheel(0,240);page.wait_for_timeout(90)
    assert seen==set(expected),readings
    assert page.evaluate('window.__qtClicks')==0
-   assert page.locator(stage).count()==1 and page.locator('[data-story-art]').count()==10
+   assert page.locator(stage).count()==1 and page.locator('[data-story-art]').count()==len(expected)
    assert page.locator('.story-panel:not([hidden])').count()==1
    assert page.locator('[data-story-art="coding"] [data-network-node]').count()==0
    snapshot(page,'coding','coding-desktop');snapshot(page,'analysis','analysis-path-desktop');snapshot(page,'network','network-desktop')
-   return {'scenes':readings,'clicks':0,'one_fixed_stage':True,'all_ten_scenes_preserved':True}
-  check('native scrolling keeps the same left stage fixed across all ten scenes without clicks',natural_scroll)
+   return {'scenes':readings,'clicks':0,'one_fixed_stage':True,'all_original_scenes_plus_QCA':True}
+  check('native scrolling keeps the same left stage fixed across all scenes without clicks',natural_scroll)
   def identity():
    nodes=page.locator('[data-story-art="network"] [data-network-node]');ids=nodes.evaluate_all('(es)=>es.map(e=>e.dataset.networkNode)');assert expected_ids<=set(ids);assert len(set(ids))==len(ids)
    edges=page.locator('[data-story-art="network"] [data-edge-from]').evaluate_all('(es)=>es.map(e=>({...e.dataset}))')
@@ -101,13 +101,14 @@ def main():
    page.keyboard.press('End');assert page.evaluate('document.activeElement.hasAttribute("data-network-node")');page.keyboard.press('ArrowLeft');assert page.evaluate('document.activeElement.getAttribute("aria-pressed")')=='true'
    visit('coding');page.locator('[data-story-art="coding"] .coding-code').focus();page.keyboard.press('PageDown');assert page.evaluate('document.activeElement.closest("#story-analysis")!==null')
    page.locator('[data-story-art="analysis"] [data-path-node][aria-pressed=true]').press('PageDown');assert page.evaluate('document.activeElement.closest("#story-network")!==null')
-   page.locator('[data-story-art="network"] [data-network-node][aria-pressed=true]').press('PageDown');assert page.evaluate('document.activeElement.closest("#story-plotting")!==null')
+   page.locator('[data-story-art="network"] [data-network-node][aria-pressed=true]').press('PageDown');assert page.evaluate('document.activeElement.closest("#story-qca")!==null')
+   page.locator('[data-story-art="qca"] .qca-procedure button').first.press('PageDown');assert page.evaluate('document.activeElement.closest("#story-plotting")!==null')
    visit('coding');page.locator('[data-story-art="coding"] .coding-passage').focus();page.keyboard.press('Tab');assert page.evaluate('document.activeElement.classList.contains("coding-code")');page.keyboard.press('Tab');assert page.evaluate('document.activeElement.classList.contains("coding-theme-path")')
    return {'source_nodes_before':before,'source_nodes_after':after,'node_keys':True,'native_tab':True,'story_keys':True}
   check('keyboard selects, expands, traverses nodes and moves between scroll scenes',keyboard)
   def phone():
    phone_ctx=context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True,device_scale_factor=1);tab=phone_ctx.new_page();tab.goto(origin+'/',wait_until='networkidle')
-   tab.wait_for_selector('.story-inline');counts=[tab.locator('[data-story-art]').count(),tab.locator('.story-inline').count(),tab.locator(stage).count()];assert counts==[10,10,0],counts
+   tab.wait_for_selector('.story-inline');counts=[tab.locator('[data-story-art]').count(),tab.locator('.story-inline').count(),tab.locator(stage).count()];assert counts==[11,11,0],counts
    assert tab.locator('.relationship-force-svg').is_visible();assert tab.evaluate('innerWidth')==390;assert tab.evaluate('document.documentElement.scrollWidth-innerWidth')==0
    snapshot(tab,'analysis','analysis-path-phone');snapshot(tab,'network','network-phone-overview');snapshot(tab,'coding','coding-phone')
    tab.locator('[data-story-art="coding"] .coding-code').tap();assert tab.locator('[data-story-art="coding"] .coding-code').get_attribute('aria-pressed')=='true'

@@ -1,19 +1,17 @@
-# QT Supervisor Review 18 October 2026
+# QT Supervisor Review · 18 October 2026
 
-**Decision:** The repaired Bologna technical workflow has passed a fresh end-to-end acceptance run. Both UX60 issues are closed in the combined flow: phone reading position survives the codebook and filters; frozen project JSON restores through the normal interface. No new functional defect was found. Current human/accessibility, researcher and user/supervisor acceptance remain open. Windows deferred; no push or deployment.
+**Status:** Mac-first review candidate. A fresh Bologna desktop run passes all 13 workflow checks; the final website passes 23 presentation/data checks. No new defect was found in these paths. Phone follow-up and Windows are deferred by the owner. Human accessibility and research/content acceptance remain distinct.
 
-**Start:** [Website](http://127.0.0.1:52770/) → [Workbench](http://127.0.0.1:52770/w/?lang=en) → **Bologna · repaired final joint review**. This editable, isolated public sample runs on the developer computer. It has 21 documents after two technical imports; the website snapshot retains 19. Previous projects and recovery points are intact.
+**Start locally:** [Website](http://127.0.0.1:52774/) → [Workbench](http://127.0.0.1:52774/w/?lang=en) → **Bologna · Mac release review**. This isolated editable public sample has 21 documents; the website's fixed descriptive report keeps 19. A public URL is not yet verified for this candidate.
 
 **Demonstration, about 12 minutes:**
 
-1. Review two batch-import receipts and duplicate cancellation. Follow an exact highlighted range to its saved Code / Category / Theme ancestry.
-2. Inspect Read, Revisit, Undo and the two-track overview. Keep paragraph 17 in Bologna-joint-A; open Themes & Codes, filter materials, clear and Resume. Preview range [5,28), jump and Resume; read further to check that memory advances.
-3. Follow relationship evidence to its source and back. Inspect all five actual figures, original-size viewing and exact CSV-linked readings on `/report`.
-4. Open Export → Research report: inspect the full selected method, six-step M1, decisions, evidence, figures, frozen QCA and retained versions.
-5. Open the new `samples/repaired-final-joint/`: editable notebook, current v11 report, complete figure/QCA code bundle and project JSON. Restore JSON through the interface and verify marks, ancestry, frozen versions and figures.
+1. Follow the five website modules. Inspect the Coding source/tree and separate reading tracks, the original relationship diagrams, the QCA procedure and all five original figures.
+2. In the workbench, review batch imports, a highlighted passage and its explicit Theme / Category / Code ancestry. Test Read, Revisit, Undo, Keep, filters and Resume.
+3. Open Insights → Comparative QCA: cases and source mapping, justified binary calibration, complete truth table, conservative solutions and the saved run. Technical memberships in this sample are test designations, not empirical findings.
+4. Open Export → Research report. Review the full selected method, six-step M1, Analysis Table, Narrative Analysis, chosen evidence, saved figures and version history.
+5. Inspect the coded full-text Notebook (editable Word / offline HTML), one Research report (editable Word / complete ZIP), five figure types with exact CSV/Python, and full project JSON. Restore a separate project and check frozen results and reading marks.
 
-**Deliverables:** a full highlighted source notebook with editable ancestry (Word / offline HTML); five SVG / PDF / PNG figures with CSV and Python; one method-specific Research report; full project JSON. Comparative results sit inside its Research report. Word edits remain external; Resume is browser-local rather than project JSON.
+**Discuss:** Are the case unit, chosen method, calibration and interpretation justified? Does the notebook preserve enough context for writing? Is the report hierarchy and method map clear? What further de-identified corpus and researcher reference decisions are needed?
 
-**Evidence:** 26 main desktop/phone checks plus 18 website checks passed, all newly executed without carried results or diagnostic recovery. Normal console/HTTP/external errors: zero. Two extra exact-range/jump checks, six independently reproduced scripts and 29 rendered Word pages passed. Current v11 report/Word/ZIP/JSON and notebook project identity agree. 141 product/data/deployment paths and 110 build sources are unchanged; the local production build passed. The unchanged product retains UX62’s 287 Python tests (3 existing skips) and 246 Node tests; these were not rerun this round.
-
-**Discuss and finish:** Is the chosen method, case unit, calibration and interpretation appropriate? Are exceptions, source evidence, hierarchy and report layout useful for writing? Technical QCA labels are not empirical findings. Researcher reference adjudication, current VoiceOver, OS reduced motion, real download feedback, unreported physical-phone paths and final user/supervisor acceptance remain explicit gates. Windows remains unverified. The packet is ready for review, not automatic release approval.
+**Evidence and limits:** 287 Python tests (3 existing skips), 225 actually executed Node tests, syntax and final production build pass. Original workbench/statistics/plotting/data/deployment files are unchanged. Console/HTTP/external errors are zero in the desktop audit and final website checks. OS VoiceOver/motion/download feedback are not newly human-signed; physical phone and Windows are deferred. Source push is authorized after checks; actual GitHub/hosting status is recorded in the accompanying release note, with automatic deployment kept off.

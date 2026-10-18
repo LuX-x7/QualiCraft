@@ -4,6 +4,8 @@ import type { CodingExample } from './CodingEvidence'
 
 export default function CodingSketch({example}:{example:CodingExample}) {
  const [part,setPart]=useState(0),code=example.code_path.at(-1)!
+ const [reading,setReading]=useState('unmarked'),[previous,setPrevious]=useState<string|null>(null)
+ const mark=(value:string)=>{setPrevious(reading);setReading(value)}
  const activate=(index:number)=>({onMouseEnter:()=>setPart(index),onPointerMove:(event:React.PointerEvent)=>{if(event.pointerType==='mouse')setPart(index)},onFocus:()=>setPart(index),onClick:()=>setPart(index)})
  return <div className={`coding-sketch evidence-plate coding-part-${part}`} data-diagram="coding" data-source-coding={example.annotation_id}>
   <header className="record-drawing-heading"><span className="mono">02 / CODING · ONE SAVED ASSIGNMENT</span><strong>Choose the words.<br/><em>Attach the meaning.</em></strong></header>
@@ -20,6 +22,16 @@ export default function CodingSketch({example}:{example:CodingExample}) {
    </div>
   </div>
   <p className="record-readout" role="status" aria-live="polite" aria-atomic="true"><span className="mono">{['ORIGINAL WORDS','SAVED CODE','CODEBOOK POSITION'][part]}</span><span>{part===0?`${example.document_name} · [${example.start}, ${example.end})`:part===1?code.name:example.code_path.map(n=>n.name).join(' › ')}</span></p>
+  <div className="reading-guide" data-reading-guide={reading}>
+   <div className="reading-guide-head"><span className="mono">READING ≠ CODING</span><div role="group" aria-label="Try manual reading marks in the illustration">
+    <button type="button" aria-pressed={reading==='read'} onClick={()=>mark('read')}>Read</button>
+    <button type="button" aria-pressed={reading==='revisit'} onClick={()=>mark('revisit')}>Revisit</button>
+    <button type="button" disabled={previous===null} onClick={()=>{if(previous!==null)setReading(previous);setPrevious(null)}}>Undo</button>
+   </div></div>
+   <div className="reading-guide-tracks" aria-label={`Illustrative reading status: ${reading}; coding range is separate`}><span>Reading</span><div className={`guide-track guide-track--${reading}`}><i/></div><span>Coding</span><div className="guide-track guide-track--coding"><i/></div></div>
+   <p role="status" aria-live="polite">{reading==='unmarked'?'Unmarked':reading==='read'?'Read':'Revisit'} · Reading marks are manual. Coding coverage stays separate.</p>
+   <span className="mono">ILLUSTRATION ONLY · KEEP / RESUME IN THE WORKBENCH</span>
+  </div>
   <details className="record-source"><summary>Source record &amp; IDs</summary><dl><dt>Coding ID</dt><dd>{example.annotation_id}</dd><dt>Code ID</dt><dd>{code.id}</dd><dt>Document SHA-256</dt><dd>{example.document_sha256}</dd></dl><p>Existing Bologna coding · CC0. An explanatory drawing; no project changes are made.</p></details>
  </div>
 }
