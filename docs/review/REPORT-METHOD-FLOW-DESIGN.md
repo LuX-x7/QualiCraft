@@ -1,6 +1,6 @@
 # Research report · explicit method and process diagram
 
-18 October 2026. Owner-requested presentation extension discovered during [UX55](UX-55-INPUT-RECOVERY-ACCEPTANCE.md). **Design only; not implemented.** The current round prohibits feature edits. No statistic, calibrated membership, counting definition or plotting path may change for this work.
+18 October 2026. Owner-requested presentation extension discovered during [UX55](UX-55-INPUT-RECOVERY-ACCEPTANCE.md). **Implemented and technically accepted in [UX59](UX-59-REPORT-METHOD-MAPS.md), under the owner’s later explicit authorisation.** The sections below retain the design and acceptance criteria. No statistic, calibrated membership, counting definition or plotting path may change for this work.
 
 ## One report family
 

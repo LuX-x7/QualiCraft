@@ -1020,3 +1020,15 @@
 /* The method comparison now includes an independent binary QCA workflow. */
 .method-drawing>svg{width:180px;height:110px;flex:none;color:var(--ink)}
 @media(min-width:1100px){.method-paths{grid-template-columns:repeat(3,minmax(0,1fr));gap:32px}.method-drawing{flex-direction:column;align-items:flex-start;gap:16px}.method-drawing .sketch-glyph{width:180px}.method-handnote{max-width:100%;overflow-wrap:anywhere}}
+
+/* UX55-04: original, static, readable method flow; opened with native details. */
+.site-method-map { margin-top:28px; border-top:1px solid var(--rule); padding-top:24px; font-size:16px; }
+.site-method-map h3 { font:500 23px/1.3 var(--serif); }
+.site-method-map > .mono { font-size:12px; letter-spacing:.07em; color:var(--accent); }
+.site-method-map ol { list-style:none; padding:0; margin:24px 0; }
+.site-method-map li { position:relative; display:flex; gap:14px; padding:14px; margin-bottom:24px; border:1px solid var(--rule); background:var(--paper); }
+.site-method-map li:not(:last-child)::after { content:'↓'; position:absolute; bottom:-25px; left:22px; color:var(--accent); }
+.site-method-map li > span { color:var(--accent); font-size:13px; }
+.site-method-map li p { margin:5px 0 0; font-size:15px; line-height:1.55; }
+.site-method-return { border-left:2px dashed var(--accent); padding-left:14px; }
+.site-method-sources { display:flex; flex-wrap:wrap; gap:12px; font-size:13px; overflow-wrap:anywhere; }

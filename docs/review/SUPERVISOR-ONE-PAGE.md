@@ -1,24 +1,24 @@
 # QT Supervisor Review · 18 October 2026
 
-**Status:** local review candidate, not final acceptance. Coding, source notebooks, five reproducible figures and method-specific research reports are available. Binary conservative Comparative QCA is implemented. UX56 fixes commit/snapshot recovery; UX57 adds an explicit duplicate-import choice; UX58 adds a resumable per-file import queue. Method/process presentation remains open. Windows is deferred and unverified. Nothing was pushed or deployed.
+**Status:** local review candidate. The method/report presentation is now implemented alongside coding, reading markers, reproducible figures, binary conservative Comparative QCA, committed recovery points and a resumable batch-import queue. Final joint acceptance and researcher/supervisor approval remain open. Windows is deferred and unverified; nothing was pushed or deployed.
 
-**Start:** [Website](http://127.0.0.1:52760/) → [Workbench](http://127.0.0.1:52760/w/?lang=en) → **Bologna · batch import review**. These links require the developer’s computer; hosted/public versions can be older. All reviewer material is public Bologna. Sample QCA memberships are explicit technical test designations, not empirical findings.
+**Start:** [Website](http://127.0.0.1:52761/) → [Workbench](http://127.0.0.1:52761/w/?lang=en) → **Bologna · method report review**. These links need the developer’s computer; hosted versions can be older. This editable copy contains only public Bologna data. QCA memberships are explicit technical test designations, not research findings.
 
-## Expected outputs
+## Outputs to review
 
-1. **Coded source notebook:** full text, highlights and actual Code / Category / Theme ancestry; editable Word and self-contained HTML. `tree-notebook` is the sample filename.
-2. **Five figure bundles:** SVG, PDF, 300 dpi PNG, count CSV and Python recipe for each existing coding-data figure.
-3. **Research report:** the common report family. TA / Content use evidence tables and narrative; Comparative adds calibration, truth tables, configurations and necessity/coverage. `qca-report` is its Comparative sample, not a second report required for every project. Original five-figure report and notebook samples are retained.
-4. **Full project JSON:** the workspace recovery file, preserving calibration, retained runs, report versions and frozen assets. Word edits stay in Word.
+- **Coded source notebook:** full text, precise highlights and actual Code / Category / Theme ancestry, in editable Word and self-contained HTML.
+- **Five figure bundles:** original SVG, PDF, PNG, count CSV and the Python recipe for each existing figure.
+- **One Research report:** selected full method and saved **Method map M1**, authored decisions, evidence and narrative. TA/Content include an analysis table; Comparative adds calibration, truth table, configuration and necessity results. The QCA sample is a version of this report family, not an extra mandatory report.
+- **Full project JSON:** recovery of sources, reading marks, calibration, retained runs, report history and frozen assets. Word edits stay in Word.
 
 ## Demonstration · about 12 minutes
 
-Select several disposable TXT/DOCX files → inspect progress/failure/retry → repeat a file and choose Cancel or Keep another copy → inspect highlighted coding and its tree → try reading marks and source jumps → inspect relationship evidence and the five figure/count/script bundles → open Insights → QCA workspace → review cases, mapped sources, explicit 0/1 rules, rationale and missing values → inspect frozen configurations/truth table → write and export the method-specific report. Reproduce a QCA ZIP with `python reproduce.py`; in a report ZIP run it inside `qca/`.
+Import multiple disposable public files and inspect each outcome → code a passage and inspect its tree → test reading marks, range jumps and Resume → inspect relationship evidence and five figure bundles → review QCA cases/rules/memberships in Insights → open Export → Research report → inspect the saved method/map and blank-note prompts → preview/download Word and ZIP → restore a legacy report and confirm its original writing/run and absent-map state remain intact.
 
-## Discuss and decide
+## Discuss
 
-Are the case unit, calibration rules and source evidence defensible? Does the report separate computed facts from authored interpretation? Does the source notebook support writing? The requested next presentation improvement is an explicit full method name and method-specific process map inside Method and decisions; the design is documented, not implemented.
+Does the chosen method fit the question? Are case units, calibration and evidence defensible? Is authored interpretation clearly separate from computed results? Does the notebook support writing? Maps describe a procedure; neither a method selection nor a checklist certifies completed or sound research. TA/Content switching samples retain the original technical narrative to test preservation, not to claim new analyses.
 
-**Latest evidence:** UX58 passes 270 Python tests (three existing environment skips), 231 Node tests and 58 desktop/phone-emulated browser checks, with zero normal console/HTTP/external-request errors. A real 100-file selection saves the 81 available slots in a 19-document Bologna copy and reports 19 separate capacity failures. Stop/close preserves saved files; refresh requires original-file reselection and checks extracted text. Lost-receipt retries do not create another copy. Browser queue history stores metadata only and warns if storage is unavailable. Direct Next build passes; statistics, plotting and original Word/ZIP samples are unchanged.
+**Latest evidence:** 280 Python tests (three existing environment skips), 231 Node tests, 28 project-only desktop/touch-emulated-phone checks, zero normal console/HTTP/external-request errors, and a successful direct Next build. Three Word reports total 48 checked pages; native map editing/save/reopen is verified. All five figure bundles, QCA results and original six deliverable samples remain unchanged.
 
-**Before final acceptance:** implement the method/process presentation, rerun the final joint workflow, then obtain current physical-device/accessibility and researcher/supervisor acceptance. Wider maximum-load and physical power-loss claims are not made. See UX-58-BATCH-IMPORT-QUEUE.md and REPORT-METHOD-FLOW-DESIGN.md. Existing notebook and report samples remain unchanged. Local commits only; Windows deferred, no push/deployment or release approval.
+**Next gates:** final joint workflow, current physical-device/accessibility checks and researcher/supervisor acceptance. See UX-59-REPORT-METHOD-MAPS.md. Windows and remote publication remain deferred; this is not release approval.

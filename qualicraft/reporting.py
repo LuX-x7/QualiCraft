@@ -7,7 +7,7 @@ import json
 import re
 import zipfile
 from xml.etree import ElementTree as ET
-from . import transcript, report_figures, qca_state
+from . import transcript, report_figures, qca_state, method_maps
 from .core import require, uid, now, event, code_path, validate_span, validate_reading_capacity
 
 METHODS = {'ta':'Thematic Analysis', 'content':'Qualitative Content Analysis', 'comparative':'Qualitative Comparative Analysis · binary crisp-set'}
@@ -69,11 +69,12 @@ def validate_draft(draft):
 
 
 def validate_entry(entry):
-    require(isinstance(entry,dict) and set(entry)=={'id','revision','saved_at','source_version','draft','bindings','restored_from','content_hash'},'The report version format is invalid')
+    require(isinstance(entry,dict) and set(entry) in ({'id','revision','saved_at','source_version','draft','bindings','restored_from','content_hash'}, {'id','revision','saved_at','source_version','draft','bindings','restored_from','content_hash','method_map'}),'The report version format is invalid')
     ids([entry['id']],1);require(type(entry['revision']) is int and 0<entry['revision']<=9_007_199_254_740_991,'The report revision is invalid')
     text(entry['saved_at'],100);require(isinstance(entry['source_version'],str) and re.fullmatch(r'[0-9a-f]{64}',entry['source_version']) is not None,'The report source version is invalid')
     if entry['restored_from'] is not None:ids([entry['restored_from']],1)
     validate_draft(entry['draft'])
+    if 'method_map' in entry:method_maps.validate(entry['method_map'],entry['draft']['method'])
     bindings=entry['bindings'];allowed={'codes','evidence'}|({'qca'} if entry['draft']['method']=='comparative' else set())
     require(isinstance(bindings,dict) and set(bindings) in (allowed,allowed|{'figures'}),'The report bindings are invalid')
     if 'qca' in bindings:qca_state.validate_run(bindings['qca'])
@@ -142,7 +143,7 @@ def context(project):
     return {'state':state,'source_version':stamp,'stale':bool(state and entry_stale(project,state['current'])),
             'qca':{'current':project.get('comparative_qca',{}).get('current'),'stale':qca_state.is_stale(project)},
             'figure_previews':{f['id']:'data:image/png;base64,'+report_figures.base64.b64encode(report_figures.files(state['assets'][state['current']['bindings']['figures'][f['id']]['asset_id']])[f['options']['name']+'.png']).decode('ascii') for f in state['current']['draft'].get('figures',[])} if state else {},
-            'catalog':catalog(project),'methods':METHODS,'checks':CHECKS,'history_limit':HISTORY_LIMIT}
+            'method_maps':{k:method_maps.map_html(v) for k,v in method_maps.MAPS.items()},'method_map_css':method_maps.CSS,'catalog':catalog(project),'methods':{k:v['name'] for k,v in method_maps.MAPS.items()},'checks':CHECKS,'history_limit':HISTORY_LIMIT}
 
 
 def blank(project, method):
@@ -173,8 +174,15 @@ def save(project, body, restore=False):
             # evidence is still current. Stale reports keep their frozen quotes.
             if stamp==current_stamp:bindings=catalog(project)
         chosen_codes={id for row in draft['rows'] for id in row['code_ids']};chosen_evidence={id for row in draft['rows'] for id in row['evidence_ids']}
+        # Preserve citations already selected in a saved report when changing
+        # method (notably QCA -> TA/Content, which need not have table rows).
+        # This cannot select a new quotation just by typing an unselected ID.
+        cited=set(re.findall(r'\[E:([a-zA-Z0-9_-]+)\]', '\n'.join(draft[k] for k in TEXT_FIELDS)+'\n'+'\n'.join(r['interpretation'] for r in draft['rows'])))
+        prior=old['current']['bindings']['evidence'] if old else {}
+        chosen_evidence |= cited & set(prior)
+        chosen_codes |= {bindings['evidence'][id]['code_id'] for id in chosen_evidence if id in bindings['evidence']}
         require(chosen_codes<=set(bindings['codes']) and chosen_evidence<=set(bindings['evidence']), 'A reference is missing. Refresh evidence explicitly or remove the unavailable reference.')
-        entry={'draft':draft,'source_version':stamp,'bindings':{key:{id:copy.deepcopy(bindings[key][id]) for id in sorted(selected)} for key,selected in [('codes',chosen_codes),('evidence',chosen_evidence)]},'restored_from':None}
+        entry={'method_map':method_maps.freeze(draft['method']),'draft':draft,'source_version':stamp,'bindings':{key:{id:copy.deepcopy(bindings[key][id]) for id in sorted(selected)} for key,selected in [('codes',chosen_codes),('evidence',chosen_evidence)]},'restored_from':None}
         if draft['method']=='comparative':
             previous=old['current']['bindings'].get('qca') if old else None
             if previous and not refresh:frozen=copy.deepcopy(previous)
@@ -254,13 +262,14 @@ def html_export(entry, stale=False, assets=None):
         for id,label in labels.items():value=value.replace('['+label+']','<a href="#e-'+esc(id)+'">['+label+']</a>')
         return '<p>'+value.replace('\n','<br>')+'</p>' if value else '<p class="muted">Not yet written.</p>'
     def fields(items):return ''.join('<section><h3>'+title+'</h3>'+prose(d[key])+'</section>' for key,title in items if d[key])
-    design=fields([('research_question','Research question'),('case_unit','Case definition'),('analysis_unit','Analysis unit'),('approach','Analytic approach'),('method_notes','Method and decisions')])
+    design=fields([('research_question','Research question'),('case_unit','Case definition')])
+    design+=method_maps.block_html(entry,prose)
     rows=''.join('<tr><td>'+esc(r['theme'])+'</td><td>'+esc(r['category'])+'</td><td>'+'<br>'.join(esc(b['codes'][id]['name']) for id in r['code_ids'])+'</td></tr>' for r in d['rows'])
     interpretations=''.join('<section><h3>'+esc(r['category'] or r['theme'] or 'Interpretation '+str(i))+'</h3>'+prose(r['interpretation'])+'<p class="meta">Table row '+str(i)+' · '+esc(' · '.join(labels[id] for id in r['evidence_ids']))+'</p></section>' for i,r in enumerate(d['rows'],1) if r['interpretation'] or r['evidence_ids'])
     review=fields([('counterexamples','Counterexamples and variation'),('limitations','Limitations'),('reflexivity','Reflexivity'),('quality_notes','Quality and review'),('disclosure','Research and assistance disclosure')])
     evidence=''.join('<section id="e-'+esc(id)+'"><h3>'+labels[id]+' '+esc(a['document_name'])+'</h3><blockquote>'+esc(a['quote'])+'</blockquote><p class="meta">['+str(a['start'])+', '+str(a['end'])+')</p><details><summary>Evidence identity</summary><p class="meta">Annotation '+esc(id)+'<br>Code '+esc(a['code_id'])+'<br>Document '+esc(a['document_id'])+'<br>SHA256 '+a['sha256']+'<br>Saved source '+esc(a['source'])+'</p></details></section>' for id,a in b['evidence'].items())
     nav=[('design','Research design'),('findings','Findings'),('review','Review')]+([('figures','Figures')] if d.get('figures') else [])+[('evidence','Evidence'),('record','Record')]
-    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'"><title>{esc(d['title'])}</title><style>body{{max-width:780px;margin:auto;padding:48px 24px;background:#fff;color:#202a36;font:18px/1.75 Georgia,serif}}h1,h2,h3{{font-family:system-ui,sans-serif;color:#000;line-height:1.25}}h1{{font-size:36px;margin:0 0 18px}}h2{{font-size:27px;margin:52px 0 26px}}h3{{font-size:20px;margin:28px 0 14px}}p{{margin:12px 0 20px}}nav{{display:flex;flex-wrap:wrap;gap:12px 22px;margin:28px 0 42px;font:14px/1.5 system-ui}}a{{color:#30465e;text-underline-offset:4px}}a:focus-visible,summary:focus-visible{{outline:2px solid #202a36;outline-offset:4px}}table{{border-collapse:collapse;width:100%;table-layout:fixed;font-size:16px;margin:22px 0 32px}}td,th{{text-align:left;vertical-align:middle;padding:14px;border:1px solid #d9d9d9;overflow-wrap:anywhere}}th{{background:#263746;color:white;font:600 14px/1.5 system-ui}}tbody tr:nth-child(even){{background:#f6f7f8}}.meta,.muted{{font:13px/1.65 system-ui;color:#526171;overflow-wrap:anywhere}}blockquote{{margin:22px 0 22px 24px;white-space:pre-wrap;font-style:italic}}section{{margin:24px 0}}figure{{margin:32px 0 52px}}figure img{{display:block;max-width:100%;height:auto}}figcaption{{margin-top:16px;font-size:17px}}details{{font:14px/1.7 system-ui;margin:20px 0}}summary{{cursor:pointer}}#record{{border:0}}@media(max-width:500px){{body{{padding:28px 18px}}h1{{font-size:29px}}h2{{font-size:24px}}td,th{{padding:9px}}}}@media print{{body{{max-width:none;padding:0}}nav,details{{display:none}}h2{{break-after:avoid}}figure{{break-before:page;break-inside:avoid}}figure img{{max-height:210mm;width:100%;object-fit:contain}}thead{{display:table-header-group}}}}</style><header><h1>{esc(d['title'])}</h1><p>{METHODS[d['method']]}</p><p class="meta">Saved version {entry['revision']} · {esc(entry['saved_at'][:10])}<br>{'Evidence changed; saved quotations and figures are retained.' if stale else 'Evidence matches the saved coding record.'}</p><nav aria-label="Report chapters">{''.join('<a href="#'+id+'">'+label+'</a>' for id,label in nav)}</nav></header><main><h2 id="design">Research design</h2>{design}<h2 id="findings">Findings</h2><h3>Analysis Table — Themes Categories and Codes</h3><table><colgroup><col style="width:27%"><col style="width:27%"><col style="width:46%"></colgroup><thead><tr><th>Themes</th><th>Categories</th><th>Codes</th></tr></thead><tbody>{rows}</tbody></table><h3>Narrative Analysis</h3>{prose(d['narrative'])}{interpretations}<h2 id="review">Review and limitations</h2>{review}{report_figures.html(entry,assets)}<h2 id="evidence">Evidence appendix</h2>{evidence or '<p>No quotations selected.</p>'}<h2 id="record">Review record</h2><h3>Researcher confirmations</h3>{prose(chr(10).join(k.replace('-',' ')+': '+('confirmed by researcher' if v else 'not confirmed') for k,v in d['checks'].items()))}<details><summary>Saved report identity</summary><p class="meta">Report {entry['id']}<br>Content SHA256 {entry['content_hash']}<br>Evidence SHA256 {entry['source_version']}</p></details><p class="meta">Report text and table labels are authored interpretations; saved quotations and figures remain separate. External edits do not update QT.</p></main></html>'''.encode()
+    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'"><title>{esc(d['title'])}</title><style>{method_maps.CSS}body{{max-width:780px;margin:auto;padding:48px 24px;background:#fff;color:#202a36;font:18px/1.75 Georgia,serif}}h1,h2,h3{{font-family:system-ui,sans-serif;color:#000;line-height:1.25}}h1{{font-size:36px;margin:0 0 18px}}h2{{font-size:27px;margin:52px 0 26px}}h3{{font-size:20px;margin:28px 0 14px}}p{{margin:12px 0 20px}}nav{{display:flex;flex-wrap:wrap;gap:12px 22px;margin:28px 0 42px;font:14px/1.5 system-ui}}a{{color:#30465e;text-underline-offset:4px}}a:focus-visible,summary:focus-visible{{outline:2px solid #202a36;outline-offset:4px}}table{{border-collapse:collapse;width:100%;table-layout:fixed;font-size:16px;margin:22px 0 32px}}td,th{{text-align:left;vertical-align:middle;padding:14px;border:1px solid #d9d9d9;overflow-wrap:anywhere}}th{{background:#263746;color:white;font:600 14px/1.5 system-ui}}tbody tr:nth-child(even){{background:#f6f7f8}}.meta,.muted{{font:13px/1.65 system-ui;color:#526171;overflow-wrap:anywhere}}blockquote{{margin:22px 0 22px 24px;white-space:pre-wrap;font-style:italic}}section{{margin:24px 0}}figure{{margin:32px 0 52px}}figure img{{display:block;max-width:100%;height:auto}}figcaption{{margin-top:16px;font-size:17px}}details{{font:14px/1.7 system-ui;margin:20px 0}}summary{{cursor:pointer}}#record{{border:0}}@media(max-width:500px){{body{{padding:28px 18px}}h1{{font-size:29px}}h2{{font-size:24px}}td,th{{padding:9px}}}}@media print{{body{{max-width:none;padding:0}}nav,details{{display:none}}h2{{break-after:avoid}}figure{{break-before:page;break-inside:avoid}}figure img{{max-height:210mm;width:100%;object-fit:contain}}thead{{display:table-header-group}}}}</style><header><h1>{esc(d['title'])}</h1><p>{METHODS[d['method']]}</p><p class="meta">Saved version {entry['revision']} · {esc(entry['saved_at'][:10])}<br>{'Evidence changed; saved quotations and figures are retained.' if stale else 'Evidence matches the saved coding record.'}</p><nav aria-label="Report chapters">{''.join('<a href="#'+id+'">'+label+'</a>' for id,label in nav)}</nav></header><main><h2 id="design">Research design</h2>{design}<h2 id="findings">Findings</h2><h3>Analysis Table — Themes Categories and Codes</h3><table><colgroup><col style="width:27%"><col style="width:27%"><col style="width:46%"></colgroup><thead><tr><th>Themes</th><th>Categories</th><th>Codes</th></tr></thead><tbody>{rows}</tbody></table><h3>Narrative Analysis</h3>{prose(d['narrative'])}{interpretations}<h2 id="review">Review and limitations</h2>{review}{report_figures.html(entry,assets)}<h2 id="evidence">Evidence appendix</h2>{evidence or '<p>No quotations selected.</p>'}<h2 id="record">Review record</h2><h3>Researcher confirmations</h3>{prose(chr(10).join(k.replace('-',' ')+': '+('confirmed by researcher' if v else 'not confirmed') for k,v in d['checks'].items()))}<details><summary>Saved report identity</summary><p class="meta">Report {entry['id']}<br>Content SHA256 {entry['content_hash']}<br>Evidence SHA256 {entry['source_version']}</p></details><p class="meta">Report text and table labels are authored interpretations; saved quotations and figures remain separate. External edits do not update QT.</p></main></html>'''.encode()
 
 
 def docx_export(entry, stale=False, assets=None):
@@ -288,9 +297,9 @@ def docx_export(entry, stale=False, assets=None):
     if stale:p('Coding evidence has changed. This report retains its saved quotations and figures.','Meta')
     p('Research design','Heading1')
     field('research_question','Research question')
-    for key,label in [('case_unit','Case definition'),('analysis_unit','Analysis unit')]:
+    for key,label in [('case_unit','Case definition')]:
         if d[key]:compact(label+' —',d[key])
-    field('approach','Analytic approach');field('method_notes','Method and decisions')
+    method_maps.word_block(body,entry)
     p('Findings','Heading1',page=True)
     p('Analysis Table','Heading2');p('Themes Categories and Codes','ChapterNote')
     table=tag(body,'tbl');pr=tag(table,'tblPr');tag(pr,'tblW',{'w':10260,'type':'dxa'});tag(pr,'tblLayout',{'type':'fixed'});borders=tag(pr,'tblBorders')

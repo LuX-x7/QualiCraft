@@ -26,6 +26,8 @@
 <p align="center"><em>English first · 中文在下半部分</em></p>
 
 > **Current review candidate:** local branch `t7-site`; GitHub rejected its push for missing `workflow` permission, and the owner has chosen to keep it local for now. The remote review branch has not been created. This is a review candidate, not the completed final scope. Hosted demos above can run an earlier commit; pushing source does not deploy them. See the [current plan](docs/review/EXPERIENCE-ROADMAP.md) and [UX-45 evidence](docs/review/UX-45-REVIEW-FINISH.md).
+
+> **UX59 local update:** Research reports now save the full selected method and a versioned process map in HTML, editable Word, JSON and ZIP. Historical reports/runs are retained. Review at http://127.0.0.1:52761/ → **Bologna · method report review**. [Acceptance and remaining gates](docs/review/UX-59-REPORT-METHOD-MAPS.md). Windows deferred; no push/deployment.
 >
 > **UX58 batch import:** select multiple TXT/DOCX files for per-file progress, explicit duplicate choices and failure/retry. Stop/close preserves saved files; refresh resumes after original-file reselection and text fingerprint checks. The limit remains 100 documents per project. See [queue acceptance and limits](docs/review/UX-58-BATCH-IMPORT-QUEUE.md). Report method/process presentation and final human acceptance remain open. Statistics and plotting are unchanged; Windows deferred, local commits only.
 >

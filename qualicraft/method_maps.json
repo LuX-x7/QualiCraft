@@ -1,0 +1,220 @@
+{
+  "ta": {
+    "version": 1,
+    "method": "ta",
+    "name": "Thematic Analysis",
+    "note": "A general TA orientation, not a declared subtype. Document your chosen approach; reflexive TA is one approach within the family.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Engage with source",
+        "detail": "Read and revisit the full material; record your analytic position."
+      },
+      {
+        "id": 2,
+        "title": "Code passages",
+        "detail": "Link precise excerpts to researcher-defined codes."
+      },
+      {
+        "id": 3,
+        "title": "Develop candidate themes",
+        "detail": "Explore patterns of meaning across the coded material."
+      },
+      {
+        "id": 4,
+        "title": "Review with full source",
+        "detail": "Reconsider candidate themes against excerpts and wider context."
+      },
+      {
+        "id": 5,
+        "title": "Define themes",
+        "detail": "Clarify the scope, central meaning and names of the themes."
+      },
+      {
+        "id": 6,
+        "title": "Write with evidence",
+        "detail": "Develop the narrative with quotations and contextual interpretation."
+      }
+    ],
+    "links": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        5,
+        3
+      ]
+    ],
+    "references": [
+      {
+        "title": "Braun and Clarke · reflexive TA guidance (one TA approach)",
+        "url": "https://www.thematicanalysis.net/doing-reflexive-ta/"
+      }
+    ]
+  },
+  "content": {
+    "version": 1,
+    "method": "content",
+    "name": "Qualitative Content Analysis",
+    "note": "Content analysis is a complete method. It is not a compulsory preliminary stage for TA or Comparative QCA.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Declare unit and approach",
+        "detail": "Document what is analysed and the chosen content analysis approach."
+      },
+      {
+        "id": 2,
+        "title": "Select meaning units",
+        "detail": "Identify relevant passages while retaining their surrounding context."
+      },
+      {
+        "id": 3,
+        "title": "Condense when appropriate",
+        "detail": "Shorten meaning units only when this fits the analytic design."
+      },
+      {
+        "id": 4,
+        "title": "Code and review categories",
+        "detail": "Compare codes and refine categories with explicit analytic decisions."
+      },
+      {
+        "id": 5,
+        "title": "Interpret in context",
+        "detail": "Consider meaning and abstraction; themes are optional, design-dependent."
+      },
+      {
+        "id": 6,
+        "title": "Write with evidence",
+        "detail": "Connect categories, interpretation and source quotations in the report."
+      }
+    ],
+    "links": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        5,
+        2
+      ]
+    ],
+    "references": [
+      {
+        "title": "Graneheim and Lundman (2004) · concepts and procedures",
+        "url": "https://doi.org/10.1016/j.nedt.2003.10.001"
+      }
+    ]
+  },
+  "comparative": {
+    "version": 1,
+    "method": "comparative",
+    "name": "Qualitative Comparative Analysis",
+    "note": "Binary crisp-set, conservative, no logical remainders. Set relations do not establish causal proof.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Define cases and sources",
+        "detail": "Declare the case unit and map each case to its source records."
+      },
+      {
+        "id": 2,
+        "title": "Define conditions and outcome",
+        "detail": "Document each set definition and explicit membership rules."
+      },
+      {
+        "id": 3,
+        "title": "Calibrate explicit 0 or 1",
+        "detail": "Record researcher judgments, reasons and evidence; missing is not zero."
+      },
+      {
+        "id": 4,
+        "title": "Review truth table and thresholds",
+        "detail": "Inspect all configurations, mixed outcomes and declared cutoffs."
+      },
+      {
+        "id": 5,
+        "title": "Conservative configurations and necessity",
+        "detail": "Use eligible observed configurations; no logical remainders."
+      },
+      {
+        "id": 6,
+        "title": "Check cases and write",
+        "detail": "Review cases and counterexamples before interpreting set relations."
+      }
+    ],
+    "links": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        6,
+        3
+      ]
+    ],
+    "references": [
+      {
+        "title": "QCA package · truthTable",
+        "url": "https://search.r-project.org/CRAN/refmans/QCA/html/truthTable.html"
+      },
+      {
+        "title": "QCA package · minimize",
+        "url": "https://search.r-project.org/CRAN/refmans/QCA/html/minimize.html"
+      }
+    ]
+  }
+}

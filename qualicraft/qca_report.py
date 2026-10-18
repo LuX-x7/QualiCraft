@@ -1,7 +1,7 @@
 """Method-specific report presentation of a frozen Comparative QCA run."""
 import copy,io,re,zipfile
 from xml.etree import ElementTree as ET
-from . import transcript,report_figures
+from . import transcript,report_figures,method_maps
 
 
 def number(value):return 'undefined' if value is None else format(value,'.6g') if isinstance(value,float) else str(value)
@@ -17,7 +17,7 @@ def blocks(entry):
     def authored(key,title):
         if draft[key]:add('h2',title);add('p',citation_text(entry,draft[key]))
     add('h1','Research design');add('h2','Research question');add('p',draft['research_question'] or design['question']);add('h2','Case definition');add('p',draft['case_unit'] or design['case_unit'])
-    authored('analysis_unit','Analysis unit');authored('approach','Analytic approach');authored('method_notes','Method and decisions')
+    add('method')
     add('p','Binary crisp-set QCA. Outcome '+result['outcome']+' = '+str(result['target'])+' is analysed. Conservative minimisation uses only eligible positive configurations; no logical remainders.')
     add('meta','Frequency cutoff '+str(result['options']['n_cut'])+' · positive consistency cutoff '+str(result['options']['ic1'])+' · negative cutoff '+str(result['options']['ic0'])+'. Minimum means the fewest prime implicants. All equally minimal covers are included. Displayed ratios use six significant figures; full values are in the JSON / reproducible ZIP.')
     add('h1','Findings');add('h2','Configuration solutions')
@@ -62,15 +62,16 @@ def blocks(entry):
 
 
 def html_export(entry,stale=False,assets=None):
-    from .reporting import METHODS
+    from .reporting import METHODS,citation_text
     esc=transcript.escaped;body=[]
     for kind,*values in blocks(entry):
-        if kind=='table':
+        if kind=='method':body.append(method_maps.block_html(entry,lambda value:'<p>'+esc(citation_text(entry,value)).replace('\n','<br>')+'</p>'))
+        elif kind=='table':
             headers,rows=values;body.append('<div class="table-wrap" tabindex="0" role="region" aria-label="'+esc(headers[0])+' table"><table><thead><tr>'+''.join('<th scope="col">'+esc(h)+'</th>' for h in headers)+'</tr></thead><tbody>'+''.join('<tr>'+''.join('<td>'+esc(v)+'</td>' for v in row)+'</tr>' for row in rows)+'</tbody></table></div>')
         else:
             tag={'h1':'h2','h2':'h3','h3':'h4','p':'p','meta':'p','quote':'blockquote'}[kind];text=esc(values[0]);cls=' class="meta"' if kind=='meta' else '';body.append('<'+tag+cls+'>'+text.replace('\n','<br>')+'</'+tag+'>')
     figures=report_figures.html(entry,assets)
-    return ('''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'"><title>'''+esc(entry['draft']['title'])+'''</title><style>body{max-width:850px;margin:auto;padding:40px 22px;color:#202a36;background:white;font:18px/1.7 Georgia,serif}h1,h2,h3,h4{font-family:system-ui,sans-serif;color:#000;line-height:1.3}h1{font-size:34px}h2{font-size:28px;margin-top:52px}h3{font-size:22px;margin-top:30px}h4{font-size:18px}p,td,th{overflow-wrap:anywhere}.meta{font:13px/1.7 system-ui;color:#526171;white-space:normal}.table-wrap{overflow-x:auto;max-width:100%;margin:24px 0;outline-offset:3px}.table-wrap:focus-visible{outline:2px solid #263746}table{width:100%;border-collapse:collapse;font-size:15px}th{background:#263746;color:white;font-family:system-ui}td,th{text-align:left;vertical-align:top;border:1px solid #d9d9d9;padding:10px}blockquote{font-style:italic;white-space:pre-wrap;margin:22px}figure{margin:36px 0}figure img{display:block;max-width:100%;height:auto}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#30465e}@media(max-width:500px){body{font-size:17px;padding:24px 18px}h1{font-size:28px}table{min-width:490px}h2{font-size:24px}}@media print{h2{break-before:page}h2,h3,h4{break-after:avoid}thead{display:table-header-group}.table-wrap{overflow:visible}figure{break-before:page}figure img{max-height:210mm;object-fit:contain}}</style><header><h1>'''+esc(entry['draft']['title'])+'</h1><p>'+METHODS['comparative']+'</p><p class="meta">Saved report version '+str(entry['revision'])+' · '+esc(entry['saved_at'][:10])+(' · Saved source or calibration has changed; this report retains its frozen run.' if stale else ' · Frozen QCA result and researcher writing.')+'</p></header><main>'+''.join(body)+figures+'</main></html>').encode()
+    return ('''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'"><title>'''+esc(entry['draft']['title'])+'''</title><style>'''+method_maps.CSS+'''body{max-width:850px;margin:auto;padding:40px 22px;color:#202a36;background:white;font:18px/1.7 Georgia,serif}h1,h2,h3,h4{font-family:system-ui,sans-serif;color:#000;line-height:1.3}h1{font-size:34px}h2{font-size:28px;margin-top:52px}h3{font-size:22px;margin-top:30px}h4{font-size:18px}p,td,th{overflow-wrap:anywhere}.meta{font:13px/1.7 system-ui;color:#526171;white-space:normal}.table-wrap{overflow-x:auto;max-width:100%;margin:24px 0;outline-offset:3px}.table-wrap:focus-visible{outline:2px solid #263746}table{width:100%;border-collapse:collapse;font-size:15px}th{background:#263746;color:white;font-family:system-ui}td,th{text-align:left;vertical-align:top;border:1px solid #d9d9d9;padding:10px}blockquote{font-style:italic;white-space:pre-wrap;margin:22px}figure{margin:36px 0}figure img{display:block;max-width:100%;height:auto}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#30465e}@media(max-width:500px){body{font-size:17px;padding:24px 18px}h1{font-size:28px}table{min-width:490px}h2{font-size:24px}}@media print{h2{break-before:page}h2,h3,h4{break-after:avoid}thead{display:table-header-group}.table-wrap{overflow:visible}figure{break-before:page}figure img{max-height:210mm;object-fit:contain}}</style><header><h1>'''+esc(entry['draft']['title'])+'</h1><p>'+METHODS['comparative']+'</p><p class="meta">Saved report version '+str(entry['revision'])+' · '+esc(entry['saved_at'][:10])+(' · Saved source or calibration has changed; this report retains its frozen run.' if stale else ' · Frozen QCA result and researcher writing.')+'</p></header><main>'+''.join(body)+figures+'</main></html>').encode()
 
 
 def docx_export(entry,stale=False,assets=None):
@@ -95,7 +96,8 @@ def docx_export(entry,stale=False,assets=None):
     if stale:p('Saved source or calibration changed. This report retains its frozen QCA run.','Meta')
     first=True
     for kind,*values in blocks(entry):
-        if kind=='table':
+        if kind=='method':method_maps.word_block(body,entry)
+        elif kind=='table':
             headers,rows=values;table=tag(body,'tbl');pr=tag(table,'tblPr');tag(pr,'tblW',{'w':10260,'type':'dxa'});tag(pr,'tblLayout',{'type':'fixed'});margins=tag(pr,'tblCellMar')
             for side in ['top','bottom','left','right']:tag(margins,side,{'w':110,'type':'dxa'})
             borders=tag(pr,'tblBorders')

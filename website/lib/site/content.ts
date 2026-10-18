@@ -89,7 +89,7 @@ export const MODULES = [
       'Export coded HTML or Word.',
       'Write and version your Analysis Table and Narrative Analysis in Export.',
     ],
-    see: 'A coded source notebook and an editable report, with saved figures, captions, counts and code.',
+    see: 'A coded source notebook and one Research report: your chosen method, process map, writing, saved figures, counts and code.',
   },
 ] as const
 

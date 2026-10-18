@@ -114,6 +114,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
     {
       id: 'sec-methods', no: '07', title: 'Methods & limits',
       intro: <>
+        <p>This worked example describes existing coding counts. For your own Research report, select one method in Export: Thematic Analysis, Qualitative Content Analysis or Qualitative Comparative Analysis. Its saved name and process map accompany HTML, editable Word and the report ZIP. <a href="/#method">Explore the three method maps</a>.</p>
         <p className="report-lead">Follow each number back to its export.</p>
         <p>The page reads the workbench’s SVGs and CSVs. It checks every listed file against the manifest’s SHA-256 and byte length before showing the report.
           Count tables retain the exported rows and order. The unit statements below come directly from that same manifest.</p>
