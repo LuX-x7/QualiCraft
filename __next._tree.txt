@@ -1,4 +1,4 @@
 :HL["/QualiCraft/_next/static/chunks/031wlvfqws_fr.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"(site)","h":96,"c":"$Q2"}]]
-0:{"b":"inmMWtjbDUzvFS2defSQk","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"_ma7XkPSfDE_DulNAlSz-","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
