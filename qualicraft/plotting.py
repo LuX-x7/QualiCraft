@@ -397,6 +397,24 @@ def read_data():
         return list(csv.DictReader(handle))
 
 
+def hierarchy_png_bbox(fig):
+    """Measure at the output DPI without allocating a full-size raster."""
+    from matplotlib.backends.backend_agg import RendererAgg
+    previous_dpi = fig.dpi
+    try:
+        fig.set_dpi(SETTINGS["dpi"])
+        # Text metrics depend on DPI, not on the renderer's pixel dimensions.
+        # The hierarchy already positions its axes in physical units. A tiny
+        # Agg renderer can therefore perform the same non-painting layout pass
+        # as savefig(bbox_inches="tight"), without its first enormous buffer.
+        renderer = RendererAgg(1, 1, SETTINGS["dpi"])
+        with renderer._draw_disabled():
+            fig.draw(renderer)
+        return fig.get_tightbbox(renderer).padded(.2)
+    finally:
+        fig.set_dpi(previous_dpi)
+
+
 def finish(fig, title, subtitle, credit, rect=(0, 0.075, 1, 0.88)):
     """The fixed header and footer every figure in this project carries."""
     if title:
@@ -417,11 +435,17 @@ def finish(fig, title, subtitle, credit, rect=(0, 0.075, 1, 0.88)):
     # this save rather than set on rcParams, so importing this module cannot
     # change how anyone else's figures are written.
     with plt.rc_context({"svg.fonttype": "none"}):
-        for ext, meta in (("png", None),
-                          ("svg", {"Date": None}),
-                          ("pdf", {"CreationDate": None, "ModDate": None})):
+        formats = (("png", None), ("svg", {"Date": None}),
+                   ("pdf", {"CreationDate": None, "ModDate": None}))
+        # Keep the large raster until last, so vector export never retains it.
+        # Other figure types keep their existing save order and layout path.
+        if SETTINGS["kind"] == "hierarchy":
+            formats = formats[1:] + formats[:1]
+        for ext, meta in formats:
+            bbox = (hierarchy_png_bbox(fig)
+                    if ext == "png" and SETTINGS["kind"] == "hierarchy" else "tight")
             fig.savefig(_output_path(HERE, SETTINGS["name"] + "." + ext),
-                        dpi=SETTINGS["dpi"], bbox_inches="tight", pad_inches=.2,
+                        dpi=SETTINGS["dpi"], bbox_inches=bbox, pad_inches=.2,
                         metadata=meta)
     plt.close(fig)
 '''
