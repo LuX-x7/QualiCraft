@@ -25,9 +25,9 @@
 
 <p align="center"><em>English first · 中文在下半部分</em></p>
 
-> **Current public review (UX67):** The website and read-only Bologna workbench have been manually updated from `main`. Website explanations cover batch import, reading/coding tracks, three methods, editable coded notebooks, method-specific Research reports and reproducible exports. Python 287 (3 existing skips), Node 246 and website build pass in GitHub CI. [Release evidence and limits](docs/review/UX-67-PUBLIC-RELEASE.md). The free hosted workbench exceeds its 512MB limit when exporting the complete hierarchy figure bundle; use the local application for that full export. The website retains its complete original figures and CSVs. Automatic deployment stays off. Physical-phone follow-up and Windows are deferred.
+> **Current public review (UX68):** The complete Bologna hierarchy export now succeeds on the existing free host with unchanged counts and figure pixels. The homepage describes QT as a research workspace of your own; Pause/Play is retained. Python 289 (3 existing skips, both Linux discovery modes), Node 246, syntax and website build pass. [Release evidence](docs/review/UX-68-HIERARCHY-MEMORY.md) · [Supervisor guide](docs/review/SUPERVISOR-ONE-PAGE.md). The hosted workbench is read-only; use the local application for uploads, coding and saved report/QCA edits. Cold starts and large exports need time. Automatic deployment is off. Phone follow-up and Windows remain deferred.
 
-> **当前公开审核版（UX67）：** 已直接推送 main，并手动更新现有网站与只读 Bologna 工作台。新增能力的说明与展示已同步，GitHub CI 通过。[发布记录与剩余事项](docs/review/UX-67-PUBLIC-RELEASE.md)。免费托管工作台导出完整层级图包时超出 512MB 内存上限；该完整导出请用本地工作台。网站原图和数据保持完整。自动部署继续关闭，手机实机补测与 Windows 暂缓。
+> **当前公开审核版（UX68）：** 免费实例已能导出完整层级图，统计、CSV 和图形像素保持不变；首页文案已精简，Pause／Play 保留。源码已推 main，现有网站和只读工作台已手动更新。[验收证据与发布状态](docs/review/UX-68-HIERARCHY-MEMORY.md) · [导师审核说明](docs/review/SUPERVISOR-ONE-PAGE.md)。公开入口可供查看、绘图与下载；上传、编码和保存报告请用本地版。免费冷启动及大图导出需要等待。自动部署关闭，手机补测与 Windows 继续暂缓。
 
 
 ---
@@ -49,8 +49,8 @@ QualiCraft is a modular workbench for interview studies and other open-ended mat
 - **[Deploy your own](#deploy)** — one blueprint puts both services on the internet from this repository.
 - **[Chinese README](#中文)** — jump to the Chinese translation below.
 
-Both demo services run on a free tier, so the first visit after a quiet spell
-takes about half a minute to wake. The corpus is public and attributed; the demo
+Both demo services run on a free tier; the first visit after inactivity can
+take 50 seconds or more to wake. Large complete figure exports also need time. The corpus is public and attributed; the demo
 is not a place to upload participant material.
 
 <a id="deploy"></a>

@@ -1,5 +1,9 @@
 # Product UX-44 · Coded transcript export · 2026-10-17
 
+2026-10-18 最新（UX68）：**UX67-01 已在现有免费 512MB 实例关闭，未升级付费规格。** 完整层级图先用输出 DPI 的微型 Agg 计算边界，再一次分配最终 PNG；保留全部 259 行、8 主题、300 dpi、尺寸与图形。Mac 独立进程峰值约501→304 MiB（12 pt约350 MiB），同字体修复前后 CSV／SVG／PDF／PNG 逐字节一致；线上默认完整图包连续两次 HTTP200（94.6s / 89.3s），CSV／SVG／PDF 与旧基线一致，PNG 全部像素及尺寸／DPI 一致，项目不变、服务继续健康。首页改为 “Many tools. This one is yours.”，**Pause／Play 原样保留且键盘切换通过**。289 Python（3原有跳过，两种 Linux 收集均通过）、246 Node、语法与构建通过；原10份报告资产／manifest、统计／数据／Coding 行为保持。源码已推 main，两现有服务在 `545560aa07caf0639e23de6a98d73fa7530c2566` 手动部署并 Live；CI测量隔离补记 `7839a4a2304f81471de0614c2e819e7299e0923b` 不改应用，Auto-Deploy 仍 Off。可交 supervisor 做技术／视觉／研究内容审核；公开工作台只读，上传／编码保存用本地版。免费冷启动和大图导出需等待；手机补测／Windows 继续暂缓，当前原生辅助功能和研究者／supervisor 接受不代签。见 [修复、线上证据及发布记录](UX-68-HIERARCHY-MEMORY.md)。下方 UX67 的开放问题及历轮未发布表述是历史记录。
+
+---
+
 2026-10-18 最新（UX67，发布）：**已按用户明确指示直接快进 main，并手动更新现有网站与只读 Bologna 工作台。** GitHub 插件以 HaijunChe 的现有协作者权限保留全部提交历史，未强推或更改仓库可见性。两服务均在应用提交 `98717a66225c18fed65c06fc2f37a13d2bf0dbe0` 显示 Live；之后的 `51f5c67ab657fbbe6a6e301470c78883b2f2f75c` 只补齐 CI job 的网站依赖安装，287 Python（3 原有跳过，两种收集命令均通过）、246 Node、语法和网站构建通过。首页新 QCA／四类输出、报告读值、只读防写及原 SVG／CSV 已在线核查。**新增 UX67-01：公开工作台完整层级图包导出触发免费实例 512MB 内存上限并返回502；服务自动恢复，不能登记线上五图导出全过。** 本地绘图及网站既有静态图保持；未改功能／统计／绘图、付费规格或自动部署。入口：[网站](https://qualicraft-website.onrender.com/) → [报告](https://qualicraft-website.onrender.com/report) → [只读工作台](https://qualicraft-website.onrender.com/w?lang=en)。手机实机补测／Windows 暂缓；系统辅助功能及研究者／supervisor 接受不代签。完整证据、哈希和剩余项见 [UX67 发布记录](UX-67-PUBLIC-RELEASE.md)。下方“未推送／未部署／鉴权阻塞”等为各轮历史状态，已被本条发布事实替代。
 
 ---

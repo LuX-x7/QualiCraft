@@ -1,5 +1,7 @@
 # UX67 · main publication and existing-service deployment
 
+> UX68 update: the hosted hierarchy capacity issue below is now fixed and verified on the unchanged free instance. See [current repair, default repeated downloads and exact-output evidence](UX-68-HIERARCHY-MEMORY.md). UX67 failure logs remain historical evidence.
+
 18 October 2026. The owner explicitly requested **direct publication to main** and had already authorized manual deployment of the existing website and read-only Bologna workbench, with automatic deployment remaining off. This supersedes the earlier branch-only / no-deploy instructions for this release. Only public Bologna material is involved.
 
 ## Published source and running application
