@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { SEO } from '@/lib/site/content'
 import './t7.css'
 import './experience.css'
@@ -27,19 +26,13 @@ export const metadata: Metadata = {
 }
 
 /**
- * The middleware resolves the locale and passes it down as a request header, so
- * the document element can carry the right `lang` and `dir` from the first
- * paint. The public site renders the English copy, so the value is `en` in
- * practice; the header is still honoured rather than hard-coded, because the
- * workbench proxy shares this document shell.
+ * The public site serves one English copy, including /zh rewrites. The
+ * workbench owns its independent language switch and HTML document. Avoid
+ * request headers so the public pages can be verified at build time.
  */
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const head = await headers()
-  const locale = head.get('x-isc-locale') || 'en'
-  const dir = head.get('x-isc-dir') || 'ltr'
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={locale} dir={dir}>
+    <html lang="en" dir="ltr">
       <head>
         {/* The site's two families are self-hosted and subset — see
             public/fonts and tools/site/prepare_fonts.py. No request to a font

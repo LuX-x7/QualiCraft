@@ -21,13 +21,13 @@ export default function WorkedOutputs({manifest}:{manifest:ExampleManifest}){
     <p>One public Bologna record: {scope.project.documents} interviews, {scope.project.codes} defined codes and {scope.project.codings} codings. These files come from the workbench’s existing exporters.</p>
     <div className="output-grid">
       <article className="output-card"><span className="mono output-number">01 / CODED SOURCE</span><h3>Tree Notebook</h3>
-        <a className="output-preview" href="/worked-example/notebook.html" aria-label="Read the coded Bologna notebook"><img src="/worked-example/notebook-preview.png" alt="An actual exported Notebook page with source text, highlighted passages and the code tree" width="600" height="850"/></a>
+        <a className="output-preview" href="/worked-example/notebook.html" aria-label="Read the coded Bologna notebook"><img src="/worked-example/notebook-preview.png" alt="An actual exported Notebook page with source text, highlighted passages and the code tree" width="600" height="850" loading="lazy" decoding="async"/></a>
         <p>Full {scope.notebook.document} text, {scope.notebook.codings} saved codings, highlights and their tree paths.</p>
         <div className="output-links"><a href="/worked-example/notebook.html">Read Notebook ↗</a><a href="/worked-example/notebook.docx" download>Editable Word ↓</a></div>
         <details><summary>Source scope &amp; tree labels</summary><p>{scope.notebook.characters.toLocaleString('en')} characters. {scope.notebook.tree_labels}</p></details>
       </article>
       <article className="output-card"><span className="mono output-number">02 / RESEARCH WRITING</span><h3>Research report</h3>
-        <a className="output-preview" href="/worked-example/research-report.html" aria-label="Read the Bologna Research report"><img src="/worked-example/report-preview.png" alt="An actual Research report page showing its selected method and process map" width="600" height="850"/></a>
+        <a className="output-preview" href="/worked-example/research-report.html" aria-label="Read the Bologna Research report"><img src="/worked-example/report-preview.png" alt="An actual Research report page showing its selected method and process map" width="600" height="850" loading="lazy" decoding="async"/></a>
         <p>{scope.report.method}, method map, an Analysis Table, illustrative Narrative Analysis and five figures.</p>
         <div className="output-links"><a href="/worked-example/research-report.html">Read report ↗</a><a href="/worked-example/research-report.docx" download>Editable Word ↓</a><a href="/worked-example/research-report.zip" download>Complete report ZIP ↓</a></div>
       </article>

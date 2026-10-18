@@ -1,3 +1,7 @@
+2026-10-18 最新（UX70）：网站加载与工作台冷启动入口修复已完成本地验证。首页／报告／About 改为构建时生成；工作台暂时不可用时显示有限等待／自动进入，持续故障保留明确重试。16项新回归、263 Node、298 Python（3原有跳过）、9项Chrome、生产构建通过；53保护文件与11份下载原样。免费实例唤醒时间仍存在，不能承诺闲置后秒开。正在正常推送main并手动部署网站；后端源码不变，不重启后端，免费规格及Auto-Deploy Off保持。见 [UX70记录](UX-70-AVAILABILITY.md)。Windows／手机补测仍暂缓。下方各轮为历史。
+
+---
+
 2026-10-18 最新（UX69）：**公开起步页、SVG 预览提速及完整 worked example 已上线。** Try the workbench 先说明只读 Bologna，再由用户进入；本地上传／新建／继续保持。预览使用同一脚本只保存 SVG，并有输入绑定、有容量上限的临时缓存，完整下载仍为 SVG／PDF／300 dpi PNG／CSV／Python。五类预览及完整输出与同环境旧基线一致；线上完整层级图两次预览 25.97s／0.70s（原线上约88.8s）；免费冷启动及完整下载仍需时间。首页及导航新增 [worked example](https://qualicraft-website.onrender.com/report#sec-outputs)，含一份完整编码 Notebook／可编辑 Word、含方法图与3条证据的 Content 示例报告／Word、五图代码包及可恢复全部19文档的 JSON。该写作为展示样例，不冒称新的实证研究或 QCA 校准结论。298 Python（3 原有跳过，两种 Linux 收集通过）、247 Node、语法／构建、32页 Word、11份线上下载／哈希与隔离恢复通过；原18保护文件保持。源提交 `2865b1d7fe4d12c5f09628e94c57a2ffc832af93` 已正常推 main，两现有免费服务手动部署并 Live；Auto-Deploy 保持 Off。Chrome 原生文件选择因扩展权限未通过，不扩大权限；本地完整粘贴导入／继续已通过，文件解析／队列由回归覆盖。手机补测、Windows 暂缓，原生辅助功能与研究者／supervisor接受不代签。见 [UX69记录](UX-69-START-PREVIEW-OUTPUTS.md)。下方历轮为历史。
 
 ---
