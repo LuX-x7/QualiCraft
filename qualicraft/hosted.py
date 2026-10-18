@@ -6,12 +6,14 @@ snapshot directory. Nothing is stored in the public website or source tree.
 from __future__ import annotations
 
 import argparse
+import base64
 from contextlib import contextmanager
 import hashlib
 import hmac
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import mimetypes
 import os
 from pathlib import Path
 import re
@@ -155,7 +157,47 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def create_hosted(root, origin_file, *, port=8789, allow_local_test=False):
+class StaticSite:
+    """Serve only a verified export directory, never the hosting runtime."""
+    def __init__(self, root):
+        self.root = Path(root).resolve()
+        if not (self.root / '.qt-pages-artifact').is_file():
+            raise ValueError('Use a QT static export artifact')
+        metadata = json.loads((self.root / 'qt-release.json').read_text(encoding='utf-8'))
+        self.prefix = metadata['prefix']
+        if (metadata.get('test_only') or not re.fullmatch(r'/[A-Za-z0-9_-]+', self.prefix)
+                or not (self.root / 'index.html').is_file()):
+            raise ValueError('Use a deployable static export')
+
+    def response(self, path):
+        path = urllib.parse.unquote(path)
+        if not path.startswith(self.prefix + '/'):
+            return None
+        relative = Path(path[len(self.prefix) + 1:])
+        if any(part.startswith('.') for part in relative.parts):
+            return None
+        file = (self.root / relative).resolve()
+        if file.is_dir():
+            file = (file / 'index.html').resolve()
+        if self.root not in file.parents or not file.is_file():
+            return None
+        payload = file.read_bytes()
+        mime = mimetypes.guess_type(file.name)[0] or 'application/octet-stream'
+        csp = None
+        if mime == 'text/html':
+            # Next static exports contain inline hydration scripts. Permit only
+            # their exact hashes, rather than allowing arbitrary inline JS.
+            scripts = re.findall(rb'<script\b[^>]*>(.*?)</script\s*>', payload, re.I | re.S)
+            hashes = sorted({"'sha256-" + base64.b64encode(hashlib.sha256(script).digest()).decode() + "'"
+                             for script in scripts if script.strip()})
+            csp = ("default-src 'self'; script-src 'self' " + ' '.join(hashes) +
+                   "; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+                   "font-src 'self'; media-src 'self'; connect-src 'self'; "
+                   "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+        return payload, mime, csp
+
+
+def create_hosted(root, origin_file, *, port=8789, allow_local_test=False, site_root=None):
     # A hosted process must never inherit an operator's global provider key or
     # read an unrelated API-key file from outside the dedicated QT directory.
     if os.getenv('QUALICRAFT_API_KEY') or os.getenv('QUALICRAFT_API_KEY_FILE'):
@@ -166,6 +208,7 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False):
     failure_lock = threading.Lock()
     failures = []
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+    site = StaticSite(site_root) if site_root else None
     auth_js = Path(__file__).resolve().parent.parent / 'web/hosted-auth.js'
 
     class Handler(BaseHTTPRequestHandler):
@@ -174,7 +217,7 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False):
         def log_message(self, *_args):
             pass
 
-        def send(self, payload, *, status=200, content_type='application/json', headers=()):
+        def send(self, payload, *, status=200, content_type='application/json', headers=(), csp=None):
             if not isinstance(payload, bytes):
                 payload = json.dumps(payload).encode('utf-8')
             self.send_response(status)
@@ -183,12 +226,13 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False):
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'same-origin')
-            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+            self.send_header('Content-Security-Policy', csp or "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
             for key, value in headers:
                 if key.lower() not in {'content-type', 'content-length', 'connection', 'transfer-encoding', 'cache-control', 'server', 'date', 'content-security-policy', 'referrer-policy'}:
                     self.send_header(key, value)
             self.end_headers()
-            self.wfile.write(payload)
+            if self.command != 'HEAD':
+                self.wfile.write(payload)
 
         def redirect(self, target, cookie=None):
             headers = [('Location', target)]
@@ -224,7 +268,7 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False):
 
         def handle_request(self):
             path = urllib.parse.urlsplit(self.path).path
-            if path == '/health' and self.command == 'GET':
+            if path == '/health' and self.command in {'GET', 'HEAD'}:
                 return self.send({'service': 'QT', 'ready': True})
             if not self.valid_request():
                 return self.send({'error': 'This request origin is not allowed.'}, status=403)
@@ -232,9 +276,19 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False):
             if self.headers.get('Transfer-Encoding') or not length.isdigit() or int(length) > MAX_BODY:
                 return self.send({'error': 'Request exceeds the supported size.'}, status=413)
             body = self.rfile.read(int(length))
-            if path in {'/', '/login'} and self.command == 'GET':
+            if site and (path in {'/', site.prefix} or path.startswith(site.prefix + '/')):
+                if self.command not in {'GET', 'HEAD'}:
+                    return self.send({'error': 'Method not allowed'}, status=405)
+                if path in {'/', site.prefix}:
+                    return self.redirect(site.prefix + '/')
+                asset = site.response(path)
+                if asset is None:
+                    return self.send({'error': 'Not found'}, status=404)
+                payload, mime, csp = asset
+                return self.send(payload, content_type=mime, csp=csp)
+            if path in {'/', '/login'} and self.command in {'GET', 'HEAD'}:
                 return self.send(AUTH_HTML.encode(), content_type='text/html; charset=utf-8')
-            if path == '/auth.js' and self.command == 'GET':
+            if path == '/auth.js' and self.command in {'GET', 'HEAD'}:
                 return self.send(auth_js.read_bytes(), content_type='application/javascript; charset=utf-8')
             if path in {'/auth/login', '/auth/register'} and self.command == 'POST':
                 if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or len(body) > 4096:
@@ -298,7 +352,7 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False):
             except Exception:
                 self.send({'error': 'The workspace request could not complete. Please retry.'}, status=503)
 
-        do_GET = do_POST = do_PUT = do_PATCH = do_DELETE = safe_handle
+        do_GET = do_HEAD = do_POST = do_PUT = do_PATCH = do_DELETE = safe_handle
 
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     server.daemon_threads = True
@@ -311,6 +365,7 @@ def main():
     parser.add_argument('operation', choices=['serve', 'invite'])
     parser.add_argument('--root', required=True)
     parser.add_argument('--origin-file')
+    parser.add_argument('--site-root', help='Optional verified static export; never the runtime directory')
     parser.add_argument('--port', type=int, default=8789)
     parser.add_argument('--out')
     parser.add_argument('--count', type=int, default=2)
@@ -331,7 +386,7 @@ def main():
         return
     if not args.origin_file:
         parser.error('--origin-file is required')
-    server = create_hosted(root, args.origin_file, port=args.port)
+    server = create_hosted(root, args.origin_file, port=args.port, site_root=args.site_root)
     print(f'QT private workspaces listening on 127.0.0.1:{server.server_port}', flush=True)
     try:
         server.serve_forever()

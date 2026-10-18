@@ -28,7 +28,7 @@ def text_calls_without_encoding(source):
     """Text-mode open()/read_text()/write_text() with no encoding argument."""
     offenders = []
     for number, line in enumerate(source.splitlines(), 1):
-        if re.search(r"(open\(|read_text\(|write_text\()", line) and "encoding" not in line:
+        if re.search(r"\b(open\(|read_text\(|write_text\()", line) and "encoding" not in line:
             # Binary mode has no encoding to give, and neither do the network
             # helpers, which take their own text handling.
             if re.search(r"""['"](rb|wb|ab)['"]""", line):
@@ -40,6 +40,10 @@ def text_calls_without_encoding(source):
 
 
 class EncodingTests(unittest.TestCase):
+    def test_subprocess_popen_is_not_a_text_file_read(self):
+        self.assertEqual(text_calls_without_encoding('process = subprocess.Popen(command)'), [])
+        self.assertEqual(len(text_calls_without_encoding("stream = path.open('a')")), 1)
+
     def setUp(self):
         import shutil, tempfile
         self.root = Path(tempfile.mkdtemp(prefix="qc-utf8-"))

@@ -1,0 +1,17 @@
+# TEMPLATE ONLY. Do not install outside QT without separate authorization.
+# Boot requires an approved startup hook (and user lingering for a user unit).
+[Unit]
+Description=QT private workbench and dedicated userspace tunnel
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT
+ExecStart=/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/venv/bin/python /mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/ops/qt_service.py --root /mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT --config /mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/config/service.json
+Restart=on-failure
+RestartSec=5
+UMask=0077
+StandardOutput=append:/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/logs/supervisor.txt
+StandardError=inherit
+
+[Install]
+WantedBy=default.target
