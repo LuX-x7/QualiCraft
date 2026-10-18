@@ -34,6 +34,7 @@ Object.assign(_T.zh, {
 });
 // UX-12 labels are presentation only; import/export formats and endpoints stay unchanged.
 Object.assign(_T.en, {
+  importDuplicate:'This document is already here', importDuplicateText:'“%s” has the same name and exact text. Keeping another copy creates a separate document, counted separately.', importKeep:'Keep another copy', cancelImport:'Cancel import', importChecking:'Checking document…',
   importFileMode:'Choose a file', importPasteMode:'Paste text', importShort:'Add a document to this project.',
   importFormats:'TXT / DOCX · UTF-8 · up to 8 MB', importHelp:'Format details',
   importTableLink:'Import a coding table instead', importTableShort:'Create a new project from a coding export.',
@@ -50,6 +51,7 @@ Object.assign(_T.en, {
   plotSvg:'Download SVG', plotClose:'Close figure', plotScale:'Magnification',
 });
 Object.assign(_T.zh, {
+  importDuplicate:'此文档已存在', importDuplicateText:'“%s”的名称和正文完全相同。保留另一份会新增独立文档，并单独计数。', importKeep:'保留另一份', cancelImport:'取消导入', importChecking:'正在检查文档…',
   importFileMode:'选择文件', importPasteMode:'粘贴文本', importShort:'将文档加入当前项目。',
   importFormats:'TXT / DOCX · UTF-8 · 最大 8 MB', importHelp:'格式说明',
   importTableLink:'改为导入编码表', importTableShort:'从已有编码导出文件创建新项目。',
@@ -153,7 +155,7 @@ const demoLock = (fallback = '') => state.config.public_demo
 const WRITE_ACTIONS = new Set([
   'reading-mark-read', 'reading-mark-undo', 'reading-mark-retry', 'reading-mark-reset',
   'import', 'run-import', 'import-export-open', 'code', 'save-code', 'code-save',
-  'code-delete', 'code-delete-ask', 'code-merge', 'code-merge-ask', 'save-document',
+  'code-delete', 'code-delete-ask', 'code-merge', 'code-merge-ask', 'save-document', 'keep-document',
   'save-memo', 'save-annotation', 'annotate', 'annotation', 'remove-annotation',
   'save-blocks', 'enable-all-blocks', 'new-project', 'restore-pick', 'review', 'analyze',
   'analyze-selection', 'start-analysis', 'popup-apply', 'popup-create',
@@ -850,6 +852,7 @@ function showSnapshots() {
   modal(QT('snapshotsTitle','Snapshots'),`<p>${QT('snapshotsIntro','A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.')}</p>${rows||`<div class="empty">${QT('noSnapshots','No snapshots yet.')}</div>`}`);
 }
 function modal(title, body, footer='') {
+  documentImport=null;
   const dlg=$('#dialog'); delete dlg.dataset.workflow;delete dlg.dataset.codingId;delete dlg.dataset.codingCodebook;delete dlg.dataset.codingEdit;delete dlg.dataset.startup; dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
   if(!dlg.open) dlg.showModal();
 }
@@ -1337,18 +1340,76 @@ function locate(start) {
   const para=[...document.querySelectorAll('.paragraph')].find(el=>Number(el.dataset.start)<=start&&Number(el.dataset.end)>start);
   if(para){para.scrollIntoView({behavior:'smooth',block:'center'});para.classList.add('flash');setTimeout(()=>para.classList.remove('flash'),1800);}
 }
+let documentImport=null;
+function importRequestId() {
+  // Plain-HTTP phone access may omit randomUUID; getRandomValues is available.
+  return crypto.randomUUID?.()||Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
+}
+function importActive(session) {
+  return documentImport===session&&$('#dialog').open&&$('#dialog').dataset.workflow==='import'&&state.project?.id===session.projectId;
+}
+function resetImportDecision() {
+  if(!documentImport)return;
+  documentImport.version++;documentImport.body=null;documentImport.confirmation=null;documentImport.requestId=importRequestId();
+  $('#import-duplicate').hidden=true;$('[data-action="save-document"]').hidden=false;$('[data-action="keep-document"]').hidden=true;
+  $('#modal-error').textContent='';
+}
+function importBusy(busy) {
+  $('#import-source').disabled=busy;
+  for(const action of ['save-document','keep-document'])$(`[data-action="${action}"]`).disabled=busy;
+  $('#import-status').textContent=busy?QT('importChecking'):'';
+}
+async function saveDocument(keep=false) {
+  const session=documentImport;if(!session||session.busy||!importActive(session))return;
+  session.busy=true;const version=session.version;importBusy(true);
+  try {
+    if(!session.body){
+      const file=$('#import-file').disabled?null:$('#import-file').files[0];
+      if(!$('#import-file').disabled&&!file)throw new Error(QT('importEmpty'));
+      const body={name:$('#document-name').value||file?.name,text:$('#document-text').value,request_id:session.requestId};
+      if(file){
+        if(file.size>8_000_000)throw new Error('File exceeds 8 MB.');
+        if(/\.docx$/i.test(file.name)){
+          const bytes=new Uint8Array(await file.arrayBuffer());let binary='';
+          for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+          body.docx_base64=btoa(binary);delete body.text;
+        }else if(/\.txt$/i.test(file.name))body.text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());
+        else throw new Error('Choose a TXT or DOCX file.');
+      }
+      if(!importActive(session)||version!==session.version)return;
+      session.body=body;
+    }
+    if(keep&&!session.confirmation)return;
+    const d=await api(`${QT_BASE}/api/projects/${session.projectId}/documents`,{...session.body,...(keep?{duplicate_confirmation:session.confirmation}:{})});
+    if(!importActive(session)||version!==session.version)return;
+    if(d.requires_confirmation){
+      session.confirmation=d.duplicate.confirmation;
+      const warning=$('#import-duplicate');warning.hidden=false;
+      warning.querySelector('strong').textContent=QT('importDuplicate');
+      warning.querySelector('p').textContent=QT('importDuplicateText').replace('%s',d.duplicate.name);
+      $('[data-action="save-document"]').hidden=true;$('[data-action="keep-document"]').hidden=false;
+      warning.scrollIntoView({block:'nearest'});
+      $('[data-action="close"][data-import-cancel]').focus({preventScroll:true});return;
+    }
+    importedDocument(d.id);closeModal();await refresh();focusImportedDocument();toast(QT('interviewImported','Interview imported.'));
+  } catch(error) {if(importActive(session))throw error;}
+  finally {session.busy=false;if(importActive(session))importBusy(false);}
+}
+
 function showImport() {
   modal(QT('importDlg','Import interview'), `<p class="io-intro">${QT('importShort')}</p>
-    <div class="io-modes" role="group" aria-label="${QT('importDlg')}"><button type="button" data-action="import-mode" data-mode="file" aria-pressed="true">${icon('upload')}${QT('importFileMode')}</button><button type="button" data-action="import-mode" data-mode="paste" aria-pressed="false">${icon('doc')}${QT('importPasteMode')}</button></div>
+    <fieldset id="import-source" class="io-import-source"><div class="io-modes" role="group" aria-label="${QT('importDlg')}"><button type="button" data-action="import-mode" data-mode="file" aria-pressed="true">${icon('upload')}${QT('importFileMode')}</button><button type="button" data-action="import-mode" data-mode="paste" aria-pressed="false">${icon('doc')}${QT('importPasteMode')}</button></div>
     <div id="import-file-panel"><label class="field io-file-label"><span class="file-picker io-file-picker">${icon('upload')}<span><strong class="file-picker-button">${QT('chooseFile')}</strong><span class="file-picker-name" data-file-name="import-file">${QT('noFileSelected')}</span></span><input id="import-file" type="file" accept=".txt,.docx" aria-label="${QT('chooseFile')}"></span><small>${QT('importFormats')}</small></label><div id="import-preview" class="io-source-preview" hidden></div></div>
     <div id="import-paste-panel" hidden><label class="field">${QT('importPaste')}<textarea id="document-text" rows="6" placeholder="Interviewer: …&#10;Participant: …" disabled></textarea></label></div>
     <label class="field">${QT('importName')}<input id="document-name" placeholder="${QT('docNamePlaceholder')}" maxlength="200"></label>
     <details class="io-help"><summary>${QT('importHelp')}</summary><p>${QT('importDesc')}</p><p>${QT('fileHint')}</p></details>
-    <button class="link io-table-link" data-action="import-export-open">${QT('importTableLink')} ↗</button>`,
-    `<button data-action="close">${QT('cancel')}</button><button class="primary" data-action="save-document">${QT('importBtn')}</button>`);
+    <button class="link io-table-link" data-action="import-export-open">${QT('importTableLink')} ↗</button></fieldset><section id="import-duplicate" class="io-duplicate" role="status" aria-live="polite" hidden><strong></strong><p></p></section><div id="import-status" role="status"></div>`,
+    `<button data-action="close" data-import-cancel>${QT('cancelImport')}</button><button class="primary" data-action="save-document">${QT('importBtn')}</button><button class="primary" data-action="keep-document" hidden>${QT('importKeep')}</button>`);
   $('#dialog').dataset.workflow='import';
+  documentImport={projectId:state.project.id,version:0,requestId:importRequestId(),body:null,confirmation:null,busy:false};
 }
 function setImportMode(mode) {
+  resetImportDecision();
   const file=mode==='file';
   $('#import-file-panel').hidden=!file; $('#import-paste-panel').hidden=file;
   $('#import-file').disabled=!file; $('#document-text').disabled=file;
@@ -1699,13 +1760,7 @@ async function action(button) {
   if(a==='import-export-open')return showImportExport();
   if(a==='run-import')return runImport();
   if(a==='import-mode')return setImportMode(button.dataset.mode);
-  if(a==='save-document'){
-    const file=$('#import-file').disabled?null:$('#import-file').files[0];
-    if(!$('#import-file').disabled&&!file)throw new Error(QT('importEmpty'));
-    const body={name:$('#document-name').value||file?.name,text:$('#document-text').value};
-    if(file){if(file.size>8_000_000)throw new Error('File exceeds 8 MB.'); if(/\.docx$/i.test(file.name)){const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));body.docx_base64=btoa(binary);delete body.text;}else if(/\.txt$/i.test(file.name)){body.text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());}else throw new Error('Choose a TXT or DOCX file.');}
-    const d=await api(projectUrl('documents'),body);importedDocument(d.id);closeModal();await refresh();focusImportedDocument();toast(QT('interviewImported','Interview imported.'));return;
-  }
+  if(a==='save-document'||a==='keep-document')return saveDocument(a==='keep-document');
   if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null,research_role:$('#code-role').value||null});closeModal();await refresh();toast(QT('codeSaved','Code saved.'));return;}
   if(a==='code-save'){
     const id=button.dataset.id;
@@ -1798,11 +1853,13 @@ document.addEventListener('click',e=>{
   brick.setAttribute('aria-pressed',String(on));
   const state_=brick.querySelector('.brick-state'); if(state_) state_.textContent=on?QT('added','Added'):QT('add','Add');
 });
+document.addEventListener('close',e=>{if(e.target.id==='dialog'&&!e.target.open)documentImport=null;},true);
 document.addEventListener('change',async e=>{
   if(e.target.id==='coded-scope'||e.target.name==='coded-document'){refreshTranscriptScope();return;}
   if(e.target.dataset&&e.target.dataset.plot){state.plotOptions[e.target.dataset.plot]=e.target.value;render();return;}
 
   try{
+    if(e.target.id==='import-file'){resetImportDecision();if(!e.target.files[0]){document.querySelector('[data-file-name="import-file"]').textContent=QT('noFileSelected');await updateImportPreview();}}
     if(e.target.id==='network-select'){if(!e.target.value)clearNetworkSelection();else if(NET.selected!==e.target.value)toggleNetworkNode(e.target.value);return;}
     if(e.target.id==='start-project-select')$('[data-action="start-open"]').disabled=!e.target.value;
     if(e.target.id==='reading-document'){switchReadingDocument(e.target.value);return;}
@@ -1813,7 +1870,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='restore-file'&&e.target.files[0]){if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject({kind:'restore',project:JSON.parse(await e.target.files[0].text())});}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+document.addEventListener('input',e=>{if(['document-name','document-text'].includes(e.target.id))resetImportDecision();if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
 // Preview changes CSS only: no re-render, source text insertion or server write.
 document.addEventListener('pointerover',event=>{
   if(event.pointerType!=='mouse')return;

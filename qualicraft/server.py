@@ -18,6 +18,7 @@ from pathlib import Path
 
 from . import analyze, ingest, plotting, transcript, reporting, report_figures, qca_state
 from .ai import Analyzer
+from .document_import import ImportReply, import_document
 from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
@@ -362,7 +363,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                                     text = read_docx(base64.b64decode(body["docx_base64"], validate=True))
                                 except Exception:
                                     raise ValueError("The DOCX file could not be parsed. Use a valid Word document under 8 MB.") from None
-                            return add_document(project, body.get("name"), text)
+                            return import_document(project, body, text)
                         if action == "codes":
                             return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"), body.get("research_role"))
                         if action == "document-update":
@@ -395,6 +396,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         raise ValueError("The requested action does not exist")
                     return self.send(store.change(project_id, operation))
                 return self.send({"error": "The API endpoint does not exist"}, status=404)
+            except ImportReply as reply:
+                return self.send(reply.payload)
             except report_figures.FigureRenderError as exc:
                 return self.send({"error": str(exc)}, status=500)
             except (ReadingConflict, reporting.ReportConflict, qca_state.QCAConflict) as exc:

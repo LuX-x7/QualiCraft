@@ -152,9 +152,11 @@ def audit(out,seed_path=None):
         refused=s.json(root);record('Invalid inputs and corrupted QCA/report recovery are atomic',input_rows)
         exact=(source*40)[:500000];start=time.perf_counter();doc=s.json(root+'/documents',{'name':'Bologna exact 500000 technical repetition','text':exact});assert doc['text']==exact
         record('Exact 500000-character accepted boundary',{'characters':len(doc['text']),'sha256':sha(exact.encode()),'seconds':time.perf_counter()-start,'technical_repetition':True})
-        name='Bologna duplicate technical import';a=s.json(root+'/documents',{'name':name,'text':source});b=s.json(root+'/documents',{'name':name,'text':source});assert a['id']!=b['id'] and a['sha256']==b['sha256']
-        result['findings'].append({'id':'UX55-01','severity':'P2','kind':'input UX','title':'Duplicate name and identical text are accepted as distinct documents without a duplicate warning','evidence':{'first_id':a['id'],'second_id':b['id'],'same_source_sha256':a['sha256']}})
-        record('Duplicate import behavior observed',{'two_distinct_IDs':True,'same_content':True,'warning_returned':False})
+        name='Bologna duplicate technical import';a=s.json(root+'/documents',{'name':name,'text':source});before=s.json(root);backups=backup_manifest(s.folder,seed['id'])
+        warning=s.json(root+'/documents',{'name':name,'text':source});assert warning['requires_confirmation'] and s.json(root)==before and backup_manifest(s.folder,seed['id'])==backups
+        b=s.json(root+'/documents',{'name':name,'text':source,'duplicate_confirmation':warning['duplicate']['confirmation'],'request_id':'boundary-duplicate-keep'})
+        assert a['id']!=b['id'] and a['sha256']==b['sha256']
+        record('Duplicate import requires an explicit keep decision',{'two_distinct_IDs_after_confirmation':True,'same_content':True,'warning_returned':True,'warning_state_and_snapshots_equal':True})
         # Real request-size header rejection occurs before reading any body.
         conn=http.client.HTTPConnection(s.base.split('://')[1],timeout=10);conn.request('POST','/w/api/projects',body=None,headers={'Content-Type':'application/json','Content-Length':'20000001','X-QualiCraft-Token':s.token});response=conn.getresponse();payload=response.read();assert response.status==400;conn.close();assert s.json(root)['comparative_qca']==seed['comparative_qca'];record('Over-20MB request header refused before body read',{'HTTP':400,'message':json.loads(payload)['error']})
     finally:s.stop()
