@@ -1,3 +1,5 @@
+> Online review update (18 Oct 2026): an invited full workbench is available at https://looking-goals-warranty-survive.trycloudflare.com/login . Create your own account with the privately supplied single-use invitation; upload, coding, server save and exports are enabled. This is a temporary review hostname, not a permanent production URL. Projects are saved on the QT server; use only approved data. GitHub Pages branch is prepared but owner activation is pending. The older Render link below remains the historical readonly example.
+
 # QT supervisor review
 
 Start at [the website](https://qualicraft-website.onrender.com/), then choose **View worked example**. Allow 10–15 minutes. Both services run on a free plan; waking after inactivity can take 50 seconds or more.

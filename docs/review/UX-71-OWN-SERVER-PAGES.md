@@ -44,3 +44,10 @@ Raw commands, outputs, exit files, JSON checks and screenshots: `~/qualicraft-re
 3. Supervisor / researcher acceptance and institutional approval for real uploads are not replaced by software tests.
 
 Public provider limitation reference: https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/ .
+
+## Published source / prepared Pages branch
+
+- Source pushed normally to `main`: `e70f7290aaf9d85ecbe4b765564732617efc5276`.
+- Static artifact pushed normally to `gh-pages`: `8d93e01827211012c324ffde3aee479fb4ff1f2f`. Clean source metadata and 37 original asset hashes are included in `qt-release.json`. Branch publication is **not** Pages activation.
+- All 32 deployed source/example files match the source commit. Actual online upload → one manual code / annotation → save → four committed snapshots → JSON export passed in a separate Bologna QA project.
+- Private owner and supervisor invitations prepared separately, each single-use / seven days, excluded from public packet and Git.
