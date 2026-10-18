@@ -103,6 +103,16 @@ Object.assign(_T.zh, {
  startName:'为项目命名',untitledProject:'未命名研究项目',startCreateNote:'先创建空项目，再选择文档。取消导入后仍可稍后继续。',createImport:'创建并导入',emptyEyebrow:'空项目',emptyTitle:'准备好第一份文档。',emptyText:'导入文本，阅读一段原句，再为它赋码。',optionalTools:'可选工具',
  bolognaLabel:'Bologna 示例',editableExample:'可在当前本地工作区编辑',startOwnAction:'新建自己的项目',moreProjectSources:'其他示例来源',backStart:'返回起步页',
 });
+Object.assign(_T.zh, {
+  queueTitle:'批量导入队列', queueIntro:'TXT / DOCX · 每份最大 8 MB · 每队列最多 100 份，每项目最多 100 份文档。',
+  queueAdd:'添加文件', queueReselect:'重新选择原文件', queueRestoreHint:'关闭后会在当前文件完成时停止。刷新后请重新选择原文件；浏览器只保存队列元数据。',
+  queueProgress:'已处理文件', queuePause:'当前文件后停止', queueClear:'清除已保存／取消项', queueStart:'开始／继续', queueOpen:'查看／继续导入队列',
+  queueChooseHint:'可同时选择多份文件，进入批量导入队列。', queueSaved:'已保存', queueFailed:'失败', queueCancelled:'已取消', queueDecisions:'待决定', queueTotal:'总数',
+  queueStopping:'当前文件完成后停止…', queueRunning:'正在导入…', queueCancelFile:'取消此文件', queueRetry:'重试此文件', queueView:'查看文档',
+  queueReselected:'份已重新选择，请开始／继续。', queueNoMatch:'未匹配到队列文件名，请重新选择原文件。',
+  queueState_queued:'等待导入', queueState_reading:'正在读取文件…', queueState_checking:'正在核对文本…', queueState_saving:'正在保存…',
+  queueState_saved:'已保存在本地', queueState_failed:'失败', queueState_duplicate:'名称和正文相同，请选择', queueState_cancelled:'已取消', 'queueState_needs-file':'请重新选择原文件',
+});
 function QT(k,fb){const d=_T[QT_LANG];return(d&&d[k])||fb||k;}
 document.documentElement.lang = QT_LANG === 'zh' ? 'zh-CN' : 'en';
 if(QT_LANG==='zh'){document.title='QualiCraft \u00b7 \u8d28\u6027\u7814\u7a76\u5de5\u4f5c\u53f0';}
@@ -155,7 +165,7 @@ const demoLock = (fallback = '') => state.config.public_demo
 const WRITE_ACTIONS = new Set([
   'reading-mark-read', 'reading-mark-undo', 'reading-mark-retry', 'reading-mark-reset',
   'import', 'run-import', 'import-export-open', 'code', 'save-code', 'code-save',
-  'code-delete', 'code-delete-ask', 'code-merge', 'code-merge-ask', 'save-document', 'keep-document',
+  'code-delete', 'code-delete-ask', 'code-merge', 'code-merge-ask', 'save-document', 'keep-document', 'queue-start', 'queue-keep', 'queue-retry',
   'save-memo', 'save-annotation', 'annotate', 'annotation', 'remove-annotation',
   'save-blocks', 'enable-all-blocks', 'new-project', 'restore-pick', 'review', 'analyze',
   'analyze-selection', 'start-analysis', 'popup-apply', 'popup-create',
@@ -852,11 +862,11 @@ function showSnapshots() {
   modal(QT('snapshotsTitle','Snapshots'),`<p>${QT('snapshotsIntro','A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.')}</p>${rows||`<div class="empty">${QT('noSnapshots','No snapshots yet.')}</div>`}`);
 }
 function modal(title, body, footer='') {
-  documentImport=null;
+  pauseImportQueue();documentImport=null;
   const dlg=$('#dialog'); delete dlg.dataset.workflow;delete dlg.dataset.codingId;delete dlg.dataset.codingCodebook;delete dlg.dataset.codingEdit;delete dlg.dataset.startup; dlg.innerHTML=`<div class="modal-head"><h2>${esc(title)}</h2><button data-action="close" aria-label="${QT('close','Close')}">×</button></div><div class="modal-body">${body}<div id="modal-error" role="alert"></div></div>${footer?`<div class="modal-footer">${footer}</div>`:''}`;
   if(!dlg.open) dlg.showModal();
 }
-function closeModal() { $('#dialog').close(); $('#dialog').innerHTML=''; }
+function closeModal() { pauseImportQueue();$('#dialog').close(); $('#dialog').innerHTML=''; }
 function errorDisplay(error) { if($('#dialog').open && $('#modal-error')) { $('#modal-error').className='inline-error'; $('#modal-error').textContent=error.message; } else toast(error.message,true); }
 function render() {
   captureReadingPosition();
@@ -1340,6 +1350,74 @@ function locate(start) {
   const para=[...document.querySelectorAll('.paragraph')].find(el=>Number(el.dataset.start)<=start&&Number(el.dataset.end)>start);
   if(para){para.scrollIntoView({behavior:'smooth',block:'center'});para.classList.add('flash');setTimeout(()=>para.classList.remove('flash'),1800);}
 }
+const importQueues=new Map();
+let activeImportQueue=null;
+function queueForProject() {
+  const pid=state.project.id;
+  if(!importQueues.has(pid)){
+    let storage;try{storage=localStorage;}catch(error){}
+    let wasRunning=false;
+    importQueues.set(pid,new window.QTImportQueue.Queue({projectId:pid,id:importRequestId,storage,read:window.QTImportQueue.readFile,
+      check:body=>api(`${QT_BASE}/api/projects/${pid}/document-check`,body),save:body=>api(`${QT_BASE}/api/projects/${pid}/documents`,body),
+      changed:q=>{if(activeImportQueue===q&&$('#dialog').open&&$('#dialog').dataset.workflow==='import-queue'&&state.project?.id===pid)renderImportQueue(q);else if(wasRunning&&!q.running&&q.rows.some(r=>r.state==='saved'))refreshImportedProject(pid).catch(error=>toast(error.message,true));wasRunning=q.running;}}));
+  }
+  return importQueues.get(pid);
+}
+function pauseImportQueue() {
+  const queue=activeImportQueue;if(!queue)return;
+  activeImportQueue=null;queue.pause();
+  if(queue.rows.some(r=>r.state==='saved'))refreshImportedProject(queue.projectId).catch(error=>toast(error.message,true));
+}
+async function refreshImportedProject(pid) {
+  const p=await api(`${QT_BASE}/api/projects/${pid}`);if(state.project?.id!==pid)return;
+  state.project=p;state.projects=await api('/api/projects');if(state.project?.id!==pid)return;
+  await loadBackups();if(state.project?.id!==pid)return;
+  const focused=document.activeElement,focusId=focused?.id,selection=focused?.selectionStart;
+  render();
+  if($('#dialog').open||focused?.isConnected&&focused!==document.body)return;
+  const target=(focusId&&document.getElementById(focusId))||[...document.querySelectorAll('[data-action="import"]')].find(el=>el.getClientRects().length);
+  if(target&&!target.disabled){target.focus({preventScroll:true});if(typeof selection==='number'&&target.setSelectionRange)target.setSelectionRange(selection,selection);}
+}
+function showImportQueue(files=[]) {
+  const queue=queueForProject();
+  if(files.length)queue.add(files);
+  modal(QT('queueTitle','Import queue'),`<p class="io-intro">${QT('queueIntro','TXT / DOCX · 8 MB each · max 100 files per queue and 100 documents per project.')}</p>
+    <div class="io-queue-pickers"><label class="file-picker"><span class="file-picker-button">${QT('queueAdd','Add files')}</span><input id="queue-add-files" type="file" multiple accept=".txt,.docx" aria-label="${QT('queueAdd','Add files')}"></label><label class="file-picker"><span class="file-picker-button">${QT('queueReselect','Reselect original files')}</span><input id="queue-reselect-files" type="file" multiple accept=".txt,.docx" aria-label="${QT('queueReselect','Reselect original files')}"></label></div>
+    <p class="io-queue-help">${QT('queueRestoreHint','Close pauses after the current file. Reselect originals after refresh; browser storage contains queue metadata only.')}</p>
+    <p id="queue-storage" role="alert" hidden></p><div id="queue-summary" role="status" aria-live="polite"></div><progress id="queue-progress" max="1" value="0" aria-label="${QT('queueProgress','Processed files')}"></progress><ol id="import-queue-list" class="io-queue-list"></ol>`,
+    `<button data-action="close">${QT('close','Close')}</button><button data-action="queue-pause">${QT('queuePause','Stop after current file')}</button><button data-action="queue-clear">${QT('queueClear','Clear finished items')}</button><button class="primary" data-action="queue-start">${QT('queueStart','Start / resume')}</button>`);
+  $('#dialog').dataset.workflow='import-queue';activeImportQueue=queue;renderImportQueue(queue);
+}
+function queueStateLabel(row) {
+  return QT('queueState_'+row.state,{'queued':'Queued','reading':'Reading file…','checking':'Checking text…','saving':'Saving…','saved':'Saved locally','failed':'Failed','duplicate':'Same name and text — choose','cancelled':'Cancelled','needs-file':'Reselect original file'}[row.state]);
+}
+function renderImportQueue(q) {
+  const focused=document.activeElement,focusKey=focused?.dataset.queueFocus,selection=focused?.selectionStart;
+  const counts=q.counts(),done=counts.saved+counts.cancelled+counts.failed;
+  $('#queue-summary').textContent=`${counts.saved} ${QT('queueSaved','saved')} · ${counts.failed} ${QT('queueFailed','failed')} · ${counts.cancelled} ${QT('queueCancelled','cancelled')} · ${counts.duplicate} ${QT('queueDecisions','decisions')} · ${counts.total} ${QT('queueTotal','total')}${q.running?' · '+QT(q.paused?'queueStopping':'queueRunning',q.paused?'Stopping after current file…':'Importing…'):''}`;
+  const progress=$('#queue-progress');progress.max=Math.max(1,counts.total);progress.value=done;
+  const storage=$('#queue-storage');storage.hidden=!q.storageError;storage.textContent=q.storageError;
+  const active=q.rows.find(r=>['reading','checking','saving'].includes(r.state));
+  $('#import-queue-list').innerHTML=q.rows.map((r,i)=>{
+    const busy=['reading','checking','saving'].includes(r.state),step={queued:0,reading:1,checking:2,saving:3,saved:4}[r.state]||0;
+    return `<li class="io-queue-row is-${r.state}" data-queue-id="${esc(r.id)}"><div class="io-queue-heading"><span class="io-kicker">${String(i+1).padStart(2,'0')}</span><strong>${esc(r.filename)}</strong><span>${r.size.toLocaleString()} B</span></div>
+      ${r.attempted?`<div class="io-queue-name">${QT('importName')} · ${esc(r.name)}</div>`:`<label class="field">${QT('importName')}<input data-queue-name="${esc(r.id)}" data-queue-focus="name:${esc(r.id)}" value="${esc(r.name)}" maxlength="200" ${q.running?'disabled':''}></label>`}
+      <div class="io-queue-state" role="status">${esc(queueStateLabel(r))}</div>${busy?`<progress max="4" value="${step}" aria-label="${esc(r.filename)} · ${esc(queueStateLabel(r))}"></progress>`:''}
+      ${r.error?`<p class="io-queue-error">${esc(r.error)}</p>`:''}
+      ${r.state==='duplicate'?`<p class="io-queue-note">${esc(QT('importDuplicateText').replace('%s',r.name))}</p>`:''}
+      <div class="io-queue-actions">${r.state==='duplicate'?`<button data-action="queue-cancel" data-id="${esc(r.id)}" data-queue-focus="cancel:${esc(r.id)}">${QT('queueCancelFile','Cancel this file')}</button><button data-action="queue-keep" data-id="${esc(r.id)}" data-queue-focus="keep:${esc(r.id)}">${QT('importKeep')}</button>`:''}
+      ${r.state==='failed'?`<button data-action="queue-retry" data-id="${esc(r.id)}" data-queue-focus="retry:${esc(r.id)}">${QT('queueRetry','Retry this file')}</button>`:''}
+      ${['queued','failed','needs-file'].includes(r.state)?`<button data-action="queue-cancel" data-id="${esc(r.id)}" data-queue-focus="cancel:${esc(r.id)}">${QT('queueCancelFile','Cancel this file')}</button>`:''}
+      ${r.state==='saved'?`<button data-action="queue-view" data-id="${esc(r.documentId)}" data-queue-focus="view:${esc(r.id)}">${QT('queueView','View document')}</button>`:''}</div></li>`;
+  }).join('');
+  $('[data-action="queue-start"]').disabled=q.running||!q.rows.some(r=>r.state==='queued');
+  $('[data-action="queue-pause"]').disabled=!q.running||q.paused;
+  $('[data-action="queue-clear"]').disabled=q.running||!q.rows.some(r=>['saved','cancelled'].includes(r.state));
+  $('#queue-add-files').disabled=q.running;$('#queue-reselect-files').disabled=q.running;
+  if(focusKey){const next=[...document.querySelectorAll('[data-queue-focus]')].find(el=>el.dataset.queueFocus===focusKey);if(next&&!next.disabled){next.focus({preventScroll:true});if(next.tagName==='INPUT'&&selection!==null)next.setSelectionRange(selection,selection);}else ($('[data-action="queue-start"]:not(:disabled)')||$('.modal-footer [data-action="close"]')).focus({preventScroll:true});}
+  else if(active&&document.activeElement===document.body)$('#queue-summary').setAttribute('tabindex','-1');
+}
+
 let documentImport=null;
 function importRequestId() {
   // Plain-HTTP phone access may omit randomUUID; getRandomValues is available.
@@ -1397,9 +1475,10 @@ async function saveDocument(keep=false) {
 }
 
 function showImport() {
+  const queue=window.QTImportQueue?queueForProject():null;
   modal(QT('importDlg','Import interview'), `<p class="io-intro">${QT('importShort')}</p>
-    <fieldset id="import-source" class="io-import-source"><div class="io-modes" role="group" aria-label="${QT('importDlg')}"><button type="button" data-action="import-mode" data-mode="file" aria-pressed="true">${icon('upload')}${QT('importFileMode')}</button><button type="button" data-action="import-mode" data-mode="paste" aria-pressed="false">${icon('doc')}${QT('importPasteMode')}</button></div>
-    <div id="import-file-panel"><label class="field io-file-label"><span class="file-picker io-file-picker">${icon('upload')}<span><strong class="file-picker-button">${QT('chooseFile')}</strong><span class="file-picker-name" data-file-name="import-file">${QT('noFileSelected')}</span></span><input id="import-file" type="file" accept=".txt,.docx" aria-label="${QT('chooseFile')}"></span><small>${QT('importFormats')}</small></label><div id="import-preview" class="io-source-preview" hidden></div></div>
+    ${queue?.rows.length?`<button class="io-queue-resume" data-action="queue-open">${QT('queueOpen','Review / resume import queue')} · ${queue.rows.length}</button>`:''}<p class="io-queue-help">${QT('queueChooseHint','Choose multiple files to open an import queue.')}</p><fieldset id="import-source" class="io-import-source"><div class="io-modes" role="group" aria-label="${QT('importDlg')}"><button type="button" data-action="import-mode" data-mode="file" aria-pressed="true">${icon('upload')}${QT('importFileMode')}</button><button type="button" data-action="import-mode" data-mode="paste" aria-pressed="false">${icon('doc')}${QT('importPasteMode')}</button></div>
+    <div id="import-file-panel"><label class="field io-file-label"><span class="file-picker io-file-picker">${icon('upload')}<span><strong class="file-picker-button">${QT('chooseFile')}</strong><span class="file-picker-name" data-file-name="import-file">${QT('noFileSelected')}</span></span><input id="import-file" type="file" multiple accept=".txt,.docx" aria-label="${QT('chooseFile')}"></span><small>${QT('importFormats')}</small></label><div id="import-preview" class="io-source-preview" hidden></div></div>
     <div id="import-paste-panel" hidden><label class="field">${QT('importPaste')}<textarea id="document-text" rows="6" placeholder="Interviewer: …&#10;Participant: …" disabled></textarea></label></div>
     <label class="field">${QT('importName')}<input id="document-name" placeholder="${QT('docNamePlaceholder')}" maxlength="200"></label>
     <details class="io-help"><summary>${QT('importHelp')}</summary><p>${QT('importDesc')}</p><p>${QT('fileHint')}</p></details>
@@ -1760,6 +1839,17 @@ async function action(button) {
   if(a==='import-export-open')return showImportExport();
   if(a==='run-import')return runImport();
   if(a==='import-mode')return setImportMode(button.dataset.mode);
+  if(a==='queue-open'){showImportQueue();return;}
+  if(a.startsWith('queue-')){
+    const q=activeImportQueue;if(!q||q.projectId!==state.project?.id)return;
+    if(a==='queue-start')return q.run();
+    if(a==='queue-pause'){q.pause();return;}
+    if(a==='queue-clear'){q.clearFinished();return;}
+    if(a==='queue-cancel'){q.cancel(button.dataset.id);return;}
+    if(a==='queue-retry'){q.retry(button.dataset.id);return q.run();}
+    if(a==='queue-keep'){q.keep(button.dataset.id);return q.run();}
+    if(a==='queue-view'){const id=button.dataset.id,pid=q.projectId;closeModal();await refreshImportedProject(pid);if(state.project?.id===pid){importedDocument(id);render();focusImportedDocument();}return;}
+  }
   if(a==='save-document'||a==='keep-document')return saveDocument(a==='keep-document');
   if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null,research_role:$('#code-role').value||null});closeModal();await refresh();toast(QT('codeSaved','Code saved.'));return;}
   if(a==='code-save'){
@@ -1845,7 +1935,7 @@ function renderJob(){
 function startPolling(){
   clearTimeout(pollTimer);pollTimer=setTimeout(async()=>{try{const before=state.jobs.filter(j=>j.status==='running').map(j=>j.id);state.jobs=await api('/api/jobs');renderJob();const finished=state.jobs.find(j=>before.includes(j.id)&&j.status!=='running');if(finished){if(finished.project_id===state.project?.id)await refresh();toast(finished.error||'Analysis finished. Review your suggestions.',finished.status==='failed');}if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(e){toast('Could not read task status. Refresh to view saved results.',true);}},1500);
 }
-document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;if(['import','export'].includes(button.dataset.action))ioReturnFocus=button;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action.startsWith('net-'))drawNetworkControls();}}});
+document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;if(['import','export'].includes(button.dataset.action))ioReturnFocus=button;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action.startsWith('net-'))drawNetworkControls();if(button.dataset.action.startsWith('queue-')&&activeImportQueue)renderImportQueue(activeImportQueue);}}});
 document.addEventListener('close',e=>{if(e.target.id==='dialog'&&e.target.dataset.workflow&&ioReturnFocus?.isConnected&&!ioReturnFocus.disabled)ioReturnFocus.focus({preventScroll:true});},true);
 document.addEventListener('click',e=>{
   const brick=e.target.closest('.brick'); if(!brick) return;
@@ -1853,12 +1943,24 @@ document.addEventListener('click',e=>{
   brick.setAttribute('aria-pressed',String(on));
   const state_=brick.querySelector('.brick-state'); if(state_) state_.textContent=on?QT('added','Added'):QT('add','Add');
 });
-document.addEventListener('close',e=>{if(e.target.id==='dialog'&&!e.target.open)documentImport=null;},true);
+document.addEventListener('cancel',e=>{if(e.target.id==='dialog')pauseImportQueue();},true);
+document.addEventListener('close',e=>{if(e.target.id==='dialog'&&!e.target.open){pauseImportQueue();documentImport=null;}},true);
 document.addEventListener('change',async e=>{
   if(e.target.id==='coded-scope'||e.target.name==='coded-document'){refreshTranscriptScope();return;}
   if(e.target.dataset&&e.target.dataset.plot){state.plotOptions[e.target.dataset.plot]=e.target.value;render();return;}
 
   try{
+    if(['queue-add-files','queue-reselect-files'].includes(e.target.id)){
+      const q=activeImportQueue;if(!q)return;
+      if(e.target.id==='queue-reselect-files'){const n=q.attach(Array.from(e.target.files));toast(n?`${n} ${QT('queueReselected','files reselected. Start / resume to continue.')}`:QT('queueNoMatch','No queued filenames matched. Reselect the original files.'));}
+      else q.add(Array.from(e.target.files));
+      e.target.value='';return;
+    }
+    if(e.target.id==='import-file'&&e.target.files.length>1){
+      const files=Array.from(e.target.files);e.target.value='';resetImportDecision();updateImportPreview();
+      showImportQueue(files);return;
+    }
+    if(e.target.dataset?.queueName){activeImportQueue?.rename(e.target.dataset.queueName,e.target.value);return;}
     if(e.target.id==='import-file'){resetImportDecision();if(!e.target.files[0]){document.querySelector('[data-file-name="import-file"]').textContent=QT('noFileSelected');await updateImportPreview();}}
     if(e.target.id==='network-select'){if(!e.target.value)clearNetworkSelection();else if(NET.selected!==e.target.value)toggleNetworkNode(e.target.value);return;}
     if(e.target.id==='start-project-select')$('[data-action="start-open"]').disabled=!e.target.value;

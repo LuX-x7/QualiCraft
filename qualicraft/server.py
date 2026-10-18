@@ -18,7 +18,7 @@ from pathlib import Path
 
 from . import analyze, ingest, plotting, transcript, reporting, report_figures, qca_state
 from .ai import Analyzer
-from .document_import import ImportReply, import_document
+from .document_import import ImportReply, import_document, read_document, source_info
 from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
@@ -241,7 +241,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                     return self.send(('window.QT_BASE=' + json.dumps(base_path) + ';').encode(),
                                      "application/javascript; charset=utf-8")
                 files = {"/": "index.html", "/app.js": "app.js", "/welcome-orbit.js": "welcome-orbit.js", "/report-editor.js":"report-editor.js", "/qca-editor.js":"qca-editor.js",
-                         "/style.css": "style.css",
+                         "/style.css": "style.css", "/import-queue.js": "import-queue.js",
                          "/landing.html": "landing.html", "/landing.css": "landing.css"}
                 if path not in files:
                     return self.send({"error": "The file does not exist"}, status=404)
@@ -251,7 +251,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 # the page is served at /w with no trailing slash. Rewrite them to
                 # absolute paths that include the prefix.
                 if base_path and file.suffix == ".html":
-                    for name in ("style.css", "config.js", "welcome-orbit.js", "report-editor.js", "qca-editor.js", "app.js", "landing.css"):
+                    for name in ("style.css", "config.js", "welcome-orbit.js", "report-editor.js", "qca-editor.js", "import-queue.js", "app.js", "landing.css"):
                         payload = payload.replace(f'"{name}"'.encode(), f'"{base_path}/{name}"'.encode())
                 return self.send(payload, (mimetypes.guess_type(file.name)[0] or "text/plain") + "; charset=utf-8")
             except (ValueError, KeyError, TypeError):
@@ -323,6 +323,12 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                     return self.send(store.create(project))
                 if len(parts) == 4 and parts[:2] == ["api", "projects"]:
                     project_id, action = parts[2:]
+                    if action == 'document-check':
+                        candidate = store.get(project_id)  # No write transaction.
+                        try:
+                            return self.send({**source_info(body, read_document(body)), 'remaining_documents': 100 - len(candidate['documents'])})
+                        except ValueError as exc:
+                            return self.send({'valid': False, 'error': str(exc)})
                     if action in {"reading-mark", "reading-reset"}:
                         return self.send(store.change_reading(project_id, body, reset=action == "reading-reset"))
                     if action == "preview":
@@ -357,13 +363,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         if action in {'report-save','report-restore'}:
                             return reporting.save(project,body,restore=action=='report-restore')
                         if action == "documents":
-                            text = body.get("text")
-                            if body.get("docx_base64"):
-                                try:
-                                    text = read_docx(base64.b64decode(body["docx_base64"], validate=True))
-                                except Exception:
-                                    raise ValueError("The DOCX file could not be parsed. Use a valid Word document under 8 MB.") from None
-                            return import_document(project, body, text)
+                            return import_document(project, body, read_document(body))
                         if action == "codes":
                             return add_code(project, body.get("name"), body.get("definition", ""), body.get("color"), body.get("parent_id"), body.get("research_role"))
                         if action == "document-update":

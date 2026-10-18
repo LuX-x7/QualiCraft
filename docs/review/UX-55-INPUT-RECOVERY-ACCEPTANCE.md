@@ -1,6 +1,6 @@
 # UX55 · Input, sequential import and interruption recovery
 
-2026-10-18 follow-up: [UX56](UX-56-COMMITTED-SNAPSHOTS.md) closes UX55-02; [UX57](UX-57-DUPLICATE-IMPORT.md) closes UX55-01 with an explicit duplicate-import decision. UX55-03/04 remain open. The original UX55 audit and its two-P2 decision below are retained as historical evidence, not the latest unresolved count.
+2026-10-18 follow-up: [UX56](UX-56-COMMITTED-SNAPSHOTS.md) closes UX55-02; [UX57](UX-57-DUPLICATE-IMPORT.md) closes UX55-01 with an explicit duplicate-import decision. [UX58](UX-58-BATCH-IMPORT-QUEUE.md) closes UX55-03 with a bounded multi-file queue; UX55-04 remains open. The original UX55 audit and its two-P2 decision below are retained as historical evidence, not the latest unresolved count.
 
 18 October 2026. Baseline `2e2dca205d04f4d952c17932f879fa492c7f586f`. **Acceptance only: no product, website, statistics or plotting changes.** Public Bologna disposable projects only. All memberships are labelled technical designations, not research findings. No private transcript was opened. Windows remains deferred and unverified; no push or deployment.
 

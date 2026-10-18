@@ -3,9 +3,10 @@
 A reply raises before mutation so a warning/retry cannot rotate snapshots or
 update project timestamps. Internal corpus importers retain add_document's API.
 """
+import base64
 import hashlib
 import json
-from .core import add_document, find, require, string
+from .core import add_document, find, read_docx, require, string
 
 
 class ImportReply(Exception):
@@ -14,14 +15,32 @@ class ImportReply(Exception):
         super().__init__('Document import needs no write')
 
 
-def import_document(project, body, text):
+def read_document(body):
+    text = body.get('text')
+    if body.get('docx_base64'):
+        try:
+            text = read_docx(base64.b64decode(body['docx_base64'], validate=True))
+        except Exception:
+            raise ValueError('The DOCX file could not be parsed. Use a valid Word document under 8 MB.') from None
+    return text
+
+
+def source_info(body, text):
     name = string(body.get('name'), 'Document name', 200)
     require(isinstance(text, str) and text.strip() and len(text) <= 500_000,
             'The document is empty or exceeds 500,000 characters')
+    return {'valid': True, 'name': name, 'sha256': hashlib.sha256(text.encode('utf-8')).hexdigest(),
+            'characters': len(text)}
+
+
+def import_document(project, body, text):
+    info = source_info(body, text)
+    name, source = info['name'], info['sha256']
+    require(body.get('expected_sha256') is None or body['expected_sha256'] == source,
+            'The source changed. Reselect the original file, or add the changed file as a new item.')
     request_id = body.get('request_id')
     require(request_id is None or (isinstance(request_id, str) and 1 <= len(request_id) <= 100),
             'The import request ID is invalid')
-    source = hashlib.sha256(text.encode('utf-8')).hexdigest()
     identity = hashlib.sha256(json.dumps([project['id'], name, source], ensure_ascii=False).encode()).hexdigest()
     if request_id:
         previous = next((e for e in reversed(project['audit'])
