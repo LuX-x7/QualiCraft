@@ -34,14 +34,30 @@ def serve(folder,mode,action):
     def pause(stage):
         dump(folder/'paused.json',{'stage':stage,'pid':os.getpid()})
         while True:time.sleep(.05)
-    if mode in ('before-snapshot','after-snapshot'):
-        original=server.store._snapshot
-        def snapshot(project):
+    if mode in ('before-snapshot','after-queue'):
+        original=server.store._queue_snapshot
+        def snapshot(conn,project):
             if mode=='before-snapshot':pause(mode)
-            result=original(project)
-            if mode=='after-snapshot':pause(mode)
+            result=original(conn,project)
+            if mode=='after-queue':pause(mode)
             return result
-        server.store._snapshot=snapshot
+        server.store._queue_snapshot=snapshot
+    if mode=='after-snapshot':
+        original=server.store._write_snapshot
+        def published(project,name):
+            result=original(project,name);pause(mode);return result
+        server.store._write_snapshot=published
+    if mode=='committed-before-publication':
+        original=server.store._flush_snapshots
+        def publish():pause(mode);return original()
+        server.store._flush_snapshots=publish
+    if mode=='partial-snapshot':
+        original=Path.write_text
+        def partial(path,data,*args,**kwargs):
+            if path.name.endswith('.part'):
+                original(path,data[:max(1,len(data)//3)],*args,**kwargs);pause(mode)
+            return original(path,data,*args,**kwargs)
+        Path.write_text=partial
     if mode=='qca-prepared':
         original=qca_state.run
         def compute(*args,**kwargs):
@@ -102,7 +118,7 @@ def validate(project):
     assert set(project['research_report']['assets'])>=report_figures.referenced(project['research_report']['current'])
 
 def audit(out,seed_path=None):
-    out.mkdir(parents=True,exist_ok=True);result={'baseline':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'checks':[],'findings':[],'scope':'public Bologna only; owned loopback subprocesses; no feature edits','bounds':{'ready_seconds':15,'request_seconds':30,'sequential_import_seconds':120,'cases':100,'conditions':6,'documents':100}}
+    out.mkdir(parents=True,exist_ok=True);result={'baseline':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'checks':[],'findings':[],'scope':'public Bologna only; owned loopback subprocesses; UX55-02 commit/publication regression','bounds':{'ready_seconds':15,'request_seconds':30,'sequential_import_seconds':120,'cases':100,'conditions':6,'documents':100}}
     def record(name,detail,passed=True):
         result['checks'].append({'name':name,'pass':passed,'detail':detail});dump(out/'results.json',result);print(name+': '+('PASS' if passed else 'FAIL'),flush=True)
     # Read only the explicitly public UX54 sample and verify its source records.
@@ -144,7 +160,7 @@ def audit(out,seed_path=None):
     finally:s.stop()
 
     # Kill at precise production boundaries. No application source is changed.
-    faults=[('calibration-before-write','before-snapshot','qca-save'),('QCA-detached-prepared','qca-prepared','qca-run'),('QCA-before-commit','before-snapshot','qca-run'),('QCA-snapshot-before-commit','after-snapshot','qca-run'),('QCA-committed-before-receipt','committed-no-ack','qca-run'),('report-detached-prepared','report-prepared','report-save'),('report-before-commit','before-snapshot','report-save'),('report-committed-before-receipt','committed-no-ack','report-save'),('report-ZIP-download','partial-export','export?format=report-zip')]
+    faults=[('calibration-before-write','before-snapshot','qca-save'),('QCA-detached-prepared','qca-prepared','qca-run'),('QCA-before-commit','before-snapshot','qca-run'),('QCA-queued-before-commit','after-queue','qca-run'),('QCA-committed-before-publication','committed-before-publication','qca-run'),('QCA-partial-snapshot','partial-snapshot','qca-run'),('QCA-published-before-receipt','after-snapshot','qca-run'),('QCA-committed-before-receipt','committed-no-ack','qca-run'),('report-detached-prepared','report-prepared','report-save'),('report-before-commit','before-snapshot','report-save'),('report-committed-before-publication','committed-before-publication','report-save'),('report-published-before-receipt','after-snapshot','report-save'),('report-committed-before-receipt','committed-no-ack','report-save'),('report-ZIP-download','partial-export','export?format=report-zip')]
     for label,mode,action in faults:
         folder=out/'faults'/label;s=Service(folder,seed,mode,action);root='/projects/'+seed['id'];before=s.json(root);initial_backups=backup_manifest(folder,seed['id'])
         if action=='qca-save':
@@ -154,15 +170,16 @@ def audit(out,seed_path=None):
             d=copy.deepcopy(seed['research_report']['current']['draft']);d['narrative']+='\nRecovery boundary technical note.';body={'revision':seed['research_report']['revision'],'source_version':reporting.source_version(seed),'draft':d}
         else:body=None
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            pending=pool.submit(s.request,root+'/'+action,body);s.wait('paused.json');exit_code=s.stop(kill=True)
+            pending=pool.submit(s.request,root+'/'+action,body);s.wait('paused.json');pre_restart=backup_manifest(folder,seed['id']);exit_code=s.stop(kill=True)
             try:network=pending.result(timeout=10);network={'HTTP':network[0],'bytes':len(network[1])}
             except Exception as e:network={'transport_error':type(e).__name__}
         s=Service(folder)
         try:
             after=s.json(root);validate(after)
-            with sqlite3.connect(folder/'qualicraft.sqlite3') as db:integrity=db.execute('PRAGMA integrity_check').fetchone()[0]
+            with __import__('contextlib').closing(sqlite3.connect(folder/'qualicraft.sqlite3')) as db:
+                integrity=db.execute('PRAGMA integrity_check').fetchone()[0];pending_jobs=db.execute('SELECT COUNT(*) FROM snapshot_outbox').fetchone()[0]
             assert integrity=='ok'
-            committed=mode=='committed-no-ack'
+            committed=mode in ('committed-no-ack','committed-before-publication','partial-snapshot','after-snapshot')
             if not committed:assert after==before,(label,evidence_state(after),evidence_state(before))
             elif action=='qca-run':assert after['comparative_qca']['revision']==before['comparative_qca']['revision']+1 and after['research_report']==before['research_report'] and after['comparative_qca']['history'][-1]==before['comparative_qca']['current']
             else:assert after['research_report']['revision']==before['research_report']['revision']+1 and after['comparative_qca']==before['comparative_qca']
@@ -177,8 +194,13 @@ def audit(out,seed_path=None):
                     else:assert json.loads(payload)==json.loads(files[fmt])
             latest=sorted((folder/'backups'/seed['id']).glob('*.json'))[-1];snapshot=json.loads(latest.read_text(encoding='utf-8'));validate(snapshot)
             ahead=snapshot.get('comparative_qca')!=after.get('comparative_qca') or snapshot.get('research_report')!=after.get('research_report')
-            if ahead:result['findings'].append({'id':'UX55-02','severity':'P2','kind':'interruption recovery','title':'An atomic snapshot is visible before the enclosing SQLite transaction commits; killing here leaves a snapshot of an unacknowledged run ahead of the live database','evidence':{'scenario':label,'live_QCA_revision':after['comparative_qca']['revision'],'snapshot_QCA_revision':snapshot['comparative_qca']['revision'],'snapshot_valid':True,'live_DB_rolled_back':True,'snapshot_name':latest.name}})
-            detail={'mode':mode,'owned_child_exit':exit_code,'network':network,'committed':committed,'DB_integrity':integrity,'full_live_state_restored':not committed,'all_frozen_records_valid':True,'original_source_unchanged':True,'repeated_old_revision_HTTP':retry,'snapshot_ahead_of_live':ahead,'before_hashes':evidence_state(before),'after_hashes':evidence_state(after),'initial_backups':initial_backups,'final_backups':backup_manifest(folder,seed['id'])}
+            assert not ahead,(label,'uncommitted snapshot');assert pending_jobs==0
+            final_backups=backup_manifest(folder,seed['id']);assert all(final_backups.get(n)==v for n,v in initial_backups.items())
+            if not committed:assert final_backups==initial_backups
+            if mode=='after-snapshot':assert final_backups==pre_restart,'Published recovery point duplicated on replay'
+            if mode in ('committed-before-publication','partial-snapshot'):assert pre_restart==initial_backups
+            assert not list((folder/'backups'/seed['id']).glob('*.part'))
+            detail={'mode':mode,'owned_child_exit':exit_code,'network':network,'committed':committed,'DB_integrity':integrity,'full_live_state_restored':not committed,'all_frozen_records_valid':True,'original_source_unchanged':True,'repeated_old_revision_HTTP':retry,'snapshot_ahead_of_live':ahead,'pending_jobs_after_restart':pending_jobs,'old_recovery_points_preserved':True,'before_hashes':evidence_state(before),'after_hashes':evidence_state(after),'initial_backups':initial_backups,'pre_restart_backups':pre_restart,'final_backups':final_backups}
             record(label,detail);dump(folder/'recovered-summary.json',detail)
         finally:s.stop()
 

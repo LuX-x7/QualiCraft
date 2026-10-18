@@ -1,8 +1,8 @@
 # QT Supervisor Review · 18 October 2026
 
-**Status:** local review candidate, not final acceptance. Coding, source notebooks, five reproducible figures and method-specific research reports are available. Binary conservative Comparative QCA is implemented. The latest boundary audit found two unresolved P2 issues and a batch-upload gap. Windows is deferred and unverified. Nothing was pushed or deployed.
+**Status:** local review candidate, not final acceptance. Coding, source notebooks, five reproducible figures and method-specific research reports are available. Binary conservative Comparative QCA is implemented. UX56 fixes commit/snapshot recovery. Duplicate-import handling, true batch upload and method/process presentation remain open. Windows is deferred and unverified. Nothing was pushed or deployed.
 
-**Start:** [Website](http://127.0.0.1:52756/) → [Workbench](http://127.0.0.1:52756/w/?lang=en) → **Bologna · Comparative QCA review**. These links require the developer’s computer; hosted/public versions can be older. All reviewer material is public Bologna. Sample QCA memberships are explicit technical test designations, not empirical findings.
+**Start:** [Website](http://127.0.0.1:52757/) → [Workbench](http://127.0.0.1:52757/w/?lang=en) → **Bologna · committed snapshot review**. These links require the developer’s computer; hosted/public versions can be older. All reviewer material is public Bologna. Sample QCA memberships are explicit technical test designations, not empirical findings.
 
 ## Expected outputs
 
@@ -19,6 +19,6 @@ Import a disposable source → inspect highlighted coding and its tree → try r
 
 Are the case unit, calibration rules and source evidence defensible? Does the report separate computed facts from authored interpretation? Does the source notebook support writing? The requested next presentation improvement is an explicit full method name and method-specific process map inside Method and decisions; the design is documented, not implemented.
 
-**Latest evidence:** UX55 completed 42 boundary/browser checks, including forced process termination, 100-document sequential imports, missing-calibration recovery, project/snapshot restoration and independent execution of QCA plus five figure scripts. Desktop/phone-emulated normal console errors were zero. This is bounded technical evidence, not research or physical-device sign-off.
+**Latest evidence:** UX56 completed 46 acceptance checks plus 251 Python tests (three environment skips), 200 Node tests and an isolated production build. Forced termination before commit leaves no candidate recovery point; committed pending/partial snapshots finish on restart, with reserved-name replay and old recovery points retained. Full calibration, frozen runs, report/history/assets and QCA plus five figure scripts were checked again. Normal browser console errors were zero; phone tests use emulation.
 
-**Before final acceptance:** fix a snapshot that can be published before the SQLite commit, and add an explicit duplicate-import choice. Genuine multi-file upload remains unavailable. Implement the method/process presentation, rerun the final joint workflow, then obtain current physical-device/accessibility and researcher/supervisor acceptance. Wider maximum-load and power-loss claims are not made. See UX-55-INPUT-RECOVERY-ACCEPTANCE.md and REPORT-METHOD-FLOW-DESIGN.md. Local commits only; no release approval is implied.
+**Before final acceptance:** add an explicit duplicate-import choice, implement the bounded multiple-file queue and the method/process presentation, rerun the final joint workflow, then obtain current physical-device/accessibility and researcher/supervisor acceptance. Wider maximum-load and physical power-loss claims are not made. See UX-56-COMMITTED-SNAPSHOTS.md and REPORT-METHOD-FLOW-DESIGN.md. Existing notebook and report samples remain unchanged. Local commits only; Windows deferred, no push/deployment or release approval.

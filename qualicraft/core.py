@@ -619,45 +619,119 @@ class Store:
         self.backup_error = None
         with self.connect() as conn:
             conn.execute("CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
+            # The outbox is committed with the project row. A crash cannot
+            # leave a published file for a rolled-back edit, or lose the
+            # obligation to publish an already committed edit.
+            conn.execute("CREATE TABLE IF NOT EXISTS snapshot_sequences (project_id TEXT PRIMARY KEY, number INTEGER NOT NULL)")
+            conn.execute("CREATE TABLE IF NOT EXISTS snapshot_outbox (id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT NOT NULL, name TEXT NOT NULL, data TEXT NOT NULL, UNIQUE(project_id,name))")
+        self._flush_snapshots()
 
-    def _snapshot(self, project):
-        """Write a restorable copy of the project beside the database.
+    def _backup_failure(self, project_id, exc):
+        self.backup_error = {"project_id": project_id, "at": now(),
+                             "message": f"{type(exc).__name__}: {exc}"}
+        print(f"QualiCraft: snapshot failed for project {safe_id(project_id)}: "
+              f"{type(exc).__name__}: {exc}", file=sys.stderr)
 
-        The whole project is one row in one SQLite file. That is convenient, and
-        it is also a single point of failure: one bad delete and weeks of coding
-        are gone, with nothing to go back to. A JSON snapshot per change costs
-        almost nothing next to re-coding an interview, and it is written in the
-        same format the Restore dialog already reads, so recovery needs no
-        special tooling.
+    def _next_snapshot_name(self, conn, project_id):
+        require_valid_id(project_id)
+        row = conn.execute("SELECT number FROM snapshot_sequences WHERE project_id=?", (project_id,)).fetchone()
+        number = row[0] if row else 0
+        # Preserve the existing files and numbering when upgrading a database.
+        for path in (self.backup_dir / project_id).glob("*.json"):
+            if path.stem.isdecimal():
+                number = max(number, int(path.stem))
+        number += 1
+        conn.execute("INSERT INTO snapshot_sequences VALUES (?,?) ON CONFLICT(project_id) DO UPDATE SET number=excluded.number", (project_id, number))
+        return "%06d.json" % number
 
-        Callers pass this inside their write transaction, so the file written
-        matches the row that was just committed and two concurrent requests
-        cannot interleave a name with someone else's state.
+    def _queue_snapshot(self, conn, project):
+        name = self._next_snapshot_name(conn, project["id"])
+        conn.execute("INSERT INTO snapshot_outbox(project_id,name,data) VALUES (?,?,?)",
+                     (project["id"], name, json.dumps(project, ensure_ascii=False, indent=1)))
+        return name
 
-        A failure here must never fail the edit the researcher just made — but it
-        is recorded rather than swallowed, so the interface can say so.
+    def _flush_snapshots(self):
+        """Publish only committed outbox records; replay is safe after a crash.
+
+        The writer lock serializes publishers across Store instances/processes.
+        If rename succeeds but acknowledgement does not, the same reserved name
+        is verified and acknowledged next time, without another recovery point.
+        Publication failures retain the durable job and all previous files.
+        """
+        project_id = ""
+        blocked = set()
+        first_error = None
+        try:
+            with self.connect() as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                after_id = 0
+                while True:
+                    row = conn.execute("SELECT id,project_id,name,data FROM snapshot_outbox WHERE id>? ORDER BY id LIMIT 1", (after_id,)).fetchone()
+                    if row is None:
+                        break
+                    job_id, project_id, name, raw = row
+                    after_id = job_id
+                    if project_id in blocked:
+                        continue
+                    if self._write_snapshot(json.loads(raw), name) is None:
+                        blocked.add(project_id)
+                        first_error = first_error or self.backup_error
+                        continue
+                    conn.execute("DELETE FROM snapshot_outbox WHERE id=?", (job_id,))
+            if first_error is not None:
+                self.backup_error = first_error
+        except (OSError, TypeError, ValueError, sqlite3.Error) as exc:
+            self._backup_failure(project_id, exc)
+
+    def _snapshot(self, project, connection=None):
+        """Snapshot an existing committed state (batch, restore or pre-edit guard).
+
+        A pre-upgrade/reset guard is checked before the destructive edit. It may
+        publish only the old committed row, never the candidate. Ordinary new
+        states must use the transactional outbox instead.
         """
         try:
+            project_id = require_valid_id(project["id"])
+            if connection is not None:
+                return self._write_snapshot(project, self._next_snapshot_name(connection, project_id))
+            with self.connect() as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                row = conn.execute("SELECT data FROM projects WHERE id=?", (project_id,)).fetchone()
+                require(row is not None and json.loads(row[0]) == project, "Only a committed project can be snapshotted")
+                name = self._queue_snapshot(conn, project)
+            self._flush_snapshots()
+            path = self.backup_dir / project_id / name
+            return path if path.is_file() else None
+        except (OSError, TypeError, ValueError, sqlite3.Error) as exc:
+            self._backup_failure(project.get("id", ""), exc)
+
+    def _write_snapshot(self, project, name):
+        """Atomically publish a verified committed record, then rotate files."""
+        try:
             folder = self.backup_dir / require_valid_id(project["id"])
+            require(isinstance(name, str) and re.fullmatch(r"[0-9]+\.json", name), "The snapshot name is invalid")
+            # Independently read committed SQLite state, even when a caller is
+            # inside a write transaction. Historical jobs are proven by their
+            # committed outbox record, not by the potentially newer live row.
+            with self.connect() as reader:
+                queued = reader.execute("SELECT data FROM snapshot_outbox WHERE project_id=? AND name=?", (project["id"], name)).fetchone()
+                live = reader.execute("SELECT data FROM projects WHERE id=?", (project["id"],)).fetchone()
+            require(any(row is not None and json.loads(row[0]) == project for row in (queued, live)),
+                    "An uncommitted project cannot be published as a snapshot")
             folder.mkdir(parents=True, exist_ok=True)
-            # A sequence number, not a timestamp. The clock can go backwards
-            # (daylight saving ends in October here), and a name derived from it
-            # would then sort before an older snapshot and be pruned as the
-            # oldest — losing the newest recovery point, silently.
-            existing = sorted(folder.glob("*.json"))
-            number = 1
-            if existing:
-                try:
-                    number = int(existing[-1].stem) + 1
-                except ValueError:
-                    number = len(existing) + 1
-            name = "%06d.json" % number
+            target = folder / name
+            payload = json.dumps(project, ensure_ascii=False, indent=1)
+            if target.exists():
+                require(target.read_text(encoding="utf-8") == payload,
+                        "The reserved recovery point already contains different data; it was preserved")
             # Written to a sibling and renamed into place. A reader that opens
             # the file while it is half-written would otherwise see truncated
             # JSON, which is worse than no snapshot: it looks restorable.
-            tmp = folder / (name + ".part")
-            tmp.write_text(json.dumps(project, ensure_ascii=False, indent=1), encoding="utf-8")
-            os.replace(tmp, folder / name)
+            else:
+                tmp = folder / (name + ".part")
+                tmp.write_text(payload, encoding="utf-8")
+                os.replace(tmp, target)
+            require(target.read_text(encoding="utf-8") == payload, "The recovery point could not be verified")
             # Keep the newest, but always keep the oldest as well. Accepting a
             # queue of fifty suggestions is fifty changes, and without that floor
             # the burst would prune away every snapshot from before it started —
@@ -670,7 +744,7 @@ class Store:
             self.last_backup = {"project_id": project["id"], "name": name,
                                 "written_at": now()}
             self.backup_error = None
-            return folder / name
+            return target
         except (OSError, TypeError, ValueError) as exc:
             if "tmp" in locals():
                 try:
@@ -680,10 +754,7 @@ class Store:
             # The recorded state is what the interface reads; the stderr line
             # exists so a failure is visible when nobody is looking at the
             # header. Once, per failure, not per frame.
-            self.backup_error = {"project_id": project["id"], "at": now(),
-                                 "message": f"{type(exc).__name__}: {exc}"}
-            print(f"QualiCraft: snapshot failed for project {safe_id(project['id'])}: "
-                  f"{type(exc).__name__}: {exc}", file=sys.stderr)
+            self._backup_failure(project["id"], exc)
 
     def backups(self, project_id):
         """What is on disk for this project, newest first."""
@@ -699,9 +770,9 @@ class Store:
                 continue
         return rows
 
-    def _checked_snapshot(self, project):
+    def _checked_snapshot(self, project, connection=None):
         """An upgrade/reset must not discard the last recoverable old state."""
-        path = self._snapshot(project)
+        path = self._snapshot(project, connection=connection)
         try:
             require(path is not None and json.loads(path.read_text(encoding="utf-8")) == project,
                     "A recovery snapshot could not be verified; no changes were saved")
@@ -793,7 +864,8 @@ class Store:
         migrate(project)
         with self.connect() as conn:
             conn.execute("INSERT INTO projects VALUES (?,?)", (project["id"], json.dumps(project, ensure_ascii=False)))
-            self._snapshot(project)
+            self._queue_snapshot(conn, project)
+        self._flush_snapshots()
         return project
 
     def change(self, project_id, operation, snapshot=True):
@@ -813,12 +885,13 @@ class Store:
             project["updated_at"] = now()
             if original.get("schema_version", 1) < 5:
                 validate_reading_capacity(project)
-                self._checked_snapshot(original)
+                self._checked_snapshot(original, connection=conn)
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
             # Inside a batch the block writes one snapshot on exit, so a
             # per-change write here would be the burst it exists to avoid.
             if snapshot and not getattr(self, "_batch_depth", 0):
-                self._snapshot(project)
+                self._queue_snapshot(conn, project)
+        self._flush_snapshots()
         return result
 
     def change_reading(self, project_id, body, reset=False):
@@ -885,7 +958,7 @@ class Store:
             project["updated_at"] = now()
             validate_reading_capacity(project)
             if reset or original.get("schema_version", 1) < 5:
-                self._checked_snapshot(original)
+                self._checked_snapshot(original, connection=conn)
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))
             return response(changed=True, before=before)
 
