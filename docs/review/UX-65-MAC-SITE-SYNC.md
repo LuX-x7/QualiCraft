@@ -1,5 +1,7 @@
 # UX65 · Mac capability sync and GitHub review candidate
 
+> Superseded publication status: UX67 publishes main through the authorized GitHub connection and manually deploys both existing services. The original authentication failures below remain historical evidence. See [current release, CI and hosted limitation](UX-67-PUBLIC-RELEASE.md).
+
 Date: 2026-10-18. Baseline: `0d4f99f728c2f449366f318394b750b0bac8ac43`.
 
 ## Outcome and scope

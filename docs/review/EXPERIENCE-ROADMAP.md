@@ -1,5 +1,9 @@
 # QualiCraft 整体体验计划
 
+2026-10-18 最新（UX67，发布）：**已按用户明确指示直接快进 main，并手动更新现有网站与只读 Bologna 工作台。** GitHub 插件以 HaijunChe 的现有协作者权限保留全部提交历史，未强推或更改仓库可见性。两服务均在应用提交 `98717a66225c18fed65c06fc2f37a13d2bf0dbe0` 显示 Live；之后的 `51f5c67ab657fbbe6a6e301470c78883b2f2f75c` 只补齐 CI job 的网站依赖安装，287 Python（3 原有跳过，两种收集命令均通过）、246 Node、语法和网站构建通过。首页新 QCA／四类输出、报告读值、只读防写及原 SVG／CSV 已在线核查。**新增 UX67-01：公开工作台完整层级图包导出触发免费实例 512MB 内存上限并返回502；服务自动恢复，不能登记线上五图导出全过。** 本地绘图及网站既有静态图保持；未改功能／统计／绘图、付费规格或自动部署。入口：[网站](https://qualicraft-website.onrender.com/) → [报告](https://qualicraft-website.onrender.com/report) → [只读工作台](https://qualicraft-website.onrender.com/w?lang=en)。手机实机补测／Windows 暂缓；系统辅助功能及研究者／supervisor 接受不代签。完整证据、哈希和剩余项见 [UX67 发布记录](UX-67-PUBLIC-RELEASE.md)。下方“未推送／未部署／鉴权阻塞”等为各轮历史状态，已被本条发布事实替代。
+
+---
+
 2026-10-18 发布补记（UX66）：用户已明确授权源码推送成功后手动部署现有网站和只读 Bologna 工作台，自动部署保持关闭，无需再次询问。新重试仍被 GitHub 以缺 workflow 权限拒绝；Render 登录与两个服务入口已就绪，均核对 Off，未保存任何设置或触发部署。当前只等用户完成本机实际 Git 凭据更新，见 [部署预检与后续顺序](UX-66-DEPLOY-PREFLIGHT.md)。
 
 2026-10-18 最新（UX-65）：**Mac 优先的网站能力同步完成；新的桌面完整流程 13/13、最终网站 23/23 通过。** 首页按原五模块纳入批量队列／重复选择、手动阅读与编码双轨、独立 Comparative QCA 六步交互，以及 Notebook／Research report／五图代码／JSON 恢复四类输出。QCA 使用工作台生成的方法图定义，不编造校准值或研究结果；Notebook 用真实 Bologna 引文和保存路径，未指定角色不冒称 Theme／Category。287 Python（3原有跳过）、实际执行225 Node、语法和最终 Next 生产构建通过；71工作台／数据／原资产／部署文件保持，66最终构建源逐字节一致。新 Mac 入口 http://127.0.0.1:52774/ → Bologna · Mac release review。**用户明确将手机实机补测和 Windows 暂缓；不记作通过。** 系统 VoiceOver／系统动效／实际下载反馈未代签，研究者和 supervisor 内容裁决仍独立保留。源码提交 `787065a388ee3ef82ebe5d76683d9e2e934dd704` 已保存；本轮实际推送再次被GitHub以缺 workflow 权限拒绝，远端t7-site尚未创建、main未动；当前线上首页200但无新展示标记，不能当作新版已上线。autoDeployTrigger 保持 off；部署需单独明确授权和可用管理访问。见 [本轮范围、测试与发布状态](UX-65-MAC-SITE-SYNC.md)。下方为历史记录。

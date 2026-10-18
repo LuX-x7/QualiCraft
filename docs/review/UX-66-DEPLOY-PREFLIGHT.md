@@ -1,5 +1,7 @@
 # UX66 · Deployment authorized; credential update still pending
 
+> Superseded publication status: UX67 publishes main through the authorized GitHub connection and manually deploys both existing services. The original authentication failures below remain historical evidence. See [current release, CI and hosted limitation](UX-67-PUBLIC-RELEASE.md).
+
 2026-10-18. The owner explicitly authorized manual deployment of the existing website and read-only Bologna workbench **after successful source push**, keeping automatic deployment off. The owner said they were updating local GitHub authorization; they did not yet report completion. This authorization persists and does not need to be requested again.
 
 ## Completed preparation

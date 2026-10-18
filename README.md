@@ -25,12 +25,9 @@
 
 <p align="center"><em>English first · 中文在下半部分</em></p>
 
-> **Current Mac review candidate (UX65):** website explanations now cover batch import, reading/coding tracks, three methods including binary Comparative QCA, editable coded notebooks, method-specific Research reports and reproducible exports. Fresh desktop 13/13, website 23/23, 287 Python (3 skips), 225 Node and final production build pass. Local review: http://127.0.0.1:52774/ → **Bologna · Mac release review**. [Evidence and remaining gates](docs/review/UX-65-MAC-SITE-SYNC.md). Phone follow-up and Windows are deferred. Push is authorized after checks; remote success and a current public deployment must be verified separately. Automatic deployment stays off.
+> **Current public review (UX67):** The website and read-only Bologna workbench have been manually updated from `main`. Website explanations cover batch import, reading/coding tracks, three methods, editable coded notebooks, method-specific Research reports and reproducible exports. Python 287 (3 existing skips), Node 246 and website build pass in GitHub CI. [Release evidence and limits](docs/review/UX-67-PUBLIC-RELEASE.md). The free hosted workbench exceeds its 512MB limit when exporting the complete hierarchy figure bundle; use the local application for that full export. The website retains its complete original figures and CSVs. Automatic deployment stays off. Physical-phone follow-up and Windows are deferred.
 
-> **当前 Mac 审核版（UX65）：** 网站已同步批量导入、阅读双轨、独立二元 Comparative QCA、可编辑编码全文树、方法流程图及研究报告／图表代码导出。桌面与最终网站验收通过，手机实机补测和 Windows 暂缓、不记作通过。源码推送已获授权；推送与线上部署必须分别核实。[验收与发布状态](docs/review/UX-65-MAC-SITE-SYNC.md)。
-
-
-> **Push status (UX65R):** The tested candidate is committed locally; GitHub rejected the actual push for missing `workflow` permission. No remote review branch or new deployment has been verified. Update local Git credentials before retrying; the existing hosted URLs still do not represent this candidate.
+> **当前公开审核版（UX67）：** 已直接推送 main，并手动更新现有网站与只读 Bologna 工作台。新增能力的说明与展示已同步，GitHub CI 通过。[发布记录与剩余事项](docs/review/UX-67-PUBLIC-RELEASE.md)。免费托管工作台导出完整层级图包时超出 512MB 内存上限；该完整导出请用本地工作台。网站原图和数据保持完整。自动部署继续关闭，手机实机补测与 Windows 暂缓。
 
 
 ---
