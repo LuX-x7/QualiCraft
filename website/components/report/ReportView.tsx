@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 
 /** Native anchors and disclosures keep the reading path usable without JS.
  *  Scroll tracking adds a current chapter; figures retain the T7 one-time fade. */
@@ -178,15 +180,15 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
                 const number = String(figures.findIndex(figure => figure.kind === section.figureKind) + 1).padStart(2, '0')
                 return (
                   <li key={section.id} className={section.id === current ? 'toc-item is-current' : 'toc-item'}>
-                    <a href={`#${section.id}`} aria-current={section.id === current ? 'location' : undefined}
+                    <a href={siteUrl(`#${section.id}`)} aria-current={section.id === current ? 'location' : undefined}
                       className="toc-link" onClick={() => visit(section)}>
                       <span className="toc-no mono">{section.no}</span>
                       <span className="toc-title">{section.title}</span>
                     </a>
                     {section.figureKind && section.id === current && (
                       <ol className="toc-subs">
-                        <li><a href={`#fig-${section.figureKind}`} className="toc-sub mono" onClick={() => visit(section)}>FIG.{number} · figure</a></li>
-                        <li><a href={`#table-${section.figureKind}`} className="toc-sub mono" onClick={() => visit(section, true)}>TABLE.{number} · counts</a></li>
+                        <li><a href={siteUrl(`#fig-${section.figureKind}`)} className="toc-sub mono" onClick={() => visit(section)}>FIG.{number} · figure</a></li>
+                        <li><a href={siteUrl(`#table-${section.figureKind}`)} className="toc-sub mono" onClick={() => visit(section, true)}>TABLE.{number} · counts</a></li>
                       </ol>
                     )}
                   </li>
@@ -223,20 +225,20 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
                             setPendingRow(`row-${figure.kind}-${row}`)
                           }} />
                       ) : (
-                        <img src={`/report/${figure.svg}`} alt={`${figure.label}. The caption states what the figure counts.`}
+                        <img src={siteUrl(`/report/${figure.svg}`)} alt={`${figure.label}. The caption states what the figure counts.`}
                           width={960} height={540} loading="lazy" />
                       )}
                       <figcaption>
                         <span className="fig-no mono">FIG.{number}</span><span className="fig-title">{figure.label}</span>
                         <span className="fig-unit">{figure.credit}</span>
-                        <span className="fig-source">Workbench export · {String(figure.numbers.codings ?? 0)} codings · <a href="#sec-methods">Export record</a></span>
+                        <span className="fig-source">Workbench export · {String(figure.numbers.codings ?? 0)} codings · <a href={siteUrl("#sec-methods")}>Export record</a></span>
                       </figcaption>
                     </figure>
                   </div>
                   <div className="report-counts" id={`table-${figure.kind}`} tabIndex={-1}>
                     <div className="report-counts-head">
                       <h3 className="report-step mono">The counts</h3>
-                      {table && <a className="mono" href={`/report/${figure.csv}`} download>Download CSV</a>}
+                      {table && <a className="mono" href={siteUrl(`/report/${figure.csv}`)} download>Download CSV</a>}
                     </div>
                     {table ? (
                       <details className="fig-table-wrap" open={Boolean(tables[figure.kind])}
@@ -270,7 +272,7 @@ export default function ReportView({ sections, figures, csvs, evidence }: {
                         </div>
                       </details>
                     ) : <p className="report-prose">No count table was exported for this figure.</p>}
-                    {readable && <a className="reader-return mono" href={`#fig-${figure.kind}`}>Return to the figure ↑</a>}
+                    {readable && <a className="reader-return mono" href={siteUrl(`#fig-${figure.kind}`)}>Return to the figure ↑</a>}
                   </div>
                   <SourceEvidence evidence={evidence} kind={figure.kind} selected={selected[figure.kind]} />
                   <details className="report-reading">

@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 
 /**
  * The five modules, walked through by scrolling.
@@ -49,14 +51,14 @@ function ModuleMedia({ item, reduced }: { item: Module; reduced: boolean }) {
       {showStill ? (
         // These are unaltered decoded recording frames, not substituted UI.
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="walk__media" src={clip.poster} width={clip.width}
+        <img className="walk__media" src={siteUrl(clip.poster)} width={clip.width}
           height={clip.height} alt={clip.description} loading="lazy" />
       ) : (
-        <video className="walk__media" src={clip.src} poster={clip.poster}
+        <video className="walk__media" src={siteUrl(clip.src)} poster={siteUrl(clip.poster)}
           width={clip.width} height={clip.height} controls muted playsInline
           preload="metadata" aria-label={clip.label || `${item.title} workbench recording`}
           aria-describedby={captionId} onError={() => setFailed(true)}>
-          <a href={clip.poster}>View the recorded still image</a>
+          <a href={siteUrl(clip.poster)}>View the recorded still image</a>
         </video>
       )}
       <figcaption id={captionId}>
@@ -70,7 +72,7 @@ function ModuleMedia({ item, reduced }: { item: Module; reduced: boolean }) {
               {still ? 'Watch recording' : 'Show still image'}
             </button>
           )}
-          <a href={clip.poster} target="_blank" rel="noreferrer">Open full-size still (new tab)</a>
+          <a href={siteUrl(clip.poster)} target="_blank" rel="noreferrer">Open full-size still (new tab)</a>
         </div>
       </figcaption>
     </figure>
@@ -85,7 +87,7 @@ export function RecordedExample({ item, reduced }: { item: Module; reduced: bool
     {open ? <ModuleMedia item={item} reduced={reduced} /> : clip && (
       // The native disclosure still has a real recorded image without JavaScript.
       // eslint-disable-next-line @next/next/no-img-element
-      <img className="walk__media" src={clip.poster} width={clip.width} height={clip.height} alt={clip.description} loading="lazy" />
+      <img className="walk__media" src={siteUrl(clip.poster)} width={clip.width} height={clip.height} alt={clip.description} loading="lazy" />
     )}
   </details>
 }
@@ -270,7 +272,7 @@ export default function ModuleWalkthrough({ example, data }: { example: CodingEx
             })}
           </ol>
         </div>
-        <noscript><p>Recorded stills and videos remain available without interactive step switching.</p><ul>{MODULES.map(item => <li key={item.key}><a href={CLIPS[item.key]?.poster}>{item.title} recorded still</a>{' · '}<a href={CLIPS[item.key]?.src}>recording</a></li>)}</ul></noscript>
+        <noscript><p>Recorded stills and videos remain available without interactive step switching.</p><ul>{MODULES.map(item => <li key={item.key}><a href={siteUrl(CLIPS[item.key]?.poster)}>{item.title} recorded still</a>{' · '}<a href={siteUrl(CLIPS[item.key]?.src)}>recording</a></li>)}</ul></noscript>
       </div>
     </section>
   )

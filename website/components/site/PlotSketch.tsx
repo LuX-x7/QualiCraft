@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { buildChartModel, type ChartTable, type ChartItem } from '@/lib/report/chart-model'
 import { matrixLayout, hierarchyPage, matrixWindow } from '@/lib/site/plot-geometry'
@@ -14,7 +16,7 @@ export default function PlotSketch({kind,data,charts,source}:{kind:string;data:W
  const table=charts[kind],figure=data.figures.find(item=>item.kind===kind)
  const model=useMemo(()=>{try{return table?buildChartModel(kind,table):null}catch{return null}},[kind,table])
  useEffect(()=>{if(focusRow.current!==null){marks.current.get(focusRow.current)?.focus({preventScroll:true});focusRow.current=null}},[selected,kind])
- if(!figure||!model)return <p role="status">Verified data is unavailable. <a href="/report">Open the report.</a></p>
+ if(!figure||!model)return <p role="status">Verified data is unavailable. <a href={siteUrl("/report")}>Open the report.</a></p>
  const active=model.items[selected],page=hierarchyPage(model.items,selected),bars=kind==='frequency'||kind==='hierarchy',barItems=kind==='hierarchy'?page.rows:model.items
  const maximum=Math.max(1,...(kind==='hierarchy'?model.items.filter(item=>item.group===page.group):model.items).map(item=>item.value))
  const ticks=[...new Set([0,.25,.5,.75,1].map(f=>Math.ceil(maximum*f)))]
@@ -44,7 +46,7 @@ export default function PlotSketch({kind,data,charts,source}:{kind:string;data:W
   {view==='original'?<div className="home-original-figure">
    {/* Native SVG dimensions determine the image ratio; the frame never stretches it. */}
    {/* eslint-disable-next-line @next/next/no-img-element */}
-   <a href={`/report/${figure.svg}`} target="_blank" rel="noreferrer" aria-label={`Open full-size original ${figure.label}`}><img src={`/report/${figure.svg}`} alt={`Unmodified Bologna workbench export: ${figure.label}`}/></a><p>Original proportions. Open the figure for full-size labels.</p>
+   <a href={siteUrl(`/report/${figure.svg}`)} target="_blank" rel="noreferrer" aria-label={`Open full-size original ${figure.label}`}><img src={siteUrl(`/report/${figure.svg}`)} alt={`Unmodified Bologna workbench export: ${figure.label}`}/></a><p>Original proportions. Open the figure for full-size labels.</p>
   </div>:<>
   {view!=='magnify'&&<div className="home-plot-inspector" role="status" aria-live="polite" aria-atomic="true"><span>{active?`${active.group?active.group+' › ':''}${active.label}`:'No exported value in this window.'}</span>{active&&<strong>{active.value}<small>{kind==='accumulation'?'distinct codes':'CSV count'}</small></strong>}{active?.secondary!==undefined&&<span className="home-plot-new">{active.secondary} newly encountered</span>}</div>}
   {view==='magnify'&&source?<HeatmapMagnifier source={source} svg={`/report/${figure.svg}`} label={figure.label} model={model} selected={selected} onSelect={select} small={small}/>:<>
@@ -57,7 +59,7 @@ export default function PlotSketch({kind,data,charts,source}:{kind:string;data:W
   </svg>{matrix&&<div className="matrix-overview"><span className="mono">FULL MATRIX</span><svg viewBox={`-1 -1 ${model.x.length+2} ${model.y.length+2}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true"><rect x="0" y="0" width={model.x.length} height={model.y.length} fill="var(--paper-sunken)"/>{model.items.map(item=><rect key={item.row} data-minimap-row={item.row} x={model.x.indexOf(item.x!)} y={model.y.indexOf(item.y!)} width=".9" height=".9" fill={`color-mix(in srgb,var(--accent) ${8+item.value/maximum*82}%,white)`}/>)}<rect className="matrix-window-outline" x={matrixView.xStart} y={matrixView.yStart} width={xLabels.length} height={yLabels.length} fill="none" stroke="var(--rust)" strokeWidth=".3"/></svg><p>Outlined area shown in detail.</p>{kind==='cooccurrence'&&<p>Blank = no exported value.</p>}</div>}</div>
   </>}
   </>}
-  <div className="home-plot-controls"><label>Read a value<select aria-label={`${figure.label} value`} value={selected<0?'':selected} onChange={event=>{if(event.target.value!==''){select(Number(event.target.value));if(view==='original')setView('counts')}}}>{selected<0&&<option value="">No exported pair in this window</option>}{model.items.map(item=><option key={item.row} value={item.row}>{item.group?item.group+' › ':''}{item.label}</option>)}</select></label><a href={`/report#table-${kind}`}>Full table ↗</a><a href={`/report/${figure.csv}`} download>CSV ↓</a><a href={`/report/${figure.svg}`} download>SVG ↓</a></div>
+  <div className="home-plot-controls"><label>Read a value<select aria-label={`${figure.label} value`} value={selected<0?'':selected} onChange={event=>{if(event.target.value!==''){select(Number(event.target.value));if(view==='original')setView('counts')}}}>{selected<0&&<option value="">No exported pair in this window</option>}{model.items.map(item=><option key={item.row} value={item.row}>{item.group?item.group+' › ':''}{item.label}</option>)}</select></label><a href={siteUrl(`/report#table-${kind}`)}>Full table ↗</a><a href={siteUrl(`/report/${figure.csv}`)} download>CSV ↓</a><a href={siteUrl(`/report/${figure.svg}`)} download>SVG ↓</a></div>
   <figcaption>{figure.credit}</figcaption>
  </figure>
 }

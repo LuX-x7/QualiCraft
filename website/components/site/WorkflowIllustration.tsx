@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 
 import { useRef, useState } from 'react'
 import type { CodingExample } from './CodingEvidence'
@@ -54,14 +56,14 @@ export default function WorkflowIllustration({ kind, example, data }: {
     {kind === 'analysis' && row && <div className="workflow-count">
       <dl aria-live="polite"><dt>Selected code</dt><dd>{row.label}</dd><dt>CSV count</dt><dd className="workflow-count__value">{row.count}</dd></dl>
       <p className="workflow-credit">{data.frequencyCredit}</p>
-      <a href={`/report/${data.frequencyCsv}`} download>Inspect this count CSV</a>
+      <a href={siteUrl(`/report/${data.frequencyCsv}`)} download>Inspect this count CSV</a>
       <p>Insights contains the relationship map, frequency and document matrix. Find the co-occurrence heatmap in Figures.</p>
     </div>}
     {kind === 'plotting' && figure && <figure className="workflow-figure" aria-live="polite">
       {/* Original verified asset, without a replacement renderer. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/report/${figure.svg}`} alt={`Existing Bologna export: ${figure.label}`} width="1000" height="700" loading="lazy" />
-      <figcaption><strong>{figure.label}</strong><p>{figure.credit}</p><a href={`/report/${figure.csv}`} download>Count CSV</a>{' · '}<a href={`/report#sec-${figure.kind}`}>Open report chapter</a></figcaption>
+      <img src={siteUrl(`/report/${figure.svg}`)} alt={`Existing Bologna export: ${figure.label}`} width="1000" height="700" loading="lazy" />
+      <figcaption><strong>{figure.label}</strong><p>{figure.credit}</p><a href={siteUrl(`/report/${figure.csv}`)} download>Count CSV</a>{' · '}<a href={siteUrl(`/report#sec-${figure.kind}`)}>Open report chapter</a></figcaption>
     </figure>}
     {kind === 'export' && <div className="workflow-output" aria-live="polite">
       <span className="workflow-file mono" aria-hidden="true">{format.suffix}</span><h3>{format.title}</h3>

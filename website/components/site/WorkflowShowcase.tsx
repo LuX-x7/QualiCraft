@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { MODULES } from '@/lib/site/content'
 import { CLIPS } from '@/lib/site/clips'
@@ -43,7 +45,7 @@ export default function WorkflowShowcase({example,data,charts,records,heatmaps={
  const artwork=(index:number,inline=false)=>{const step=STORY_SCENES[index];return <div data-story-art={step.id} className={`story-panel${['coding','analysis','network'].includes(step.id)?' evidence-plate':''}`} hidden={!inline&&active!==index} key={`${step.id}-${replays[step.id]??0}`} onKeyDown={event=>artKeyboard(event,index)}><StoryArt kind={step.module} reduced={reduced} inline={inline}>{render(index)}</StoryArt></div>}
  const scene=STORY_SCENES[active],module=MODULES.find(item=>item.key===scene.module)!
  return <section className="scroll-story section" id="workflow" aria-labelledby="story-title"><div className="wrap">
-  <header className="story-heading"><span className="sec-no mono">02 / FOLLOW THE RECORD</span><h2 id="story-title">One workflow.<br/><em>Every connection in view.</em></h2><p>Scroll to follow. Hover or focus to explore.</p><nav className="story-evidence-links" aria-label="Explore the source relationships"><a href="#story-coding">Coding: one assignment ↓</a><a href="#story-analysis">Analysis: a saved path ↓</a><a href="#story-network">Explore the network ↓</a></nav></header>
+  <header className="story-heading"><span className="sec-no mono">02 / FOLLOW THE RECORD</span><h2 id="story-title">One workflow.<br/><em>Every connection in view.</em></h2><p>Scroll to follow. Hover or focus to explore.</p><nav className="story-evidence-links" aria-label="Explore the source relationships"><a href={siteUrl("#story-coding")}>Coding: one assignment ↓</a><a href={siteUrl("#story-analysis")}>Analysis: a saved path ↓</a><a href={siteUrl("#story-network")}>Explore the network ↓</a></nav></header>
   <div className="story-layout">
    {!compact&&<aside className="story-stage story-stage--sequence" data-scene={scene.id} aria-label={`${module.title} interactive illustration`}>
     <div className="story-stage-head mono"><span>{scene.no} / {module.title.toUpperCase()}</span><span>{active+1} / {STORY_SCENES.length} · BOLOGNA CC0</span></div>
@@ -53,11 +55,11 @@ export default function WorkflowShowcase({example,data,charts,records,heatmaps={
    </aside>}
    <ol className="story-steps">{STORY_SCENES.map((step,index)=>{const item=MODULES.find(item=>item.key===step.module)!;return <li key={step.id}><article id={`story-${step.id}`} ref={el=>{sections.current[index]=el}} className={`story-step${active===index?' is-current':''}`}>
     <h3><button className="story-step-title" type="button" ref={el=>{buttons.current[index]=el}} onMouseEnter={()=>setActive(index)} onPointerMove={event=>{if(event.pointerType==='mouse')setActive(index)}} onFocus={()=>setActive(index)} aria-current={active===index?'step':undefined} onClick={()=>visit(index)} onKeyDown={event=>keyboard(event,index)}><span className="mono">{step.no} / {item.title.toUpperCase()}</span><span className="story-step-heading">{step.title}</span></button></h3>
-    <p>{step.body}</p><a className="quiet-link" href={step.module==='plotting'?`/report#sec-${step.plot}`:'/w?lang=en'}>{step.module==='plotting'?'Full figure, counts & source →':'Try it in the workbench ↗'}</a>
+    <p>{step.body}</p><a className="quiet-link" href={siteUrl(step.module==='plotting'?`/report#sec-${step.plot}`:'/w?lang=en')}>{step.module==='plotting'?'Full figure, counts & source →':'Try it in the workbench ↗'}</a>
     {compact&&artwork(index,true)}
     {!['network','qca'].includes(step.id)&&(step.module!=='plotting'||step.plot==='frequency')&&<details className="story-details"><summary>Workbench recording &amp; steps</summary><ol>{item.steps.map(text=><li key={text}>{text}</li>)}</ol><RecordedExample item={item} reduced={reduced}/></details>}
    </article></li>})}</ol>
   </div>
-  <noscript><p>Drawings require JavaScript. The original recordings, stills, figures and complete count tables remain available.</p><ul>{MODULES.map(step=><li key={step.key}><a href={CLIPS[step.key]?.poster}>{step.title} still</a>{' · '}<a href={CLIPS[step.key]?.src}>recording</a></li>)}</ul><a href="/report">Original figures and complete count tables</a></noscript>
+  <noscript><p>Drawings require JavaScript. The original recordings, stills, figures and complete count tables remain available.</p><ul>{MODULES.map(step=><li key={step.key}><a href={siteUrl(CLIPS[step.key]?.poster)}>{step.title} still</a>{' · '}<a href={siteUrl(CLIPS[step.key]?.src)}>recording</a></li>)}</ul><a href={siteUrl("/report")}>Original figures and complete count tables</a></noscript>
  </div></section>
 }

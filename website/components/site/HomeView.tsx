@@ -1,3 +1,5 @@
+
+import {siteUrl,externalWorkbench} from '@/lib/site/url'
 import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 import {originalHeatmap,type OriginalHeatmap} from '@/lib/site/original-heatmap'
@@ -16,7 +18,7 @@ import { DATA_SECTION, METHODS, NOT_DOING } from '@/lib/site/content'
 
 function DataCards({ selected }: { selected: typeof cards.cards }) {
   return <ul className="cards">{selected.map(card => <li key={card.id} className="card">
-    <div className="card__head"><span className="card__id mono">{card.id}</span><span className="card__licence mono"><a href={card.licence_url}>{card.licence}</a>{card.share_alike ? ' · ShareAlike' : ''}</span></div>
+    <div className="card__head"><span className="card__id mono">{card.id}</span><span className="card__licence mono"><a href={siteUrl(card.licence_url)}>{card.licence}</a>{card.share_alike ? ' · ShareAlike' : ''}</span></div>
     <h3 className="card__title">{card.title}</h3><p className="card__meta mono">{card.author} · {card.year}{card.language ? ` · ${card.language}` : ''}</p>
     <p className="card__purpose">{card.purpose}</p><p className="card__hash mono">sha256:{card.sha256_short}{card.sha256_verified ? '' : ' (recorded)'}</p>
   </li>)}</ul>
@@ -41,11 +43,11 @@ export default async function HomeView() {
       <div className="wrap hero__composition"><OrbitMark/><div className="hero__inner">
         <p className="hero__eyebrow mono">QT / A LOCAL RESEARCH WORKBENCH</p>
         <h1 id="hero-title" className="hero__title">Many tools.<br/><em>This one is yours.</em></h1>
-        <p className="hero__body">A local workspace for qualitative research. Your passages, codes and decisions.</p>
-        <div className="hero__actions"><a className="btn btn--primary" href="/w?lang=en">Try the workbench ↗</a><a className="btn btn--secondary" href="/report#sec-outputs">View worked example →</a></div>
-        <p className="hero__footnote mono">Public demo: read-only Bologna · Upload your own files locally</p>
+        <p className="hero__body">A workspace for qualitative research. Your passages, codes and decisions.</p>
+        <div className="hero__actions"><a className="btn btn--primary" href={siteUrl("/w?lang=en")}>Try the workbench ↗</a><a className="btn btn--secondary" href={siteUrl("/report#sec-outputs")}>View worked example →</a></div>
+        <p className="hero__footnote mono">{externalWorkbench?'Full online workspace · Upload, code, save and export':'Public demo: read-only Bologna · Upload your own files locally'}</p>
       </div></div>
-      <a className="hero-scroll mono" href="#modules">FOLLOW THE RECORD ↓</a>
+      <a className="hero-scroll mono" href={siteUrl("#modules")}>FOLLOW THE RECORD ↓</a>
     </section>
     <section className="section home-atlas" id="modules" aria-labelledby="atlas-title"><div className="wrap"><ModuleAtlas/></div></section>
     <WorkflowShowcase heatmaps={heatmaps} records={source?.network??[]} example={example} data={source?.workflow??{frequency:[],frequencyCredit:'',frequencyCsv:'',figures:[]}} charts={charts}/>

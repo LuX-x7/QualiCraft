@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { SEO } from '@/lib/site/content'
+import {siteUrl} from '@/lib/site/url'
 import './t7.css'
 import './experience.css'
 import './sketches.css'
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
     siteName: SEO.siteName,
   },
   twitter: { card: 'summary_large_image', title: SEO.title, description: SEO.description },
-  icons: { icon: '/icon.svg' },
+  icons: { icon: siteUrl('/icon.svg') },
 }
 
 /**

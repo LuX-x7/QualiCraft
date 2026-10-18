@@ -1,3 +1,5 @@
+
+import {siteUrl} from '@/lib/site/url'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import ReportSignal from '@/components/report/ReportSignal'
@@ -42,7 +44,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
             <h3 id="corpus-record-title">{corpus.title}</h3>
             <p className="report-card-meta">{corpus.author} · {corpus.year} · {corpus.language}</p>
             <p>{corpus.purpose}</p>
-            <div className="report-card-links mono"><a href={`https://doi.org/${corpus.doi}`}>Dataset record ↗</a><a href={corpus.licence_url}>{corpus.licence}</a></div>
+            <div className="report-card-links mono"><a href={siteUrl(`https://doi.org/${corpus.doi}`)}>Dataset record ↗</a><a href={siteUrl(corpus.licence_url)}>{corpus.licence}</a></div>
             <p className="report-card-hash mono">Archive SHA-256 · {corpus.sha256_short}</p>
           </aside>
         </details>}
@@ -59,7 +61,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
           {index > 0 && (index === top.length - 1 ? ' and ' : ', ')}<em>{item.label}</em> ({item.count})
         </span>)}.</p>
         <p>This is a selected view of the codebook. The numbers record coding activity; deciding what a passage means still requires reading it in context.
-          Next, <a href="#sec-coverage">check how these codes are distributed across interviews</a>.</p>
+          Next, <a href={siteUrl("#sec-coverage")}>check how these codes are distributed across interviews</a>.</p>
       </>,
     },
     {
@@ -71,7 +73,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       reading: <>
         <p>A zero means no coding was recorded for that code in that interview. It does not establish that the topic was absent from the conversation.</p>
         <p>These are the codes selected for this figure, not the entire codebook. To examine shared text rather than distribution across files,
-          continue to <a href="#sec-cooccurrence">co-occurrence</a>.</p>
+          continue to <a href={siteUrl("#sec-cooccurrence")}>co-occurrence</a>.</p>
       </>,
     },
     {
@@ -83,7 +85,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
       reading: <>
         <p>TABLE.03 preserves the exported non-zero pairs in both directions. The original workbench figure also includes a diagonal; it is not included in this CSV or the interactive view.</p>
         <p>A blank pair in the count export is not proof that two ideas are unrelated. These values describe the coded ranges under the chosen rule.
-          Next, <a href="#sec-hierarchy">return to the codebook’s theme structure</a>.</p>
+          Next, <a href={siteUrl("#sec-hierarchy")}>return to the codebook’s theme structure</a>.</p>
       </>,
     },
     {
@@ -96,7 +98,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
         <p>The theme membership comes from the codebook. The exported layout orders groups and bars by their counts;
           it does not establish that a larger group explains the others.</p>
         <p>The same material can carry more than one code. To see how the set of encountered codes grows across files,
-          continue to <a href="#sec-accumulation">accumulation</a>.</p>
+          continue to <a href={siteUrl("#sec-accumulation")}>accumulation</a>.</p>
       </>,
     },
     {
@@ -109,13 +111,13 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
         <p>The final exported point is {last ?? 'unavailable'} distinct codes encountered across {acc?.cases?.length ?? 0} interviews,
           compared with {manifest.project.codes} codes defined in the full codebook.</p>
         <p>The route through the curve depends on the order of the files. A slower rise alone does not decide whether the research is complete.
-          Finish with the <a href="#sec-methods">counting rules and export record</a>.</p>
+          Finish with the <a href={siteUrl("#sec-methods")}>counting rules and export record</a>.</p>
       </>,
     },
     {
       id: 'sec-methods', no: '07', title: 'Methods & limits',
       intro: <>
-        <p>This worked example describes existing coding counts. For your own Research report, select one method in Export: Thematic Analysis, Qualitative Content Analysis or Qualitative Comparative Analysis. Its saved name and process map accompany HTML, editable Word and the report ZIP. <a href="/#method">Explore the three method maps</a>.</p>
+        <p>This worked example describes existing coding counts. For your own Research report, select one method in Export: Thematic Analysis, Qualitative Content Analysis or Qualitative Comparative Analysis. Its saved name and process map accompany HTML, editable Word and the report ZIP. <a href={siteUrl("/#method")}>Explore the three method maps</a>.</p>
         <p className="report-lead">Follow each number back to its export.</p>
         <p>The page reads the workbench’s SVGs and CSVs. It checks every listed file against the manifest’s SHA-256 and byte length before showing the report.
           Count tables retain the exported rows and order. The unit statements below come directly from that same manifest.</p>
@@ -132,10 +134,10 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
             {Object.entries(manifest.source_files ?? {}).map(([name, hash]) => <div key={name}><dt>{name} SHA-256</dt><dd className="mono">{hash}</dd></div>)}
             <div><dt>Command</dt><dd className="mono">{manifest.command}</dd></div>
           </dl>
-          <a href="/report/manifest.json" className="mono">Read the manifest and full file hashes ↗</a>
+          <a href={siteUrl("/report/manifest.json")} className="mono">Read the manifest and full file hashes ↗</a>
         </details>
         <p>These descriptive views do not replace interpretation of the interviews. For the same workflow in the interface,
-          <Link href="/w?lang=en">open the workbench</Link>.</p>
+          <Link href={siteUrl("/w?lang=en")}>open the workbench</Link>.</p>
       </>,
     },
   ]
@@ -180,7 +182,7 @@ export default async function ReportPage() {
           <div><dt>Defined codes</dt><dd>{manifest.project.codes}</dd></div>
           <div><dt>Codings</dt><dd>{manifest.project.codings}</dd></div>
         </dl>
-        <a className="report-start mono" href="#sec-outputs">Open the finished outputs ↓</a>
+        <a className="report-start mono" href={siteUrl("#sec-outputs")}>Open the finished outputs ↓</a>
       </div>
       {csvs.frequency && <ReportSignal table={csvs.frequency} credit={figures.find(item=>item.kind==='frequency')?.credit??''}/>}
     </header>

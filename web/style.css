@@ -877,3 +877,6 @@ button:disabled{cursor:default}
 /* Public start choice shares the local welcome layout. */
 .welcome-install{display:inline-flex;align-items:center;min-height:44px;margin-top:auto;color:var(--ink);text-underline-offset:4px}
 .welcome-install:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+
+/* Hosting adds identity and storage context, without changing the reader. */
+.hosted-account{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:8px 16px;font-size:13px}.hosted-account button{min-height:44px}.hosted-account span{overflow-wrap:anywhere}

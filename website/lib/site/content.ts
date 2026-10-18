@@ -1,3 +1,4 @@
+import { externalWorkbench } from './url'
 /**
  * Site · the words the public pages are made of.
  * ---------------------------------------------------------------------------
@@ -172,7 +173,7 @@ export const NOT_DOING = {
   label: 'The boundary',
   title: 'Four things it does not do.',
   body:
-    'Four product decisions keep the workflow local and researcher led. Open a reason to inspect the boundary and alternatives.',
+    'Four product decisions keep the workflow researcher led. Open a reason to inspect the boundary and alternatives.',
   items: [
     {
       name: 'Automatic coding',
@@ -184,12 +185,12 @@ export const NOT_DOING = {
       instead: 'NVivo, MAXQDA and ATLAS.ti all ship autocoding or AI-assist features.',
     },
     {
-      name: 'Cloud accounts',
-      summary: 'Keep research files in the workspace you control.',
-      reason:
+      name: externalWorkbench ? 'Uncontrolled sharing' : 'Cloud accounts',
+      summary: externalWorkbench ? 'Private accounts, separate projects, explicit exports.' : 'Keep research files in the workspace you control.',
+      reason: externalWorkbench ? 'The online workspace saves files on the QT server in your own account. Projects are not public. Share an export only when you choose; local use remains available.' :
         'An account means a server, which means the transcripts sit somewhere you cannot ' +
         'see. Local is the feature, not the limitation.',
-      instead: 'A hosted CAQDAS — Delve, or the web editions of the desktop suites.',
+      instead: externalWorkbench ? 'Use the local workspace when a study requires files to remain on your own machine.' : 'A hosted CAQDAS — Delve, or the web editions of the desktop suites.',
     },
     {
       name: 'Real-time collaboration',
@@ -248,13 +249,12 @@ export const ABOUT = {
   body:
     'QualiCraft is built for interview studies where the analysis has to be defensible: ' +
     'every coding traceable to a passage, every model suggestion reviewable, every change ' +
-    'to the codebook recoverable. It runs on your machine, stores one SQLite file, and ' +
-    'never opens a connection you did not ask for.',
+    'to the codebook recoverable. ' + (externalWorkbench ? 'Use a private online account or run it locally. Online projects are saved on the QT server; local projects stay on your machine.' : 'It runs on your machine, stores one SQLite file, and never opens a connection you did not ask for.'),
   principles: [
     {
-      name: 'Your data stays here',
+      name: 'Choose where your data lives',
       detail:
-        'Local files, no account, no upload. Which is what ethics review asks for anyway.',
+        externalWorkbench ? 'Online accounts use separate project stores on the QT server. Choose local use when your study requires it, and check consent and institutional requirements before uploading.' : 'Local files stay on your machine. Check consent and institutional requirements for your study.',
     },
     {
       name: 'Every suggestion can be traced',

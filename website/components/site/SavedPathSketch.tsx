@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 import { useMemo,useRef,useState,type KeyboardEvent } from 'react'
 import {recordFamily,exampleContains,type SavedCoding} from '@/lib/site/record-network'
 
@@ -8,7 +10,7 @@ export default function SavedPathSketch({records,initial}:{records:SavedCoding[]
  const family=useMemo(()=>recordFamily(records,root),[records,root]),refs=useRef<Map<string,SVGGElement>>(new Map())
  const themes=[...new Map(records.map(r=>[r.code_path[0].id,r.code_path[0]])).values()]
  const active=family.examples.find(e=>e.annotation_id===annotation)??family.examples[0]
- if(!active)return <p role="status">Saved network evidence is unavailable. <a href="/report">Read the verified report.</a></p>
+ if(!active)return <p role="status">Saved network evidence is unavailable. <a href={siteUrl("/report")}>Read the verified report.</a></p>
  const choose=(id:string)=>{setSelected(id);const record=family.examples.find(e=>e.annotation_id===annotation&&exampleContains(e,id))??family.examples.find(e=>exampleContains(e,id));if(record)setAnnotation(record.annotation_id)}
  const nodeById=new Map(family.nodes.map(n=>[n.id,n])),onPath=(id:string)=>exampleContains(active,id)
  const key=(event:KeyboardEvent<SVGGElement>,id:string)=>{let i=family.nodes.findIndex(n=>n.id===id);if(event.key==='Home')i=0;else if(event.key==='End')i=family.nodes.length-1;else if(['ArrowRight','ArrowDown'].includes(event.key))i=Math.min(i+1,family.nodes.length-1);else if(['ArrowLeft','ArrowUp'].includes(event.key))i=Math.max(0,i-1);else return;event.preventDefault();const next=family.nodes[i].id;choose(next);refs.current.get(next)?.focus({preventScroll:true})}
@@ -26,6 +28,6 @@ export default function SavedPathSketch({records,initial}:{records:SavedCoding[]
   </svg>
   <div className="network-mobile-path" role="group" aria-label="Selected relationship path"><ol>{active.code_path.map(node=><li key={node.id}><button type="button" onClick={()=>choose(family.key(node.id))} aria-pressed={selected===family.key(node.id)}>{node.name}</button></li>)}</ol></div>
   <div className="network-evidence path-evidence" role="status" aria-live="polite" data-selected-annotation={active.annotation_id}><div><span className="mono">HIGHLIGHTED SOURCE · {active.document_name} · [{active.start}, {active.end})</span><blockquote lang="it"><mark>{active.quote}</mark></blockquote></div><div className="network-selected-node"><span className="mono">{nodeById.get(selected)?.kind.toUpperCase()}</span><strong>{nodeById.get(selected)?.label}</strong></div></div>
-  <details className="record-source"><summary>Inspect this path &amp; source IDs</summary><p>{active.code_path.map(n=>n.name).join(' › ')}</p><dl><dt>Coding ID</dt><dd>{active.annotation_id}</dd><dt>Code ID</dt><dd>{active.code_id}</dd><dt>Document SHA-256</dt><dd>{active.document_sha256}</dd></dl><p>A small set of existing Bologna codings, grouped by their saved theme. Layout positions are explanatory, not statistical. <a href="/w?lang=en">Open the full map in Insights ↗</a></p></details>
+  <details className="record-source"><summary>Inspect this path &amp; source IDs</summary><p>{active.code_path.map(n=>n.name).join(' › ')}</p><dl><dt>Coding ID</dt><dd>{active.annotation_id}</dd><dt>Code ID</dt><dd>{active.code_id}</dd><dt>Document SHA-256</dt><dd>{active.document_sha256}</dd></dl><p>A small set of existing Bologna codings, grouped by their saved theme. Layout positions are explanatory, not statistical. <a href={siteUrl("/w?lang=en")}>Open the full map in Insights ↗</a></p></details>
  </div>
 }

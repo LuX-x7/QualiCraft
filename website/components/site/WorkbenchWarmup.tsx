@@ -1,8 +1,11 @@
 'use client'
 import {useEffect} from 'react'
+import {externalWorkbench} from '@/lib/site/url'
 /** One early wake request per page, plus intent; no background keep-alive. */
 export default function WorkbenchWarmup() {
   useEffect(() => {
+    // A static website has no proxy or sleeping process to wake.
+    if(externalWorkbench)return
     let sent=false
     function wake() {
       if(sent || document.visibilityState !== 'visible')return

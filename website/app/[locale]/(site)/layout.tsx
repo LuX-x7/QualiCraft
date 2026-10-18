@@ -1,3 +1,5 @@
+
+import {siteUrl} from '@/lib/site/url'
 import SiteHeader from '@/components/site/SiteHeader'
 import SiteFoot from '@/components/site/SiteFoot'
 import WorkbenchWarmup from '@/components/site/WorkbenchWarmup'
@@ -14,7 +16,7 @@ export const dynamicParams = false
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <a className="site-skip" href="#site-content">Skip to content</a>
+      <a className="site-skip" href={siteUrl("#site-content")}>Skip to content</a>
       <SiteHeader />
       <WorkbenchWarmup />
       <main id="site-content" tabIndex={-1}>{children}</main>

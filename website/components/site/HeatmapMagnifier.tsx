@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 import {useEffect,useId,useRef,useState,type KeyboardEvent,type PointerEvent} from 'react'
 import {originalCell,originalWindow,originalCellRow,type OriginalHeatmap} from '@/lib/site/original-heatmap'
 import type {ChartModel} from '@/lib/report/chart-model'
@@ -28,14 +30,14 @@ export default function HeatmapMagnifier({source,svg,label,model,selected,onSele
   <div className="lens-panels">
    <div className="lens-detail"><div className="lens-panel-heading mono"><span>MAGNIFIED ORIGINAL</span><span>{region.columns} × {region.rows} cells</span></div><svg className="lens-detail-svg" viewBox={`${region.x} ${region.y} ${region.width} ${region.height}`} preserveAspectRatio="xMidYMid meet" role="group" aria-label={`${label} magnified original cells`} onPointerDown={event=>down(event,false)} onPointerMove={event=>pointer(event,false)} onPointerUp={finish} onPointerCancel={finish}>
     <defs><clipPath id={clip}><rect x={region.x} y={region.y} width={region.width} height={region.height}/></clipPath></defs>
-    <image href={svg} x="0" y="0" width={source.width} height={source.height} aria-hidden="true" clipPath={`url(#${clip})`}/>
+    <image href={siteUrl(svg)} x="0" y="0" width={source.width} height={source.height} aria-hidden="true" clipPath={`url(#${clip})`}/>
     <rect className="lens-hit-area" x={region.x} y={region.y} width={region.width} height={region.height}/>{selectedRect}
    </svg><div className="lens-coordinate" role="status" aria-live="polite" aria-atomic="true"><span className="mono">COLUMN {cell.x+1} · ROW {cell.y+1}</span><p>{source.x[cell.x]}<br/>× {source.y[cell.y]}</p><span className="lens-csv-value" data-lens-row={active?.row??''}>{active?`CSV count: ${active.value}`:'No exported CSV row for this cell.'}</span></div></div>
    <div className="lens-overview"><div className="lens-panel-heading mono">COMPLETE ORIGINAL</div><svg className="lens-original-svg" viewBox={`0 0 ${source.width} ${source.height}`} preserveAspectRatio="xMidYMid meet" tabIndex={0} role="group" aria-label={`${label} original with movable magnifier`} aria-describedby={hint} onKeyDown={key} onPointerDown={event=>down(event,true)} onPointerMove={event=>pointer(event,true)} onPointerUp={finish} onPointerCancel={finish}>
-    <image href={svg} x="0" y="0" width={source.width} height={source.height} aria-hidden="true"/>
+    <image href={siteUrl(svg)} x="0" y="0" width={source.width} height={source.height} aria-hidden="true"/>
     <rect className="lens-hit-area" x={source.plot.x} y={source.plot.y} width={source.plot.width} height={source.plot.height}/>
     <rect className="lens-viewfinder" x={region.x} y={region.y} width={region.width} height={region.height} vectorEffect="non-scaling-stroke"/>
-   </svg><button type="button" className="lens-freeze" aria-pressed={frozen} onClick={()=>setFrozen(value=>!value)}>{frozen?'Resume hover':'Freeze hover'}</button><p className="lens-hint" id={hint}>Move or drag the frame. Arrow keys move one cell; Home/End reach the corners. Enter freezes hover.</p><a className="quiet-link" href={svg} target="_blank" rel="noreferrer">Open full-size original ↗</a></div>
+   </svg><button type="button" className="lens-freeze" aria-pressed={frozen} onClick={()=>setFrozen(value=>!value)}>{frozen?'Resume hover':'Freeze hover'}</button><p className="lens-hint" id={hint}>Move or drag the frame. Arrow keys move one cell; Home/End reach the corners. Enter freezes hover.</p><a className="quiet-link" href={siteUrl(svg)} target="_blank" rel="noreferrer">Open full-size original ↗</a></div>
   </div>
  </div>
 }

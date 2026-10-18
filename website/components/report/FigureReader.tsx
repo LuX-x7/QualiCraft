@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 
 import DataPlot from './DataPlot'
 import type { CsvTable, FigureData } from './ReportView'
@@ -27,8 +29,8 @@ export default function FigureReader({ figure, table, selected, onSelect, onLoca
       {figure.kind === 'cooccurrence' && <p className="reader-help">Only exported non-zero off-diagonal pairs are selectable. Blank and diagonal cells have no value in this CSV.</p>}
     </details>
     <details className="original-figure"><summary>Original workbench figure</summary>
-      <img src={`/report/${figure.svg}`} alt={`${figure.label}: original workbench export.`} width={figure.hitMap?.width ?? 960} height={figure.hitMap?.height ?? 540} loading="lazy" />
-      <a className="mono" href={`/report/${figure.svg}`} download>Download original SVG</a>
+      <img src={siteUrl(`/report/${figure.svg}`)} alt={`${figure.label}: original workbench export.`} width={figure.hitMap?.width ?? 960} height={figure.hitMap?.height ?? 540} loading="lazy" />
+      <a className="mono" href={siteUrl(`/report/${figure.svg}`)} download>Download original SVG</a>
     </details>
     <noscript><p className="reader-help">Open the original figure or complete table for static values.</p></noscript>
   </div>

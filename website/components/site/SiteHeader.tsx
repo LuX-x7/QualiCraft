@@ -1,3 +1,5 @@
+
+import {siteUrl} from '@/lib/site/url'
 import Link from 'next/link'
 import QtMark from '@/components/QtMark'
 import { NAV } from '@/lib/site/content'
@@ -19,7 +21,7 @@ export default function SiteHeader() {
           <ul className="site-nav__list">
             {NAV.map((item) => (
               <li key={item.label}>
-                <a href={item.href} className="site-nav__link">
+                <a href={siteUrl(item.href)} className="site-nav__link">
                   {item.label}
                 </a>
               </li>
@@ -34,7 +36,7 @@ export default function SiteHeader() {
           <ul className="site-nav-disclosure__list">
             {NAV.map((item) => (
               <li key={item.label}>
-                <a href={item.href} className="site-nav__link">
+                <a href={siteUrl(item.href)} className="site-nav__link">
                   {item.label}
                 </a>
               </li>

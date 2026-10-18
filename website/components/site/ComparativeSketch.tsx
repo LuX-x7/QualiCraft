@@ -1,4 +1,6 @@
 'use client'
+import {siteUrl} from '@/lib/site/url'
+
 
 import { useRef, useState, type KeyboardEvent } from 'react'
 import maps from '@/lib/site/method-maps.json'
@@ -47,6 +49,6 @@ export default function ComparativeSketch() {
     </div>
     <p className="sketch-note">Binary sets · 1–6 conditions · up to 100 cases. Save calibration, then freeze a run. The report keeps that result and its reproducible code.</p>
     <p className="sketch-note mono">PROCEDURE GUIDE · NO CASE VALUES OR RESULTS ARE ASSUMED</p>
-    <a className="quiet-link" href="#method">Compare all three methods ↓</a>
+    <a className="quiet-link" href={siteUrl("#method")}>Compare all three methods ↓</a>
   </div>
 }
