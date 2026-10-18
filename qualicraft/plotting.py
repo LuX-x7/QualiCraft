@@ -22,6 +22,11 @@ reconstruct; the script is short because the counting is already done.
 from __future__ import annotations
 
 import csv
+import copy
+import hashlib
+import json
+import threading
+from collections import OrderedDict
 import importlib.util
 import inspect
 import io
@@ -353,6 +358,7 @@ handed to a co-author as it stands.
     python figure.py       # writes figure.png, figure.svg and figure.pdf
 """
 import csv
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -441,6 +447,9 @@ def finish(fig, title, subtitle, credit, rect=(0, 0.075, 1, 0.88)):
         # Other figure types keep their existing save order and layout path.
         if SETTINGS["kind"] == "hierarchy":
             formats = formats[1:] + formats[:1]
+        # Preview runs the identical drawing recipe, saving only its SVG.
+        if "--svg-only" in sys.argv:
+            formats = tuple(item for item in formats if item[0] == "svg")
         for ext, meta in formats:
             bbox = (hierarchy_png_bbox(fig)
                     if ext == "png" and SETTINGS["kind"] == "hierarchy" else "tight")
@@ -763,7 +772,7 @@ def _require_stack():
                            + ". Install it with: " + state["install"])
 
 
-def _prepare(project, options, root):
+def _prepare(project, options, root, svg_only=False):
     """Write the data and the script into root, then run the script.
 
     One path for preview and export: they cannot disagree, because they are the
@@ -798,14 +807,17 @@ def _prepare(project, options, root):
     _output_path(root, "figure_data.csv").write_text(data, encoding="utf-8")
     _output_path(root, "figure.py").write_text(build_script(options), encoding="utf-8")
 
-    finished = subprocess.run([sys.executable, str(_output_path(root, "figure.py"))],
+    command = [sys.executable, str(_output_path(root, "figure.py"))]
+    if svg_only:
+        command.append("--svg-only")
+    finished = subprocess.run(command,
                               capture_output=True, text=True, timeout=300, cwd=str(root))
     if finished.returncode != 0:
         tail = (finished.stderr or "").strip().splitlines()
         raise RuntimeError("The figure script failed: " + (tail[-1] if tail else "no output"))
 
     produced = {}
-    for ext in FIGURE_EXTENSIONS:
+    for ext in (("svg",) if svg_only else FIGURE_EXTENSIONS):
         path = _output_path(root, "%s.%s" % (options["name"], ext))
         if not path.exists():
             raise RuntimeError("The figure script produced no %s output." % ext)
@@ -815,15 +827,40 @@ def _prepare(project, options, root):
     return produced, _result(rows, options, case_text)
 
 
+# Only derived preview output is retained, in process memory, with a strict bound.
+# Input changes (including text used by paragraph co-occurrence) get another key.
+_PREVIEW_CACHE = OrderedDict()
+_PREVIEW_CACHE_BYTES = 8 * 1024 * 1024
+_PREVIEW_LOCK = threading.Lock()
+
+
+def clear_preview_cache():
+    with _PREVIEW_LOCK:
+        _PREVIEW_CACHE.clear()
+
+
 def render(project, options=None):
-    """The preview: the figure that the exported script produces."""
+    """The exported SVG recipe, without generating unused raster/PDF outputs."""
     options = normalise(options)
     _require_stack()
-    with tempfile.TemporaryDirectory(prefix="qualicraft-plot-") as workdir:
-        root = Path(workdir)
-        produced, result = _prepare(project, options, root)
-        options = normalise(options)
-        return produced["%s.svg" % options["name"]].decode("utf-8"), result
+    inputs = {key: project.get(key, []) for key in ("documents", "codes", "annotations")}
+    key = hashlib.sha256(json.dumps([inputs, options, build_script(options)],
+                                   ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    # One preview renderer at a time also coalesces simultaneous identical requests.
+    with _PREVIEW_LOCK:
+        if key in _PREVIEW_CACHE:
+            svg, result, size = _PREVIEW_CACHE.pop(key)
+            _PREVIEW_CACHE[key] = (svg, result, size)
+            return svg, copy.deepcopy(result)
+        with tempfile.TemporaryDirectory(prefix="qualicraft-plot-") as workdir:
+            produced, result = _prepare(project, options, Path(workdir), svg_only=True)
+            svg = produced["%s.svg" % options["name"]].decode("utf-8")
+        size = len(svg.encode("utf-8")) + len(json.dumps(result).encode("utf-8"))
+        if size <= _PREVIEW_CACHE_BYTES:
+            _PREVIEW_CACHE[key] = (svg, copy.deepcopy(result), size)
+            while len(_PREVIEW_CACHE) > 12 or sum(item[2] for item in _PREVIEW_CACHE.values()) > _PREVIEW_CACHE_BYTES:
+                _PREVIEW_CACHE.popitem(last=False)
+        return svg, result
 
 
 def bundle(project, options=None):

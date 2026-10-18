@@ -14,6 +14,7 @@
 
 export const NAV = [
   { href: '/#modules', label: 'Workflow' },
+  { href: '/report#sec-outputs', label: 'Worked example' },
   { href: '/#data', label: 'Data' },
   { href: '/#method', label: 'Methods' },
 ] as const
@@ -286,7 +287,7 @@ export const SEO = {
     'choose TA, content analysis or binary Comparative QCA, and export coded notebooks, ' +
     'editable research reports, figures and reproducible code.',
   report: {
-    title: 'A worked example · figures from the Bologna corpus',
+    title: 'A worked example · Bologna sources, report and figures',
     description:
       'Five figures drawn by the QualiCraft workbench from a public, CC0-licensed interview ' +
       'corpus, with the counts behind each one.',

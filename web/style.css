@@ -873,3 +873,7 @@ button:disabled{cursor:default}
 #dialog[data-workflow="import-queue"] button:disabled { opacity:.45;cursor:not-allowed; }
 .io-queue-name { color:var(--muted);font-size:12px;line-height:1.6;margin:8px 0;overflow-wrap:anywhere; }
 .io-queue-pickers .file-picker-button { font-size:13px;min-height:32px; }
+
+/* Public start choice shares the local welcome layout. */
+.welcome-install{display:inline-flex;align-items:center;min-height:44px;margin-top:auto;color:var(--ink);text-underline-offset:4px}
+.welcome-install:focus-visible{outline:2px solid var(--ink);outline-offset:4px}

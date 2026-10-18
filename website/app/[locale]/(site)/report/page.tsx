@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import ReportSignal from '@/components/report/ReportSignal'
+import WorkedOutputs, {readWorkedExample} from '@/components/report/WorkedOutputs'
 import ReportView, { type CsvTable, type FigureData, type Section } from '@/components/report/ReportView'
 import { readCsv, readManifest, verifyManifest, type Manifest } from '@/lib/report/read'
 import dataCards from '@/lib/site/data-cards.json'
@@ -11,7 +12,7 @@ import { readHitMap } from '@/lib/report/hit-map'
 import '../t7-report.css'
 
 export const metadata: Metadata = {
-  title: 'A worked example · figures from the Bologna corpus',
+  title: 'A worked example · Bologna sources, report and figures',
   description: 'Read five views of the Bologna corpus, with a question, an exported figure, its counts and its limits in each chapter.',
 }
 
@@ -166,19 +167,20 @@ export default async function ReportPage() {
     }
   }
   const evidence = reportEvidence(await readFile(path.join(process.cwd(), 'public', 'report', 'manifest.json'), 'utf8'), csvs)
-  const sections = chapters(manifest, figures)
+  const outputs = await readWorkedExample()
+  const sections:Section[] = [{id:'sec-outputs',no:'00',title:'Finished outputs',intro:<WorkedOutputs manifest={outputs}/>} ,...chapters(manifest, figures)].map((section,index)=>({...section,no:String(index+1).padStart(2,'0')}))
 
   return <div className="t7">
     <header className="report-head report-head--visual wrap">
       <div><p className="sec-no">FIELD NOTES / BOLOGNA · CC0</p>
-        <h1>One coding record.<br/><em>Five ways to read it.</em></h1>
-        <p className="report-standfirst">Follow a pattern back to the passage.</p>
+        <h1>From coded source<br/><em>to finished files.</em></h1>
+        <p className="report-standfirst">Read the Notebook and editable report, then trace all five figures to their counts.</p>
         <dl className="report-facts mono">
           <div><dt>Interviews</dt><dd>{manifest.project.documents}</dd></div>
           <div><dt>Defined codes</dt><dd>{manifest.project.codes}</dd></div>
           <div><dt>Codings</dt><dd>{manifest.project.codings}</dd></div>
         </dl>
-        <a className="report-start mono" href="#sec-frequency">Explore the first figure ↓</a>
+        <a className="report-start mono" href="#sec-outputs">Open the finished outputs ↓</a>
       </div>
       {csvs.frequency && <ReportSignal table={csvs.frequency} credit={figures.find(item=>item.kind==='frequency')?.credit??''}/>}
     </header>

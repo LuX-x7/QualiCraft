@@ -1,0 +1,87 @@
+{
+  "source": "demo-data/qualicraft.sqlite3",
+  "licence": "CC0",
+  "source_commit": "baf4d916c63ec0856b21d3c6d18c867052895f6c",
+  "working_tree_dirty": true,
+  "source_files": {
+    "tools/site/build_worked_example.py": "ee52c3eb22bab05d5b6528874ae91f03a9f84e286f009852727679dc28e3eee3",
+    "qualicraft/plotting.py": "30eb7da14824c622a531f7b5565c07ac70098bf983c8716cddc91cbd31d09385",
+    "qualicraft/reporting.py": "62d5c3f1faa5e127a90edf252e18487d2fa97c1db14fb208b6250dff8722fc4b",
+    "qualicraft/transcript.py": "2e4020ab39448a9dddf8e915e53a41cc0015ed663644f07658463349b368dfe4"
+  },
+  "scope": {
+    "project": {
+      "documents": 19,
+      "codes": 317,
+      "codings": 874
+    },
+    "notebook": {
+      "document": "interview02.txt",
+      "characters": 18239,
+      "codings": 53,
+      "tree_labels": "Explicit display convention: root Theme, intermediate Category, leaf Code. Saved names and links are unchanged."
+    },
+    "report": {
+      "method": "Qualitative Content Analysis",
+      "selected_evidence": 3,
+      "status": "Illustrative writing from existing codes; not a newly validated research analysis."
+    }
+  },
+  "files": [
+    {
+      "path": "figures-and-code.zip",
+      "bytes": 4922657,
+      "sha256": "869fd0edb7dffbc600bdd4c37d4d160a690d0e51784d7d56e8378bd1b0791a04"
+    },
+    {
+      "path": "notebook-preview.png",
+      "bytes": 328490,
+      "sha256": "1573677a302ab16afdce1cb6d065c2e4700a7b6c90f98b3500ca9eda83deb71a"
+    },
+    {
+      "path": "notebook-record.json",
+      "bytes": 155378,
+      "sha256": "83648a21439073087b36e0fd8d132b5e0ca865f88da3676273bcc54e8afc7624"
+    },
+    {
+      "path": "notebook.docx",
+      "bytes": 48398,
+      "sha256": "82254e94ff7ad0f0a94b99c967bf7109739c79b539af1907687b1875b7150a42"
+    },
+    {
+      "path": "notebook.html",
+      "bytes": 262267,
+      "sha256": "6aff2c3d72c1677bbd5d907ba4c8a85004d6d9525208105d425cf78963b3f0da"
+    },
+    {
+      "path": "project.json",
+      "bytes": 7772896,
+      "sha256": "3a9e7b812da34e4e855b481990444165d6dbcb3caf99a48baafd0eff04fa80e4"
+    },
+    {
+      "path": "report-preview.png",
+      "bytes": 131761,
+      "sha256": "837e565140467487555f76cce8c017c439d22a59a1c4c1b8c1603f9b5aa51113"
+    },
+    {
+      "path": "research-report.docx",
+      "bytes": 4743263,
+      "sha256": "dd5ed2ca8a3bba9e311b791d15da3a7fe810ed62bbfc76ac2b4b6d71ce502a05"
+    },
+    {
+      "path": "research-report.html",
+      "bytes": 6997662,
+      "sha256": "dff088ae93183023e63f272d9ec3ea342fa622c2e7416e028f6e2ef340f97516"
+    },
+    {
+      "path": "research-report.zip",
+      "bytes": 19579525,
+      "sha256": "a34e8ddb6d3874eb2f00188388fa557d31d9db04914dc0af89ead13c0a8eed46"
+    },
+    {
+      "path": "scope.json",
+      "bytes": 505,
+      "sha256": "45ff6a99ff7b7cee222a330cf453a240bfc800fe79fbaa9e642a6d16e083da0d"
+    }
+  ]
+}

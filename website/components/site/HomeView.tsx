@@ -42,8 +42,8 @@ export default async function HomeView() {
         <p className="hero__eyebrow mono">QT / A LOCAL RESEARCH WORKBENCH</p>
         <h1 id="hero-title" className="hero__title">Many tools.<br/><em>This one is yours.</em></h1>
         <p className="hero__body">A local workspace for qualitative research. Your passages, codes and decisions.</p>
-        <div className="hero__actions"><a className="btn btn--primary" href="/w?lang=en">Try the workbench ↗</a></div>
-        <p className="hero__footnote mono">Local files · Human decisions</p>
+        <div className="hero__actions"><a className="btn btn--primary" href="/w?lang=en">Try the workbench ↗</a><a className="btn btn--secondary" href="/report#sec-outputs">View worked example →</a></div>
+        <p className="hero__footnote mono">Public demo: read-only Bologna · Upload your own files locally</p>
       </div></div>
       <a className="hero-scroll mono" href="#modules">FOLLOW THE RECORD ↓</a>
     </section>
