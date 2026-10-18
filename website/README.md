@@ -6,7 +6,7 @@ no database, no accounts, no CMS. The pages are:
 
 | path | what it is |
 |---|---|
-| `/` | the six-block homepage: hero, the five-module walkthrough, the two methods, the boundary, the datasets |
+| `/` | the six-block homepage: hero, the five-module walkthrough, the three methods, the boundary, the datasets |
 | `/report` | a worked example — five figures drawn by the workbench from the Bologna corpus, each with its counts one click away |
 | `/about` | what the tool is and the principles it follows |
 | `/w` | the workbench itself, proxied to the separate Python process (see `app/w/[[...path]]/route.ts`) |

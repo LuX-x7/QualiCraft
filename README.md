@@ -27,9 +27,9 @@
 
 > **Current review candidate:** local branch `t7-site`; GitHub rejected its push for missing `workflow` permission, and the owner has chosen to keep it local for now. The remote review branch has not been created. This is a review candidate, not the completed final scope. Hosted demos above can run an earlier commit; pushing source does not deploy them. See the [current plan](docs/review/EXPERIENCE-ROADMAP.md) and [UX-45 evidence](docs/review/UX-45-REVIEW-FINISH.md).
 >
-> **Available:** QT satellite start screen, manual coding and reading marks, relationship exploration, five reproducible figures, and coded transcript HTML / editable Word alongside the four existing project exports. **Still planned:** an editable Analysis Table / Narrative Analysis report, complete method-specific workflows, Comparative QCA calibration / truth tables / minimisation, and a defined 100-interview capacity test. Windows is deferred and unverified.
+> **Available:** QT satellite start screen, manual coding and reading marks, relationship exploration, five reproducible figures, and coded transcript HTML / editable Word alongside the four existing project exports. **Available in the local candidate:** saved, editable Analysis Table / Narrative Analysis reports with frozen figures; explicit research roles; and independent binary Comparative QCA calibration, complete truth tables, conservative configurations and reproducible report/code export. QCA supports up to 100 cases, six conditions and one outcome. Broader input/batch/interruption checks and researcher/device acceptance remain open. Windows is deferred and unverified.
 >
-> **当前审核版：** 新起步页、编码原文 HTML／Word 已接通；完整报告编辑器、Comparative QCA 与百份容量验收仍待做。上方在线演示可能仍是旧版本，源码推送不会自动部署。当前代码在本机 `t7-site`；GitHub 因令牌缺 workflow 权限拒绝推送，远端审核分支尚未创建。Windows 暂缓，不能称最终版。
+> **当前审核版：** 新起步页、原生树形 Word、报告编辑／冻结五图和独立二元 Comparative QCA 已接通。QCA 最多100案例、6条件、1结果；更广输入／中断与研究者／设备验收仍开放。上方在线演示可能仍是旧版本，源码推送不会自动部署。当前代码在本机 `t7-site`；GitHub 因令牌缺 workflow 权限拒绝推送，远端审核分支尚未创建。Windows 暂缓，不能称最终版。
 
 
 ---
@@ -131,9 +131,9 @@ These are independent capability blocks, not a mandatory wizard. Enable the modu
 |:--|:--|:--|
 | 1 | **Ingest** | Add TXT/DOCX transcripts or import an existing coding export. The importer recognises QualCoder `.qda` archives, OpenQDA CSV, NVivo CSV, ATLAS.ti XLSX reports, and FAIRqual XLSX codebooks. |
 | 2 | **Coding** | Select source text, apply hierarchical codes, add memos, and keep a provenance trail. Human codings and model suggestions are distinguishable. |
-| 3 | **Analyse** | Inspect code frequency, document × code counts, coverage, co-occurrence, accumulation, and the theme–code–passage relationship map. |
+| 3 | **Analyse** | Inspect existing descriptive counts and the relationship map. Independently define cases and binary calibration in Comparative QCA, then inspect truth tables, conservative configurations, necessity and coverage. |
 | 4 | **Plot** | Render figures from the same tidy analysis table, each captioned with the counting unit. Adjust grouping, palette, font, clustering, and labels beside the preview. |
-| 5 | **Export** | Export full project JSON, codings CSV, document × code matrix, a methods record, full coded transcripts as linked HTML or editable Word, or a figure bundle with CSV, script, SVG, PDF and PNG. |
+| 5 | **Export** | Export full project JSON, codings CSV, document × code matrix, a methods record, full coded transcripts as linked HTML or editable Word, a saved editable research report, a QCA data/code bundle, or a figure bundle with CSV, script, SVG, PDF and PNG. |
 
 ### The relationship map
 
@@ -348,9 +348,9 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
 |:--|:--|:--|
 | 1 | **导入** | 添加 TXT/DOCX 转录，或导入已有编码导出。可识别 QualCoder `.qda`、OpenQDA CSV、NVivo CSV、ATLAS.ti XLSX 报表、FAIRqual XLSX 编码本。 |
 | 2 | **编码** | 选择原文、应用层级编码、添加备忘录并保留来源记录；人工编码与模型建议可区分。 |
-| 3 | **分析** | 查看编码频次、文档 × 编码计数、覆盖、共现、累计趋势，以及主题—编码—文本片段关系网图。 |
+| 3 | **分析** | 查看既有频次、矩阵、覆盖、共现、累计及关系网；另可进入 Comparative QCA，明确案例与二元校准，检查真值表、保守配置、必要性与覆盖。 |
 | 4 | **绘图** | 基于同一张整洁分析表生成期刊风格图表，可在预览旁调节分组、配色、字号、聚类和标注。 |
-| 5 | **导出** | 导出项目 JSON、编码 CSV、文档 × 编码矩阵、方法记录、全文高亮与归属树 HTML／可编辑 Word，或包含 CSV、脚本、SVG、PDF、PNG 的图包。 |
+| 5 | **导出** | 导出项目 JSON、编码 CSV、文档 × 编码矩阵、方法记录、全文高亮与归属树 HTML／可编辑 Word，可保存／编辑的研究报告、QCA 数据／代码包，或包含 CSV、脚本、SVG、PDF、PNG 的图包。 |
 
 ### 关系网图
 
@@ -481,3 +481,7 @@ QualiCraft 是研究辅助工具，不是临床决策系统，也不能替代方
 软件采用 [MIT License](LICENSE)。公开数据集各自遵循其许可；来源 URL、校验值、署名和许可元数据见 [`qualicraft/datasets.py`](qualicraft/datasets.py)。不要重新分发私人访谈材料或 API 密钥。
 
 <p align="center"><a href="#english">↑ English</a></p>
+
+### Comparative QCA local workflow
+
+In Insights, open QCA workspace. Define cases and their mapped source documents, conditions and a separate outcome, calibration rules and reasons. Save explicit binary memberships before running. Missing values block execution. The conservative engine retains the complete truth table and all equally minimum-cardinality prime-implicant covers, or fails explicitly at its resource limit; it does not use logical remainders. Review source evidence and counterexamples, then write a method-specific research report from the frozen run. Download the QCA data/code ZIP or the complete report ZIP and run its standalone `reproduce.py`. See [UX54 scope and acceptance](docs/review/UX-54-COMPARATIVE-QCA.md). Fuzzy / multi-value, PRI, intermediate and parsimonious analyses are excluded. Existing descriptive statistics and plotting are unchanged.

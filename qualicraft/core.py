@@ -567,6 +567,9 @@ def validate_project(project):
     if 'research_report' in project:
         from .reporting import validate_state
         validate_state(project['research_report'])
+    if 'comparative_qca' in project:
+        from .qca_state import validate_state as validate_qca
+        validate_qca(project['comparative_qca'])
     validate_reading_capacity(project)
     return project
 

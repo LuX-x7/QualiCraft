@@ -93,14 +93,14 @@ export const MODULES = [
   },
 ] as const
 
-/** Two methods, on the same axes. The claims are the two literatures', not
+/** Three methods, on the same axes. The claims are the methods literatures', not
  *  ours: each row says what the method holds and how far this tool carries it.
  *  Citations verified 2026-10-13 against the published records. */
 export const METHODS = {
   label: 'Method',
-  title: 'Two ways to read the same transcript.',
+  title: 'Three methods with distinct decisions.',
   body:
-    'TA and qualitative content analysis share passage coding, saved hierarchies and memos. Choose the approach that fits the research question; interpretation, reflexivity and reporting remain your work.',
+    'TA and qualitative content analysis share passage coding, hierarchies and memos. Comparative QCA adds explicit case and set calibration. Choose the method that fits the research question; interpretation and reporting remain your work.',
   columns: [
     'Research question',
     'Unit of analysis',
@@ -135,18 +135,31 @@ export const METHODS = {
         'Carries saved coding, descriptive counts and evidence. In Export, choose Qualitative Content Analysis to edit the Analysis Table, interpretation, method decisions and narrative. Agreement across coders is not computed here.',
       ],
     },
+    {
+      approach: 'Qualitative Comparative Analysis (QCA)',
+      cells: [
+        'Which calibrated configurations relate to a defined outcome set?',
+        'An explicitly identified case, with one or several mapped source documents.',
+        'Researchers define conditions and an outcome, then justify every binary membership with decision rules, rationale and optional exact quotations. Code frequencies are not memberships.',
+        'Complete truth table, conservative configuration solutions, necessity checks and researcher-written interpretation.',
+        'Review contradictory cases, frequency and consistency cutoffs, alternative minimal solutions and the limits of the case design. A configuration does not automatically establish a causal claim.',
+        'Record calibration choices, theoretical basis, source evidence, counterexamples and limits.',
+        'Available in Insights: one to six binary conditions, one outcome and up to 100 cases. Save calibration, run conservative QCA without logical remainders, then bind the frozen result to an editable report and export data with standalone code.',
+      ],
+    },
   ],
   writing: 'Available in Export: edit an Analysis Table and Narrative Analysis, choose saved quotations, compare and restore versions, and download HTML or editable Word. Save up to five figures with editable captions, frozen counts and code; download the complete report bundle. Project JSON preserves retained versions and shared figure assets. Changed coding is flagged; evidence refresh is explicit. Word edits stay in Word.',
   planned: [
     {
-      name: 'Comparative QCA',
-      detail: 'Qualitative Comparative Analysis is planned and unavailable. Calibration, truth tables and minimisation are not implemented. Coding counts and co-occurrence cannot stand in for this workflow.',
+      name: 'Comparative QCA scope',
+      detail: 'The binary conservative workflow is available in Insights. Fuzzy and multi-value sets, PRI filtering, intermediate and parsimonious minimisation are outside this implementation. Code counts remain separate; interpretation and calibration remain researcher decisions.',
     },
   ],
   citations: [
     'Braun, V., & Clarke, V. (2006). Using thematic analysis in psychology. Qualitative Research in Psychology, 3(2), 77–101. https://doi.org/10.1191/1478088706qp063oa',
     'Braun, V., & Clarke, V. (2019). Reflecting on reflexive thematic analysis. Qualitative Research in Sport, Exercise and Health, 11(4), 589–597. https://doi.org/10.1080/2159676X.2019.1628806',
     'Hsieh, H.-F., & Shannon, S. E. (2005). Three approaches to qualitative content analysis. Qualitative Health Research, 15(9), 1277–1288. https://doi.org/10.1177/1049732305276687',
+    'Dușa, A. (2019). QCA with R. A Comprehensive Resource. Springer. https://doi.org/10.1007/978-3-319-75668-4',
     'Krippendorff, K. (2019). Content analysis: An introduction to its methodology (4th ed.). SAGE. ISBN 978-1-5063-9566-1',
   ],
 }

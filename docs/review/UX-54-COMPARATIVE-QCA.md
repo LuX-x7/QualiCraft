@@ -1,0 +1,68 @@
+# UX54 Comparative QCA
+
+18 October 2026. Baseline `7d3d708cd3933ecb93eba6c52811181824e5a772`. The owner explicitly authorised implementation of the [UX48 plan](UX-48-QCA-IMPLEMENTATION-BRIEF.md): cases, conditions and outcome calibration, truth tables, configuration analysis, reports and reproducible export. This completes that **binary conservative slice**, not every variety of QCA. All product examples and browser work use disposable public Bologna projects. Independent Boolean fixtures are mathematical tests, not interview findings. No private interview was read. Windows is deferred and unverified; no push or deployment.
+
+## Available workflow
+
+**Insights → Open QCA workspace** has Design & sets, Cases, Calibration, Results and Versions & export. This belongs to the existing Analysis module; the original descriptive views remain available.
+
+- Define the research question and case unit, one to six conditions and a separate outcome. Each set needs a label, definition, zero / one decision rules and theoretical or evidence basis. IDs remain separate from labels.
+- Explicitly create up to 100 cases, assign their identities and map one or several source documents. A document is not silently treated as a participant. A case remains one case when it maps several documents.
+- Choose each membership as 0, 1 or missing; record a rationale and optionally select exact saved quotations from that case’s mapped documents. No quotation is not evidence of set absence. Frequencies never become memberships automatically. Source ranges, code paths, document hashes and stable IDs are retained.
+- Save calibration independently of running. Partial calibration can be saved; missing values, missing definitions / rules / basis, unmapped cases or unexplained decisions prevent execution. The UI gives an actionable preflight message; the API independently enforces the same rules. Invalid data never silently become zero.
+- Run the saved calibration, with outcome presence or absence, frequency cutoff and positive / negative consistency cutoffs. Results are read-only in the workbench. Editing calibration leaves the old result frozen and visibly stale until another deliberate run.
+
+The current run and up to four historical runs are retained (first plus three recent). Loading a historical calibration creates an editable draft; it does not pretend to rerun anything. Save and Run create a new result. Project JSON and ordinary project snapshots retain definitions, calibrated decisions, exact evidence, runs and history. The project remains schema v5 with an optional `comparative_qca` extension; no SQL migration or rewriting of legacy projects.
+
+## Method and calculation contracts
+
+The original standard-library engine is `qualicraft/qca.py`. It accepts binary calibrated case data only. It produces all 2^k truth-table rows, frequencies, selected-outcome positive / negative counts, consistency, threshold label, mixed-outcome flag and exact case IDs. Frequency below the cutoff is a remainder. The mixed flag is independent of whether a threshold labels a row 0, 1 or C. Equal consistency cutoffs leave no C interval. These conventions follow the [official truthTable documentation](https://search.r-project.org/CRAN/refmans/QCA/html/truthTable.html).
+
+Every permissible Boolean cube is enumerated within six conditions. A cube is retained only if **every completion belongs to the eligible positive rows**. Unobserved, below-frequency and nonpositive rows cannot be borrowed as logical remainders. Prime implicants are derived from this allowed set. Exact cover search returns every cover with the minimum number of prime implicants, not an arbitrarily selected first solution. This optimisation criterion is consistent with the default criterion described in the [official minimize documentation](https://search.r-project.org/CRAN/refmans/QCA/html/minimize.html); no third-party implementation was copied.
+
+For binary X and selected outcome Y, I is their intersection, NX the size of X and NY the size of Y. Sufficient consistency is I/NX and raw coverage I/NY; necessary consistency is I/NY and necessary coverage I/NX. Solution metrics use the union of covered cases; unique coverage excludes the positive cases covered by other terms. A zero denominator is undefined, represented as JSON null and a blank CSV field. UI / report ratios display six significant figures; JSON retains full computed numbers. See Dușa’s chapters on [sufficiency](https://dusadrian.github.io/QCAbook/analysisofsufficiency.html) and [necessity](https://dusadrian.github.io/QCAbook/analysisofnecessity.html).
+
+There is a 200,000-operation search budget and at most 256 equally minimal solutions. Reaching either bound raises an explicit error, not a partial answer marked complete. Cancellation, computational failure, invalid evidence, capacity rejection and stale revision / source identity leave the prior saved result, audit and snapshots intact. The main computation runs on a detached copy before the writer transaction; the commit rechecks QCA revision and coding fingerprint. Exact immutable mathematical validation is cached; restored code is never executed. Concurrent reading metadata are retained. A configuration is not an automatically authored causal conclusion.
+
+## Reports and reproducible files
+
+Versions & export → **Write QCA research report** opens the report editor with the Comparative method. A report freezes its QCA run and selected source evidence, then keeps computed calibration, truth tables, configurations and necessity distinct from researcher-written Narrative Analysis, method decisions, reflexivity, limitations and disclosure. It has a QCA-specific review checklist. Changing calibration or the current run makes the report stale; writing can continue against the old frozen run. Only explicit report refresh binds the new current result. Concurrent calibration changes during report preparation return 409. Other methods’ saved table rows are retained but are not presented as QCA configurations.
+
+HTML and editable Word include the QCA chapters, full case identities / mappings / reasons, exact italic quotations, numeric tables and saved record. Word uses the UX53 native hierarchy / page fields and deliberate numeric-column widths. Word edits remain in Word and do not alter QT or recompute results. Existing descriptive figures may still be included; they keep their original counting units and are not recast as calibrated-case QCA figures. The report ZIP retains their original files and adds `qca/` reproduction files.
+
+The QCA ZIP contains `qca-run.json`, `calibration.csv`, `truth-table.csv`, `result.json`, the exact `qca_engine.py`, `reproduce.py`, a generation environment record, README and member SHA256 manifest. Run `python reproduce.py` at its root; for a report ZIP, run the same command inside `qca/`. Only Python’s standard library is needed. The script recomputes and compares the whole result, including all values and IDs. Export does not execute stored code on the server. Frozen state also records engine source and checksum, source fingerprint, thresholds, direction and input revision.
+
+Capacity bounds remain explicit: up to 100 cases / six conditions, four historic runs and 6 MB QCA state, the existing 19 MB whole-project guard, and the report’s existing 1.5 MB entry guard. A Comparative report supports up to 2,000 selected calibration quotations within that byte guard; the existing TA / Content limit remains unchanged. Longer rationale or repeated large versions can reach byte limits before case limits. Rejection does not discard history. Data are not uploaded to a model by this workflow.
+
+## Acceptance and raw evidence
+
+Evidence root: `~/qualicraft-review/ux-54/`. The local commit is recorded in its `COMMIT.txt` and in the supervisor pack’s `COMMITS.md`. Raw failed attempts are retained and not counted as passes.
+
+| Check | Accepted result | Raw record |
+| --- | --- | --- |
+| Initial regression | Old implementation cannot import the QCA engine; expected red import failure retained | `raw/engine-red.txt` |
+| Full Python | **239 tests, OK, 3 environment skips**, exit 0 | `raw/python-accepted.txt` |
+| Node | **200 pass**, exit 0 | `raw/node-release.txt` |
+| QCA end-to-end | **8 / 8** desktop / phone workflows; normal console / HTTP / outside-project errors 0 | `browser-release/results.json` |
+| Upper-bound UI | **2 / 2** at 1440px and 390px, 100 case options, seven calibrated sets, all 64 truth rows; last case reachable; no page overflow | `capacity-verified/results.json` |
+| Upper-bound measured open | About 0.181s desktop and 0.178s phone emulation in this environment; not a general performance promise | `capacity-verified/results.json` |
+| Existing report / source / five-figure flows | **11 + 14 + 9** pass; console / HTTP / outside errors 0 | `report-regression/`, `transcript-regression/`, `figures-regression/` |
+| Website / original report | **4 / 4** desktop / phone, three method cards, keyboard comparison, no overflow / console errors | `site/results.json` |
+| Final actual Word / ZIP downloads | **2 / 2** desktop / phone; downloaded OOXML / image members equal the inspected sample and the QCA record matches | `downloads/results.json` |
+| Independent reproduction | QCA ZIP, report’s QCA ZIP folder and phone ZIP each reproduce every result and case ID exactly | `raw/reproduction.json` |
+| Native Word | **8 final pages rendered and each inspected**; native edit / save / reopen preserves the frozen record | `word-final/`, `raw/word-proof.json` |
+| Existing calculation / figure compatibility | Nine analysis outputs equal; **25 / 25** original figure members and all five numeric results equal with / without the new QCA extension | `raw/scope.json` |
+| Source / build scope | **32 protected paths** equal baseline; **108 website files** equal the successful isolated production build | `raw/scope.json`, `raw/next-build-second.txt` |
+| Syntax, text, diff and links | JS syntax, source forbidden-word scan, whitespace and documentation targets checked, with command exit codes | `raw/short-checks.json` |
+
+These are **50 browser workflow checks** in total, not 50 physical-device tests. Phone checks use Chrome touch emulation. The earlier user-confirmed reading controls remain historical evidence; current QCA physical-device / VoiceOver sign-off is still separate. The production build uses the bundled Node and an isolated physical copy of existing dependencies; npm remains unavailable as previously recorded. An initial dependency symlink was rejected by Turbopack, then replaced by a physical local clone. No dependency install, deployment or configuration change was used to bypass it.
+
+The mathematics tests include the independent ABC known answer (AB + AC with raw coverage 2/3, unique coverage 1/3 and unit union coverage), missing 111, mixed positive / negative cases, consistency boundary equality, frequency exclusion, zero-outcome and undefined ratios, negated outcome, constant sets, duplicate / invalid cases, 100 cases with six conditions, resource / cancellation failures, and an independent brute-force enumeration of **all 256 three-condition Boolean functions** and all their minimum covers. Persistence / HTTP tests cover exact mapped evidence, one case with multiple documents, missing values, stale writing / refresh, concurrent commits, JSON / snapshot recovery, frozen recipe / result corruption, history, byte capacity, 201 calibration quotations and QCA reports with original descriptive figures. No external R package execution is claimed.
+
+Issues caught during acceptance were resolved: an early test helper accidentally shadowed unittest’s `run`; an assertion selected a hidden notice; the first negative UI scenario needlessly generated a 400 console entry, so actionable missing-input validation now occurs before requesting a run while the API remains independently guarded; phone columns wrapped too aggressively, so headers / numeric fields retain readable width and tables scroll sideways. The first capacity script checked a button before awaiting QCA context readiness; the corrected measurement explicitly waits for the save-state marker. A figure-extraction boundary now checks native chapter style so a researcher paragraph named “Figures” cannot duplicate content. A scope harness initially omitted the paragraph-cooccurrence source mapping; the final compatibility proof supplies it. All failures remain in raw logs.
+
+## Reviewer entry and remaining issues
+
+Open **http://127.0.0.1:52756/** → workbench → **Bologna · Comparative QCA review** → Insights → Open QCA workspace. A clean editable copy, report, project JSON and reproduction ZIP are in the supervisor pack. It retains the original public 19 documents / 317 codes / 874 coding links. Its two-case memberships are explicitly technical acceptance designations, not substantive Bologna research results. Older source notebook and five-figure report samples are retained, not replaced by this QCA sample. The older 4445 and 52755 services were not silently modified.
+
+No unresolved failure remains in this binary QCA acceptance slice. Remaining project work is broader supported-input / batch and process-interruption testing beyond these bounded checks, current researcher / physical-device / accessibility acceptance and supervisor review. Fuzzy / multi-value sets, PRI, intermediate / parsimonious remainders, temporal QCA and automatic robustness / causal inference are excluded from this slice, not features falsely marked implemented. The owner’s local-only decision remains in force; GitHub push needs renewed instruction and suitable authorisation. Windows remains deferred.

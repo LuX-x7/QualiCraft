@@ -1,5 +1,7 @@
 # Next capability · Comparative QCA
 
+2026-10-18 status: the bounded binary conservative slice in this brief is now implemented and technically accepted in [UX54](UX-54-COMPARATIVE-QCA.md), including persisted calibration, computed results, reports and independent code export. The original proposal below remains as its historical specification. Explicit exclusions remain outside this slice. Researcher / device / supervisor acceptance is separate.
+
 2026-10-17. Implementation brief following UX-47. **Not implemented or accepted.** This records the research subtask's primary-source findings and a bounded first implementation proposal, not a claim that the final three-method requirement is complete. Existing qualitative coding counts and plotting stay unchanged.
 
 ## Proposed first slice

@@ -7,17 +7,18 @@ import json
 import re
 import zipfile
 from xml.etree import ElementTree as ET
-from . import transcript, report_figures
+from . import transcript, report_figures, qca_state
 from .core import require, uid, now, event, code_path, validate_span, validate_reading_capacity
 
-METHODS = {'ta':'Thematic Analysis', 'content':'Qualitative Content Analysis'}
+METHODS = {'ta':'Thematic Analysis', 'content':'Qualitative Content Analysis', 'comparative':'Qualitative Comparative Analysis · binary crisp-set'}
 HISTORY_LIMIT = 10
 MAX_BYTES = 1_500_000
 TEXT_FIELDS = {'title':200, 'research_question':4000, 'case_unit':2000, 'analysis_unit':2000,
                'approach':4000, 'method_notes':20000, 'reflexivity':20000, 'quality_notes':20000,
                'narrative':100000, 'counterexamples':20000, 'limitations':20000, 'disclosure':10000}
 CHECKS = {'ta':['familiarisation','coding','theme-development','theme-review','reflexivity','writing'],
-          'content':['units','coding-rules','category-development','category-review','context','writing']}
+          'content':['units','coding-rules','category-development','category-review','context','writing'],
+          'comparative':['case-definition','set-definitions','calibration-basis','truth-table-review','configuration-review','limitations-and-writing']}
 
 
 class ReportConflict(ValueError):
@@ -73,9 +74,12 @@ def validate_entry(entry):
     text(entry['saved_at'],100);require(isinstance(entry['source_version'],str) and re.fullmatch(r'[0-9a-f]{64}',entry['source_version']) is not None,'The report source version is invalid')
     if entry['restored_from'] is not None:ids([entry['restored_from']],1)
     validate_draft(entry['draft'])
-    bindings=entry['bindings'];require(isinstance(bindings,dict) and set(bindings) in ({'codes','evidence'},{'codes','evidence','figures'}),'The report bindings are invalid')
+    bindings=entry['bindings'];allowed={'codes','evidence'}|({'qca'} if entry['draft']['method']=='comparative' else set())
+    require(isinstance(bindings,dict) and set(bindings) in (allowed,allowed|{'figures'}),'The report bindings are invalid')
+    if 'qca' in bindings:qca_state.validate_run(bindings['qca'])
     require(all(isinstance(bindings[k],dict) for k in bindings),'The report bindings are invalid')
-    require(len(bindings['codes'])<=2000 and len(bindings['evidence'])<=200,'Too much report evidence')
+    evidence_limit=2000 if entry['draft']['method']=='comparative' else 200
+    require(len(bindings['codes'])<=2000 and len(bindings['evidence'])<=evidence_limit,'Too much report evidence')
     for id,c in bindings['codes'].items():
         ids([id],1);require(isinstance(c,dict) and set(c)=={'id','name','path'} and c['id']==id,'The report code reference is invalid')
         text(c['name'],160);text(c['path'],400000)
@@ -135,7 +139,8 @@ def catalog(project):
 def context(project):
     state=project.get('research_report');stamp=source_version(project)
     if state:validate_state(state)
-    return {'state':state,'source_version':stamp,'stale':bool(state and state['current']['source_version']!=stamp),
+    return {'state':state,'source_version':stamp,'stale':bool(state and entry_stale(project,state['current'])),
+            'qca':{'current':project.get('comparative_qca',{}).get('current'),'stale':qca_state.is_stale(project)},
             'figure_previews':{f['id']:'data:image/png;base64,'+report_figures.base64.b64encode(report_figures.files(state['assets'][state['current']['bindings']['figures'][f['id']]['asset_id']])[f['options']['name']+'.png']).decode('ascii') for f in state['current']['draft'].get('figures',[])} if state else {},
             'catalog':catalog(project),'methods':METHODS,'checks':CHECKS,'history_limit':HISTORY_LIMIT}
 
@@ -170,6 +175,15 @@ def save(project, body, restore=False):
         chosen_codes={id for row in draft['rows'] for id in row['code_ids']};chosen_evidence={id for row in draft['rows'] for id in row['evidence_ids']}
         require(chosen_codes<=set(bindings['codes']) and chosen_evidence<=set(bindings['evidence']), 'A reference is missing. Refresh evidence explicitly or remove the unavailable reference.')
         entry={'draft':draft,'source_version':stamp,'bindings':{key:{id:copy.deepcopy(bindings[key][id]) for id in sorted(selected)} for key,selected in [('codes',chosen_codes),('evidence',chosen_evidence)]},'restored_from':None}
+        if draft['method']=='comparative':
+            previous=old['current']['bindings'].get('qca') if old else None
+            if previous and not refresh:frozen=copy.deepcopy(previous)
+            else:
+                frozen=qca_state.selected(project)
+                require(not qca_state.is_stale(project,frozen),'Save calibration and run current QCA before binding or refreshing the report')
+            require(frozen['source_version']==stamp,'Refresh report evidence explicitly before binding QCA from a different coding source')
+            entry['bindings']['qca']=frozen
+            for key in ('codes','evidence'):entry['bindings'][key].update(copy.deepcopy(frozen['bindings'][key]))
         figures={};old_figures={f['id']:f for f in old['current']['draft'].get('figures',[])} if old else {}
         for f in draft.get('figures',[]):
             f['options']=report_figures.options(f['options']);previous=old_figures.get(f['id']);old_ref=old['current']['bindings'].get('figures',{}).get(f['id']) if old else None
@@ -197,11 +211,13 @@ def save(project, body, restore=False):
     return new
 
 
-def install_prepared(project,state,expected_revision,expected_source):
+def install_prepared(project,state,expected_revision,expected_source,expected_qca=None):
     """Commit a render prepared without holding SQLite's writer lock."""
     revision=project.get('research_report',{}).get('revision',0)
     if revision!=expected_revision or source_version(project)!=expected_source:
         raise ReportConflict('The report or coding evidence changed while figures were generated. Keep your writing and reload before saving again.')
+    if state['current']['draft']['method']=='comparative' and expected_qca!=digest(project.get('comparative_qca')):
+        raise ReportConflict('QCA calibration or results changed while the report was prepared. Keep your writing and reload before saving.')
     validate_state(state)
     candidate=copy.deepcopy(project);candidate['research_report']=state;entry=state['current']
     event(candidate,'report_save',report_id=entry['id'],revision=entry['revision'],restored_from=entry['restored_from'])
@@ -210,11 +226,16 @@ def install_prepared(project,state,expected_revision,expected_source):
     return state
 
 
+def entry_stale(project,entry):
+    frozen=entry['bindings'].get('qca');current=project.get('comparative_qca',{}).get('current')
+    return entry['source_version']!=source_version(project) or bool(frozen and (qca_state.is_stale(project,frozen) or not current or frozen['id']!=current['id']))
+
+
 def selected(project, version_id=None):
     state=project.get('research_report');require(state is not None,'Save a report before exporting');validate_state(state)
     entry=next((e for e in [state['current']]+state['history'] if version_id is None or e['id']==version_id),None)
     require(entry is not None,'That report version is unavailable')
-    return copy.deepcopy(entry),entry['source_version']!=source_version(project)
+    return copy.deepcopy(entry),entry_stale(project,entry)
 
 
 def citation_text(entry, value):
@@ -223,6 +244,9 @@ def citation_text(entry, value):
 
 
 def html_export(entry, stale=False, assets=None):
+    if entry['draft']['method']=='comparative':
+        from .qca_report import html_export as qca_html
+        return qca_html(entry,stale,assets)
     assets=report_figures.selected_assets(entry,assets or {});esc=transcript.escaped;d=entry['draft'];b=entry['bindings']
     labels={id:'E'+str(i) for i,id in enumerate(b['evidence'],1)}
     def prose(value):
@@ -240,6 +264,9 @@ def html_export(entry, stale=False, assets=None):
 
 
 def docx_export(entry, stale=False, assets=None):
+    if entry['draft']['method']=='comparative':
+        from .qca_report import docx_export as qca_word
+        return qca_word(entry,stale,assets)
     assets=report_figures.selected_assets(entry,assets or {})
     frozen={'project_name':'','documents':[],'association_count':0,'range_count':0,'include_memos':False,'project_id':'report','schema_version':5,'version':entry['source_version'],'generated_at':entry['saved_at']}
     with zipfile.ZipFile(io.BytesIO(transcript.docx_export(frozen))) as z:files={n:z.read(n) for n in z.namelist()}
@@ -350,6 +377,8 @@ def bundle_export(entry,assets,stale=False):
     with zipfile.ZipFile(buffer,'w',zipfile.ZIP_DEFLATED) as z:
         z.writestr('report.html',html_export(entry,stale,chosen));z.writestr('report.docx',docx_export(entry,stale,chosen))
         z.writestr('report.json',json.dumps(export_record(entry,chosen),ensure_ascii=False,indent=2))
+        if 'qca' in entry['bindings']:
+            for name,payload in qca_state.export_files(entry['bindings']['qca']).items():z.writestr('qca/'+name,payload)
         for f in entry['draft'].get('figures',[]):
             asset=chosen[entry['bindings']['figures'][f['id']]['asset_id']];prefix='figures/'+f['id']+'/'
             for name,payload in report_figures.files(asset).items():z.writestr(prefix+name,payload)

@@ -16,7 +16,7 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import analyze, ingest, plotting, transcript, reporting, report_figures
+from . import analyze, ingest, plotting, transcript, reporting, report_figures, qca_state
 from .ai import Analyzer
 from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
@@ -154,6 +154,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                             return self.send(project)
                         if len(parts) == 4 and parts[3] == 'report':
                             return self.send(reporting.context(project))
+                        if len(parts) == 4 and parts[3] == 'qca':
+                            return self.send(qca_state.context(project))
                         if len(parts) == 4 and parts[3] == "backups":
                             # Snapshots written automatically on every change,
                             # plus whether writing them is still working. The
@@ -163,6 +165,12 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                                               "status": store.backup_status()})
                         if len(parts) == 4 and parts[3] == "export":
                             fmt = urllib.parse.parse_qs(parsed.query).get("format", ["json"])[0]
+                            if fmt in {'qca-json','qca-zip'}:
+                                query=urllib.parse.parse_qs(parsed.query,keep_blank_values=True)
+                                versions=query.get('run_id',[None]);require(len(versions)==1,'Choose one QCA run')
+                                run=qca_state.selected(project,versions[0]);suffix=fmt.removeprefix('qca-')
+                                payload=qca_state.bundle_export(run) if suffix=='zip' else json.dumps(run,ensure_ascii=False,indent=2).encode()
+                                return self.send(payload,'application/zip' if suffix=='zip' else 'application/json',filename=f"qt-qca-{run['id'][:12]}.{suffix}")
                             if fmt in {'report-html','report-docx','report-json','report-zip'}:
                                 query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
                                 version = query.get('version_id', [None])
@@ -231,7 +239,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 if path == "/config.js":
                     return self.send(('window.QT_BASE=' + json.dumps(base_path) + ';').encode(),
                                      "application/javascript; charset=utf-8")
-                files = {"/": "index.html", "/app.js": "app.js", "/welcome-orbit.js": "welcome-orbit.js", "/report-editor.js":"report-editor.js",
+                files = {"/": "index.html", "/app.js": "app.js", "/welcome-orbit.js": "welcome-orbit.js", "/report-editor.js":"report-editor.js", "/qca-editor.js":"qca-editor.js",
                          "/style.css": "style.css",
                          "/landing.html": "landing.html", "/landing.css": "landing.css"}
                 if path not in files:
@@ -242,7 +250,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 # the page is served at /w with no trailing slash. Rewrite them to
                 # absolute paths that include the prefix.
                 if base_path and file.suffix == ".html":
-                    for name in ("style.css", "config.js", "welcome-orbit.js", "report-editor.js", "app.js", "landing.css"):
+                    for name in ("style.css", "config.js", "welcome-orbit.js", "report-editor.js", "qca-editor.js", "app.js", "landing.css"):
                         payload = payload.replace(f'"{name}"'.encode(), f'"{base_path}/{name}"'.encode())
                 return self.send(payload, (mimetypes.guess_type(file.name)[0] or "text/plain") + "; charset=utf-8")
             except (ValueError, KeyError, TypeError):
@@ -330,14 +338,21 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         # point in one move.
                         require(not public_demo, "The public demonstration is read-only")
                         return self.send(store.restore(project_id, body.get("name", "")))
+                    if action == 'qca-run':
+                        candidate=store.get(project_id);stamp=qca_state.source_version(candidate)
+                        revision=candidate.get('comparative_qca',{}).get('revision',0)
+                        prepared=qca_state.run(candidate,body)
+                        return self.send(store.change(project_id,lambda p:qca_state.install_prepared(p,prepared,revision,stamp)))
                     if action == 'report-save':
                         # Render on a detached project before acquiring a writer lock.
                         # Recheck report revision and coding identity at the short commit.
                         candidate=store.get(project_id);stamp=reporting.source_version(candidate)
+                        qca_stamp=reporting.digest(candidate.get('comparative_qca'))
                         revision=candidate.get('research_report',{}).get('revision',0)
                         prepared=reporting.save(candidate,body)
-                        return self.send(store.change(project_id,lambda p:reporting.install_prepared(p,prepared,revision,stamp)))
+                        return self.send(store.change(project_id,lambda p:reporting.install_prepared(p,prepared,revision,stamp,qca_stamp)))
                     def operation(project):
+                        if action == 'qca-save':return qca_state.save(project,body)
                         if action in {'report-save','report-restore'}:
                             return reporting.save(project,body,restore=action=='report-restore')
                         if action == "documents":
@@ -382,7 +397,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 return self.send({"error": "The API endpoint does not exist"}, status=404)
             except report_figures.FigureRenderError as exc:
                 return self.send({"error": str(exc)}, status=500)
-            except (ReadingConflict, reporting.ReportConflict) as exc:
+            except (ReadingConflict, reporting.ReportConflict, qca_state.QCAConflict) as exc:
                 return self.send({"error": str(exc)}, status=409)
             except ValueError as exc:
                 return self.send({"error": str(exc)}, status=400)
