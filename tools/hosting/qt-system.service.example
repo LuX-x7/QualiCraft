@@ -1,0 +1,23 @@
+# TEMPLATE ONLY. Registration outside QT requires explicit permission/admin.
+[Unit]
+Description=QT website and private full workbench
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=xiaolu
+WorkingDirectory=/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT
+ExecStart=/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/venv/bin/python /mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/ops/qt_service.py --root /mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT --config /mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/config/service.json
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT
+StandardOutput=append:/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/logs/supervisor.txt
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

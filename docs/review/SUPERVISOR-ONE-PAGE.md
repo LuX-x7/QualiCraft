@@ -1,18 +1,24 @@
-> Online review update (18 Oct 2026): an invited full workbench is available at https://looking-goals-warranty-survive.trycloudflare.com/login . Create your own account with the privately supplied single-use invitation; upload, coding, server save and exports are enabled. This is a temporary review hostname, not a permanent production URL. Projects are saved on the QT server; use only approved data. GitHub Pages branch is prepared but owner activation is pending. The older Render link below remains the historical readonly example.
+# QT — supervisor review
 
-# QT supervisor review
+Start at **https://qt-review.taila524d0.ts.net/**. Allow 10–15 minutes. The website is public; the full online workbench uses the separate invitation supplied privately. No installation or Tailscale account is needed for visitors.
 
-Start at [the website](https://qualicraft-website.onrender.com/), then choose **View worked example**. Allow 10–15 minutes. Both services run on a free plan; waking after inactivity can take 50 seconds or more.
+## Suggested demonstration
 
-1. **Inspect the final outputs** at [Worked example](https://qualicraft-website.onrender.com/report#sec-outputs): open the full coded Notebook and the Research report. Download editable Word to inspect headings, italic quotations and the source tree. The Notebook covers interview02 in full (18,239 characters, 53 codings); the report is a clearly labelled Content Analysis illustration with 3 selected evidence rows and its method map.
-2. **Follow the five figures** on the same page. Select values, inspect complete count tables and original SVGs, then download the five-figure code ZIP. Each folder contains CSV, Python, SVG, PDF and 300 dpi PNG. The figures summarize all 19 Bologna documents /317 codes /874 codings. Existing values and image outputs are preserved.
-3. **Open the workbench** using Try the workbench. The start page explains **Bologna is read-only**; choose Explore Bologna. Inspect Coding, reading/coding overview, the relationship graph and Figures. New SVG-only previews avoid generating unused raster/PDF files; repeated identical previews reuse a bounded temporary cache. Full downloads still need longer.
-4. **Try editing locally**, following [local setup](https://github.com/LuX-x7/QualiCraft#local-installation). The local start page supports an empty project/import, editable Bologna and continuation. Restore the downloaded project JSON as a new project to inspect the saved report. Public upload/editing is disabled. Word edits do not update QT.
+1. **See the workflow.** Explore the five modules and the passage–code–theme connections. Compare Content Analysis, Thematic Analysis and the separate Comparative QCA workflow.
+2. **Inspect real outputs.** Open [Worked example](https://qt-review.taila524d0.ts.net/QualiCraft/report/#sec-outputs): coded Notebook, editable Word, Research report with selected method and method map, five figures, exact CSVs and standalone Python scripts. These are public Bologna examples, not new empirical findings. The figures cover 19 documents, 317 codes and 874 codings; the Notebook contains one complete interview.
+3. **Try the full workbench.** Open https://qt-review.taila524d0.ts.net/login . Expand “First visit” and use the private single-use invitation to choose your own username/password. Start empty and import an approved document, or choose an editable Bologna copy. Inspect coding paths, reading marks/overview, evidence links and Figures.
+4. **Save and recover.** Download Notebook/Word, a report, figure/code bundles and project JSON. Refresh or sign in again to check server saving; restore JSON as a new project. Word is editable, but edits in Word do not update QT.
 
-Discuss whether the tree paths, selected method and evidence citations support transparent interpretation; whether the report structure fits your research writing; and whether the homepage makes the five-step local workflow clear. Comparative QCA is a separate binary crisp-set calibration workflow: coding counts are not set memberships. This worked example does not claim an empirical Comparative analysis.
+## Discussion
 
-Technical checks pass: 298 Python tests (3 existing skips), 247 Node tests, syntax/build, five script reproductions, exact baseline figures/counts, output hashes and isolated JSON restoration. The two Word samples were rendered and reviewed, 16 pages each. The tall hierarchy uses five continuous views; read its unsliced original in the ZIP when a label crosses a view boundary. Source `2865b1d7fe4d12c5f09628e94c57a2ffc832af93` is manually deployed on the existing free services; automatic deployment stays Off.
+- Are the source quotations, tree paths and selected method clear enough to support interpretation?
+- Does the report help develop a narrative while keeping evidence and researcher judgement visible?
+- Which steps are confusing, missing or unnecessary for a small interview study?
 
-Remaining: researcher/supervisor interpretation and acceptance; current native VoiceOver/system reduced-motion/download-feedback checks are not signed on your behalf. A native Chrome file-picker upload could not be automated without expanding extension access; full paste import/resume and parser/queue regressions pass. Phone follow-up and Windows are deferred, not passed. Details: [UX69 evidence](UX-69-START-PREVIEW-OUTPUTS.md).
+Comparative QCA uses explicit case/condition/outcome calibration and configuration analysis. Coding frequencies are not set memberships. The public worked report illustrates **Content Analysis** and does not claim an empirical Comparative QCA result. Agreement with one hand-coded analysis alone does not establish general methodological validity.
 
-Live availability update (UX70): website pages are now generated at build time. A sleeping workbench shows a finite connection screen and continues when its real bootstrap is ready; persistent faults still offer retry. Free-host wake-up delays remain. The existing outputs, methodology, read-only demo and local editing scope are unchanged. See [connection verification](UX-70-AVAILABILITY.md).
+## Status and remaining work
+
+Fixed-origin website/workbench and full Bologna exports passed online checks. QT web/tunnel process restarts retained the hostname, saved coding and frozen report. **OS boot registration is still pending permission and administrative access; the shared server has not been rebooted.** Funnel is a free-plan candidate with provider limits, not a production SLA.
+
+Online projects are stored privately on the QT server. Use only material approved for that hosting arrangement. Local use remains available. Current technical regressions: 321 Python tests (3 existing skips), 267 JavaScript tests. Researcher/supervisor acceptance and current native accessibility checks remain separate. Phone follow-up and Windows are deferred, not recorded as passed. Details: [deployment evidence](UX-72-STABLE-ENTRY.md).

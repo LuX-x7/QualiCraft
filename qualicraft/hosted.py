@@ -10,6 +10,7 @@ import base64
 from contextlib import contextmanager
 import hashlib
 import hmac
+import gzip
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -43,6 +44,19 @@ AUTH_HTML = '''<!doctype html><html lang="en"><head><meta charset="utf-8">
 
 def digest(value):
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
+def accepts_gzip(header):
+    for entry in header.lower().split(','):
+        coding, *parameters = entry.strip().split(';')
+        if coding.strip() == 'gzip':
+            quality = next((part.split('=', 1)[1].strip() for part in parameters
+                            if part.strip().startswith('q=')), '1')
+            try:
+                return 0 < float(quality) <= 1
+            except ValueError:
+                return False
+    return False
 
 
 class Accounts:
@@ -217,13 +231,13 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False, site_
         def log_message(self, *_args):
             pass
 
-        def send(self, payload, *, status=200, content_type='application/json', headers=(), csp=None):
+        def send(self, payload, *, status=200, content_type='application/json', headers=(), csp=None, cache_control='no-store'):
             if not isinstance(payload, bytes):
                 payload = json.dumps(payload).encode('utf-8')
             self.send_response(status)
             self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(payload)))
-            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Cache-Control', cache_control)
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'same-origin')
             self.send_header('Content-Security-Policy', csp or "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
@@ -285,7 +299,16 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False, site_
                 if asset is None:
                     return self.send({'error': 'Not found'}, status=404)
                 payload, mime, csp = asset
-                return self.send(payload, content_type=mime, csp=csp)
+                headers = [('Vary', 'Accept-Encoding')]
+                # Compression is limited to public static assets. Credentials,
+                # project APIs and private exports keep the unchanged route.
+                text = mime.startswith('text/') or mime in {'application/javascript', 'application/json', 'image/svg+xml'}
+                if text and len(payload) > 1024 and accepts_gzip(self.headers.get('Accept-Encoding', '')):
+                    payload = gzip.compress(payload, compresslevel=5, mtime=0)
+                    headers.append(('Content-Encoding', 'gzip'))
+                immutable = path.startswith(site.prefix + '/_next/static/')
+                cache = 'public, max-age=31536000, immutable' if immutable else 'no-cache'
+                return self.send(payload, content_type=mime, csp=csp, headers=headers, cache_control=cache)
             if path in {'/', '/login'} and self.command in {'GET', 'HEAD'}:
                 return self.send(AUTH_HTML.encode(), content_type='text/html; charset=utf-8')
             if path == '/auth.js' and self.command in {'GET', 'HEAD'}:

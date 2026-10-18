@@ -1,48 +1,46 @@
-# UX72 — Stable entry and startup recovery (in progress)
+# UX72 — Fixed website and full workbench; boot registration pending
 
-Date: 2026-10-18. User requests a free-first stable website and full workbench without waiting for LuX-x7. Server scope remains strictly `/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/`; no other project, system package, service registration, shell profile, cron or global network configuration may be changed.
+Date: 2026-10-18. The user authorized a free-first alternative without waiting for LuX-x7, plus their own Tailscale device/Funnel authorization. Server changes remain confined to `/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/`. No system service, cron, shell profile, host interface or other project has been modified.
 
-## Candidate route
+## Live fixed entry
 
-Use one dedicated userspace Tailscale Funnel node with its persistent `*.ts.net` name. The public website and authenticated workbench share that HTTPS origin. Visitors need only a browser; workbench invitation accounts remain required. This avoids repository-owner Pages administration and temporary Quick Tunnel hostnames. The existing Render services and UX71 deployment remain untouched until the replacement passes external verification.
+- Website: https://qt-review.taila524d0.ts.net/ (redirects to `/QualiCraft/`).
+- Report and worked outputs: https://qt-review.taila524d0.ts.net/QualiCraft/report/ .
+- Full invited workbench: https://qt-review.taila524d0.ts.net/login . New users choose their own credentials using a private single-use invitation; existing accounts use their existing credentials.
+- Website/report are public. Upload, manual coding, save, snapshots, report and exports are authenticated and isolated per account. Mentor needs only a browser, no local installation or Tailscale client.
 
-This is a **candidate, not a deployed fixed address**. It requires the user's own account/device authorization and successful network tests from the server. Funnel is currently beta, available across plans, uses only the tailnet DNS name and has provider bandwidth limits. Personal free eligibility is for noncommercial use and must be checked on the actual account; no paid plan or trial is to be activated by the agent. A personal GitHub identity can be used for the user's own login. The agent never needs the user's password or an auth key in chat.
+The fixed name belongs to the dedicated persistent QT Tailscale node. Actual workbench and tunnel process restarts retained the same name, HTTPS/Funnel settings and saved work. This is **not an OS reboot test**. Tailscale Funnel is beta with provider bandwidth limits; Personal free eligibility is noncommercial. No paid plan was enabled by the agent. Server availability and provider availability remain requirements; this is not a production SLA.
 
-Official references:
+The user completed authentication in their own browser. No password/auth key was requested, captured or committed. Official static Tailscale 1.104.1 amd64 package verified against SHA-256 `108d1d96ecf410d305571e173516f27038f870919a9b89c914a167c6d33a4528`. Dedicated userspace mode uses only QT's socket/state/logs, accepts no host DNS/routes and does not enable Tailscale SSH. Existing server networking was not modified.
 
-- https://tailscale.com/docs/features/tailscale-funnel
-- https://tailscale.com/docs/concepts/userspace-networking
-- https://tailscale.com/pricing
+GitHub Pages is now **optional**, not a prerequisite for the mentor entry. The existing repository still needs LuX-x7 to enable Pages; no bypass of repository permissions was attempted. Render services remain unchanged with auto-deploy off. Only the obsolete QT Quick Tunnel and its old gateway were retired after fixed-origin verification, avoiding parallel gateways for the same stores. Their source and data remain for rollback.
 
-## Prepared locally
+## Hosting implementation
 
-- `qualicraft.hosted --site-root <verified artifact>` serves the original static export under its recorded prefix, with the website public and project APIs still invitation-authenticated. `/` redirects to the website; `/login` and `/w` retain their roles. Only the selected export directory can be read. Traversal, hidden files and symlink escapes are rejected. Inline Next hydration is allowed by exact SHA-256 CSP hashes, without general inline-script permission. GET and HEAD are supported.
-- `tools/hosting/qt_service.py` supervises the QT workbench and optionally a dedicated userspace tailscaled. All paths/state/logs/socket/cache stay in QT; it does not reuse another Tailscale instance, alter host interfaces or read arbitrary PID files. A lock rejects duplicate supervisors; crashed children restart with bounded backoff; shutdown signals only processes it created. Existing projects and snapshots are never reset.
-- `tools/hosting/qt.service.example` is a **template only**, not an installed service. No service has been enabled and no remote reboot has occurred.
+`qualicraft.hosted --site-root` serves only the verified static artifact under its manifest prefix. Path traversal, hidden paths and symlink escapes are refused. Original inline Next hydration uses exact script SHA-256 CSP hashes; arbitrary inline scripts are not permitted. GET/HEAD are supported. The original 37 report / worked-example / clip / font resources retain their hashes.
 
-## Boot constraint — do not conflate with crash recovery
+Public HTML/CSS/JS/JSON/SVG transfer may use gzip; decompression produces the exact original bytes. Only hashed `/_next/static/` resources get immutable caching. Private APIs, credentials and private exports keep their original uncompressed/no-store path. Homepage HTML is 998,824 bytes, or 203,440 bytes over gzip. This reduces transfer, not the underlying report or data. It does not promise a fixed latency.
 
-A supervisor can restart a crashed child while it remains running. It cannot start itself after the operating system or container reboots without an external boot trigger. A file placed in QT alone is not such a trigger.
+`QT/ops/qt_service.py` supervises only QT's web and userspace tunnel children. All persistent paths remain in QT. Its lock refuses duplicates; bounded-backoff restarts preserve runtime files; shutdown acts only on children it created. No arbitrary PID file is used to signal another project. The live QA terminated each verified child individually: both recovered, same hostname/Funnel configuration, original report/documents/annotations and a manual coding remained exact.
 
-Prefer an existing provider startup-command facility pointing at QT's script. If none exists, a user-level systemd service / lingering or another approved boot mechanism is necessary. Registering these outside QT is currently forbidden by the user's scope, so the agent must explain the exact minimal exception and obtain authorization first. Do not install cron, modify `~/.config/systemd`, change lingering or restart the shared server under the current authorization.
+## Boot remains the single operational gate
 
-## Gates before replacing the mentor link
+Read-only OS checks found systemd PID 1, an available user runtime, `Linger=no`, and no QT path in the user unit search path. A QT-local script cannot execute itself when the OS boots.
 
-1. Re-establish the private temporary SSH control connection; last round's connection was intentionally closed.
-2. User completes free-account and device authorization in their own browser; no credentials in Git/evidence.
-3. Verify outbound connectivity, dedicated userspace Funnel, HTTPS name, authenticated Bologna writes/exports, and no global network changes.
-4. Rebuild website with the actual fixed workbench URL; upload only inside QT, then verify homepage → report → login → coding → save/export/restore externally.
-5. Select and register an allowed startup trigger. Test only QT process stop/restart; do not reboot a shared host or affect sibling projects. State actual OS-boot verification separately.
-6. Update roadmap / supervisor packet with the real URL, full hashes and evidence. Never present the candidate URL or the prepared unit template as an active deployment.
+A concrete dedicated **system** unit is prepared only at `QT/config/qt-xiaolu.service`, with tracked source `tools/hosting/qt-system.service.example`. It passes systemd syntax verification. It runs as `xiaolu`, with `NoNewPrivileges`, read-only system/home mounts and a single QT write exception. It does not enable user-wide lingering or restart another service. The intended unit registration path is currently absent. Verification reported an existing unrelated network-online dependency warning; it was not modified.
 
-## Current evidence
+**Not installed or enabled.** The user has been asked whether to allow the minimal exception: add `/etc/systemd/system/qt-xiaolu.service` and its own boot-enable link. No answer is assumed. If permission is granted, administrative access is still required. Registration must use a root-owned copy, not a root-loaded symlink to a user-writable unit. Stop only the verified manual QT supervisor before starting that unit, retain data, verify effective user/write boundaries, test only QT restart and rerun external checks. Do not reboot the shared server.
 
-Local raw outputs/screenshots: `~/qualicraft-review/ux-72/` once copied from `/tmp/qualicraft-ux72/`. Targeted hosted boundary tests and real-child crash/duplicate supervisor tests are included. Same-origin Chrome verifies actual module-button hydration, keyboard interaction, report, original Word download, login and zero console/page/HTTP errors. The initial browser run exposed missing HEAD handling; it was fixed before any deployment. Test counts and commit hashes are recorded after the final run.
+## Verification
 
-## Scope and local test details
+- 321 Python tests pass, 3 existing skips; 267 Node tests pass. Nine protected analysis/data/original-server/deployment files are byte-identical to the prior release.
+- Fixed HTTPS Chrome: actual module hydration, keyboard interaction, report, original Word download, login, editable Bologna Coding and logout pass; page/console/unexpected HTTP errors zero on the successful runs.
+- Actual Bologna import → manual code/annotation → server save → 4 committed snapshots → JSON export passes in a separate QA project.
+- Seven original exports pass: JSON, coded HTML/Word, frozen Research report JSON/HTML/Word/ZIP. Five previews and complete figure bundles pass with exact unchanged local CSV comparison. One run: full hierarchy preview + ZIP 20.20s, report ZIP 11.57s; observations only.
+- After remote child restarts and the transfer update: frozen report, 19 documents, 874 annotations, and manual import/coding remained exact in QA account. Unauthenticated project bootstrap is HTTP 401.
+- Initial TLS probe occurred during certificate provisioning and failed; certificate issuance and subsequent external checks succeeded. One Chrome run reported `ERR_NETWORK_IO_SUSPENDED`; failed output retained, unchanged clean rerun passed. No failure is recorded as a pass.
+- The earlier UTF-8 test audit matched `Popen` as `open`. A word boundary plus regression fixes that false positive while still refusing real text opens without explicit UTF-8. Product encoding behavior is unchanged.
 
-Nine protected files (core, analyzer, plotting, original server routes, reporting, QCA state, dataset registry, public Bologna database and render.yaml) remain byte-identical to the previous commit. The existing website source and its original assets are unchanged.
+Raw commands, outputs, JSON checks and live screenshots: `~/qualicraft-review/ux-72/`. Private invitations and temporary QA credentials are excluded from Git and the public packet. Private invitation handoff now points at the fixed login; invitation codes were not regenerated or printed. Windows and physical-phone follow-up remain deferred.
 
-The UTF-8 static audit previously matched `Popen(` as `open(`; it now uses a word boundary, with a regression that still rejects a real text-mode `path.open` without encoding. The process-fixture source is written with explicit UTF-8. Earlier failed audit outputs are retained alongside final results. This changes a test classifier, not product encoding behavior.
-
-Final local results: **319 Python tests pass (3 existing skips), 267 JavaScript tests pass**, project-only Chrome hydration / keyboard / report / Word / login checks pass with zero page, console and HTTP errors. Real supervised-child crash restart, duplicate-process rejection and preservation of a pre-existing runtime file pass. These are **local** results; no fixed Funnel name or OS boot behavior has been verified on the live server.
+Official references: https://tailscale.com/docs/features/tailscale-funnel ; https://tailscale.com/docs/concepts/userspace-networking ; https://tailscale.com/pricing .

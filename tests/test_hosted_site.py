@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import gzip
 import json
 from pathlib import Path
 import tempfile
@@ -43,9 +44,10 @@ class HostedSiteTests(unittest.TestCase):
         self.env.stop()
         self.temporary.cleanup()
 
-    def request(self, path, data=None):
+    def request(self, path, data=None, headers=None):
         try:
-            response = urllib.request.urlopen(self.base + path, data=data)
+            request = urllib.request.Request(self.base + path, data=data, headers=headers or {})
+            response = urllib.request.urlopen(request)
         except urllib.error.HTTPError as error:
             response = error
         with response:
@@ -75,6 +77,34 @@ class HostedSiteTests(unittest.TestCase):
                 self.assertEqual(response.status, 200)
                 self.assertGreater(int(response.headers['Content-Length']), 0)
                 self.assertEqual(response.read(), b'')
+
+    def test_public_compression_preserves_exact_original_html_and_csp(self):
+        payload = self.html + b'<p>Public QT website.</p>' * 100
+        (self.site / 'index.html').write_bytes(payload)
+        status, body, headers = self.request('/QualiCraft/', headers={'Accept-Encoding': 'br, gzip'})
+        self.assertEqual(status, 200)
+        self.assertEqual(headers['Content-Encoding'], 'gzip')
+        self.assertEqual(headers['Vary'], 'Accept-Encoding')
+        self.assertLess(len(body), len(payload))
+        self.assertEqual(gzip.decompress(body), payload)
+        expected = base64.b64encode(hashlib.sha256(self.script).digest()).decode()
+        self.assertIn("'sha256-" + expected + "'", headers['Content-Security-Policy'])
+        _, plain, plain_headers = self.request('/QualiCraft/', headers={'Accept-Encoding': 'gzip;q=0'})
+        self.assertEqual(plain, payload)
+        self.assertIsNone(plain_headers.get('Content-Encoding'))
+
+    def test_only_hashed_next_assets_are_immutable_and_private_apis_stay_uncached(self):
+        assets = self.site / '_next/static/chunks'
+        assets.mkdir(parents=True)
+        (assets / 'sample-abc123.js').write_text('window.qt=true;', encoding='utf-8')
+        _, _, headers = self.request('/QualiCraft/_next/static/chunks/sample-abc123.js')
+        self.assertIn('immutable', headers['Cache-Control'])
+        _, _, html_headers = self.request('/QualiCraft/')
+        self.assertEqual(html_headers['Cache-Control'], 'no-cache')
+        status, _, private = self.request('/w/api/bootstrap', headers={'Accept-Encoding': 'gzip'})
+        self.assertEqual(status, 401)
+        self.assertEqual(private['Cache-Control'], 'no-store')
+        self.assertIsNone(private.get('Content-Encoding'))
 
     def test_traversal_hidden_files_and_symlink_escapes_are_not_public(self):
         (self.site / 'escape.txt').symlink_to(self.root / 'private.txt')
