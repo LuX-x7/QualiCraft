@@ -1,5 +1,7 @@
 # UX54 Comparative QCA
 
+2026-10-18 最新（UX-55，只验收）：**输入／连续导入／进程中断恢复共42项核对完成，但整体验收仍未关闭。** 500,000字符、19MB项目／6MB QCA历史等边界拒绝及已保存校准（含缺失）、冻结结果、五图报告、JSON／快照／下载重试与六脚本复现已核对。新增未修：UX55-02／P2 快照可能领先未提交数据库；UX55-01／P2 同名同内容重复导入无提醒；UX55-03 真正多文件批量上传仍是范围缺口。用户新增的“Method and decisions 内完整方法名＋流程图”为UX55-04待实施，见 [方案](REPORT-METHOD-FLOW-DESIGN.md)。[本轮问题、命令与证据](UX-55-INPUT-RECOVERY-ACCEPTANCE.md)明确区分42项执行与最终门禁通过；136产品／数据／部署路径、108网站文件保持。本轮不改功能、不重跑未变产品的全套单测／构建；Windows暂缓，不推送、不部署。
+
 18 October 2026. Baseline `7d3d708cd3933ecb93eba6c52811181824e5a772`. The owner explicitly authorised implementation of the [UX48 plan](UX-48-QCA-IMPLEMENTATION-BRIEF.md): cases, conditions and outcome calibration, truth tables, configuration analysis, reports and reproducible export. This completes that **binary conservative slice**, not every variety of QCA. All product examples and browser work use disposable public Bologna projects. Independent Boolean fixtures are mathematical tests, not interview findings. No private interview was read. Windows is deferred and unverified; no push or deployment.
 
 ## Available workflow

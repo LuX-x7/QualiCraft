@@ -1,19 +1,24 @@
-# QT Supervisor Review 18 October 2026
+# QT Supervisor Review · 18 October 2026
 
-**Status.** Local review build. Coding, editable source notebooks, saved TA / Content Analysis reports and the new binary Comparative QCA workflow are available. Only public Bologna material is included. The QCA memberships in this pack are labelled technical acceptance designations, not empirical findings. No push or deployment; Windows remains deferred and unverified.
+**Status:** local review candidate, not final acceptance. Coding, source notebooks, five reproducible figures and method-specific research reports are available. Binary conservative Comparative QCA is implemented. The latest boundary audit found two unresolved P2 issues and a batch-upload gap. Windows is deferred and unverified. Nothing was pushed or deployed.
 
-**Start.** [Website](http://127.0.0.1:52756/) → [Workbench](http://127.0.0.1:52756/w/?lang=en) → **Bologna · Comparative QCA review**. These local links require the developer’s computer. The public GitHub repository and hosted demo do not yet contain this candidate. The pack includes a Bologna project JSON for isolated restoration.
+**Start:** [Website](http://127.0.0.1:52756/) → [Workbench](http://127.0.0.1:52756/w/?lang=en) → **Bologna · Comparative QCA review**. These links require the developer’s computer; hosted/public versions can be older. All reviewer material is public Bologna. Sample QCA memberships are explicit technical test designations, not empirical findings.
 
-## Demonstration about 12 minutes
+## Expected outputs
 
-1. **Import and code.** Open an independent Bologna copy. Inspect the saved document, explicit Theme / Category / Code tree and highlighted source. Try Read / Revisit, Undo, overview jumps, Keep and Resume.
-2. **Trace and inspect.** Follow a relationship node to its source. Review the five original figures, exact count tables and scripts, and the website report readouts. Export the editable source notebook.
-3. **Calibrate QCA.** In Insights → Open QCA workspace, inspect case identities, mapped documents, condition / outcome definitions, 0 / 1 rules, rationale and selected quotations. Missing is separate from zero.
-4. **Review QCA results.** Inspect the full truth table, mixed outcomes, conservative configurations, necessity and coverage. Change calibration: the old run remains frozen until another explicit run. Up to 100 cases, six binary conditions and one outcome are supported; no logical remainders are used.
-5. **Write and reproduce.** Versions & export → Write QCA research report. Calculations stay separate from editable narrative and method review. Save versions, inspect exact evidence and deliberately refresh after changed calibration. Download Word or the report ZIP. Run `python reproduce.py` in its `qca/` folder; the standalone QCA ZIP uses the same command at its root. Project JSON restores the whole workspace; Word edits stay in Word.
+1. **Coded source notebook:** full text, highlights and actual Code / Category / Theme ancestry; editable Word and self-contained HTML. `tree-notebook` is the sample filename.
+2. **Five figure bundles:** SVG, PDF, 300 dpi PNG, count CSV and Python recipe for each existing coding-data figure.
+3. **Research report:** the common report family. TA / Content use evidence tables and narrative; Comparative adds calibration, truth tables, configurations and necessity/coverage. `qca-report` is its Comparative sample, not a second report required for every project. Original five-figure report and notebook samples are retained.
+4. **Full project JSON:** the workspace recovery file, preserving calibration, retained runs, report versions and frozen assets. Word edits stay in Word.
+
+## Demonstration · about 12 minutes
+
+Import a disposable source → inspect highlighted coding and its tree → try reading marks and source jumps → inspect relationship evidence and the five figure/count/script bundles → open Insights → QCA workspace → review cases, mapped sources, explicit 0/1 rules, rationale and missing values → inspect frozen configurations/truth table → write and export the method-specific report. Reproduce a QCA ZIP with `python reproduce.py`; in a report ZIP run it inside `qca/`.
 
 ## Discuss and decide
 
-Are case definitions and calibration rules sufficiently explicit for the intended research? Can an independent reader distinguish evidence, calibrated assignments, computed set relations and authored interpretation? Are the notebook and report structure useful for writing? Which substantive dataset and reviewer should provide the next method validation?
+Are the case unit, calibration rules and source evidence defensible? Does the report separate computed facts from authored interpretation? Does the source notebook support writing? The requested next presentation improvement is an explicit full method name and method-specific process map inside Method and decisions; the design is documented, not implemented.
 
-**Evidence and remaining work.** UX54 records the exact tests, screenshots, known-answer and independent-reproduction checks. Existing statistics, figures and CSVs are unchanged. Wider input / batch / process-interruption boundaries and current physical-device / VoiceOver / OS-motion / download feedback remain open. Earlier user-confirmed phone reading controls remain recorded. Researcher interpretation and supervisor acceptance are separate from technical tests. Fuzzy / multi-value, PRI, parsimonious and intermediate QCA are outside this implementation. The owner’s latest release decision is to retain local commits; GitHub authorisation and publication require renewed instruction.
+**Latest evidence:** UX55 completed 42 boundary/browser checks, including forced process termination, 100-document sequential imports, missing-calibration recovery, project/snapshot restoration and independent execution of QCA plus five figure scripts. Desktop/phone-emulated normal console errors were zero. This is bounded technical evidence, not research or physical-device sign-off.
+
+**Before final acceptance:** fix a snapshot that can be published before the SQLite commit, and add an explicit duplicate-import choice. Genuine multi-file upload remains unavailable. Implement the method/process presentation, rerun the final joint workflow, then obtain current physical-device/accessibility and researcher/supervisor acceptance. Wider maximum-load and power-loss claims are not made. See UX-55-INPUT-RECOVERY-ACCEPTANCE.md and REPORT-METHOD-FLOW-DESIGN.md. Local commits only; no release approval is implied.
