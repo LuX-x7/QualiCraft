@@ -44,3 +44,11 @@ A concrete dedicated **system** unit is prepared only at `QT/config/qt-xiaolu.se
 Raw commands, outputs, JSON checks and live screenshots: `~/qualicraft-review/ux-72/`. Private invitations and temporary QA credentials are excluded from Git and the public packet. Private invitation handoff now points at the fixed login; invitation codes were not regenerated or printed. Windows and physical-phone follow-up remain deferred.
 
 Official references: https://tailscale.com/docs/features/tailscale-funnel ; https://tailscale.com/docs/concepts/userspace-networking ; https://tailscale.com/pricing .
+
+## Source and operator handoff
+
+Application source pushed to `main`: `892e2efccfb97a103f3d233c3cc30846e93f2e82` (including preparation `8907638ffdad8c71993d58d2792ef315a650300e`). The live 32 source/example files and two operation files match that source. Current server static build uses the unchanged website source at `8907638ffdad8c71993d58d2792ef315a650300e`. The updated `gh-pages` artifact is `807e815568d8a7e6fb4522e5a9625256e67c19ef`, built from `892e2efccfb97a103f3d233c3cc30846e93f2e82` with the fixed workbench URL and 37 original resource hashes. Pages itself is not enabled and is not the live mentor address.
+
+The server's current dedicated Tailscale device key expires on 2027-04-16. For long-term unattended use the account owner must manage renewal or deliberately disable expiry for **this QT device only**; no key-expiry setting or global tailnet policy was changed by the agent. HTTPS/Funnel background configuration and state are stored within QT.
+
+GitHub README now points at the fixed entry and explains invited server storage separately from local use and the optional readonly Render blueprint. Private invitations at `~/qualicraft-review/private/qt-review-invitations.json` have the new login URL with the same unprinted codes; they are not in Git or the public packet.

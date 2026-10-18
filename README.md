@@ -2,22 +2,18 @@
 
 <p align="center">
   <strong>A researcher-led workbench for qualitative coding, analysis, and figures that state what they count.</strong><br>
-  Local-first by design · English interface by default · 中文可切换
+  Local and invited online workspaces · English interface by default · 中文可切换
 </p>
 
 <p align="center">
-  <strong><a href="https://qualicraft-website.onrender.com/">Website</a></strong>
+  <strong><a href="https://qt-review.taila524d0.ts.net/">Website</a></strong>
   ·
-  <strong><a href="https://qualicraft-website.onrender.com/w?lang=en">Live workbench</a></strong>
+  <strong><a href="https://qt-review.taila524d0.ts.net/login">Live workbench</a></strong>
 </p>
 
-<p align="center">
-  <a href="https://render.com/deploy?repo=https://github.com/LuX-x7/QualiCraft"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" height="32"></a>
-</p>
+<p align="center"><em>The website is public. The full workbench supports invited accounts, upload, coding, server save and export. No installation is needed for online use.</em></p>
 
-<p align="center"><em>The links above are a read-only demonstration running on the public Bologna corpus — no installation needed. The button deploys your own copy.</em></p>
-
-> Availability update: the website now serves prebuilt pages. A sleeping workbench shows a connection screen and continues when ready; free hosting can still take about a minute after inactivity. [Verification and remaining limits](docs/review/UX-70-AVAILABILITY.md).
+> **Current online review (UX72):** Fixed website/workbench entry on a dedicated QT server. Public examples use Bologna CC0; online accounts have separate project stores. QT web/tunnel process recovery is verified; OS boot registration is still pending permission/admin access. [Deployment evidence](docs/review/UX-72-STABLE-ENTRY.md) · [Supervisor guide](docs/review/SUPERVISOR-ONE-PAGE.md). No paid hosting upgrade; automatic Render deployment remains off. Windows and phone follow-up are deferred.
 
 <p align="center">
   <a href="#english"><strong>English</strong></a>
@@ -26,14 +22,6 @@
 </p>
 
 <p align="center"><em>English first · 中文在下半部分</em></p>
-
-> **Current public review (UX69):** The workbench now opens with an explicit read-only Bologna choice. Local upload/continuation remains available. SVG previews are faster with the same figure recipe and a bounded temporary cache. [Worked example](https://qualicraft-website.onrender.com/report#sec-outputs) now includes a coded full-text Notebook, editable Word Research report, five figures with CSV/Python, and restorable project JSON. These are clearly scoped Bologna demonstration outputs. 298 Python (3 existing skips), 247 Node, syntax/build, Word layout, reproduction and online integrity checks pass. [Release evidence](docs/review/UX-69-START-PREVIEW-OUTPUTS.md) · [Supervisor guide](docs/review/SUPERVISOR-ONE-PAGE.md). Automatic deployment remains off; Windows and phone follow-up are deferred.
-
-> **当前公开审核版（UX69）：** 起步页已明确区分公开只读 Bologna 与本地上传；同一绘图脚本的 SVG 预览提速，完整下载保留。首页新增 [完整成果示例](https://qualicraft-website.onrender.com/report#sec-outputs)：编码全文 Notebook、可编辑 Word 报告、五图与代码、项目 JSON。298 Python（3 原有跳过）、247 Node、构建和线上核对通过。自动部署关闭，Windows 与手机补测暂缓。
-
-> **Historical public review (UX68):** The complete Bologna hierarchy export now succeeds on the existing free host with unchanged counts and figure pixels. The homepage describes QT as a research workspace of your own; Pause/Play is retained. Python 289 (3 existing skips, both Linux discovery modes), Node 246, syntax and website build pass. [Release evidence](docs/review/UX-68-HIERARCHY-MEMORY.md) · [Supervisor guide](docs/review/SUPERVISOR-ONE-PAGE.md). The hosted workbench is read-only; use the local application for uploads, coding and saved report/QCA edits. Cold starts and large exports need time. Automatic deployment is off. Phone follow-up and Windows remain deferred.
-
-> **此前公开审核版（UX68）：** 免费实例已能导出完整层级图，统计、CSV 和图形像素保持不变；首页文案已精简，Pause／Play 保留。源码已推 main，现有网站和只读工作台已手动更新。[验收证据与发布状态](docs/review/UX-68-HIERARCHY-MEMORY.md) · [导师审核说明](docs/review/SUPERVISOR-ONE-PAGE.md)。公开入口可供查看、绘图与下载；上传、编码和保存报告请用本地版。免费冷启动及大图导出需要等待。自动部署关闭，手机补测与 Windows 继续暂缓。
 
 
 ---
@@ -44,29 +32,24 @@
 
 QualiCraft is a modular workbench for interview studies and other open-ended material. Read transcripts, build a hierarchical codebook, review model suggestions, inspect relationships between themes, and produce reproducible figures — while keeping the researcher in control of every interpretation.
 
-**The public links above are for teaching and demonstration.** The workbench link opens a read-only sample built from public, attributed research data. For private research, run QualiCraft locally: the normal application stores projects in a SQLite file on your own machine.
+**The website is public; the full online workbench is invitation-only.** Create your own account with the separately supplied invitation, then upload, code, save and export. Online projects are stored on the QT server in separate account stores. Use material approved for that hosting arrangement. Local installation remains available and stores its SQLite project file on your own machine.
 
 > **Researcher decides.** A model can suggest codes, but no suggestion becomes a coding until a person accepts it. Pending suggestions do not enter counts, figures, or exports.
 
 ## Try it
 
-- **[Website](https://qualicraft-website.onrender.com/)** — English overview and a walkthrough of all five workflow steps.
-- **[Live workbench](https://qualicraft-website.onrender.com/w?lang=en)** — the real interface, running on the public Bologna corpus. Read-only: no uploads, no edits.
-- **[Deploy your own](#deploy)** — one blueprint puts both services on the internet from this repository.
+- **[Website](https://qt-review.taila524d0.ts.net/)** — English overview and a walkthrough of all five workflow steps.
+- **[Live workbench](https://qt-review.taila524d0.ts.net/login)** — invited online accounts with upload, coding, saving and export; start empty or choose your own editable Bologna copy.
+- **[Deploy your own](#deploy)** — optional read-only Render demonstration blueprint; not the invited server deployment.
 - **[Chinese README](#中文)** — jump to the Chinese translation below.
 
-Both demo services run on a free tier; the first visit after inactivity can
-take 50 seconds or more to wake. Large complete figure exports also need time. The corpus is public and attributed; the demo
-is not a place to upload participant material.
+The fixed entry uses the dedicated QT server rather than Render wake-up. Full figure/report generation and downloads still take time. The website worked example is public Bologna data. The optional Render blueprint below remains read-only and must not receive participant material.
 
 <a id="deploy"></a>
 
-## Putting a demo online
+## Optional read-only Render demo
 
-**GitHub alone cannot host this.** GitHub Pages serves static files only, so it
-cannot run the Python workbench, its SQLite storage, or the Next.js site. A
-shareable link needs a host that runs a process; [Render](https://render.com)
-does that on its free plan and deploys straight from this repository.
+GitHub Pages can host the exported static website (`tools/site/build_pages.py`); it cannot run the Python workbench or SQLite storage. The current invited workbench runs on the dedicated QT server. The [Render](https://render.com) blueprint below is a separate read-only public-data demonstration, not the full hosted deployment.
 
 `render.yaml` in the repository root defines both services, so there is nothing
 to configure by hand:
@@ -280,27 +263,24 @@ The software is released under the [MIT License](LICENSE). Public datasets remai
 
 QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。它支持导入转录、建立层级编码本、审核模型建议、查看主题关系并生成可复现的图表；每一种解释仍由研究者决定。
 
-**上方公开链接用于教学演示。** 工作台链接打开的是只读样例，使用公开且标注来源的研究数据。正式研究请在本机运行 QualiCraft：常规版本把项目存入本机 SQLite 文件。
+**网站公开，完整在线工作台使用邀请账号。** 用单独提供的邀请码设置自己的账号后，可上传、编码、保存和导出；可从空项目开始，或选择自己的可编辑 Bologna 副本。在线项目存于 QT 服务器的独立账号目录，只使用获准放在该环境的材料。本地安装继续可用，项目保存在本机 SQLite。
 
 > **研究者做决定。** 模型可以提出编码建议，但必须由人接受后才会成为正式标注。待审核建议不会计入统计、图表或导出。
 
 ## 在线查看
 
-- **[网站](https://qualicraft-website.onrender.com/)** —— 英文为主，可切换语言，含五个模块的书面走查。
-- **[在线工作台](https://qualicraft-website.onrender.com/w?lang=en)** —— 真实界面，运行在 Bologna 公开语料上。只读：不能上传、不能修改。
-- **[部署你自己的](#部署)** —— 一份蓝图把这个仓库的两个服务放到公网。
+- **[网站](https://qt-review.taila524d0.ts.net/)** —— 英文为主，可切换语言，含五个模块的书面走查。
+- **[在线工作台](https://qt-review.taila524d0.ts.net/login)** —— 邀请账号内支持上传、编码、保存和导出，无需本地安装。
+- **[部署你自己的](#部署)** —— 可选的只读 Render 演示蓝图，与完整邀请工作台分开。
 - **[English README](#english)** —— 跳转至上方英文说明。
 
-两个演示服务都在免费方案上，**闲置一段时间后第一次打开需要约半分钟唤醒**。
-语料是公开且带署名的；演示实例不适合上传参与者材料。
+当前固定入口使用独立 QT 服务器，不走 Render 唤醒。完整绘图、报告生成和下载仍需时间。工作台与隧道进程恢复已验证；系统开机自启注册仍待授权／管理员操作。网站示例只用 Bologna；下方可选 Render 演示仍为只读，不可上传参与者材料。
 
 <a id="部署"></a>
 
-## 把它放到线上
+## 可选的只读 Render 演示
 
-**只靠 GitHub 做不到。** GitHub Pages 只能提供静态文件，跑不了 Python 工作台、它的 SQLite 存储，
-也跑不了 Next.js 网站。想要一个可分享的链接，需要能跑进程的托管平台；[Render](https://render.com)
-的免费方案可以，并且能直接从本仓库部署。
+GitHub Pages 可以托管导出的静态网站（`tools/site/build_pages.py`），但不能运行 Python 工作台或 SQLite。当前完整邀请工作台运行在独立 QT 服务器。下方 [Render](https://render.com) 蓝图是另外的只读公开数据演示，不是完整在线部署。
 
 仓库根目录的 `render.yaml` 已经定义好两个服务，不需要手工配置：
 
@@ -338,7 +318,7 @@ QualiCraft 是一个面向访谈研究和开放式材料的模块化工作台。
   所以把网站指向另一个工作台无需重新构建；请在托管面板把 `QT_WORKBENCH_URL` 设为工作台公开地址，
   蓝图只声明变量，不覆盖面板中保存的值。
 
-### 公开实例不适合放私人数据
+### 只读 Render 演示不适合放私人数据
 
 公开演示以只读方式运行并自带样例材料，适合向老师或评审展示界面，**不适合放真实参与者数据**。
 一个正经的多人部署仍需要身份权限管理、用户隔离加密、限流、会话与 CSRF 控制、备份、
