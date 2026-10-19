@@ -42,7 +42,7 @@ export default async function HomeView() {
       <div className="hero__ground" aria-hidden="true"/>
       <div className="wrap hero__composition"><OrbitMark/><div className="hero__inner">
         <p className="hero__eyebrow mono">QT / A LOCAL RESEARCH WORKBENCH</p>
-        <h1 id="hero-title" className="hero__title">Many tools.<br/><em>This one is yours.</em></h1>
+        <h1 id="hero-title" className="hero__title">Build your research.<br/><em>Block by block.</em></h1>
         <p className="hero__body">A workspace for qualitative research. Your passages, codes and decisions.</p>
         <div className="hero__actions"><a className="btn btn--primary" href={siteUrl("/w?lang=en")}>Try the workbench ↗</a><a className="btn btn--secondary" href={siteUrl("/report#sec-outputs")}>View worked example →</a></div>
         <p className="hero__footnote mono">{externalWorkbench?'Full online workspace · Upload, code, save and export':'Public demo: read-only Bologna · Upload your own files locally'}</p>

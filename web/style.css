@@ -880,3 +880,7 @@ button:disabled{cursor:default}
 
 /* Hosting adds identity and storage context, without changing the reader. */
 .hosted-account{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:8px 16px;font-size:13px}.hosted-account button{min-height:44px}.hosted-account span{overflow-wrap:anywhere}
+
+/* Match the website hero QT mark, including compact navigation marks. */
+.qtmark rect.qtmark__cell--sunkissed,.qtmark rect.qtmark__cell--sage,.qtmark rect.qtmark__cell--tidal{fill:#4b607c}
+.qtmark rect.qtmark__cell--accent,.qtmark rect.qtmark__cell--terracotta{fill:#8f3222}

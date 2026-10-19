@@ -1,0 +1,9 @@
+# UX73 · QT identity and hosted project selection · 2026-10-19
+
+User authorized website/workbench synchronization. Homepage slogan: “Build your research. Block by block.” Website navigation and workbench SVG marks use the homepage grey-blue/rust tones. Hosted initialization always offers the start page, including remembered projects; local resume remains unchanged. Existing-project dropdown, upload and editable Bologna remain available. No project data, statistics, plotting, invitation or password behavior changes.
+
+Regression: new hosted-return test fails before change, passes after. All 247 Node tests pass; syntax check passes. Isolated static production build succeeds and verifies all 37 original assets byte-for-byte. Raw outputs: `/tmp/qt-brand-before.txt`, `/tmp/qt-brand-after.txt`, `/tmp/qt-brand-node.txt`, `/tmp/qt-brand-build.txt`.
+
+Deployment limited to QT: two workbench UI files, new static artifact, service.json site_root and QT-owned site-ux72 symlink. Previous UI/config/static files retained inside QT. No system services, other projects or Render settings modified. Built from the reviewed working tree before this commit; artifact explicitly records source_dirty=true, not falsely a clean-commit build. Future system startup still blocked by administrator rights. Windows remains deferred.
+
+Online acceptance: public homepage HTTP200 with new slogan; navigation and workbench accent both computed rgb(75,96,124). Open saved project → sign out → sign in returns to upload/Bologna/existing-project chooser. Desktop and390px screenshots captured; no horizontal overflow and no page-script errors. First check during static-root switch failed; gateway-only restart resolved the path safety boundary and unchanged rerun passed. No shared-server reboot performed. Evidence: `~/qualicraft-review/ux-73/`.

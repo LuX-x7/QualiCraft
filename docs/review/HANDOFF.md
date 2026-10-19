@@ -1,3 +1,7 @@
+2026-10-19 UX73：网站标语与彩色QT统一；线上每次登录先选上传／Bologna／已有项目，本地继续上次行为保留。247 Node及静态构建／37原资产通过。见 [UX73](UX-73-BRAND-START.md)。开机自启管理员阻塞仍保留。
+
+---
+
 2026-10-19 UX72：QT 专用系统启动注册已获用户授权，但服务器明确拒绝：`xiaolu is not in the sudoers file.`。单元复核为 not-found／inactive；开机自启未完成，需服务器管理员仅注册已备 QT 单元。现有进程保持，不改其他服务、不重启主机。详见 [UX72](UX-72-STABLE-ENTRY.md)。
 
 ---

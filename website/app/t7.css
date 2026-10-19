@@ -1242,3 +1242,7 @@ html[data-reduced-motion="true"] .fig-pending { opacity: 1; transform: none; }
   .home-proof { gap: 16px; }
   .evidence-themes button { min-height: 44px; }
 }
+
+/* QT identity: use the homepage orbit mark palette at every size. */
+.qtmark .qtmark__cell--sunkissed,.qtmark .qtmark__cell--sage,.qtmark .qtmark__cell--tidal{background:var(--accent)}
+.qtmark .qtmark__cell--accent,.qtmark .qtmark__cell--terracotta{background:var(--rust)}

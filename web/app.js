@@ -760,9 +760,9 @@ function workspaceMemoryKey() { return 'qt.workspace.v1:'+QT_BASE; }
 function rememberWorkspaceProject(id) {
   try{localStorage.setItem(workspaceMemoryKey(),JSON.stringify({version:1,projectId:id}));}catch(_){}
 }
-function selectedStartupProject(projects,publicDemo=false) {
-  // A public visit starts with an explicit read-only choice, including return visits.
-  if(publicDemo)return null;
+function selectedStartupProject(projects,publicDemo=false,hosted=false) {
+  // Hosted sign-ins and public visits always start with an explicit project choice.
+  if(publicDemo||hosted)return null;
   try{const saved=JSON.parse(localStorage.getItem(workspaceMemoryKey()));if(saved?.version===1&&typeof saved.projectId==='string'&&projects.some(p=>p.id===saved.projectId))return saved.projectId;}catch(_){}
   return null;
 }
@@ -2034,7 +2034,7 @@ window.addEventListener('pagehide',captureReadingPosition);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')captureReadingPosition();});
 async function init(){try{
   const boot=await api('/api/bootstrap');state.token=boot.token;state.projects=boot.projects;state.config=boot.config;
-  const id=selectedStartupProject(state.projects,state.config.public_demo);if(id)await loadProject(id);else render();
+  const id=selectedStartupProject(state.projects,state.config.public_demo,state.config.hosted);if(id)await loadProject(id);else render();
   state.jobs=await api('/api/jobs');renderJob();if(state.jobs.some(j=>j.status==='running'))startPolling();
 }catch(error){$('#app').innerHTML=`<div class="loading">Could not open workspace: ${esc(error.message)}. Check that the local server is running, then refresh.</div>`;}}
 init();
