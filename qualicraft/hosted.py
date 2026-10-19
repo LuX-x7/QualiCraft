@@ -38,7 +38,7 @@ AUTH_HTML = '''<!doctype html><html lang="en"><head><meta charset="utf-8">
 <h1>Continue your research.</h1><p>Upload, code, save and export in your browser. Your projects are saved privately on this QT server.</p>
 <form data-auth="login"><label for="login-name">Username</label><input id="login-name" name="username" autocomplete="username" required maxlength="48"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="256"><button>Sign in →</button></form>
 <p id="auth-status" role="status" aria-live="polite"></p>
-<details><summary>First visit? Create your invited account</summary><form data-auth="register"><label for="register-invite">Invitation code</label><input id="register-invite" name="invite" autocomplete="off" required><label for="register-name">Choose a username</label><input id="register-name" name="username" autocomplete="username" required minlength="3" maxlength="48" pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]{2,47}"><small>3–48 letters, numbers, dots, underscores or hyphens.</small><label for="register-password">Choose a password</label><input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="256"><small>At least 12 characters. Keep your password private.</small><button>Create account →</button></form></details>
+<details><summary>First visit? Create your invited account</summary><form data-auth="register"><label for="register-invite">Invitation code</label><input id="register-invite" name="invite" autocomplete="off" required><label for="register-name">Choose a username</label><input id="register-name" name="username" autocomplete="username" required minlength="3" maxlength="48" pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]{2,47}"><small>3–48 letters, numbers, dots, underscores or hyphens.</small><label for="register-password">Choose a password</label><input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="6" maxlength="256"><small>At least 6 characters. Keep your password private.</small><button>Create account →</button></form></details>
 <p><small>All workbench features are available. AI requests still require your model configuration and explicit confirmation.</small></p></main></body></html>'''
 
 
@@ -87,8 +87,8 @@ class Accounts:
         return value
 
     def register(self, name, password, invite):
-        if not isinstance(name, str) or not NAME.fullmatch(name) or not isinstance(password, str) or not 12 <= len(password) <= 256:
-            raise ValueError('Choose a valid username and a password of at least 12 characters.')
+        if not isinstance(name, str) or not NAME.fullmatch(name) or not isinstance(password, str) or not 6 <= len(password) <= 256:
+            raise ValueError('Choose a valid username and a password of at least 6 characters.')
         if not isinstance(invite, str) or len(invite) > 200:
             raise ValueError('The invitation is unavailable or has expired.')
         account = secrets.token_hex(16)

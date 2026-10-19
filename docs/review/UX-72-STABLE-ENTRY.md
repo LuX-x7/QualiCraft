@@ -1,3 +1,19 @@
+## 2026-10-19 · 邀请注册密码下限调整
+
+按用户明确要求，注册密码下限从12位改为6位；前端约束、提示与服务端一致。邀请码、单次使用及7天有效期保持，不增加注册步骤，不设置共用初始密码；旧账号与密码哈希不迁移。仅修改 QT 托管边界，不改统计、绘图或研究数据。
+
+定向回归：支持的 Python 环境中新增边界测试修改前唯一失败，修改后14项 hosted／hosted-site 测试全过。系统Python3.9缺少所需运行能力的失败原样保留，未当作产品结果。原始输出 `/tmp/qt-password-before-supported.txt`、`/tmp/qt-password-after.txt`。线上仅替换 `QT/releases/ux72/qualicraft/hosted.py`，旧文件留在QT/config；部署SHA-256：`b8d29ce1d3e76c66744da9ef50a4a427a731bb965caff9caea157229fad3e2af`。线上Chrome实际6位注册／退出／重新登录、5位拒绝且邀请码未消耗均通过，注册至起步4.05秒，页面脚本错误0；证据为 `password-live-result.json`。仅由既有监督进程重启QT网关，未重启隧道或其他项目。开机自启管理员阻塞不因此关闭。
+
+---
+
+## 2026-10-19 · 开机注册受管理员权限阻塞
+
+用户已明确批准仅新增 `/etc/systemd/system/qt-xiaolu.service` 与其启用链接。实际执行 `sudo install` 被服务器拒绝：`xiaolu is not in the sudoers file.`；不是用户授权缺失。复核 `systemctl is-enabled qt-xiaolu.service` 返回 `not-found`，`is-active` 返回 `inactive`，没有注册成功，不得标为开机自启完成。已备单元 SHA-256 为 `12900b09656f57bfd98f3b62ee6243f94c0a7f125bd559289278e601c7b42e08`。现有 QT 手动监督进程保持运行。
+
+下一步由服务器管理员以管理员身份执行已审核的专用单元安装、daemon-reload 和 enable；先不 start，待核验后仅切换 QT 进程。不要授予通用 sudo 权限，不改其他服务，不重启共享服务器。真实 OS 重启验证仍未执行。
+
+---
+
 # UX72 — Fixed website and full workbench; boot registration pending
 
 Date: 2026-10-18. The user authorized a free-first alternative without waiting for LuX-x7, plus their own Tailscale device/Funnel authorization. Server changes remain confined to `/mnt/data/xiaolu/LMIC-ILI-EarlyWarning/QT/`. No system service, cron, shell profile, host interface or other project has been modified.

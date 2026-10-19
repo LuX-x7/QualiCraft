@@ -91,6 +91,22 @@ class HostedTests(unittest.TestCase):
         self.assertEqual(self.request(client, '/auth/logout', {})[0], 303)
         self.assertEqual(self.request(client, '/w/api/bootstrap')[0], 401)
 
+    def test_six_character_password_boundary_preserves_invitation_and_login(self):
+        invite = self.server.accounts.invite()
+        client = self.client()
+        payload = {'username': 'short-password-review', 'password': 'abc12', 'invite': invite}
+        self.assertEqual(self.request(client, '/auth/register', payload)[0], 400)
+        payload['password'] = 'abc123'
+        self.assertEqual(self.request(client, '/auth/register', payload)[0], 200)
+        self.assertEqual(self.request(self.client(), '/auth/login', payload)[0], 200)
+        self.assertEqual(self.request(self.client(), '/auth/register',
+                                     {**payload, 'username': 'reused-invite'})[0], 400)
+        self.assertEqual(self.request(self.client(), '/auth/register',
+                                     {**payload, 'username': 'no-invite', 'invite': ''})[0], 400)
+        html = self.request(self.client(), '/login')[1].decode('utf-8')
+        self.assertIn('required minlength="6" maxlength="256"', html)
+        self.assertIn('At least 6 characters.', html)
+
     def test_independent_full_workspaces_do_not_share_projects_tokens_or_model_settings(self):
         a, boot_a = self.register('researcher-a')
         b, boot_b = self.register('researcher-b')

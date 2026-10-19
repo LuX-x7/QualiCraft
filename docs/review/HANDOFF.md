@@ -1,3 +1,7 @@
+2026-10-19 UX72：QT 专用系统启动注册已获用户授权，但服务器明确拒绝：`xiaolu is not in the sudoers file.`。单元复核为 not-found／inactive；开机自启未完成，需服务器管理员仅注册已备 QT 单元。现有进程保持，不改其他服务、不重启主机。详见 [UX72](UX-72-STABLE-ENTRY.md)。
+
+---
+
 2026-10-18 UX72 上线补记：固定网站 https://qt-review.taila524d0.ts.net/ 与完整邀请工作台 https://qt-review.taila524d0.ts.net/login 已通过外网Bologna全流程。无需 LuX-x7 或安装客户端；网站／报告公开，上传／编码／保存／导出需私有账号。321 Python（3原有跳过）、267 Node、Chrome交互／键盘／报告／Word／登录／编码／退出、12项完整导出和五图CSV一致性通过；远端分别停止QT网页与隧道后自动恢复，域名、冻结报告与保存编码保持。公开文本gzip与哈希资源缓存已接通，原37资源不变。**系统开机自启尚未注册：仅QT目录无法登记启动，已备专用服务并等待用户是否允许仅QT启动注册的最小例外。没有修改QT外文件或其他项目，没有重启共享主机。** 旧QT临时隧道退役，Render不变且自动部署关闭，GitHub Pages不再是审核入口前置。见 [UX72](UX-72-STABLE-ENTRY.md)。
 
 ---
