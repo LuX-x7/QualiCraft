@@ -884,3 +884,29 @@ button:disabled{cursor:default}
 /* Match the website hero QT mark, including compact navigation marks. */
 .qtmark rect.qtmark__cell--sunkissed,.qtmark rect.qtmark__cell--sage,.qtmark rect.qtmark__cell--tidal{fill:#4b607c}
 .qtmark rect.qtmark__cell--accent,.qtmark rect.qtmark__cell--terracotta{fill:#8f3222}
+
+/* UX74: keep account actions in the project row; reserve space for source text. */
+.project-strip-actions{display:flex;align-items:center;gap:10px;flex:none}
+.project-strip-actions .hosted-account{margin:0;padding:0;gap:8px;font-size:11px}
+.project-strip-actions .hosted-account span{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell--coding .project-strip{padding:5px 16px;min-height:46px;gap:12px}
+.shell--coding .project-strip-actions{flex-wrap:nowrap;gap:8px}
+.shell--coding .project-strip-actions button{min-height:34px;padding:6px 9px}
+.shell--coding .reading-dock{padding:6px 16px 4px}
+.shell--coding .reading-context{height:27px;margin-top:2px}
+.shell--coding:has(.empty-project) .project-strip-actions>[data-action="import"]{display:none}
+@media(min-width:1200px){
+ .shell--coding .reading-dock{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:center}
+ .shell--coding .reading-primary{gap:7px}
+ .shell--coding #reading-document{width:220px;max-width:35%}
+ .shell--coding .reading-marks{margin:0;gap:6px}
+ .shell--coding .reading-marks button,.shell--coding .reading-marks select{min-height:34px}
+ .shell--coding .reading-context{grid-column:1/-1}
+}
+@media(max-width:800px){
+ .shell--coding .project-strip{flex-wrap:wrap;padding:6px 10px}
+ .shell--coding .project-strip-actions{margin-left:auto}
+ .shell--coding .project-strip-actions button{min-height:44px}
+ .shell--coding .reading-dock{padding-inline:10px}
+ .project-strip-actions .hosted-account span{max-width:70px}
+}
