@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import copy
+import hashlib
 import base64
 import io
 import json
@@ -56,6 +58,35 @@ def network_response(project, passages=True):
                         document_id=annotation['document_id'],
                         start=annotation['start'], end=annotation['end'])
     return graph
+
+
+def project_version(project):
+    """Opaque transport baseline; never stored in a research project."""
+    return hashlib.sha256(json.dumps(project, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
+
+
+def coding_patch(before, after):
+    """Exact top-level delta; array splice keeps order and stable identities."""
+    def encoded(value):
+        return json.dumps(value, sort_keys=True, ensure_ascii=False)
+    changes = {}
+    for key in before.keys() | after.keys():
+        if key not in after:
+            changes[key] = {'op': 'remove'}
+        elif key not in before or encoded(before[key]) != encoded(after[key]):
+            old, new = before.get(key), after[key]
+            if isinstance(old, list) and isinstance(new, list):
+                left = 0
+                while left < min(len(old), len(new)) and encoded(old[left]) == encoded(new[left]):
+                    left += 1
+                right = 0
+                while right < min(len(old), len(new)) - left and encoded(old[-1-right]) == encoded(new[-1-right]):
+                    right += 1
+                changes[key] = {'op': 'splice', 'start': left, 'delete': len(old)-left-right,
+                                'items': new[left:len(new)-right]}
+            else:
+                changes[key] = {'op': 'set', 'value': new}
+    return changes
 
 
 def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1",
@@ -153,7 +184,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                     if len(parts) >= 3 and parts[1] == "projects":
                         project = store.get(parts[2])
                         if len(parts) == 3:
-                            return self.send(project)
+                            return self.send(project, extra_headers=[("X-QT-Project-Version", project_version(project))])
                         if len(parts) == 4 and parts[3] == 'report':
                             return self.send(reporting.context(project))
                         if len(parts) == 4 and parts[3] == 'qca':
@@ -316,7 +347,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         target = Path(scratch) / ("upload" + suffix)
                         target.write_bytes(blob)
                         project = ingest.from_file(target, body.get("name") or None)
-                    return self.send(store.create(project))
+                    created = store.create(project)
+                    return self.send(created, extra_headers=[("X-QT-Project-Version", project_version(created))])
                 if parts == ["api", "analyze"]:
                     require(body.get("confirmed") is True, "Confirm the preview before sending data")
                     return self.send(analyzer.start(body.get("preview_id")))
@@ -342,7 +374,8 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         project = new_project(body.get("name", "Untitled research project"))
                     else:
                         raise ValueError("The project type is invalid")
-                    return self.send(store.create(project))
+                    created = store.create(project)
+                    return self.send(created, extra_headers=[("X-QT-Project-Version", project_version(created))])
                 if len(parts) == 4 and parts[:2] == ["api", "projects"]:
                     project_id, action = parts[2:]
                     if action == 'document-check':
@@ -416,7 +449,31 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                             review(project, body.get("id"), body.get("action"))
                             return {"ok": True}
                         raise ValueError("The requested action does not exist")
-                    return self.send(store.change(project_id, operation))
+                    compact = (self.headers.get('X-QT-Save-Response') == 'compact-v1' and
+                               action in {'codes', 'annotations', 'code-update', 'memo', 'remove-annotation'})
+                    if not compact:
+                        return self.send(store.change(project_id, operation))
+                    baseline = self.headers.get('X-QT-Project-Version')
+                    captured = {}
+                    def committed_operation(project):
+                        # Compare inside the existing writer transaction. A stale
+                        # client still writes once, then receives full state.
+                        captured['before'] = copy.deepcopy(project) if baseline == project_version(project) else None
+                        captured['project'] = project
+                        return operation(project)
+                    result = store.change(project_id, committed_operation)
+                    # Store.change returns only after commit and snapshot-outbox
+                    # handling. Never publish a candidate or invent backup success.
+                    current = captured['project']
+                    receipt = {'format': 'qt-save-v1', 'project_id': project_id,
+                               'version': project_version(current), 'result': result,
+                               'backups': store.backups(project_id), 'backup_status': store.backup_status(),
+                               'summary': {k: current[k] for k in ('id', 'name', 'updated_at')}}
+                    if captured['before'] is None:
+                        receipt['project'] = current
+                    else:
+                        receipt.update(base_version=baseline, patch=coding_patch(captured['before'], current))
+                    return self.send(receipt)
                 return self.send({"error": "The API endpoint does not exist"}, status=404)
             except ImportReply as reply:
                 return self.send(reply.payload)

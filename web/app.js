@@ -190,13 +190,16 @@ function toast(message, error=false) { const el=$('#toast'); el.textContent=mess
 // When the workbench is proxied behind the site, /config.js sets QT_BASE to the
 // prefix it is mounted at. Standalone, the base is empty and every path is root.
 const QT_BASE = (typeof window !== 'undefined' && window.QT_BASE) || '';
-async function api(path, body, {rawJson=false}={}) {
+const projectVersions=new WeakMap();
+let codingSaveQueue=Promise.resolve();
+async function api(path, body, {rawJson=false,compact=false,compactVersion=null}={}) {
   if (body && state.config.public_demo) {
     throw new Error(QT('publicDemoReadOnly', 'This public demonstration is read-only. Start a local copy to create or change projects.'));
   }
   const url = path.startsWith('/api') ? QT_BASE + path : path;
   let payload=body?(rawJson?body:JSON.stringify(body)):undefined;
   const headers={'X-QualiCraft-Token':state.token,...(body?{'Content-Type':'application/json'}:{})};
+  if(compact){headers['X-QT-Save-Response']='compact-v1';if(compactVersion)headers['X-QT-Project-Version']=compactVersion;}
   // Preserve raw frozen JSON bytes; compress transport only, with a fallback
   // for browsers without CompressionStream. Never stringify the parsed file.
   if(rawJson&&typeof payload==='string'&&payload.length>65536&&typeof CompressionStream!=='undefined'){
@@ -205,7 +208,51 @@ async function api(path, body, {rawJson=false}={}) {
   }
   const response = await fetch(url, {method:body ? 'POST':'GET',headers,...(body?{body:payload}:{})});
   if(response.status===401&&window.QT_HOSTED){window.location.assign('/login');throw new Error('Sign in to continue.');}
-  const data = await response.json(); if(!response.ok) { const error=new Error(data.error || 'Request failed'); error.status=response.status; throw error; } return data;
+  const data = await response.json(); if(!response.ok) { const error=new Error(data.error || 'Request failed'); error.status=response.status; throw error; }
+  const version=response.headers?.get?.('X-QT-Project-Version');
+  if(version&&Array.isArray(data?.documents)&&Array.isArray(data?.codes))projectVersions.set(data,version);
+  return data;
+}
+function applyCodingReceipt(current,receipt){
+  if(receipt.project_id!==current.id||!/^[a-f0-9]{64}$/.test(receipt.version))throw Error('Invalid save receipt');
+  let next;
+  if(receipt.project){next=receipt.project;if(next.id!==current.id)throw Error('Wrong saved project');}
+  else{
+    if(receipt.base_version!==projectVersions.get(current)||!receipt.patch)throw Error('Save baseline changed');
+    next={...current};
+    for(const [key,change] of Object.entries(receipt.patch)){
+      if(['__proto__','constructor','prototype'].includes(key))throw Error('Invalid save field');
+      if(change.op==='set')next[key]=change.value;
+      else if(change.op==='remove')delete next[key];
+      else if(change.op==='splice'){
+        const old=next[key],{start,delete:count,items}=change;
+        if(!Array.isArray(old)||!Number.isInteger(start)||!Number.isInteger(count)||start<0||count<0||start+count>old.length||!Array.isArray(items))throw Error('Invalid save range');
+        next[key]=[...old.slice(0,start),...items,...old.slice(start+count)];
+      }else throw Error('Unknown save change');
+    }
+  }
+  if(next.id!==current.id||!Array.isArray(next.documents)||!Array.isArray(next.codes)||!Array.isArray(next.annotations)||!Array.isArray(receipt.backups)||!receipt.backup_status||receipt.summary?.id!==current.id||receipt.summary.updated_at!==next.updated_at)throw Error('Incomplete save receipt');
+  projectVersions.set(next,receipt.version);return next;
+}
+function saveCoding(action,body){
+  const id=state.project.id;
+  const task=codingSaveQueue.then(async()=>{
+    const current=state.project?.id===id?state.project:null;
+    const receipt=await api(`/api/projects/${id}/${action}`,body,{compact:true,compactVersion:current?projectVersions.get(current):null});
+    if(state.project?.id!==id)return receipt.result??receipt;
+    if(receipt.format!=='qt-save-v1'){await refresh();return receipt;}
+    let next;
+    try{next=applyCodingReceipt(state.project,receipt);}
+    catch(_){
+      // The write already committed: read authoritative state, never replay it.
+      try{await refresh();}catch(_){throw Error('Saved on the server. Refresh to load the latest project and recovery points.');}
+      return receipt.result;
+    }
+    state.project=next;state.backups=receipt.backups;state.backupStatus=receipt.backup_status;
+    state.projects=state.projects.map(p=>p.id===id?receipt.summary:p).sort((a,b)=>b.updated_at.localeCompare(a.updated_at));
+    return receipt.result;
+  });
+  codingSaveQueue=task.catch(()=>{});return task;
 }
 const projectUrl = action => `${QT_BASE}/api/projects/${state.project.id}${action?'/'+action:''}`;
 const doc = () => state.project?.documents.find(d=>d.id===state.docId);
@@ -444,6 +491,7 @@ function acceptReadingResponse(projectId,result){
   if((d.reading_state?.revision||0)>result.reading_state.revision)return false;
   d.reading_state=result.reading_state;
   if(state.docId===d.id&&readingOverview.open)renderReadingOverview();
+  projectVersions.delete(state.project);
   if(result.updated_at>state.project.updated_at)state.project.updated_at=result.updated_at;
   if(result.audit_event&&!state.project.audit.some(e=>e.id===result.audit_event.id))state.project.audit.push(result.audit_event);
   return true;
@@ -1431,14 +1479,13 @@ function movePopupCursor(delta) {
 }
 async function applyCodeById(codeId) {
   const sel=state.selection; if(!sel) return;
-  await api(projectUrl('annotations'),{document_id:sel.document_id,start:sel.start,end:sel.end,code_id:codeId,memo:''});
+  await saveCoding('annotations',{document_id:sel.document_id,start:sel.start,end:sel.end,code_id:codeId,memo:''});
   closeCodePopup(); state.selection=null;
-  await refresh();
+  render();
   toast(QT('toastCoded','Coded.'));
 }
 async function createAndApplyCode(name) {
-  const code=await api(projectUrl('codes'),{name,definition:'',color:null});
-  await refresh();
+  const code=await saveCoding('codes',{name,definition:'',color:null});
   await applyCodeById(code.id);
   toast(QT('toastCodeCreated','Created “%s” and coded it.').replace('%s',name));
 }
@@ -1970,12 +2017,12 @@ async function action(button) {
     if(a==='queue-view'){const id=button.dataset.id,pid=q.projectId;closeModal();await refreshImportedProject(pid);if(state.project?.id===pid){importedDocument(id);render();focusImportedDocument();}return;}
   }
   if(a==='save-document'||a==='keep-document')return saveDocument(a==='keep-document');
-  if(a==='save-code'){await api(projectUrl('codes'),{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null,research_role:$('#code-role').value||null});closeModal();await refresh();toast(QT('codeSaved','Code saved.'));return;}
+  if(a==='save-code'){await saveCoding('codes',{name:$('#code-name').value,definition:$('#code-definition').value,color:$('#code-color').value,parent_id:$('#code-parent')?$('#code-parent').value||null:null,research_role:$('#code-role').value||null});closeModal();render();toast(QT('codeSaved','Code saved.'));return;}
   if(a==='code-save'){
     const id=button.dataset.id;
     const changes=codeEditChanges(codeEditValues(),$('#dialog').codeEditBaseline);
-    if(Object.keys(changes).length)await api(projectUrl('code-update'),{id,changes});
-    closeModal();await refresh();toast(QT('codeUpdated','Code updated.'));return;
+    if(Object.keys(changes).length)await saveCoding('code-update',{id,changes});
+    closeModal();render();toast(QT('codeUpdated','Code updated.'));return;
   }
   if(a==='code-delete'){
     const id=button.dataset.id;
@@ -1991,7 +2038,7 @@ async function action(button) {
     closeModal();await refresh();
     toast(`Merged “${result.source}” into “${result.target}” · ${result.codings_moved} coding(s) moved${result.duplicates_collapsed?` · ${result.duplicates_collapsed} duplicate(s) collapsed`:''}.`);return;
   }
-  if(a==='save-annotation'){await api(projectUrl('annotations'),{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();await refresh();toast(QT('passageCoded','Passage coded.'));return;}
+  if(a==='save-annotation'){await saveCoding('annotations',{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();render();toast(QT('passageCoded','Passage coded.'));return;}
   if(a==='review'){const start=state.project.suggestions.find(s=>s.id===button.dataset.id)?.start;await api(projectUrl('review'),{id:button.dataset.id,action:button.dataset.decision});await refresh();locate(start);toast(button.dataset.decision==='accept'?QT('toastAccepted','Accepted and added to your codings.'):QT('toastRejected','Rejected; review decision saved.'));return;}
   if(a==='coding-locate'){const id=button.dataset.id;delete $('#dialog').dataset.codingId;closeModal();if(state.search||state.codeFilter){state.search='';state.codeFilter=null;render();}const mark=[...document.querySelectorAll('.passage mark[data-coding-ids]')].find(el=>JSON.parse(el.dataset.codingIds).includes(id));if(mark){mark.setAttribute('tabindex','-1');mark.scrollIntoView({block:'center',behavior:'auto'});mark.focus({preventScroll:true});previewCoding([id]);}return;}
   if(a==='annotation'&&state.view==='coding'){inspectCodings([button.dataset.id]);return;}
@@ -2001,8 +2048,8 @@ async function action(button) {
     modal(codesFor(annotation).name,`${codingDetailsHtml(annotation)}<label class="field">${QT('researchMemo','Research memo')}<textarea id="edit-memo" rows="4">${esc(annotation.memo)}</textarea></label>`,`<button class="danger" data-action="remove-annotation"${demoLock()} data-id="${annotation.id}">${QT('removeCoding','Remove coding')}</button><button class="primary" data-action="save-memo"${demoLock()} data-id="${annotation.id}">${QT('saveMemo','Save memo')}</button>`);
     $('#dialog').dataset.codingId=annotation.id;return;
   }
-  if(a==='save-memo'){await api(projectUrl('memo'),{id:button.dataset.id,memo:$('#edit-memo').value});closeModal();await refresh();toast(QT('memoSaved','Memo saved.'));return;}
-  if(a==='remove-annotation'){await api(projectUrl('remove-annotation'),{id:button.dataset.id});closeModal();await refresh();toast(QT('codingRemoved','Coding removed; the previous record is retained in the audit trail.'));return;}
+  if(a==='save-memo'){await saveCoding('memo',{id:button.dataset.id,memo:$('#edit-memo').value});closeModal();render();toast(QT('memoSaved','Memo saved.'));return;}
+  if(a==='remove-annotation'){await saveCoding('remove-annotation',{id:button.dataset.id});closeModal();render();toast(QT('codingRemoved','Coding removed; the previous record is retained in the audit trail.'));return;}
   if(a==='save-settings'||a==='clear-key'){
     state.config=await api('/api/config',{base_url:$('#api-base').value,model:$('#api-model').value,api_key:a==='clear-key'?'':$('#api-key').value,keep_key:a!=='clear-key'});closeModal();toast(a==='clear-key'?QT('keyCleared','Key cleared from memory.'):QT('settingsSaved','Settings saved. No text has been sent.'));return;
   }
