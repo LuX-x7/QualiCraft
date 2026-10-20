@@ -258,7 +258,8 @@ function codingDetailsHtml(annotation) {
 let codingPreview=[];
 function previewCoding(ids=[]) {
   codingPreview=ids;
-  const effective=ids.length?ids:(state.sourceFocus?[state.sourceFocus]:[]),chosen=new Set(effective),path=new Set();
+  const pinned=inspectorReturn()?(codingInspector.ids.length?codingInspector.ids:inspectorCurrent()?[inspectorCurrent().id]:[]):[];
+  const effective=ids.length?ids:pinned.length?pinned:(state.sourceFocus?[state.sourceFocus]:[]),chosen=new Set(effective),path=new Set();
   state.project?.annotations.filter(a=>chosen.has(a.id)).forEach(a=>{const c=codesFor(a);if(c)codeLineage(c).forEach(c=>path.add(c.id));});
   document.querySelectorAll('.passage mark[data-coding-ids]').forEach(mark=>mark.classList.toggle('coding-active',JSON.parse(mark.dataset.codingIds).some(id=>chosen.has(id))));
   document.querySelectorAll('.pill[data-code-id]').forEach(pill=>pill.classList.toggle('coding-active',chosen.has(pill.dataset.id)));
@@ -266,6 +267,97 @@ function previewCoding(ids=[]) {
   document.querySelectorAll('[data-coding-node],[data-code-node]').forEach(node=>node.classList.toggle('coding-path-active',path.has(node.dataset.codingNode||node.dataset.codeNode)));
   updateReadingPath();
 }
+// UX77: one Coding workspace tree and an ephemeral source-inspection return.
+// These fields never enter project JSON, audit, snapshots or browser storage.
+let codingInspector={mode:'tree',query:'',codeId:null,ids:[],index:0,returnTo:null,drawer:false};
+function inspectorWide(){return typeof window.innerWidth!=='number'||window.innerWidth>1000;}
+function inspectorTitle(){return QT('inspectorTitle','Themes / Categories / Codes');}
+function inspectorRole(code){return ['theme','category','code'].includes(code.research_role)?{theme:QT('researchTheme','Theme'),category:QT('researchCategory','Category'),code:QT('codeRole','Code')}[code.research_role]:QT('roleUnassigned','Not assigned');}
+function inspectorReturn(){
+  const saved=codingInspector.returnTo,d=doc();
+  return saved&&d&&state.view==='coding'&&saved.projectId===state.project?.id&&saved.documentId===d.id&&saved.text===d.text?saved:null;
+}
+function resetCodingInspector(){codingInspector={mode:'tree',query:'',codeId:null,ids:[],index:0,returnTo:null,drawer:false};}
+function beginCodingInspection(){
+  if(inspectorReturn())return;
+  const d=doc();if(!d)return;
+  const first=segments(d.text)[0]?.start??0;
+  const start=(readingMounted?.filtered?readingMounted.start:readingSearchPosition()?.start??readingMounted?.readingStart??readingMounted?.start)??readReadingPosition(state.project,d)?.start??first;
+  codingInspector.returnTo={projectId:state.project.id,documentId:d.id,text:d.text,start,search:state.search,codeFilter:state.codeFilter,sourceFocus:state.sourceFocus,searchReturn:readingSearchReturn,overviewNav:readingOverviewNav,overviewFocus:readingOverviewFocus,overviewOpen:readingOverview.open};
+}
+function inspectorMatches(){
+  if(!inspectorReturn())return [];
+  const ids=new Set(codingInspector.ids),scope=codingInspector.codeId?new Set([codingInspector.codeId,...codeDescendants(codingInspector.codeId)]):null;
+  return state.project.annotations.filter(a=>a.document_id===state.docId&&(scope?scope.has(a.code_id):ids.has(a.id))).sort((a,b)=>a.start-b.start||a.end-b.end||a.id.localeCompare(b.id));
+}
+function inspectorCurrent(){const items=inspectorMatches();return items[Math.min(codingInspector.index,Math.max(0,items.length-1))]||null;}
+function inspectorExpand(ids){
+  ids.forEach(id=>{const code=state.project.codes.find(c=>c.id===id);if(code)codeLineage(code).forEach(c=>state.collapsed.delete(c.id));});
+}
+function selectInspectorCode(id){
+  if(!state.project?.codes.some(c=>c.id===id))return;
+  beginCodingInspection();codingInspector.mode='tree';codingInspector.codeId=id;codingInspector.ids=[];codingInspector.index=0;
+  inspectorExpand([id]);refreshInspector();focusInspectorSource();
+  [...document.querySelectorAll('#inspector-tree [data-action="inspect-code"]')].find(el=>el.dataset.id===id)?.focus({preventScroll:true});
+}
+function inspectCodings(ids){
+  const items=state.project?.annotations.filter(a=>a.document_id===state.docId&&ids.includes(a.id))||[];if(!items.length)return;
+  beginCodingInspection();codingInspector.mode='tree';codingInspector.codeId=null;codingInspector.ids=items.map(a=>a.id);codingInspector.index=0;
+  inspectorExpand(items.map(a=>a.code_id));
+  if(!inspectorWide())openCodingInspector(false);else refreshInspector();
+  previewCoding(items.map(a=>a.id));
+}
+function focusInspectorSource(){
+  const a=inspectorCurrent();if(!a)return;
+  const paragraphs=[...document.querySelectorAll('#reader .paragraph')],paragraph=paragraphs.find(p=>Number(p.dataset.start)<=a.start&&Number(p.dataset.end)>a.start);
+  if(paragraph){scrollReadingParagraph(Number(paragraph.dataset.start));previewCoding([a.id]);}
+  refreshInspectorReadout();
+}
+function finishCodingInspection(here=false){
+  const previous=inspectorReturn(),current=inspectorCurrent();
+  const start=here&&current?segments(doc().text).find(p=>p.start<=current.start&&current.start<p.end)?.start:previous?.start;
+  const drawer=codingInspector.drawer;
+  if(previous&&!here){state.search=previous.search;state.codeFilter=previous.codeFilter;state.sourceFocus=previous.sourceFocus;readingSearchReturn=previous.searchReturn;readingOverviewNav=previous.overviewNav;readingOverviewFocus=previous.overviewFocus;readingOverview.open=previous.overviewOpen;}
+  else if(here){state.sourceFocus=null;readingSearchReturn=null;readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;}
+  codingInspector.mode='tree';codingInspector.codeId=null;codingInspector.ids=[];codingInspector.returnTo=null;codingInspector.index=0;codingInspector.drawer=false;
+  const dlg=$('#dialog');if(drawer&&dlg?.dataset.workflow==='coding-inspector'){delete dlg.dataset.workflow;dlg.close();dlg.innerHTML='';}
+  render();
+  if(Number.isInteger(start)){scrollReadingParagraph(start,true);updateReadingPosition();}
+}
+function inspectorSelectionHtml(){
+  const previous=inspectorReturn();if(!previous)return `<p class="inspector-hint">${QT('inspectHint','Select a tree node or a highlighted passage. Your full transcript stays in view.')}</p>`;
+  const items=inspectorMatches(),a=inspectorCurrent(),code=codingInspector.codeId&&state.project.codes.find(c=>c.id===codingInspector.codeId);
+  const selected=code?codeIdentity(code):QT('inspectPassage','Selected passage');
+  const visible=a&&[...document.querySelectorAll('#reader .paragraph')].some(p=>Number(p.dataset.start)<=a.start&&Number(p.dataset.end)>a.start);
+  return `<section class="inspector-selection" aria-label="${QT('inspectSelection','Current selection')}"><strong>${esc(selected)}</strong><p class="inspector-match-count" role="status">${items.length?`${codingInspector.index+1} / ${items.length} ${QT('inspectMatches','coded passages in this document')}`:QT('inspectNoMatch','No matching coded passages in this document.')}</p>
+   ${items.length?`<div class="inspector-pager"><button data-action="inspect-prev"${codingInspector.index<=0?' disabled':''}>${QT('inspectPrevious','Previous passage')}</button><button data-action="inspect-next"${codingInspector.index>=items.length-1?' disabled':''}>${QT('inspectNext','Next passage')}</button></div>`:''}
+   ${a?`<p class="inspector-path">${esc(codeIdentity(codesFor(a)))}</p><blockquote>${esc(a.quote)}</blockquote>${!visible&&(state.search||state.codeFilter)?`<p>${QT('inspectHidden','This passage is hidden by your current filters.')}</p><button data-action="inspect-show-all">${QT('ovFullJump','Show full text and jump')}</button>`:''}
+   <details class="inspector-details"><summary>${QT('inspectDetails','Details and editing')}</summary><p>${esc(inspectorRole(codesFor(a)))} · [${a.start}, ${a.end}) · ${esc(codingSourceLabel(a))}</p>${codesFor(a).definition?`<p>${esc(codesFor(a).definition)}</p>`:''}${a.memo?`<p>${esc(a.memo)}</p>`:''}<button data-action="inspect-edit-coding" data-id="${a.id}">${QT('inspectEdit','Edit coding / memo')}</button><button data-action="code-edit" data-id="${a.code_id}"${demoLock()}>${QT('editCode','Edit code')}</button></details>`:''}
+   ${code?`<button class="inspector-filter" data-action="inspect-filter" data-id="${code.id}">${QT('inspectFilter','Only show matching passages')}</button>`:''}</section>`;
+}
+function inspectorBodyHtml(){
+  const pending=state.project.suggestions.filter(s=>s.document_id===state.docId&&s.status==='pending').length;
+  return `<div class="inspector-tabs" role="group" aria-label="${QT('inspectViews','Coding panel')}"><button data-action="inspect-tree" aria-pressed="${codingInspector.mode==='tree'}">${inspectorTitle()}</button>${hasBlock('ai')?`<button data-action="inspect-ai" aria-pressed="${codingInspector.mode==='ai'}">${QT('suggestions','Suggestions')} (${pending})</button>`:''}</div>
+  <div class="inspector-return"><button data-action="inspect-return"${inspectorReturn()?'':' disabled'}>${QT('inspectReturn','\u2190 Continue coding')}</button>${inspectorReturn()?`<button data-action="inspect-here">${QT('inspectHere','Continue here')}</button>`:''}</div>
+  ${codingInspector.mode==='ai'&&hasBlock('ai')?`<div class="inspector-ai"><p class="inspector-hint">${QT('reviewSubtitle')}</p><label for="review-filter" class="sr-only">${QT('inspectReviewStatus','Suggestion status')}</label><select id="review-filter">${['pending','accepted','rejected'].map(v=>`<option value="${v}"${v===state.reviewFilter?' selected':''}>${QT(v==='pending'?'pending':v==='accepted'?'reviewAccepted':'reviewRejected')}</option>`).join('')}</select>${suggestionsHtml()}</div>`:
+  `<div id="inspector-readout">${inspectorSelectionHtml()}</div><div class="inspector-tree-head"><label for="inspector-search">${QT('codebookFind','Find a code or group')}</label><input id="inspector-search" type="search" autocomplete="off" value="${esc(codingInspector.query)}"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button></div><div id="inspector-tree">${codebookHtml('inspector')}</div>`}`;
+}
+function refreshInspectorReadout(){const target=$('#inspector-readout');if(target)target.innerHTML=inspectorSelectionHtml();}
+function refreshInspector(){
+  const host=$('#coding-inspector-body'),dlg=$('#dialog');
+  if(host){const top=host.scrollTop;host.innerHTML=inspectorBodyHtml();host.scrollTop=top;}
+  else if(dlg?.open&&dlg.dataset.workflow==='coding-inspector')dlg.querySelector('.modal-body').innerHTML=inspectorBodyHtml()+'<div id="modal-error" role="alert"></div>';
+  const a=inspectorCurrent();previewCoding(codingInspector.ids.length?codingInspector.ids:a?[a.id]:[]);
+}
+function openCodingInspector(protect=true){
+  if(protect)beginReadingSearch();
+  if(inspectorWide()){$('#inspector-search')?.focus({preventScroll:true});return;}
+  codingInspector.drawer=true;
+  modal(inspectorTitle(),inspectorBodyHtml(),`<button data-action="inspect-close">${QT('inspectReturn','\u2190 Continue coding')}</button>`);
+  $('#dialog').dataset.workflow='coding-inspector';
+  $('#inspector-search')?.focus({preventScroll:true});
+}
+Object.assign(_T.zh,{inspectorTitle:'主题／类别／编码',inspectPrevious:'上一处原句',inspectNext:'下一处原句',inspectHint:'选择树节点或高亮原句，正文保持可见。',inspectPassage:'所选原句',inspectSelection:'当前选择',inspectMatches:'处原句（当前文档）',inspectNoMatch:'当前文档没有匹配的已编码原句。',inspectHidden:'当前筛选隐藏了这处原句。',inspectDetails:'详情与编辑',inspectEdit:'编辑编码／备忘录',inspectFilter:'仅显示匹配原句',inspectViews:'编码面板',inspectReturn:'← 继续编码',inspectHere:'在此继续',inspectReviewStatus:'建议状态'});
 // Browser-local navigation only. No transcript, quote, read-completion state or
 // project mutation is stored. A changed source invalidates its paragraph anchor.
 function readingSignature(text) {
@@ -559,7 +651,7 @@ document.addEventListener('touchend',readingSearchGesture,{passive:true});
 document.addEventListener('keydown',readingSearchGesture);
 document.addEventListener('keyup',readingSearchGesture);
 function captureReadingPosition() {
-  if(!readingMounted||readingMounted.filtered||readingOverview.open||overviewPreviewNavigation()||document.activeElement?.id==='search'||readingSearchPosition({id:readingMounted.projectId},readingMounted.document))return;
+  if(inspectorReturn()||!readingMounted||readingMounted.filtered||readingOverview.open||overviewPreviewNavigation()||document.activeElement?.id==='search'||readingSearchPosition({id:readingMounted.projectId},readingMounted.document))return;
   const paragraph=readingParagraph();if(!paragraph)return;
   writeReadingPosition({id:readingMounted.projectId},readingMounted.document,Number(paragraph.dataset.start));
 }
@@ -682,17 +774,18 @@ function codeCounts() {
   return {own, total};
 }
 function codebookHtml(context='side') {
+  const inspect=context==='inspector';
   const p=state.project;
   if(!p.codes.length)return `<div class="empty">${QT('noCodes','No codes yet. Add one to start coding.')}</div>`;
-  const {own,total}=codeCounts(),byParent=new Map(),needle=state.sideFilter.trim().toLowerCase();
+  const {own,total}=codeCounts(),byParent=new Map(),needle=(inspect?codingInspector.query:state.sideFilter).trim().toLowerCase();
   p.codes.forEach(c=>{const key=c.parent_id||null;if(!byParent.has(key))byParent.set(key,[]);byParent.get(key).push(c);});
   byParent.forEach(list=>list.sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name)));
   const row=(c,search=false)=>{
-    const children=byParent.get(c.id)||[],open=!state.collapsed.has(c.id),path=codeIdentity(c),role=codeRole(c);
+    const children=byParent.get(c.id)||[],open=!state.collapsed.has(c.id),path=codeIdentity(c),role=inspect?inspectorRole(c):codeRole(c);
     return `<li data-code-node="${c.id}" data-parent-id="${esc(c.parent_id||'')}"><div class="code-row">
       ${children.length&&!search?`<button class="twisty" data-action="toggle-code" data-id="${c.id}" aria-expanded="${open}" aria-controls="cb-${context}-${c.id}" aria-label="${esc((open?QT('collapse','Collapse'):QT('expand','Expand'))+' '+c.name)}">${open?'▾':'▸'}</button>`:'<span class="twisty leaf" aria-hidden="true">·</span>'}
-      <button class="side-item${state.codeFilter===c.id?' selected':''}" data-action="filter-code" data-id="${c.id}" aria-pressed="${state.codeFilter===c.id}" aria-label="${esc(role+': '+path+' · '+(total.get(c.id)||0)+' '+QT('savedCodings'))}" title="${esc(path+(c.definition?' — '+c.definition:''))}">
-        <span class="code-row-label"><span class="code-role">${esc(role)}</span><span class="name">${esc(c.name)}${c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}</span>${search?`<small class="code-parent">${esc(path)}</small>`:path!==codePath(c)?`<small class="code-identity-id">${esc(c.id)}</small>`:''}</span>
+      <button class="side-item${(inspect?codingInspector.codeId===c.id:state.codeFilter===c.id)?' selected':''}" data-action="${inspect?'inspect-code':'filter-code'}" data-id="${c.id}" aria-pressed="${inspect?codingInspector.codeId===c.id:state.codeFilter===c.id}" aria-label="${esc(role+': '+path+' · '+(total.get(c.id)||0)+' '+QT('savedCodings'))}" title="${esc(path+(c.definition?' — '+c.definition:''))}">
+        <span class="code-row-label"><span class="code-role">${esc(role)}</span><span class="name">${esc(c.name)}${!inspect&&c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}</span>${search?`<small class="code-parent">${esc(path)}</small>`:path!==codePath(c)?`<small class="code-identity-id">${esc(c.id)}</small>`:''}</span>
         <span class="count" title="${own.get(c.id)||0} direct · ${total.get(c.id)||0} including sub-codes">${total.get(c.id)||0}</span><span class="code-color-swatch" style="background:${esc(c.color)}" aria-hidden="true"></span>
       </button><button class="edit-code" data-action="code-edit" data-id="${c.id}"${demoLock('Edit, re-parent, merge or delete')} aria-label="${esc(QT('editCode','Edit code')+': '+path)}">⋯</button>
     </div>${children.length&&!search?`<ul id="cb-${context}-${c.id}"${open?'':' hidden'}>${children.map(child=>row(child)).join('')}</ul>`:''}</li>`;
@@ -704,33 +797,29 @@ function refreshCodebooks(id,part='filter-code',context='side') {
   const scroller=$('.sidebar-scroll'),top=scroller?.scrollTop;
   refreshSideList();if(scroller)scroller.scrollTop=top;
   const mobile=$('#mobile-codebook-list');if(mobile)mobile.innerHTML=codebookHtml('mobile');
-  const host=context==='mobile'?mobile:$('#side-list');
+  const inspector=$('#inspector-tree');if(inspector)inspector.innerHTML=codebookHtml('inspector');
+  const host=context==='inspector'?inspector:context==='mobile'?mobile:$('#side-list');
   [...host?.querySelectorAll(`[data-action="${part}"]`)||[]].find(el=>el.dataset.id===id)?.focus({preventScroll:true});
   previewCoding(codingPreview);
 }
 function handleCodebookKey(event) {
   if(event.altKey||event.ctrlKey||event.metaKey)return;
-  const button=event.target.closest('.codebook-tree [data-action="filter-code"],.codebook-tree [data-action="toggle-code"]');if(!button)return;
-  const tree=button.closest('.codebook-tree'),id=button.dataset.id,code=state.project.codes.find(c=>c.id===id),context=tree.closest('#mobile-codebook-list')?'mobile':'side';
-  const visible=[...tree.querySelectorAll('[data-action="filter-code"]')].filter(el=>el.getClientRects().length),index=visible.findIndex(el=>el.dataset.id===id),children=state.project.codes.filter(c=>c.parent_id===id);
+  const button=event.target.closest('.codebook-tree [data-action="filter-code"],.codebook-tree [data-action="inspect-code"],.codebook-tree [data-action="toggle-code"]');if(!button)return;
+  const tree=button.closest('.codebook-tree'),id=button.dataset.id,code=state.project.codes.find(c=>c.id===id),context=tree.closest('#inspector-tree')?'inspector':tree.closest('#mobile-codebook-list')?'mobile':'side';
+  const selectedAction=context==='inspector'?'inspect-code':'filter-code';
+  const visible=[...tree.querySelectorAll(`[data-action="${selectedAction}"]`)].filter(el=>el.getClientRects().length),index=visible.findIndex(el=>el.dataset.id===id),children=state.project.codes.filter(c=>c.parent_id===id);
   let next;
   if(event.key==='ArrowDown')next=visible[Math.min(index+1,visible.length-1)];else if(event.key==='ArrowUp')next=visible[Math.max(0,index-1)];else if(event.key==='Home')next=visible[0];else if(event.key==='End')next=visible.at(-1);
   else if(event.key==='ArrowRight'){
-    if(children.length&&state.collapsed.has(id)){event.preventDefault();state.collapsed.delete(id);refreshCodebooks(id,'filter-code',context);return;}
+    if(children.length&&state.collapsed.has(id)){event.preventDefault();state.collapsed.delete(id);refreshCodebooks(id,selectedAction,context);return;}
     next=visible.find(el=>el.closest('[data-code-node]').dataset.parentId===id);
   }else if(event.key==='ArrowLeft'){
-    if(children.length&&!state.collapsed.has(id)){event.preventDefault();state.collapsed.add(id);refreshCodebooks(id,'filter-code',context);return;}
+    if(children.length&&!state.collapsed.has(id)){event.preventDefault();state.collapsed.add(id);refreshCodebooks(id,selectedAction,context);return;}
     next=visible.find(el=>el.dataset.id===code.parent_id);
   }else return;
   event.preventDefault();next?.focus();next?.scrollIntoView({block:'nearest'});
 }
-function showMobileCodebook() {
-  // Revealing this control can scroll a phone away from the source. Share the
-  // source-bound search return until filtering ends or actual reading resumes.
-  beginReadingSearch();
-  modal(QT('codebookTree'),`<label class="field">${QT('codebookFind')}<input id="mobile-code-filter" type="search" value="${esc(state.sideFilter)}" autocomplete="off"></label><div id="mobile-codebook-list">${codebookHtml('mobile')}</div>`);
-  $('#dialog').dataset.codingCodebook='1';$('#mobile-code-filter').focus();
-}
+function showMobileCodebook() {beginReadingSearch();openCodingInspector(false);}
 // The sidebar's own scroll, re-rendered on every keystroke in the filter box.
 // Redrawing the whole app would take the caret out of the input.
 function refreshSideList(){const el=$('#side-list');if(el)el.innerHTML=sideListHtml();}
@@ -742,8 +831,8 @@ function sideListHtml() {
   const open=state.codebookOpen||!!needle;
   return `<div class="side-title"><div class="section-label">${QT('documents','DOCUMENTS')} <span class="count">${docs.length}${docs.length!==p.documents.length?`/${p.documents.length}`:''}</span></div><button class="link" data-action="import"${demoLock()} aria-label="${QT('importDlg','Import interview')}">＋</button></div>
     ${docs.map(d=>`<button class="side-item ${d.id===state.docId?'selected':''}" data-action="doc" data-id="${d.id}" title="${esc(d.name)}">${icon('doc')}<span class="name">${esc(d.name)}</span></button>`).join('') || `<div class="empty">${QT('noDocsFilter','No documents match.')}</div>`}
-    <div class="side-title"><button class="side-toggle" data-action="toggle-codebook" aria-expanded="${open}"><span class="twisty">${open?'▾':'▸'}</span>${QT('codebookTree')} <span class="count">${total}</span>${total?`<span class="side-hint">${open?QT('codebookHide','hide codes'):QT('codebookShow','show codes')}</span>`:''}</button><button class="link" data-action="code"${demoLock()} aria-label="${QT('createCode','Create code')}">＋</button></div>
-    ${open?codebookHtml():''}`;
+    ${state.view==='coding'?'':`<div class="side-title"><button class="side-toggle" data-action="toggle-codebook" aria-expanded="${open}"><span class="twisty">${open?'▾':'▸'}</span>${QT('codebookTree')} <span class="count">${total}</span>${total?`<span class="side-hint">${open?QT('codebookHide','hide codes'):QT('codebookShow','show codes')}</span>`:''}</button><button class="link" data-action="code"${demoLock()} aria-label="${QT('createCode','Create code')}">＋</button></div>
+    ${open?codebookHtml():''}`}`;
 }
 function segments(text) {
   let speaker='unknown';
@@ -835,7 +924,7 @@ function emptyProjectHtml() {
 async function loadProject(id) {
   captureReadingPosition();
   const project=await api(`/api/projects/${id}`);
-  state.project=project;state.docId=preferredReadingDocument(project);rememberWorkspaceProject(project.id);
+  resetCodingInspector();state.project=project;state.docId=preferredReadingDocument(project);rememberWorkspaceProject(project.id);
   const preference=guidePreference(project.id);guide={open:preference?.status==='active',step:preference?.step??null};guideReturnFocus=null;
   state.selection=null; state.search=''; state.codeFilter=null; state.sourceFocus=null; state.networkReturn=null; NET.restoreFocus=false; state.insightsTab='map'; await loadBackups(); render();
 }
@@ -878,7 +967,7 @@ function closeModal() { pauseImportQueue();$('#dialog').close(); $('#dialog').in
 function errorDisplay(error) { if($('#dialog').open && $('#modal-error')) { $('#modal-error').className='inline-error'; $('#modal-error').textContent=error.message; } else toast(error.message,true); }
 function render() {
   captureReadingPosition();
-  const p=state.project;if(!p){readingMounted=null;$('#app').innerHTML=startupHtml();window.mountWelcomeOrbit?.($('#welcome-orbit'));return;}
+  const p=state.project;if(codingInspector.returnTo&&!inspectorReturn())resetCodingInspector();if(!p){readingMounted=null;$('#app').innerHTML=startupHtml();window.mountWelcomeOrbit?.($('#welcome-orbit'));return;}
   window.mountWelcomeOrbit?.(null);
   const pending=p.suggestions.filter(s=>s.status==='pending').length;
   const titles={coding:QT('navCoding','Coding workspace'),insights:QT('navInsights','Insights'),audit:QT('navAudit','Audit trail'),plotting:QT('navPlotting','Figures')};
@@ -905,7 +994,8 @@ function render() {
   loadNetwork();
   focusNetworkSource();
   mountReading();
-  previewCoding(state.view==='coding'&&overviewPreviewNavigation()&&readingOverviewFocus?readingOverviewFocus.ids:[]);
+  if(state.view==='coding'&&(inspectorReturn()||codingInspector.drawer)){refreshInspector();}
+  previewCoding(state.view==='coding'&&inspectorReturn()?(codingInspector.ids.length?codingInspector.ids:inspectorCurrent()?[inspectorCurrent().id]:[]):state.view==='coding'&&overviewPreviewNavigation()&&readingOverviewFocus?readingOverviewFocus.ids:[]);
 }
 function highlight(text, start, annotations) {
   const chars=cp(text), end=start+chars.length;
@@ -918,7 +1008,7 @@ function highlight(text, start, annotations) {
     if(!activeCodes.length) return part;
     const filtered=state.codeFilter?new Set([state.codeFilter,...codeDescendants(state.codeFilter)]):null;
     const source=active.some(x=>x.id===state.sourceFocus),overview=readingOverviewFocus?.key===markKey(state.project.id,doc().id)&&a<readingOverviewFocus.end&&b>readingOverviewFocus.start,classes=[source?'source-target':'',overview?'overview-source-target':'',filtered&&active.some(x=>filtered.has(x.code_id))?'coding-filtered':''].filter(Boolean).join(' ');
-    return `<mark${classes?` class="${classes}"`:''}${source||overview?' tabindex="-1"':''} data-coding-ids="${esc(JSON.stringify(active.map(x=>x.id)))}" data-coding-count="${active.length}" title="${esc(activeCodes.map(c=>c.name).join(' · '))}">${part}</mark>`;
+    return `<mark${classes?` class="${classes}"`:''} tabindex="0" role="button" aria-label="${esc(QT('inspectPassage','Inspect coded passage'))}" data-coding-ids="${esc(JSON.stringify(active.map(x=>x.id)))}" data-coding-count="${active.length}" title="${esc(activeCodes.map(c=>c.name).join(' · '))}">${part}</mark>`;
   }).join('');
 }
 
@@ -929,12 +1019,12 @@ function codingView() {
     <div class="reading-primary"><label class="reading-document-label" for="reading-document">${icon('doc')}<span class="sr-only">${QT('readingDocument','Current document')}</span></label><select id="reading-document" aria-label="${QT('readingDocument','Current document')}">${state.project.documents.map(item=>`<option value="${esc(item.id)}" ${item.id===d.id?'selected':''}>${esc(item.name)}</option>`).join('')}</select><output id="reading-position" aria-label="${QT('readingPosition','Reading position')}"></output><button data-action="reading-resume" title="${QT('readingResumeHint','Return to the saved paragraph in this browser. Position is not a read mark.')}">${QT('readingResume','Resume')}</button><button type="button" data-action="reading-overview" aria-expanded="${readingOverview.open}" aria-controls="reading-overview">${QT('ovOverview','Overview')}</button></div>
     <div class="reading-marks" id="reading-marks" role="group" aria-label="${QT('projectMarks','Project reading marks')}"><select id="reading-mark-status" aria-label="${QT('projectMark','Project mark')}">${['unmarked','read','revisit'].map(status=>`<option value="${status}">${markLabel(status)}</option>`).join('')}</select><button type="button" data-action="reading-mark-read">${QT('markRead','Mark read')}</button><button type="button" data-action="reading-mark-undo" disabled>${QT('markUndo','Undo')}</button><button type="button" data-action="reading-mark-retry" hidden>${QT('markRetry','Retry')}</button><button type="button" data-action="reading-mark-reset" hidden>${QT('markReset','Reset marks…')}</button><span id="reading-mark-save"></span></div>
     <div class="reading-context" tabindex="0" role="region" aria-label="${QT('readingPaths','Coding paths at this position')}"><span id="reading-path-label">${QT('readingHere','Codings here')}</span><span id="reading-code-path"></span></div><span id="reading-announcement" class="sr-only" role="status"></span>
-  </section><div class="work-grid${hasBlock('ai')&&state.project.suggestions.length?'':' no-review'}"><section class="document-pane" id="document-pane" aria-label="Source transcript">
-  <div class="document-tools"><input id="search" class="search" type="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"><button class="mobile-only reading-tools-toggle" data-action="reading-tools" aria-expanded="false" aria-controls="reading-coding-tools">${QT('readingTools','Coding tools')}</button><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${QT('codebookTree')}</button><div class="tool-group" id="reading-coding-tools"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
+  </section><div class="work-grid coding-single"><section class="document-pane" id="document-pane" aria-label="Source transcript">
+  <div class="document-tools"><input id="search" class="search" type="search" placeholder="${QT('searchDoc','Search in document')}" aria-label="Search transcript" value="${esc(state.search)}"><button class="mobile-only reading-tools-toggle" data-action="reading-tools" aria-expanded="false" aria-controls="reading-coding-tools">${QT('readingTools','Coding tools')}</button><button type="button" class="coding-codebook-entry" data-action="coding-codebook">${inspectorTitle()}</button><div class="tool-group" id="reading-coding-tools"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button><button class="primary${hasBlock('ai')?'':' block-off'}" data-action="analyze"${demoLock()}>${icon('star')}${QT('analyzeAi','Analyse with AI')}</button></div></div>
   <section id="reading-overview" class="reading-overview" aria-labelledby="overview-title" ${readingOverview.open?'':'hidden'}>${readingOverviewHtml()}</section>
   ${state.importReceipt===d.id?`<div class="import-receipt" role="status">${icon('doc')}<strong>${QT('importedLocal')}</strong><span>✓</span></div>`:''}<details class="reading-details"><summary>${QT('readingDetails','Document details & notes')}<span>${segments(d.text).length} ${QT('readingParagraphs','paragraphs')} · ${state.project.annotations.filter(a=>a.document_id===d.id).length} ${QT('savedCodings')}</span></summary><div class="reader-header"><div><h2 class="reader-heading" tabindex="-1">${esc(d.name)}</h2><div class="reader-meta">${cp(d.text).length.toLocaleString()} characters · ${segments(d.text).length} segments · ${state.project.annotations.filter(a=>a.document_id===d.id).length} codings</div></div></div>
   <p class="reading-marks-help">${QT('markPolicy','Project marks are manual and shared with this file; they do not prove reading or understanding. Reading-only changes are saved to the project and enter its next snapshot. Export JSON to keep this state now. JSON format v5 requires this version of QT.')}</p><p class="reading-memory-note">${QT('readingMemoryNote','Position only · stored in this browser, outside project exports. Scrolling does not mark text as read.')}</p><div class="reading-note${hasBlock('memos')?'':' block-off'}"><label class="reading-note-label" for="doc-memo">${QT('readingNotes','READING NOTES')}</label><textarea id="doc-memo" rows="2" placeholder="${QT('readingPlaceholder','First impressions, questions to follow up, anything that stands out.')}">${esc(d.memo||'')}</textarea><span class="reading-note-state" id="doc-memo-state"></span></div></details>
-  <div id="reader">${readerHtml()}</div></section><aside class="review-pane${hasBlock('ai')?'':' block-off'}" aria-label="AI suggestion review"><div class="review-header"><div class="panel-kicker">${QT('aiReview','AI REVIEW')}</div><div class="review-title"><h3>${QT('suggestions','Suggestions')}</h3><span class="count">${state.project.suggestions.filter(s=>s.document_id===d.id&&s.status==='pending').length}</span></div><p class="review-subtitle">${QT('reviewSubtitle','Verify each interpretation against the source. A suggestion becomes a coding only after you accept it.')}</p><select id="review-filter" class="review-filter" aria-label="Suggestion status">${[['pending',QT('pending','Pending review')],['accepted',QT('reviewAccepted','Accepted')],['rejected',QT('reviewRejected','Rejected')]].map(([v,t])=>`<option value="${v}" ${state.reviewFilter===v?'selected':''}>${t}</option>`).join('')}</select></div><div class="suggestion-list">${suggestionsHtml()}</div><div class="review-footnote">Source ranges are verified automatically.<br>Interpretation remains your decision.</div></aside></div>`;
+  <div id="reader">${readerHtml()}</div></section>${inspectorWide()?`<aside class="coding-inspector" aria-label="${inspectorTitle()}"><div id="coding-inspector-body">${inspectorBodyHtml()}</div></aside>`:''}</div>`;
 }
 function readerHtml() {
   const d=doc(), annotations=state.project.annotations.filter(a=>a.document_id===d.id);
@@ -944,7 +1034,7 @@ function readerHtml() {
   const filter=state.codeFilter?`<p class="tiny-label reader-code-filter">${QT('codeFilterLabel')}: ${esc(codeIdentity(state.project.codes.find(c=>c.id===state.codeFilter)))} <button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></p>`:'';
   return `<div class="coding-key"><span>${QT('codingHighlight')}</span><span>${QT('codingHighlightFocus')}</span><small>${QT('codingKeyHint')}</small></div>`+filter+(paras.map(p=>{
     const matches=annotations.filter(a=>a.start<p.end&&a.end>p.start);
-    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}" tabindex="-1" data-reading-mark="${paragraphMark(d,p.start)}"><span class="line-no">${String(p.index+1).padStart(2,'0')}<span class="reading-mark-badge" role="img" aria-label="${markLabel(paragraphMark(d,p.start))}" title="${markLabel(paragraphMark(d,p.start))}"${paragraphMark(d,p.start)==='unmarked'?' hidden':''}>${paragraphMark(d,p.start)==='read'?'✓':paragraphMark(d,p.start)==='revisit'?'↺':''}</span></span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="margin-tags"${matches.length?` role="region" tabindex="0" aria-label="${QT('codebookTree')} · ${matches.length} ${QT('savedCodings')}"`: ''}>${marginHtml(matches)}</div></div>`;
+    return `<div class="paragraph" data-start="${p.start}" data-end="${p.end}" tabindex="-1" data-reading-mark="${paragraphMark(d,p.start)}"><span class="line-no">${String(p.index+1).padStart(2,'0')}<span class="reading-mark-badge" role="img" aria-label="${markLabel(paragraphMark(d,p.start))}" title="${markLabel(paragraphMark(d,p.start))}"${paragraphMark(d,p.start)==='unmarked'?' hidden':''}>${paragraphMark(d,p.start)==='read'?'✓':paragraphMark(d,p.start)==='revisit'?'↺':''}</span></span><div class="passage ${p.speaker==='doctor'?'doctor':''}" data-start="${p.start}">${highlight(p.text,p.start,annotations)}</div><div class="paragraph-codings">${matches.length?`<button type="button" data-action="inspect-paragraph" data-start="${p.start}" aria-label="${matches.length} ${QT('savedCodings')}">${matches.length} ${QT('savedCodings')}</button>`:''}</div></div>`;
   }).join('') || `<div class="empty">${QT('noPassages','No passages match your filters.')}<button class="link" data-action="clear-filter">${QT('clearFilters','Clear filters')}</button></div>`);
 }
 function suggestionsHtml() {
@@ -1725,6 +1815,14 @@ async function createProject(body, rawJson=false) {
 }
 async function action(button) {
   const a=button.dataset.action;
+  if(a==='inspect-code'){selectInspectorCode(button.dataset.id);return;}
+  if(a==='inspect-paragraph'){const start=Number(button.dataset.start),p=segments(doc().text).find(p=>p.start===start);if(p)inspectCodings(state.project.annotations.filter(a=>a.document_id===state.docId&&a.start<p.end&&a.end>p.start).map(a=>a.id));return;}
+  if(a==='inspect-return'||a==='inspect-close'){finishCodingInspection(false);return;}
+  if(a==='inspect-here'){finishCodingInspection(true);return;}
+  if(a==='inspect-prev'||a==='inspect-next'){const items=inspectorMatches();codingInspector.index=Math.max(0,Math.min(items.length-1,codingInspector.index+(a==='inspect-next'?1:-1)));refreshInspector();focusInspectorSource();return;}
+  if(a==='inspect-filter'){beginCodingInspection();state.codeFilter=button.dataset.id;readingOverviewNav=null;readingOverviewFocus=null;render();if(!inspectorWide())openCodingInspector(false);return;}
+  if(a==='inspect-show-all'){state.search='';state.codeFilter=null;render();if(!inspectorWide())openCodingInspector(false);focusInspectorSource();return;}
+  if(a==='inspect-ai'||a==='inspect-tree'){if(a==='inspect-ai')beginCodingInspection();codingInspector.mode=a==='inspect-ai'?'ai':'tree';refreshInspector();return;}
   if(a==='write-report')return openResearchReport();
   if(a==='open-qca')return window.QTQCA.open({project:state.project,lang:QT_LANG,readonly:state.config.public_demo,request:api,endpoint:projectUrl(),modal,onSaved:refresh,onReport:()=>openResearchReport('comparative'),fetchFile:url=>fetch(url,{headers:{'X-QualiCraft-Token':state.token}})});
   if(a==='check-coded-export')return checkTranscriptVersion();
@@ -1745,7 +1843,7 @@ async function action(button) {
     return;
   }
   if(state.config.public_demo&&WRITE_ACTIONS.has(a)){toast(DEMO_LOCK(),true);return;}
-  if(a==='close'){closeModal();return;}
+  if(a==='close'){if($('#dialog').dataset.workflow==='coding-inspector')finishCodingInspection(false);else closeModal();return;}
   if(a==='workspace-home'){closeModal();showWorkspaceStart();return;}
   if(a==='start-project'){startReturnFocus=button;showStartProject();return;}
   if(a==='start-create'){await createProject({name:$('#new-project-name').value,kind:'empty'});showImport();return;}
@@ -1789,11 +1887,11 @@ async function action(button) {
   if(a==='reading-mark-undo'){const saved=readingUndos.get(markKey(state.project.id,doc().id));if(saved)return saveReadingMark(saved.status,{undo:true,targetOverride:saved});return;}
   if(a==='reading-mark-retry'){const failure=readingFailures.get(markKey(state.project.id,doc().id));if(failure?.retry?.refresh)return refreshReadingMarks(failure.retry.projectId,failure.retry.documentId);if(failure?.retry)return saveReadingMark(failure.retry.body.status,{retry:failure.retry,reset:failure.retry.reset,undo:failure.retry.undo});return;}
   if(a==='reading-mark-reset'){if(confirm(QT('markResetConfirm','The source has changed. Clear these project reading marks and bind new marks to this text? A recovery snapshot will be checked first.')))return saveReadingMark('unmarked',{reset:true});return;}
-  if(a==='reading-resume'){readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;const saved=readReadingPosition(state.project,doc());if(saved){state.search='';state.codeFilter=null;state.sourceFocus=null;render();scrollReadingParagraph(saved.start,true);updateReadingPosition();}return;}
+  if(a==='reading-resume'){resetCodingInspector();readingOverviewNav=null;readingOverviewFocus=null;readingOverview.open=false;const saved=readReadingPosition(state.project,doc());if(saved){state.search='';state.codeFilter=null;state.sourceFocus=null;render();scrollReadingParagraph(saved.start,true);updateReadingPosition();}return;}
   if(a==='reading-tools'){const pane=$('#document-pane'),open=pane.classList.toggle('reading-tools-open');button.setAttribute('aria-expanded',String(open));return;}
   if(a==='coding-codebook')return showMobileCodebook();
   if(a==='filter-code'){const inBook=button.closest('#mobile-codebook-list');const fromTree=button.closest('.codebook-tree'),id=button.dataset.id;if(inBook){delete $('#dialog').dataset.codingCodebook;closeModal();}readingOverviewNav=null;readingOverviewFocus=null;state.codeFilter=state.codeFilter===button.dataset.id?null:button.dataset.id;state.view='coding';render();if(inBook)$('.reader-code-filter button')?.focus();else if(fromTree)[...document.querySelectorAll('#side-list [data-action="filter-code"]')].find(el=>el.dataset.id===id)?.focus({preventScroll:true});return;}
-  if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);refreshCodebooks(id,'toggle-code',button.closest('#mobile-codebook-list')?'mobile':'side');return;}
+  if(a==='toggle-code'){const id=button.dataset.id;state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id);refreshCodebooks(id,'toggle-code',button.closest('#inspector-tree')?'inspector':button.closest('#mobile-codebook-list')?'mobile':'side');return;}
   if(a==='toggle-codebook'){state.codebookOpen=!state.codebookOpen;refreshSideList();$('[data-action="toggle-codebook"]')?.focus({preventScroll:true});return;}
   if(a==='code-edit'){showCodeEdit(button.dataset.id);$('#dialog').dataset.codingEdit=button.dataset.id;return;}
   if(a==='code-delete-ask')return showCodeDeleteAsk(button.dataset.id);
@@ -1886,7 +1984,8 @@ async function action(button) {
   if(a==='save-annotation'){await api(projectUrl('annotations'),{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();await refresh();toast(QT('passageCoded','Passage coded.'));return;}
   if(a==='review'){const start=state.project.suggestions.find(s=>s.id===button.dataset.id)?.start;await api(projectUrl('review'),{id:button.dataset.id,action:button.dataset.decision});await refresh();locate(start);toast(button.dataset.decision==='accept'?QT('toastAccepted','Accepted and added to your codings.'):QT('toastRejected','Rejected; review decision saved.'));return;}
   if(a==='coding-locate'){const id=button.dataset.id;delete $('#dialog').dataset.codingId;closeModal();if(state.search||state.codeFilter){state.search='';state.codeFilter=null;render();}const mark=[...document.querySelectorAll('.passage mark[data-coding-ids]')].find(el=>JSON.parse(el.dataset.codingIds).includes(id));if(mark){mark.setAttribute('tabindex','-1');mark.scrollIntoView({block:'center',behavior:'auto'});mark.focus({preventScroll:true});previewCoding([id]);}return;}
-  if(a==='annotation'){
+  if(a==='annotation'&&state.view==='coding'){inspectCodings([button.dataset.id]);return;}
+  if(a==='annotation'||a==='inspect-edit-coding'){
     const annotation=state.project.annotations.find(x=>x.id===button.dataset.id);
     previewCoding([annotation.id]);
     modal(codesFor(annotation).name,`${codingDetailsHtml(annotation)}<label class="field">${QT('researchMemo','Research memo')}<textarea id="edit-memo" rows="4">${esc(annotation.memo)}</textarea></label>`,`<button class="danger" data-action="remove-annotation"${demoLock()} data-id="${annotation.id}">${QT('removeCoding','Remove coding')}</button><button class="primary" data-action="save-memo"${demoLock()} data-id="${annotation.id}">${QT('saveMemo','Save memo')}</button>`);
@@ -1977,14 +2076,21 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='start-project-select')$('[data-action="start-open"]').disabled=!e.target.value;
     if(e.target.id==='reading-document'){switchReadingDocument(e.target.value);return;}
     if(e.target.id==='project-select')await loadProject(e.target.value);
-    if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;render();}
+    if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;refreshInspector();}
     if(e.target.id==='send-confirm')$('[data-action="start-analysis"]').disabled=!e.target.checked;
     if(e.target.matches('input[type="file"]')&&e.target.files[0]){const label=document.querySelector('[data-file-name="'+e.target.id+'"]');if(label)label.textContent=e.target.files[0].name;if(e.target.id==='import-file'){$('#document-name').value=e.target.files[0].name.replace(/\.(txt|docx)$/i,'');await updateImportPreview();}}
     if(e.target.id==='restore-file'&&e.target.files[0]){if(!e.target.files[0].size)throw new Error('The project file is empty.');if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject(await e.target.files[0].text(),true);}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(['document-name','document-text'].includes(e.target.id))resetImportDecision();if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+document.addEventListener('input',e=>{if(e.target.id==='inspector-search'){codingInspector.query=e.target.value;const tree=$('#inspector-tree');if(tree)tree.innerHTML=codebookHtml('inspector');return;}if(['document-name','document-text'].includes(e.target.id))resetImportDecision();if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
 // Preview changes CSS only: no re-render, source text insertion or server write.
+document.addEventListener('click',event=>{const mark=event.target.closest?.('#reader mark[data-coding-ids]');if(!mark||window.getSelection?.()?.toString())return;inspectCodings(JSON.parse(mark.dataset.codingIds));});
+document.addEventListener('keydown',event=>{
+ const mark=event.target.closest?.('#reader mark[data-coding-ids]');if(mark&&['Enter',' '].includes(event.key)){event.preventDefault();inspectCodings(JSON.parse(mark.dataset.codingIds));return;}
+ if(event.key==='Escape'&&inspectorReturn()&&!$('#dialog').open&&!$('#code-popup')){event.preventDefault();finishCodingInspection(false);}
+});
+document.addEventListener('cancel',event=>{if(event.target.id==='dialog'&&event.target.dataset.workflow==='coding-inspector'){event.preventDefault();finishCodingInspection(false);}},true);
+document.addEventListener('close',event=>{if(event.target.id==='dialog'&&codingInspector.drawer&&!inspectorWide()&&state.project&&state.view==='coding'){queueMicrotask(()=>{if(!$('#dialog').open&&codingInspector.drawer)openCodingInspector(false);});}},true);
 document.addEventListener('pointerover',event=>{
   if(event.pointerType!=='mouse')return;
   const pill=event.target.closest('.pill[data-code-id]'),mark=event.target.closest('.passage mark[data-coding-ids]');
@@ -2027,7 +2133,8 @@ document.addEventListener('mouseup',e=>{if(e.target.closest('#reader'))selection
 document.addEventListener('keyup',e=>{if(e.shiftKey&&e.target.closest('#reader'))selectionUpdate();});
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#code-popup')&&!e.target.closest('#reader')&&!e.target.closest('dialog'))closeCodePopup();});
 window.addEventListener('scroll',()=>positionCodePopup(),true);
-window.addEventListener('resize',()=>positionCodePopup());
+let inspectorWasWide=inspectorWide();
+window.addEventListener('resize',()=>{positionCodePopup();const wide=inspectorWide();if(wide!==inspectorWasWide&&state.project&&state.view==='coding'){inspectorWasWide=wide;const dlg=$('#dialog');if(dlg?.open&&dlg.dataset.workflow==='coding-inspector'){delete dlg.dataset.workflow;dlg.close();dlg.innerHTML='';}codingInspector.drawer=false;render();}});
 window.addEventListener('scroll',scheduleReadingPosition,true);
 window.addEventListener('resize',()=>{if(readingMounted&&!readingMounted.filtered&&readingMounted.start!==null)scrollReadingParagraph(readingMounted.start);scheduleReadingPosition();});
 window.addEventListener('pagehide',captureReadingPosition);

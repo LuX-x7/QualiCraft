@@ -103,7 +103,7 @@ test('an unavailable source cannot move the reader or alter project data', () =>
 test('source highlighting follows the selected annotation without highlighting unrelated codings', () => {
   const w=workspace();
   w.run("state.sourceFocus='a1'");
-  assert.match(w.run("highlight(state.project.documents[0].text,0,state.project.annotations.filter(a=>a.document_id==='d1'))"),/class="source-target" tabindex="-1"/);
+  assert.match(w.run("highlight(state.project.documents[0].text,0,state.project.annotations.filter(a=>a.document_id==='d1'))"),/class="source-target" tabindex="0" role="button"/);
   assert.doesNotMatch(w.run("highlight(state.project.documents[1].text,0,state.project.annotations.filter(a=>a.document_id==='d2'))"),/source-target/);
 });
 test('rebuilding the map for the same revision preserves selected, expanded and dragged positions', async () => {

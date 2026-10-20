@@ -1,3 +1,9 @@
+UX77补充：线上完整冻结项目恢复请求180秒超时，未通过此项；本地恢复通过。75D需优先复现大项目响应与保存延迟；本轮单树主流程通过不代表完整发布验收。
+
+2026-10-20 UX77：75C Coding单层已实现、测试通过并上线QT；正文＋唯一右树，定位与筛选分离，继续编码／在此继续，窄屏复用一份树。259 Node通过；Python322项、3原有跳过；JS及生产构建通过。独立Bologna线上主流程7组、0脚本错误；打开Coding3.08s，编码保存含刷新6.49–7.50s，延迟仍待优化。仅同步app.js／style.css，未重启服务；统计、绘图、数据、导出不变。详见[UX77验收](UX-77-SINGLE-LAYER-CODING.md)。75D其余→75B→75A上线→75E继续开放，Windows暂缓；系统自启与Pages仍独立待办。
+
+---
+
 2026-10-20 UX76: Official-source competitor comparison, task protocol and delivery gates recorded in [UX76](UX-76-COMPARISON-AND-DELIVERY.md). Neutral Name labels locally verified;247 Node and10 QCA checks pass. One report-method check blocked by missing matplotlib. No deployment.
 
 ---

@@ -85,12 +85,14 @@ test('subtree filtering remains an intersection with document and text search', 
   assert.deepEqual(starts(w.read('root', 'other')), []);
 });
 
-test('two codes on one range render one paragraph with both pills and original highlight', () => {
+test('two codes on one range retain both assignments behind one compact indicator', () => {
   const w = workspace();
   w.run("state.project.annotations.push({id:'a7',document_id:'d1',code_id:'child',start:10,end:15})");
   const html = w.read('child', 'deep');
   assert.deepEqual(starts(html), [10]);
-  assert.equal([...html.matchAll(/class="pill"/g)].length, 2);
+  assert.match(html, /data-action="inspect-paragraph"[^>]*>2 saved codings/);
+  assert.doesNotMatch(html, /class="margin-tree"/);
+  assert.match(html, /data-coding-count="2"/);
   assert.ok(html.includes('title="Leaf · Shared">deep😀</mark>'));
   assert.equal(w.run("codeCounts().total.get('root')"), 6);
 });
