@@ -1474,129 +1474,97 @@ function closeCodePopup() {
   removeCodePopupDom();
   clearPendingSelection();
 }
+let popupWriteBusy=false;
 function codePopupMatches(query) {
   const needle=query.trim().toLowerCase();
-  const all=state.project.codes.map(c=>({code:c, path:codePath(c)}));
-  const paths=new Map();
+  const all=state.project.codes.map(c=>({code:c,path:codePath(c)})),paths=new Map();
   all.forEach(m=>paths.set(m.path,(paths.get(m.path)||0)+1));
   all.forEach(m=>{
     m.identity=paths.get(m.path)>1?`${m.path} · ${m.code.id}`:m.path;
     const full=needle&&(m.path.toLowerCase()===needle||m.identity.toLowerCase()===needle);
     const name=needle&&m.code.name.toLowerCase()===needle;
-    m.exact=!!(full||name);
-    m.rank=full?0:name?1:2;
+    m.exact=!!(full||name);m.rank=full?0:name?1:2;
   });
-  if(!needle) return all.slice(0,8);
-  // Rank before the display cap so a saved exact name cannot be hidden by parents.
-  return all.filter(m=>m.exact||m.identity.toLowerCase().includes(needle)).sort((a,b)=>a.rank-b.rank).slice(0,8);
+  // All saved codes remain reachable. The viewport scrolls; identities are not capped.
+  return needle?all.filter(m=>m.exact||m.identity.toLowerCase().includes(needle)).sort((a,b)=>a.rank-b.rank):all;
+}
+function popupSelectedCode(){
+ const matches=state.popupMatches||[];
+ if((!state.popupCursorMoved&&matches.filter(m=>m.exact).length>1)||state.popupCursor<0)return null;
+ return matches[state.popupCursor]?.code.id||null;
 }
 function showCodePopup() {
   removeCodePopupDom();
-  const sel=state.selection; if(!sel) return;
-  const host=document.createElement('div');
-  host.id='code-popup';
-  host.className='code-popup';
-  host.innerHTML=`
-    <div class="code-popup-row">
-      <input id="code-search" type="text" autocomplete="off" spellcheck="false" placeholder="${esc(QT('codeSearchPh','Type a keyword, press Enter to code'))}">
-      <button class="code-popup-x" data-action="close-popup" title="${esc(QT('closeEsc','Close (Esc)'))}">✕</button>
-    </div>
-    <div class="code-suggest" id="code-suggest"></div>
-    <div class="code-popup-foot">
-      <span class="code-popup-count">${sel.end-sel.start}${QT('charsLabel',' characters')}${state.selectionSpansParagraphs?QT('spansParagraphs',' (spans paragraphs)'):''}</span>
-      <button data-action="annotate">${esc(QT('moreOptions','More options…'))}</button>
-      <button data-action="analyze-selection">${esc(QT('analyzeSel','Analyse with AI'))}</button>
-    </div>`;
-  document.body.appendChild(host);
-  renderCodeSuggest('');
-  positionCodePopup();
-  setTimeout(positionCodePopup,120);
-  setTimeout(positionCodePopup,320);
-  const input=$('#code-search');
-  if(input) {
-    input.focus();
-    input.addEventListener('input',e=>{renderCodeSuggest(e.target.value);positionCodePopup();});
-    input.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){ e.preventDefault(); submitCodePopup(); }
-      else if(e.key==='Escape'){ e.preventDefault(); closeCodePopup(); }
-      else if(e.key==='ArrowDown'){ e.preventDefault(); movePopupCursor(1); }
-      else if(e.key==='ArrowUp'){ e.preventDefault(); movePopupCursor(-1); }
-    });
-  }
+  const sel=state.selection;if(!sel)return;
+  const host=document.createElement('div');host.id='code-popup';host.className='code-popup';
+  host.innerHTML=`<label class="code-picker-label" for="code-search">${QT('codebookFind','Find a code')}</label>
+    <div class="code-popup-row"><input id="code-search" type="text" role="combobox" aria-label="${QT('codebookFind','Find a code')}" aria-autocomplete="list" aria-expanded="true" aria-controls="code-suggest" aria-describedby="code-picker-help code-match-count" autocomplete="off" spellcheck="false" placeholder="${QT_LANG==='zh'?'搜索名称或完整路径':'Search names or full paths'}"><button class="code-popup-x" data-action="close-popup" aria-label="${esc(QT('closeEsc','Close (Esc)'))}">✕</button></div>
+    <div class="code-match-count" id="code-match-count" role="status"></div>
+    <div class="code-suggest" id="code-suggest" role="listbox" aria-label="${QT('selectCode','Select a code')}"></div>
+    <p class="code-picker-help" id="code-picker-help">${QT_LANG==='zh'?'滚动浏览全部编码，或搜索。↑ ↓ 选择；Enter 应用；Home / End 首尾定位。':'Scroll all codes or search. ↑ ↓ choose; Enter applies; Home / End reach the first / last.'}</p>
+    <div class="code-popup-foot"><span class="code-popup-count">${sel.end-sel.start}${QT('charsLabel',' characters')}${state.selectionSpansParagraphs?QT('spansParagraphs',' (spans paragraphs)'):''}</span><button data-action="annotate">${esc(QT('moreOptions','More options…'))}</button><button data-action="analyze-selection">${esc(QT('analyzeSel','Analyse with AI'))}</button></div>`;
+  document.body.appendChild(host);renderCodeSuggest('');positionCodePopup();setTimeout(positionCodePopup,120);setTimeout(positionCodePopup,320);
+  const input=$('#code-search');if(input){input.focus();input.addEventListener('input',e=>{renderCodeSuggest(e.target.value);positionCodePopup();});input.addEventListener('keydown',e=>{
+    if(e.isComposing||e.keyCode===229)return;
+    if(e.key==='Enter'){e.preventDefault();submitCodePopup().catch(errorDisplay);}
+    else if(e.key==='Escape'){e.preventDefault();if(!popupWriteBusy)closeCodePopup();}
+    else if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key)){e.preventDefault();movePopupCursor({ArrowDown:1,ArrowUp:-1,PageDown:8,PageUp:-8,Home:'first',End:'last'}[e.key]);}
+  });}
 }
 function positionCodePopup() {
-  const host=$('#code-popup'); if(!host) return;
+  const host=$('#code-popup');if(!host)return;
   const anchor=pendingRange?pendingRange.getBoundingClientRect():(state.selectionRect||null);
-  if(!anchor||(!anchor.width&&!anchor.height)) return;
-  const list=$('#code-suggest');
-  const vw=window.innerWidth, vh=window.innerHeight, gap=8;
-  const above=anchor.top-gap*2, below=vh-anchor.bottom-gap*2;
-  const useBelow=below>=above;
-  const room=Math.max(130,useBelow?below:above);
-  if(list) {
-    const chrome=host.getBoundingClientRect().height-(list.getBoundingClientRect().height||0);
-    list.style.maxHeight=Math.max(56,Math.min(212,room-chrome))+'px';
-  }
-  const box=host.getBoundingClientRect();
-  let left=anchor.left;
-  if(left+box.width>vw-gap) left=Math.max(gap,vw-box.width-gap);
-  if(left<gap) left=gap;
-  let top=useBelow?anchor.bottom+gap:anchor.top-box.height-gap;
-  top=Math.max(gap,Math.min(top,vh-box.height-gap));
-  host.style.left=left+'px'; host.style.top=top+'px';
+  if(!anchor||(!anchor.width&&!anchor.height))return;
+  const list=$('#code-suggest'),vw=window.innerWidth,vh=window.innerHeight,gap=8;
+  const above=anchor.top-gap*2,below=vh-anchor.bottom-gap*2,useBelow=below>=above,room=Math.max(130,useBelow?below:above);
+  if(list){const chrome=host.getBoundingClientRect().height-(list.getBoundingClientRect().height||0);list.style.maxHeight=Math.max(56,Math.min(300,room-chrome))+'px';}
+  const box=host.getBoundingClientRect();let left=Math.max(gap,Math.min(anchor.left,vw-box.width-gap)),top=useBelow?anchor.bottom+gap:anchor.top-box.height-gap;
+  host.style.left=left+'px';host.style.top=Math.max(gap,Math.min(top,vh-box.height-gap))+'px';
+}
+function updateCodeSuggestCount(){
+ const count=$('#code-match-count');if(count)count.textContent=popupWriteBusy?(QT_LANG==='zh'?'正在保存编码…':'Saving coding…'):`${state.popupMatches?.length||0} / ${state.project.codes.length} ${QT_LANG==='zh'?'个编码':'codes'}`;
+}
+function syncPopupCursor(){
+ const rows=[...(document.querySelectorAll?.('#code-suggest .suggest-row')||[])],index=state.popupCursor??-1,input=$('#code-search');
+ rows.forEach((row,i)=>{row.classList.toggle('active',i===index);row.setAttribute?.('aria-selected',String(i===index));});
+ if(index>=0&&rows[index])input?.setAttribute?.('aria-activedescendant',`code-candidate-${index}`);else input?.removeAttribute?.('aria-activedescendant');
 }
 function renderCodeSuggest(query) {
-  const box=$('#code-suggest'); if(!box) return;
-  const needle=query.trim();
-  const matches=codePopupMatches(needle);
-  const depth=codeDepthMap();
-  const exact=matches.some(m=>m.exact);
-  const ambiguous=matches.filter(m=>m.exact).length>1;
-  state.popupMatches=matches;
-  state.popupCursor=0;
-  state.popupCursorMoved=false;
-  const rows=matches.map((m,i)=>`<button class="suggest-row${i===0?' active':''}" data-action="popup-apply" data-id="${m.code.id}">
-      <span class="dot" style="background:${esc(m.code.color)}"></span>
-      <span class="suggest-name">${esc(m.identity)}</span>
-      ${(depth.get(m.code.id)||0)>0?`<span class="suggest-tag">${QT('subLevel','sub-level')}</span>`:''}
-    </button>`).join('');
-  const createRow=(needle&&!exact)
-    ? `<button class="suggest-row create" data-action="popup-create" data-name="${esc(needle)}">${esc(QT('createCodeTpl','＋ Create “%s” and code it').replace('%s',needle))}</button>`
-    : '';
-  const hint=ambiguous?`<div class="suggest-empty" role="status">${esc(QT('popupChoosePath'))}</div>`:'';
-  box.innerHTML=(hint+rows+createRow)||'<div class="suggest-empty">'+esc(QT('noCodesYet','No codes yet — type a keyword to create one'))+'</div>';
+  const box=$('#code-suggest');if(!box)return;
+  const needle=query.trim(),matches=codePopupMatches(needle),exact=matches.some(m=>m.exact),ambiguous=matches.filter(m=>m.exact).length>1;
+  state.popupMatches=matches;state.popupCursor=needle?0:-1;state.popupCursorMoved=false;
+  const rows=matches.map((m,i)=>`<button type="button" role="option" tabindex="-1" id="code-candidate-${i}" aria-selected="${i===state.popupCursor}" class="suggest-row${i===state.popupCursor?' active':''}" data-action="popup-apply" data-id="${m.code.id}"><span class="dot" style="background:${esc(m.code.color)}"></span><span class="suggest-text"><strong class="suggest-name">${esc(m.code.name)}</strong>${m.identity!==m.code.name?`<small class="suggest-path">${esc(m.identity)}</small>`:''}</span></button>`).join('');
+  const createRow=needle&&!exact?`<button type="button" role="option" tabindex="-1" id="code-candidate-${matches.length}" aria-selected="${state.popupCursor===matches.length}" class="suggest-row create${state.popupCursor===matches.length?' active':''}" data-action="popup-create" data-name="${esc(needle)}">${esc(QT('createCodeTpl','＋ Create “%s” and code it').replace('%s',needle))}</button>`:'';
+  box.innerHTML=rows+createRow||`<div class="suggest-empty">${esc(QT('noCodesYet','No codes yet — type a keyword to create one'))}</div>`;box.scrollTop=0;
+  const help=$('#code-picker-help');if(help)help.textContent=ambiguous?QT('popupChoosePath'):(QT_LANG==='zh'?'滚动浏览全部编码，或搜索。↑ ↓ 选择；Enter 应用；Home / End 首尾定位。':'Scroll all codes or search. ↑ ↓ choose; Enter applies; Home / End reach the first / last.');
+  updateCodeSuggestCount();syncPopupCursor();
 }
 function movePopupCursor(delta) {
-  const rows=[...document.querySelectorAll('#code-suggest .suggest-row')];
-  if(!rows.length) return;
-  const next=Math.max(0,Math.min(rows.length-1,(state.popupCursor||0)+delta));
-  state.popupCursor=next;
-  state.popupCursorMoved=true;
-  rows.forEach((r,i)=>r.classList.toggle('active',i===next));
-  rows[next].scrollIntoView({block:'nearest'});
+  if(popupWriteBusy)return;
+  const rows=[...document.querySelectorAll('#code-suggest .suggest-row')];if(!rows.length)return;
+  const current=state.popupCursor??-1,next=delta==='first'?0:delta==='last'?rows.length-1:Math.max(0,Math.min(rows.length-1,current+delta));
+  state.popupCursor=next;state.popupCursorMoved=true;syncPopupCursor();rows[next].scrollIntoView({block:'nearest'});
 }
-async function applyCodeById(codeId) {
-  const sel=state.selection; if(!sel) return;
+function setPopupSaving(value){
+ popupWriteBusy=value;const host=$('#code-popup');if(!host)return;host.setAttribute('aria-busy',String(value));
+ for(const button of document.querySelectorAll('#code-popup button'))button.disabled=value;
+ const input=$('#code-search');if(input)input.disabled=value;updateCodeSuggestCount();
+}
+async function commitPopupCoding(codeId,name=null){
+ const sel=state.selection;if(!sel||popupWriteBusy)return;const projectId=state.project.id;setPopupSaving(true);
+ try{
+  if(name!==null){const code=await saveCoding('codes',{name,definition:'',color:null});codeId=code.id;if(state.project?.id!==projectId)return;}
   await saveCoding('annotations',{document_id:sel.document_id,start:sel.start,end:sel.end,code_id:codeId,memo:''});
-  closeCodePopup(); state.selection=null;
-  render();
-  toast(QT('toastCoded','Coded.'));
+  if(state.project?.id===projectId){if(state.selection===sel){closeCodePopup();state.selection=null;}render();toast(name===null?QT('toastCoded','Coded.'):QT('toastCodeCreated','Created “%s” and coded it.').replace('%s',name));}
+ }finally{setPopupSaving(false);}
 }
-async function createAndApplyCode(name) {
-  const code=await saveCoding('codes',{name,definition:'',color:null});
-  await applyCodeById(code.id);
-  toast(QT('toastCodeCreated','Created “%s” and coded it.').replace('%s',name));
-}
+async function applyCodeById(codeId){return commitPopupCoding(codeId);}
+async function createAndApplyCode(name){return commitPopupCoding(null,name);}
 async function submitCodePopup() {
-  const input=$('#code-search'); if(!input) return;
-  const q=input.value.trim();
-  const matches=state.popupMatches||[];
-  if(!state.popupCursorMoved&&matches.filter(m=>m.exact).length>1){
-    toast(QT('popupChoosePath'),true);return;
-  }
-  const pick=matches[state.popupCursor||0];
-  if(pick) return applyCodeById(pick.code.id);
-  if(q) return createAndApplyCode(q);
+  const input=$('#code-search');if(!input||popupWriteBusy)return;const q=input.value.trim(),matches=state.popupMatches||[];
+  if(!state.popupCursorMoved&&matches.filter(m=>m.exact).length>1){toast(QT('popupChoosePath'),true);return;}
+  const pick=matches[state.popupCursor??-1];if(pick)return applyCodeById(pick.code.id);
+  if(q)return createAndApplyCode(q);
   toast(QT('toastNeedKeyword','Type a keyword first, or pick a code from the list.'),true);
 }
 function locate(start) {
@@ -1888,11 +1856,12 @@ function showMergeAsk(id) {
     <div class="notice">Sub-codes of <b>${esc(src.name)}</b> are re-parented to the target. A coding that would duplicate an existing target coding on the same passage is collapsed rather than copied.</div>`,
     `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="code-merge" data-id="${id}"${others.length?'':' disabled'}>Merge</button>`);
 }
-function showAnnotation() {
-  if(!state.selection||state.selection.document_id!==state.docId) throw new Error('Select a passage in the transcript first.');
-  if(!state.project.codes.length) {showCode();return;}
-  modal(QT('codePassage','Code this passage'),`<blockquote class="big-quote">${esc(cut(doc().text,state.selection.start,state.selection.end))}</blockquote><label class="field">${QT('selectCode','Select a code')}<select id="annotation-code">${state.project.codes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label class="field${hasBlock('memos')?'':' block-off'}">Research memo (optional)<textarea id="annotation-memo" rows="3" placeholder="${QT('memoPlaceholder','Record your interpretation or a question for comparison.')}"></textarea></label>`, `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="save-annotation">${QT('applyCode','Apply code')}</button>`);
+function showAnnotation(preferredId=null) {
+  if(!state.selection)return;
+  const matches=codePopupMatches(''),selected=matches.find(m=>m.code.id===preferredId);
+  modal(QT('codePassage','Code this passage'),`<blockquote class="big-quote">${esc(cut(doc().text,state.selection.start,state.selection.end))}</blockquote><label class="field">${QT('selectCode','Select a code')}<select id="annotation-code"><option value=""${selected?'':' selected'}>${QT_LANG==='zh'?'请选择编码':'Choose a code…'}</option>${matches.map(m=>`<option value="${m.code.id}"${m===selected?' selected':''}>${esc(m.identity)}</option>`).join('')}</select></label><p class="annotation-code-path" id="annotation-code-path">${esc(selected?.identity||'')}</p><label class="field${hasBlock('memos')?'':' block-off'}">Research memo (optional)<textarea id="annotation-memo" rows="3" placeholder="${QT('memoPlaceholder','Record your interpretation or a question for comparison.')}"></textarea></label>`, `<button data-action="close">${QT('cancel','Cancel')}</button><button class="primary" data-action="save-annotation"${selected?'':' disabled'}>${QT('applyCode','Apply code')}</button>`);
 }
+
 function showSettings() {
   modal(QT('settingsTitle','Cloud model settings'),`<p>${QT('settingsDesc','The launcher can read a local API_key.txt. Keys entered here stay in server memory only, outside browser storage, projects, and exports.')}</p><label class="field">${QT('apiBase','API Base URL')}<input id="api-base" value="${esc(state.config.base_url)}" spellcheck="false"><small>${QT('apiBaseHint','Alibaba Cloud Beijing: https://dashscope.aliyuncs.com/compatible-mode/v1. A workspace-specific URL in the same region or another compatible endpoint also works.')}</small></label><label class="field">${QT('modelName','Model name')}<input id="api-model" value="${esc(state.config.model)}" spellcheck="false"><small>${QT('modelHint','Default: qwen3.8-flash. When switching providers, update the endpoint, model, and key together.')}</small></label><label class="field">${QT('apiKey','API Key')}<input id="api-key" type="password" autocomplete="off" placeholder="${state.config.has_key?QT('apiKeyConfigured','Configured; leave blank to keep the key for this endpoint'):QT('apiKeyPlaceholder','Enter your key here, not in chat')}"></label><div class="notice">${QT('settingsNotice','Manual coding is free and works offline. Cloud analysis runs only after confirmation and may incur provider charges. De-identify real transcripts and confirm that sharing them with this provider is permitted.')}</div><a class="source-link" href="https://help.aliyun.com/zh/model-studio/compatibility-of-openai-with-dashscope" target="_blank" rel="noreferrer">Official Model Studio API documentation ↗</a>`, `<button data-action="clear-key">${QT('clearKey','Clear key')}</button><button class="primary" data-action="save-settings">${QT('saveSettings','Save settings')}</button>`);
 }
@@ -2096,7 +2065,7 @@ async function action(button) {
   if(a==='settings')return showSettings();
   if(a==='projects')return showProjects();
   if(a==='export')return showExport();
-  if(a==='annotate'){closeCodePopup();return showAnnotation();}
+  if(a==='annotate'){if(popupWriteBusy)return;const selected=$('#code-popup')?popupSelectedCode():null;closeCodePopup();return showAnnotation(selected);}
   if(a==='analyze'||a==='analyze-selection'){closeCodePopup();return showAnalyze(a==='analyze-selection');}
   if(a==='close-popup'){closeCodePopup();return;}
   if(a==='popup-apply'){await applyCodeById(button.dataset.id);return;}
@@ -2151,7 +2120,7 @@ async function action(button) {
     closeModal();await refresh();
     toast(`Merged “${result.source}” into “${result.target}” · ${result.codings_moved} coding(s) moved${result.duplicates_collapsed?` · ${result.duplicates_collapsed} duplicate(s) collapsed`:''}.`);return;
   }
-  if(a==='save-annotation'){await saveCoding('annotations',{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();render();toast(QT('passageCoded','Passage coded.'));return;}
+  if(a==='save-annotation'){if(!state.project.codes.some(c=>c.id===$('#annotation-code').value))throw Error(QT('selectCode','Select a code'));await saveCoding('annotations',{...state.selection,code_id:$('#annotation-code').value,memo:$('#annotation-memo').value});state.selection=null;closeModal();render();toast(QT('passageCoded','Passage coded.'));return;}
   if(a==='review'){const start=state.project.suggestions.find(s=>s.id===button.dataset.id)?.start;await api(projectUrl('review'),{id:button.dataset.id,action:button.dataset.decision});await refresh();locate(start);toast(button.dataset.decision==='accept'?QT('toastAccepted','Accepted and added to your codings.'):QT('toastRejected','Rejected; review decision saved.'));return;}
   if(a==='coding-locate'){const id=button.dataset.id;delete $('#dialog').dataset.codingId;closeModal();if(state.search||state.codeFilter){state.search='';state.codeFilter=null;render();}const mark=[...document.querySelectorAll('.passage mark[data-coding-ids]')].find(el=>JSON.parse(el.dataset.codingIds).includes(id));if(mark){mark.setAttribute('tabindex','-1');mark.scrollIntoView({block:'center',behavior:'auto'});mark.focus({preventScroll:true});previewCoding([id]);}return;}
   if(a==='annotation'&&state.view==='coding'){inspectCodings([button.dataset.id]);return;}
@@ -2235,6 +2204,7 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='import-file'){resetImportDecision();if(!e.target.files[0]){document.querySelector('[data-file-name="import-file"]').textContent=QT('noFileSelected');await updateImportPreview();}}
     if(e.target.id==='network-select'){if(!e.target.value)clearNetworkSelection();else if(NET.selected!==e.target.value)toggleNetworkNode(e.target.value);return;}
     if(e.target.id==='start-project-select')$('[data-action="start-open"]').disabled=!e.target.value;
+    if(e.target.id==='annotation-code'){const match=codePopupMatches('').find(m=>m.code.id===e.target.value);$('#annotation-code-path').textContent=match?.identity||'';$('[data-action="save-annotation"]').disabled=!match;return;}
     if(e.target.id==='reading-document'){switchReadingDocument(e.target.value);return;}
     if(e.target.id==='project-select')await loadProject(e.target.value);
     if(e.target.id==='review-filter'){state.reviewFilter=e.target.value;refreshInspector();}
