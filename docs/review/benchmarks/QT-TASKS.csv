@@ -1,0 +1,11 @@
+task_id,task,pass_criteria,record
+T01,Start and import,Choose empty project and import agreed text without replacing another project,tool_version;time;help;errors
+T02,Create hierarchy,Create a theme category and two codes with unambiguous parentage,role;parent;help
+T03,Code exact passages,Apply agreed codes including two codes on one agreed range,range;stable_identity;expected_count
+T04,Return to source,Select a coding inspect path and return to continue at the same passage,position_before;position_after;help
+T05,Manage mistaken import,Find safe removal or cancellation path without altering the original study,confirmation;preserved_project;help
+T06,Locate saved work,Save sign out reopen project and find saved range,save_seconds;restored_values
+T07,Five figures,Select each applicable figure or explain its unmet data prerequisite,figure;prerequisite;count_unit;render_seconds;download_seconds
+T08,Coded document export,Export readable source with matching highlight and hierarchy associations,range_checks;editable_format;extra_steps
+T09,Report and code bundle,Find method decisions writing figures CSV and scripts in appropriate outputs,method;writing;reproduction;extra_tools
+T10,Restore and continue,Restore a separate project and verify agreed coding and preserved previous project,hash_or_counts;old_project_preserved;errors
