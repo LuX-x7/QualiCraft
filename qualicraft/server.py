@@ -13,6 +13,7 @@ import tempfile
 import urllib.parse
 import webbrowser
 import zipfile
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -268,7 +269,22 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 require(self.headers.get("Content-Type", "").startswith("application/json"), "Only JSON requests are accepted")
                 size = int(self.headers.get("Content-Length", "0"))
                 require(0 < size <= 20_000_000, "The request is empty or too large")
-                body = json.loads(self.rfile.read(size))
+                wire = self.rfile.read(size)
+                encoding = self.headers.get("Content-Encoding", "identity").lower().strip()
+                if encoding != "identity":
+                    # Only raw project restores accept gzip. Bound the decoded
+                    # size before JSON parsing; never bypass project validation.
+                    restore_path = urllib.parse.urlsplit(self.path).path
+                    require(encoding == "gzip" and restore_path == base_path + "/api/projects/restore",
+                            "Unsupported request encoding")
+                    try:
+                        decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+                        wire = decoder.decompress(wire, 20_000_001)
+                        require(len(wire) <= 20_000_000 and decoder.eof and not decoder.unused_data,
+                                "The restored file is invalid or larger than 20 MB")
+                    except zlib.error:
+                        raise ValueError("The compressed project could not be read") from None
+                body = json.loads(wire)
                 require(isinstance(body, dict), "The request format is invalid")
                 raw = urllib.parse.urlsplit(self.path).path
                 if base_path and raw.startswith(base_path + "/"):

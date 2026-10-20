@@ -63,6 +63,59 @@ class HostedTests(unittest.TestCase):
         self.assertEqual(status, 200, body)
         return client, json.loads(body)
 
+    def test_project_response_compression_preserves_bytes_and_private_headers(self):
+        import gzip
+        client, boot = self.register('compression-review')
+        token = {'X-QualiCraft-Token': boot['token']}
+        status, raw, _ = self.request(client, '/w/api/projects', {'kind': 'bologna'}, token)
+        self.assertEqual(status, 200)
+        pid = json.loads(raw)['id']
+        status, packed, headers = self.request(client, '/w/api/projects/' + pid,
+            headers={**token, 'Accept-Encoding': 'gzip'})
+        self.assertEqual(status, 200)
+        self.assertEqual(headers.get('Content-Encoding'), 'gzip')
+        self.assertEqual(headers.get('Cache-Control'), 'no-store')
+        self.assertIn('Accept-Encoding', headers.get('Vary', ''))
+        self.assertEqual(gzip.decompress(packed), raw)
+        self.assertLess(len(packed), len(raw) / 2)
+        _, boot_raw, boot_headers = self.request(client, '/w/api/bootstrap',
+            headers={'Accept-Encoding': 'gzip'})
+        self.assertIsNone(boot_headers.get('Content-Encoding'))
+        self.assertIn('token', json.loads(boot_raw))
+        self.assertEqual(self.request(self.client(), '/w/api/projects/' + pid,
+            headers={'Accept-Encoding': 'gzip'})[0], 401)
+
+    def test_compressed_restore_preserves_frozen_report_and_checks_integrity(self):
+        import gzip
+        client, boot = self.register('restore-compression-review')
+        original = (Path(__file__).resolve().parents[1] / 'website/public/worked-example/project.json').read_bytes()
+        token = {'X-QualiCraft-Token': boot['token'], 'Content-Type': 'application/json',
+                 'Content-Encoding': 'gzip', 'Accept-Encoding': 'gzip'}
+        def restore(payload):
+            req = urllib.request.Request(self.base + '/w/api/projects/restore', data=payload, headers=token)
+            opener = client
+            try: response = opener.open(req, timeout=10)
+            except urllib.error.HTTPError as e: response = e
+            with response:
+                raw = response.read()
+                if response.headers.get('Content-Encoding') == 'gzip': raw = gzip.decompress(raw)
+                return response.status, json.loads(raw)
+        status, result = restore(gzip.compress(original))
+        self.assertEqual(status, 200)
+        source = json.loads(original)
+        for key in ['documents', 'codes', 'annotations', 'qca', 'research_report']:
+            if key in source: self.assertEqual(result[key], source[key], key)
+        self.assertNotEqual(result['id'], source['id'])
+        self.assertEqual(restore(b'broken gzip')[0], 400)
+        self.assertEqual(restore(gzip.compress(original)[:-5])[0], 400)
+        self.assertEqual(restore(gzip.compress(original) + gzip.compress(b'{}'))[0], 400)
+        self.assertEqual(restore(gzip.compress(b' ' * 20_000_001))[0], 400)
+        before = self.request(client, '/w/api/projects', headers={'X-QualiCraft-Token': boot['token']})[1]
+        damaged = json.loads(original)
+        damaged['documents'][0]['text'] += ' changed'
+        self.assertEqual(restore(gzip.compress(json.dumps(damaged).encode()))[0], 400)
+        self.assertEqual(before, self.request(client, '/w/api/projects', headers={'X-QualiCraft-Token': boot['token']})[1])
+
     def test_anonymous_cannot_read_bootstrap_or_mutate_and_cross_site_link_can_reach_login(self):
         client = self.client()
         self.assertEqual(self.request(client, '/w/api/bootstrap')[0], 401)

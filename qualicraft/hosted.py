@@ -362,8 +362,18 @@ def create_hosted(root, origin_file, *, port=8789, allow_local_test=False, site_
                     payload = json.dumps(value, ensure_ascii=False).encode('utf-8')
                 elif path == '/w/config.js' and upstream.status == 200:
                     payload = b'window.QT_HOSTED=true;' + payload
-                self.send(payload, status=upstream.status, content_type=upstream.headers.get('Content-Type', 'application/octet-stream'),
-                          headers=upstream.headers.items())
+                response_headers = list(upstream.headers.items())
+                content_type = upstream.headers.get('Content-Type', 'application/octet-stream')
+                # Compress only authenticated project JSON, never auth/bootstrap
+                # tokens. Keep private no-store semantics and exact decoded bytes.
+                if (upstream.status == 200 and path.startswith('/w/api/projects/') and
+                        content_type.startswith('application/json')):
+                    response_headers.append(('Vary', 'Accept-Encoding'))
+                    if len(payload) > 1024 and accepts_gzip(self.headers.get('Accept-Encoding', '')):
+                        payload = gzip.compress(payload, compresslevel=5, mtime=0)
+                        response_headers.append(('Content-Encoding', 'gzip'))
+                self.send(payload, status=upstream.status, content_type=content_type,
+                          headers=response_headers)
 
         def safe_handle(self):
             try:

@@ -38,6 +38,21 @@ class ProjectRestoreTests(unittest.TestCase):
             self.assertEqual(transcript.canonical(restored[key]),transcript.canonical(self.p[key]),key)
         core.validate_project(copy.deepcopy(restored))
         self.assertNotIn('method_map',restored['research_report']['history'][0])
+    def test_gzip_transport_preserves_all_frozen_qca_and_report_versions(self):
+        import gzip
+        original=self.state()
+        payload=json.dumps(self.p,ensure_ascii=False,indent=2).encode()
+        status,body=self.request(gzip.compress(payload),**{'Content-Encoding':'gzip'})
+        self.assertEqual(status,200,body[:200]);self.assertFrozen(json.loads(body))
+        self.assertEqual(self.store.get(self.p['id']),original[1])
+        for path,content in original[2].items():
+            self.assertEqual((self.home/path).read_bytes(),content)
+        damaged=copy.deepcopy(self.p)
+        damaged['comparative_qca']['history'][0]['content_hash']='broken'
+        count=len(self.store.list())
+        self.assertEqual(self.request(gzip.compress(json.dumps(damaged).encode()),**{'Content-Encoding':'gzip'})[0],400)
+        self.assertEqual(len(self.store.list()),count)
+
     def test_raw_export_restores_all_versions_hashes_numeric_types_and_original_points(self):
         original=self.state();payload=json.dumps(self.p,ensure_ascii=False,indent=2).encode();status,data=self.request(payload);self.assertEqual(status,200,data)
         restored=json.loads(data);self.assertFrozen(restored);self.assertEqual(self.store.get(self.p['id']),original[1])

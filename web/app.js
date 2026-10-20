@@ -195,7 +195,15 @@ async function api(path, body, {rawJson=false}={}) {
     throw new Error(QT('publicDemoReadOnly', 'This public demonstration is read-only. Start a local copy to create or change projects.'));
   }
   const url = path.startsWith('/api') ? QT_BASE + path : path;
-  const response = await fetch(url, {method:body ? 'POST':'GET', headers:{'X-QualiCraft-Token':state.token,...(body?{'Content-Type':'application/json'}:{})}, ...(body?{body:rawJson?body:JSON.stringify(body)}:{})});
+  let payload=body?(rawJson?body:JSON.stringify(body)):undefined;
+  const headers={'X-QualiCraft-Token':state.token,...(body?{'Content-Type':'application/json'}:{})};
+  // Preserve raw frozen JSON bytes; compress transport only, with a fallback
+  // for browsers without CompressionStream. Never stringify the parsed file.
+  if(rawJson&&typeof payload==='string'&&payload.length>65536&&typeof CompressionStream!=='undefined'){
+    const packed=await new Response(new Blob([payload]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+    if(packed.byteLength<new Blob([payload]).size){payload=packed;headers['Content-Encoding']='gzip';}
+  }
+  const response = await fetch(url, {method:body ? 'POST':'GET',headers,...(body?{body:payload}:{})});
   if(response.status===401&&window.QT_HOSTED){window.location.assign('/login');throw new Error('Sign in to continue.');}
   const data = await response.json(); if(!response.ok) { const error=new Error(data.error || 'Request failed'); error.status=response.status; throw error; } return data;
 }
@@ -921,9 +929,9 @@ function showWorkspaceStart() {
 function emptyProjectHtml() {
   return `<section class="no-doc empty-project"><span class="empty-project-glyph" aria-hidden="true">${icon('doc')}</span><p class="eyebrow">${QT('emptyEyebrow','EMPTY PROJECT')}</p><h2>${QT('emptyTitle','Ready for your first document.')}</h2><p>${QT('emptyText','Import text, read a passage, and give it a code.')}</p><button class="primary" data-action="import"${demoLock()}>${icon('upload')}${QT('startImport','Import a document')}</button><details class="empty-project-options"><summary>${QT('optionalTools','Optional tools')}</summary><button data-action="code"${demoLock()}>${QT('createCode','Create code')}</button><button data-action="enable-all-blocks"${demoLock()}>${QT('enableAllBlocks','Enable figure workflow')}</button><p>${QT('enableAllBlocksHint','Adds theme grouping, Insights, Figures and Audit to this project. Other blocks keep their current settings.')}</p></details></section>`;
 }
-async function loadProject(id) {
+async function loadProject(id, created=null) {
   captureReadingPosition();
-  const project=await api(`/api/projects/${id}`);
+  const project=created?.id===id?created:await api(`/api/projects/${id}`);
   resetCodingInspector();state.project=project;state.docId=preferredReadingDocument(project);rememberWorkspaceProject(project.id);
   const preference=guidePreference(project.id);guide={open:preference?.status==='active',step:preference?.step??null};guideReturnFocus=null;
   state.selection=null; state.search=''; state.codeFilter=null; state.sourceFocus=null; state.networkReturn=null; NET.restoreFocus=false; state.insightsTab='map'; await loadBackups(); render();
@@ -949,7 +957,9 @@ function saveStateHtml() {
   return `<button class="save-state" data-action="snapshots" title="${esc(QT('backupHint','A restorable copy is written after every change. Click to restore one as a copy.'))}">${label}</button>`;
 }
 async function refresh() {
-  state.project=await api(projectUrl()); state.projects=await api('/api/projects'); await loadBackups(); render();
+  // These reads follow the committed mutation and do not depend on each other.
+  const [project,projects]=await Promise.all([api(projectUrl()),api('/api/projects'),loadBackups()]);
+  state.project=project;state.projects=projects;render();
 }
 function showSnapshots() {
   const rows=state.backups.map(b=>{
@@ -1811,7 +1821,7 @@ async function createProject(body, rawJson=false) {
   // invalidates existing frozen report/QCA hashes. The server still validates.
   const p=await api(rawJson?'/api/projects/restore':'/api/projects',body,{rawJson}); state.projects=await api('/api/projects');
   if(!rawJson&&['empty','bologna'].includes(body.kind))setGuidePreference(p.id,'active');
-  closeModal(); state.view='coding'; await loadProject(p.id); toast(QT('projectCreated','Project created and saved locally.'));
+  closeModal(); state.view='coding'; await loadProject(p.id,p); toast(QT('projectCreated','Project created and saved locally.'));
 }
 async function action(button) {
   const a=button.dataset.action;
