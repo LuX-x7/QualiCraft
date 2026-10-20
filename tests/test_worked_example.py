@@ -7,7 +7,7 @@ import unittest
 import zipfile
 from xml.etree import ElementTree as ET
 from qualicraft import core, reporting, transcript
-from qualicraft.server import bologna_example
+from qualicraft.examples import teaching_project
 
 ROOT=Path(__file__).resolve().parents[1]/'website/public/worked-example'
 
@@ -24,7 +24,7 @@ class WorkedExampleTests(unittest.TestCase):
 
     def test_restore_contains_original_corpus_and_saved_content_method(self):
         p=core.validate_project(json.loads((ROOT/'project.json').read_text(encoding='utf-8')))
-        original=bologna_example()
+        original=teaching_project()
         for field in ('documents','codes','annotations'):
             self.assertEqual(p[field],original[field])
         entry=p['research_report']['current']
@@ -38,14 +38,16 @@ class WorkedExampleTests(unittest.TestCase):
     def test_notebook_preserves_one_complete_document_and_all_saved_links(self):
         p=json.loads((ROOT/'project.json').read_text(encoding='utf-8'))
         record=json.loads((ROOT/'notebook-record.json').read_text(encoding='utf-8'))
-        doc=next(d for d in p['documents'] if d['name']=='interview02.txt')
+        doc=next(d for d in p['documents'] if d['name']=='interview02-english-excerpts.txt')
         expected=transcript.freeze(p,[doc['id']],role_labels='theme-category-code')
         expected['generated_at']=record['generated_at']
         self.assertEqual(record,expected)
         self.assertEqual((ROOT/'notebook.html').read_bytes(),transcript.html_export(record))
         with zipfile.ZipFile(ROOT/'notebook.docx') as z:
             xml=ET.fromstring(z.read('word/document.xml'))
-            self.assertTrue(len(list(xml.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t')))>100)
+            text=''.join(xml.itertext())
+            self.assertIn(doc['text'].split('\n\n')[0],text)
+            self.assertIn('CATEGORY',text)
             self.assertNotIn('word/documentProtection',z.namelist())
 
     def test_downloads_have_all_five_complete_reproducible_bundles(self):

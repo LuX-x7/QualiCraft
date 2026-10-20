@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="783pt" height="683.388pt" viewBox="0 0 783 683.388" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="783pt" height="504.2376pt" viewBox="0 0 783 504.2376" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
@@ -20,8 +20,8 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 683.388 
-L 783 683.388 
+   <path d="M 0 504.2376 
+L 783 504.2376 
 L 783 0 
 L 0 0 
 z
@@ -29,19 +29,19 @@ z
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 178 580.27375 
-L 768.6 580.27375 
-L 768.6 97.38 
-L 178 97.38 
+    <path d="M 192.4 411.79375 
+L 768.6 411.79375 
+L 768.6 79.596 
+L 192.4 79.596 
 z
 " style="fill: #ffffff"/>
    </g>
    <g id="matplotlib.axis_1">
     <g id="xtick_1">
      <g id="line2d_1">
-      <path d="M 178 580.27375 
-L 178 97.38 
-" clip-path="url(#p683e460eb7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
+      <path d="M 192.4 411.79375 
+L 192.4 79.596 
+" clip-path="url(#pdab60624d7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_2">
       <defs>
@@ -50,446 +50,320 @@ L 0 3.5
 " style="stroke: #251f21; stroke-width: 0.8"/>
       </defs>
       <g>
-       <use xlink:href="#m6c3acc10ae" x="178" y="580.27375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#m6c3acc10ae" x="192.4" y="411.79375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_1">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="178" y="595.87375" transform="rotate(-0 178 595.87375)">0</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="192.4" y="427.39375" transform="rotate(-0 192.4 427.39375)">0.0</text>
      </g>
     </g>
     <g id="xtick_2">
      <g id="line2d_3">
-      <path d="M 289.644612 580.27375 
-L 289.644612 97.38 
-" clip-path="url(#p683e460eb7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
+      <path d="M 317.66087 411.79375 
+L 317.66087 79.596 
+" clip-path="url(#pdab60624d7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_4">
       <g>
-       <use xlink:href="#m6c3acc10ae" x="289.644612" y="580.27375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#m6c3acc10ae" x="317.66087" y="411.79375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_2">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="289.644612" y="595.87375" transform="rotate(-0 289.644612 595.87375)">5</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="317.66087" y="427.39375" transform="rotate(-0 317.66087 427.39375)">0.5</text>
      </g>
     </g>
     <g id="xtick_3">
      <g id="line2d_5">
-      <path d="M 401.289225 580.27375 
-L 401.289225 97.38 
-" clip-path="url(#p683e460eb7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
+      <path d="M 442.921739 411.79375 
+L 442.921739 79.596 
+" clip-path="url(#pdab60624d7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_6">
       <g>
-       <use xlink:href="#m6c3acc10ae" x="401.289225" y="580.27375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#m6c3acc10ae" x="442.921739" y="411.79375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_3">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="401.289225" y="595.87375" transform="rotate(-0 401.289225 595.87375)">10</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="442.921739" y="427.39375" transform="rotate(-0 442.921739 427.39375)">1.0</text>
      </g>
     </g>
     <g id="xtick_4">
      <g id="line2d_7">
-      <path d="M 512.933837 580.27375 
-L 512.933837 97.38 
-" clip-path="url(#p683e460eb7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
+      <path d="M 568.182609 411.79375 
+L 568.182609 79.596 
+" clip-path="url(#pdab60624d7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_8">
       <g>
-       <use xlink:href="#m6c3acc10ae" x="512.933837" y="580.27375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#m6c3acc10ae" x="568.182609" y="411.79375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_4">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="512.933837" y="595.87375" transform="rotate(-0 512.933837 595.87375)">15</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="568.182609" y="427.39375" transform="rotate(-0 568.182609 427.39375)">1.5</text>
      </g>
     </g>
     <g id="xtick_5">
      <g id="line2d_9">
-      <path d="M 624.57845 580.27375 
-L 624.57845 97.38 
-" clip-path="url(#p683e460eb7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
+      <path d="M 693.443478 411.79375 
+L 693.443478 79.596 
+" clip-path="url(#pdab60624d7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_10">
       <g>
-       <use xlink:href="#m6c3acc10ae" x="624.57845" y="580.27375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#m6c3acc10ae" x="693.443478" y="411.79375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_5">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="624.57845" y="595.87375" transform="rotate(-0 624.57845 595.87375)">20</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="693.443478" y="427.39375" transform="rotate(-0 693.443478 427.39375)">2.0</text>
      </g>
     </g>
-    <g id="xtick_6">
-     <g id="line2d_11">
-      <path d="M 736.223062 580.27375 
-L 736.223062 97.38 
-" clip-path="url(#p683e460eb7)" style="fill: none; stroke: #eae9ea; stroke-width: 0.8; stroke-linecap: square"/>
-     </g>
-     <g id="line2d_12">
-      <g>
-       <use xlink:href="#m6c3acc10ae" x="736.223062" y="580.27375" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_6">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="736.223062" y="595.87375" transform="rotate(-0 736.223062 595.87375)">25</text>
-     </g>
-    </g>
-    <g id="text_7">
-     <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="473.3" y="609.87375" transform="rotate(-0 473.3 609.87375)">Passage-code assignments</text>
+    <g id="text_6">
+     <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: middle; fill: #251f21" x="480.5" y="441.39375" transform="rotate(-0 480.5 441.39375)">Passage-code assignments</text>
     </g>
    </g>
    <g id="matplotlib.axis_2">
     <g id="ytick_1">
-     <g id="line2d_13">
+     <g id="line2d_11">
       <defs>
        <path id="mcf27317821" d="M 0 0 
 L -3.5 0 
 " style="stroke: #251f21; stroke-width: 0.8"/>
       </defs>
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="547.58776" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="385.508743" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_8">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(21.435937 545.527604)">methodologies are formalized in</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(132.678125 560.247916)">manuals</text>
+     <g id="text_7">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(35.185937 383.808743)">website for dissemination to the</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(129.203125 397.808743)">wider public</text>
      </g>
     </g>
     <g id="ytick_2">
-     <g id="line2d_14">
+     <g id="line2d_12">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="517.764776" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="354.438994" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_9">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="171" y="522.064776" transform="rotate(-0 171 522.064776)">journal articles</text>
+     <g id="text_8">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="185.4" y="358.738994" transform="rotate(-0 185.4 358.738994)">stemma codicum</text>
      </g>
     </g>
     <g id="ytick_3">
-     <g id="line2d_15">
+     <g id="line2d_13">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="487.941793" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="323.369246" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_10">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="171" y="492.241793" transform="rotate(-0 171 492.241793)">conferences and workshops</text>
+     <g id="text_9">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(16.19375 321.379402)">printed books and manuscripts from</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(109.059375 335.95909)">the Renaissance</text>
      </g>
     </g>
     <g id="ytick_4">
-     <g id="line2d_16">
+     <g id="line2d_14">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="458.118809" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="292.299498" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_11">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(18.901562 456.418809)">discarded material can be useful</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(16.2625 470.418809)">for teaching and further research</text>
+     <g id="text_10">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="185.4" y="296.599498" transform="rotate(-0 185.4 296.599498)">manuscripts from the Middle Ages</text>
      </g>
     </g>
     <g id="ytick_5">
-     <g id="line2d_17">
+     <g id="line2d_15">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="428.295826" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="261.229749" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_12">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(46.25 426.595826)">data are circunscribed and</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(129.110938 440.595826)">objective</text>
+     <g id="text_11">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(32.395312 259.169593)">digitisation has changed the way</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(48.89375 273.889905)">of working on the documents</text>
      </g>
     </g>
     <g id="ytick_6">
-     <g id="line2d_18">
+     <g id="line2d_16">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="398.472842" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="230.160001" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_13">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(48.314062 396.482998)">critical editions are deeply</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(122.43125 411.062686)">formalized</text>
+     <g id="text_12">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(15.79375 228.099845)">difference between paleography and</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(132.142188 242.820157)">diplomatics</text>
      </g>
     </g>
     <g id="ytick_7">
-     <g id="line2d_19">
+     <g id="line2d_17">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="368.649859" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="199.090252" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_14">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(17.995312 366.589702)">digitisation has changed the way</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(34.49375 381.310015)">of working on the documents</text>
+     <g id="text_13">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(72.39375 197.030096)">attitudes towards digital</text>
+      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(104.653125 211.750409)">scholarly editions</text>
      </g>
     </g>
     <g id="ytick_8">
-     <g id="line2d_20">
+     <g id="line2d_18">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="338.826875" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="168.020504" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_15">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(40.476562 336.766719)">working with others through</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(109.329688 351.487031)">consultations</text>
+     <g id="text_14">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="185.4" y="172.320504" transform="rotate(-0 185.4 172.320504)">Munich Staats Bibliotek</text>
      </g>
     </g>
     <g id="ytick_9">
-     <g id="line2d_21">
+     <g id="line2d_19">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="309.003891" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="136.950756" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_16">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(35.720313 307.014048)">interpretation and results are</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(150.409375 321.593735)">data</text>
+     <g id="text_15">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="185.4" y="141.250756" transform="rotate(-0 185.4 141.250756)">Google Books</text>
      </g>
     </g>
     <g id="ytick_10">
-     <g id="line2d_22">
+     <g id="line2d_20">
       <g>
-       <use xlink:href="#mcf27317821" x="178" y="279.180908" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
+       <use xlink:href="#mcf27317821" x="192.4" y="105.881007" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
       </g>
      </g>
-     <g id="text_17">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(54.165625 277.191064)">published with traditional</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(75.942187 291.770752)">academic publishers</text>
-     </g>
-    </g>
-    <g id="ytick_11">
-     <g id="line2d_23">
-      <g>
-       <use xlink:href="#mcf27317821" x="178" y="249.357924" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_18">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="171" y="253.657924" transform="rotate(-0 171 253.657924)">primary sources are data</text>
-     </g>
-    </g>
-    <g id="ytick_12">
-     <g id="line2d_24">
-      <g>
-       <use xlink:href="#mcf27317821" x="178" y="219.534941" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_19">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="171" y="223.834941" transform="rotate(-0 171 223.834941)">specificities of the humanities</text>
-     </g>
-    </g>
-    <g id="ytick_13">
-     <g id="line2d_25">
-      <g>
-       <use xlink:href="#mcf27317821" x="178" y="189.711957" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_20">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(18.582812 187.651801)">preceding academic work on the</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(109.179688 202.372113)">same subject</text>
-     </g>
-    </g>
-    <g id="ytick_14">
-     <g id="line2d_26">
-      <g>
-       <use xlink:href="#mcf27317821" x="178" y="159.888974" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_21">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(21.704688 157.828817)">working with others as part of a</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(147.759375 172.54913)">team</text>
-     </g>
-    </g>
-    <g id="ytick_15">
-     <g id="line2d_27">
-      <g>
-       <use xlink:href="#mcf27317821" x="178" y="130.06599" style="fill: #251f21; stroke: #251f21; stroke-width: 0.8"/>
-      </g>
-     </g>
-     <g id="text_22">
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(23.78125 128.005834)">keeping working materials after</text>
-      <text style="font-size: 10px; font-family: 'PingFang SC'; fill: #251f21" transform="translate(69.164062 142.726146)">the end of the project</text>
+     <g id="text_16">
+      <text style="font-size: 10px; font-family: 'PingFang SC'; text-anchor: end; fill: #251f21" x="185.4" y="110.181007" transform="rotate(-0 185.4 110.181007)">critically-reconstructed text</text>
      </g>
     </g>
    </g>
    <g id="patch_3">
-    <path d="M 178 558.324034 
-L 378.960302 558.324034 
-L 378.960302 536.851486 
-L 178 536.851486 
+    <path d="M 192.4 396.693852 
+L 442.921739 396.693852 
+L 442.921739 374.323633 
+L 192.4 374.323633 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_4">
-    <path d="M 178 528.501051 
-L 378.960302 528.501051 
-L 378.960302 507.028502 
-L 178 507.028502 
+    <path d="M 192.4 365.624104 
+L 442.921739 365.624104 
+L 442.921739 343.253885 
+L 192.4 343.253885 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_5">
-    <path d="M 178 498.678067 
-L 378.960302 498.678067 
-L 378.960302 477.205519 
-L 178 477.205519 
+    <path d="M 192.4 334.554355 
+L 442.921739 334.554355 
+L 442.921739 312.184137 
+L 192.4 312.184137 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_6">
-    <path d="M 178 468.855083 
-L 401.289225 468.855083 
-L 401.289225 447.382535 
-L 178 447.382535 
+    <path d="M 192.4 303.484607 
+L 442.921739 303.484607 
+L 442.921739 281.114388 
+L 192.4 281.114388 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_7">
-    <path d="M 178 439.0321 
-L 401.289225 439.0321 
-L 401.289225 417.559552 
-L 178 417.559552 
+    <path d="M 192.4 272.414859 
+L 442.921739 272.414859 
+L 442.921739 250.04464 
+L 192.4 250.04464 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_8">
-    <path d="M 178 409.209116 
-L 401.289225 409.209116 
-L 401.289225 387.736568 
-L 178 387.736568 
+    <path d="M 192.4 241.34511 
+L 442.921739 241.34511 
+L 442.921739 218.974891 
+L 192.4 218.974891 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_9">
-    <path d="M 178 379.386133 
-L 423.618147 379.386133 
-L 423.618147 357.913584 
-L 178 357.913584 
+    <path d="M 192.4 210.275362 
+L 442.921739 210.275362 
+L 442.921739 187.905143 
+L 192.4 187.905143 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_10">
-    <path d="M 178 349.563149 
-L 468.275992 349.563149 
-L 468.275992 328.090601 
-L 178 328.090601 
+    <path d="M 192.4 179.205613 
+L 442.921739 179.205613 
+L 442.921739 156.835395 
+L 192.4 156.835395 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_11">
-    <path d="M 178 319.740166 
-L 468.275992 319.740166 
-L 468.275992 298.267617 
-L 178 298.267617 
+    <path d="M 192.4 148.135865 
+L 442.921739 148.135865 
+L 442.921739 125.765646 
+L 192.4 125.765646 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_12">
-    <path d="M 178 289.917182 
-L 512.933837 289.917182 
-L 512.933837 268.444634 
-L 178 268.444634 
+    <path d="M 192.4 117.066117 
+L 693.443478 117.066117 
+L 693.443478 94.695898 
+L 192.4 94.695898 
 z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+" clip-path="url(#pdab60624d7)" style="fill: #73a89a"/>
    </g>
    <g id="patch_13">
-    <path d="M 178 260.094198 
-L 512.933837 260.094198 
-L 512.933837 238.62165 
-L 178 238.62165 
-z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
+    <path d="M 192.4 411.79375 
+L 192.4 79.596 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_14">
-    <path d="M 178 230.271215 
-L 557.591682 230.271215 
-L 557.591682 208.798667 
-L 178 208.798667 
-z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
-   </g>
-   <g id="patch_15">
-    <path d="M 178 200.448231 
-L 602.249527 200.448231 
-L 602.249527 178.975683 
-L 178 178.975683 
-z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
-   </g>
-   <g id="patch_16">
-    <path d="M 178 170.625248 
-L 646.907372 170.625248 
-L 646.907372 149.152699 
-L 178 149.152699 
-z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
-   </g>
-   <g id="patch_17">
-    <path d="M 178 140.802264 
-L 691.565217 140.802264 
-L 691.565217 119.329716 
-L 178 119.329716 
-z
-" clip-path="url(#p683e460eb7)" style="fill: #73a89a"/>
-   </g>
-   <g id="patch_18">
-    <path d="M 178 580.27375 
-L 178 97.38 
+    <path d="M 192.4 411.79375 
+L 768.6 411.79375 
 " style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
-   <g id="patch_19">
-    <path d="M 178 580.27375 
-L 768.6 580.27375 
-" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   <g id="text_17">
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="388.748743" transform="rotate(-0 448.934261 388.748743)">1</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="357.678994" transform="rotate(-0 448.934261 357.678994)">1</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="326.609246" transform="rotate(-0 448.934261 326.609246)">1</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="295.539498" transform="rotate(-0 448.934261 295.539498)">1</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="264.469749" transform="rotate(-0 448.934261 264.469749)">1</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="233.400001" transform="rotate(-0 448.934261 233.400001)">1</text>
    </g>
    <g id="text_23">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="385.123085" y="550.82776" transform="rotate(-0 385.123085 550.82776)">9</text>
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="202.330252" transform="rotate(-0 448.934261 202.330252)">1</text>
    </g>
    <g id="text_24">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="385.123085" y="521.004776" transform="rotate(-0 385.123085 521.004776)">9</text>
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="171.260504" transform="rotate(-0 448.934261 171.260504)">1</text>
    </g>
    <g id="text_25">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="385.123085" y="491.181793" transform="rotate(-0 385.123085 491.181793)">9</text>
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="448.934261" y="140.190756" transform="rotate(-0 448.934261 140.190756)">1</text>
    </g>
    <g id="text_26">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="407.452008" y="461.358809" transform="rotate(-0 407.452008 461.358809)">10</text>
-   </g>
-   <g id="text_27">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="407.452008" y="431.535826" transform="rotate(-0 407.452008 431.535826)">10</text>
-   </g>
-   <g id="text_28">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="407.452008" y="401.712842" transform="rotate(-0 407.452008 401.712842)">10</text>
-   </g>
-   <g id="text_29">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="429.78093" y="371.889859" transform="rotate(-0 429.78093 371.889859)">11</text>
-   </g>
-   <g id="text_30">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="474.438775" y="342.066875" transform="rotate(-0 474.438775 342.066875)">13</text>
-   </g>
-   <g id="text_31">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="474.438775" y="312.243891" transform="rotate(-0 474.438775 312.243891)">13</text>
-   </g>
-   <g id="text_32">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="519.09662" y="282.420908" transform="rotate(-0 519.09662 282.420908)">15</text>
-   </g>
-   <g id="text_33">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="519.09662" y="252.597924" transform="rotate(-0 519.09662 252.597924)">15</text>
-   </g>
-   <g id="text_34">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="563.754465" y="222.774941" transform="rotate(-0 563.754465 222.774941)">17</text>
-   </g>
-   <g id="text_35">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="608.41231" y="192.951957" transform="rotate(-0 608.41231 192.951957)">19</text>
-   </g>
-   <g id="text_36">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="653.070155" y="163.128974" transform="rotate(-0 653.070155 163.128974)">21</text>
-   </g>
-   <g id="text_37">
-    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="697.728" y="133.30599" transform="rotate(-0 697.728 133.30599)">23</text>
+    <text style="font-size: 9px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="699.456" y="109.121007" transform="rotate(-0 699.456 109.121007)">2</text>
    </g>
   </g>
-  <g id="text_38">
+  <g id="text_27">
    <text style="font-weight: 700; font-size: 16px; font-family: 'PingFang SC'; text-anchor: start; fill: #251f21" x="14.4" y="28.16" transform="rotate(-0 14.4 28.16)">Code frequency</text>
   </g>
-  <g id="text_39">
-   <text style="font-size: 8px; font-family: 'PingFang SC'; text-anchor: start; fill: #585254" x="14.4" y="667.29175" transform="rotate(-0 14.4 667.29175)">Counts passage-code assignments, not participants. Frequency is not importance.</text>
+  <g id="text_28">
+   <text style="font-size: 8px; font-family: 'PingFang SC'; text-anchor: start; fill: #585254" x="14.4" y="488.14135" transform="rotate(-0 14.4 488.14135)">Counts passage-code assignments, not participants. Frequency is not importance.</text>
   </g>
  </g>
  <defs>
-  <clipPath id="p683e460eb7">
-   <rect x="178" y="97.38" width="590.6" height="482.89375"/>
+  <clipPath id="pdab60624d7">
+   <rect x="192.4" y="79.596" width="576.2" height="332.19775"/>
   </clipPath>
  </defs>
 </svg>

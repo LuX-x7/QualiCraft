@@ -228,7 +228,7 @@ export const NOT_DOING = {
 
 export const DATA_SECTION = {
   title: 'Built on a checkable example.',
-  body: 'This page and the report use the Bologna CC0 corpus. Its original Italian text and researcher coding are preserved. Other importer fixtures remain available below.',
+  body: 'This page and the report use English translation teaching excerpts from Bologna CC0. Original Italian records and outputs remain available for source checking. Other importer fixtures remain available below.',
 }
 
 export const FOOTER = {

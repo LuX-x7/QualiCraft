@@ -25,17 +25,18 @@ def write_json(path,value):
 
 
 def prepare():
-    p=bologna_example();p['name']='Bologna worked example'
-    d=next(d for d in p['documents'] if d['name']=='interview02.txt')
+    from qualicraft.examples import teaching_project
+    p=teaching_project();p['name']='Bologna English teaching example'
+    d=next(d for d in p['documents'] if d['name']=='interview02-english-excerpts.txt')
     draft=reporting.blank(p,'content')
     draft.update(title='Bologna coding evidence report',
         research_question='How are research materials described in this saved Bologna coding record?',
-        case_unit='The corpus has 19 public interview documents. The short written example below reviews selected passages from interview02.txt.',
+        case_unit='This English teaching subset contains selected translated passages from three public Bologna interviews. The Notebook covers all excerpts selected from interview02.txt, not the full original interview.',
         analysis_unit='An existing quotation and its saved code path, read in the context of the full source document.',
         approach='Qualitative Content Analysis',
-        method_notes='This is a worked software example using the original Bologna coding. No new coding or participant interpretation was generated. Table labels retain the saved ancestry. Method steps show the workflow; unchecked review stages remain unconfirmed.',
+        method_notes='This is a worked software example using translated Bologna excerpts and source-linked teaching associations. Translated offsets refer to the English teaching documents, not the Italian originals. This is not a new empirical analysis. Table labels retain the saved ancestry. Method steps show the workflow; unchecked review stages remain unconfirmed.',
         reflexivity='The short illustrative narrative was prepared for the QT demonstration. It is not an independently validated analysis of this corpus.',
-        quality_notes='Quoted characters and code identities were checked against the saved source. All five figures use the complete original 19-document coding record and their existing counting rules.',
+        quality_notes='Quoted characters and code identities were checked against the saved source. All five figures use only this three-document translated teaching subset and the unchanged counting rules.',
         counterexamples='Only selected material-related passages are interpreted here. Contrasting perspectives across the other interviews require further contextual reading.',
         limitations='This small writing example does not establish a complete analysis or saturation. Counts describe saved coding activity rather than importance or prevalence among people.',
         disclosure='Public Bologna CC0 data only. No private interviews or model calls were used. Editing the downloaded Word documents does not change the QT project.')
@@ -44,15 +45,15 @@ def prepare():
         chain=[];node=by[a['code_id']]
         while node:
             chain.insert(0,node);node=by.get(node.get('parent_id'))
-        if a['document_id']==d['id'] and len(chain)>=3 and chain[0]['name']=='materials' and chain[1]['id'] not in seen:
-            chosen.append((a,chain));seen.add(chain[1]['id'])
+        if a['document_id']==d['id'] and len(chain)>=2 and a['code_id'] not in seen:
+            chosen.append((a,chain));seen.add(a['code_id'])
         if len(chosen)==3:break
     assert chosen
     draft['rows']=[{'id':'example-row-'+str(i),'theme':chain[0]['name'],'category':' > '.join(c['name'] for c in chain[1:-1]),'code_ids':[a['code_id']],'evidence_ids':[a['id']],
         'interpretation':'The saved code distinguishes a form of research material in this passage. [E:'+a['id']+']'} for i,(a,chain) in enumerate(chosen,1)]
     draft['narrative']='The selected passages describe different forms of research material. Their saved paths place these distinctions inside the materials group. Read the exact quotations before judging how well each code fits. '+' '.join('[E:'+a['id']+']' for a,_ in chosen)+'\nThe five figures summarize all existing codings across the corpus. They support checking the record; they do not substitute for interpretation of the interviews.'
     draft['checks']['units']=True
-    draft['figures']=[{'id':'example-'+kind,'options':{'kind':kind,'font':'DejaVu Sans'},'caption':label+' from the original saved coding record.'} for kind,label in [('frequency','Code frequency'),('coverage','Code by interview'),('cooccurrence','Code co-occurrence'),('hierarchy','Theme hierarchy'),('accumulation','Code accumulation')]]
+    draft['figures']=[{'id':'example-'+kind,'options':{'kind':kind,'font':'DejaVu Sans'},'caption':label+' from the English translation teaching subset.'} for kind,label in [('frequency','Code frequency'),('coverage','Code by interview'),('cooccurrence','Code co-occurrence'),('hierarchy','Theme hierarchy'),('accumulation','Code accumulation')]]
     state=reporting.save(p,{'revision':0,'source_version':reporting.source_version(p),'draft':draft})
     core.validate_project(p)
     frozen=transcript.freeze(p,[d['id']],role_labels='theme-category-code')
@@ -63,8 +64,8 @@ def prepare():
         for figure in state['current']['draft']['figures']:
             asset=state['assets'][state['current']['bindings']['figures'][figure['id']]['asset_id']]
             for name,payload in report_figures.files(asset).items():z.writestr(figure['options']['kind']+'/'+name,payload)
-        z.writestr('README.txt','Bologna CC0. Each of five folders contains SVG, PDF, 300 dpi PNG, exact CSV and figure.py. Extract first; install matplotlib (scipy for optional clustering), then run python figure.py in the chosen folder. Font: DejaVu Sans. Counts are the existing saved coding record, not new analysis.\n')
-    write_json(OUT/'scope.json',{'project':{'documents':len(p['documents']),'codes':len(p['codes']),'codings':len(p['annotations'])},'notebook':{'document':d['name'],'characters':len(d['text']),'codings':sum(a['document_id']==d['id'] for a in p['annotations']),'tree_labels':'Explicit display convention: root Theme, intermediate Category, leaf Code. Saved names and links are unchanged.'},'report':{'method':reporting.METHODS['content'],'selected_evidence':len(chosen),'status':'Illustrative writing from existing codes; not a newly validated research analysis.'}})
+        z.writestr('README.txt','Bologna CC0. Each of five folders contains SVG, PDF, 300 dpi PNG, exact CSV and figure.py. Extract first; install matplotlib (scipy for optional clustering), then run python figure.py in the chosen folder. Font: DejaVu Sans. Counts describe translated teaching associations, not the full Italian corpus or new empirical analysis.\n')
+    write_json(OUT/'scope.json',{'project':{'documents':len(p['documents']),'codes':len(p['codes']),'codings':len(p['annotations'])},'notebook':{'document':d['name'],'characters':len(d['text']),'codings':sum(a['document_id']==d['id'] for a in p['annotations']),'tree_labels':'Explicit display convention: root Theme, intermediate Category, leaf Code. Saved names and links are unchanged.'},'report':{'method':reporting.METHODS['content'],'selected_evidence':len(chosen),'status':'English translation teaching excerpts from Bologna CC0; not complete interviews or a newly validated research analysis.'}})
 
 
 def word():
@@ -81,7 +82,7 @@ def manifest():
     files=[]
     for path in sorted(OUT.iterdir()):
         if path.is_file() and path.name!='manifest.json':files.append({'path':path.name,'bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
-    write_json(OUT/'manifest.json',{'source':'demo-data/qualicraft.sqlite3','licence':'CC0','source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain','--','tools/site/build_worked_example.py','qualicraft/plotting.py'],cwd=ROOT,text=True)),'source_files':{str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [Path(__file__),ROOT/'qualicraft/plotting.py',ROOT/'qualicraft/reporting.py',ROOT/'qualicraft/transcript.py']},'scope':json.loads((OUT/'scope.json').read_text(encoding='utf-8')),'files':files})
+    write_json(OUT/'manifest.json',{'source':'demo-data/qualicraft.sqlite3','licence':'CC0','source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain','--','tools/site/build_worked_example.py','qualicraft/plotting.py'],cwd=ROOT,text=True)),'source_files':{str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [Path(__file__),ROOT/'qualicraft/plotting.py',ROOT/'qualicraft/reporting.py',ROOT/'qualicraft/transcript.py',ROOT/'qualicraft/examples.py',ROOT/'demo-data/bologna-english.json']},'scope':json.loads((OUT/'scope.json').read_text(encoding='utf-8')),'files':files})
 
 
 if __name__=='__main__':

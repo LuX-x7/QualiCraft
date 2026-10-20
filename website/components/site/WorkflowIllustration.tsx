@@ -48,7 +48,7 @@ export default function WorkflowIllustration({ kind, example, data }: {
     {kind === 'import' && <div className="workflow-source">
       <div className={selected === 0 ? 'is-selected' : ''}><span className="mono evidence-label">Source document</span><strong>{example.document_name}</strong></div>
       <div className="evidence-connector" aria-hidden="true">↓</div>
-      <div className={selected === 1 ? 'is-selected' : ''}><span className="mono evidence-label">Existing source excerpt</span><blockquote lang="it">{example.quote}</blockquote></div>
+      <div className={selected === 1 ? 'is-selected' : ''}><span className="mono evidence-label">Existing source excerpt</span><blockquote lang="en">{example.quote}</blockquote></div>
       <div className="evidence-connector" aria-hidden="true">↓</div>
       <div className={selected === 2 ? 'is-selected' : ''}><span className="mono evidence-label">Unicode range</span><strong>[{example.start}, {example.end})</strong></div>
       <p role="status">{['Keep the source file recognisable.', 'The original wording stays intact.', 'A saved coding can point back to this exact range.'][selected]}</p>

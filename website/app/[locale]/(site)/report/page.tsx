@@ -15,7 +15,7 @@ import '../t7-report.css'
 
 export const metadata: Metadata = {
   title: 'A worked example · Bologna sources, report and figures',
-  description: 'Read five views of the Bologna corpus, with a question, an exported figure, its counts and its limits in each chapter.',
+  description: 'Read five views of an English Bologna teaching subset, with a question, an exported figure, its counts and its limits in each chapter.',
 }
 
 /** Prose describes the existing export. It neither calculates new statistics
@@ -36,7 +36,7 @@ function chapters(manifest: Manifest, figures: FigureData[]): Section[] {
     {
       id: 'sec-corpus', no: '01', title: 'The corpus',
       intro: <>
-        <p className="report-lead">One public corpus. One saved coding record.</p>
+        <p className="report-lead">Bologna · English translation teaching excerpts.</p>
         <p>Read frequency, distribution, shared ranges, theme structure and accumulation. Every view retains its exported values.</p>
         {corpus && <details className="report-dataset"><summary>Dataset, licence &amp; source record</summary>
           <aside className="report-data-card" aria-labelledby="corpus-record-title">

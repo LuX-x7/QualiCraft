@@ -1,87 +1,94 @@
 {
   "source": "demo-data/qualicraft.sqlite3",
   "licence": "CC0",
-  "source_commit": "baf4d916c63ec0856b21d3c6d18c867052895f6c",
+  "source_commit": "8f98dc28f744cb8486d5f84a6807864bf37c77f5",
   "working_tree_dirty": true,
   "source_files": {
-    "tools/site/build_worked_example.py": "ee52c3eb22bab05d5b6528874ae91f03a9f84e286f009852727679dc28e3eee3",
+    "tools/site/build_worked_example.py": "cc78fe989ce5d74b6e82783e73d30c2c36c74a3a10df2844dc2017a277fb8e5a",
     "qualicraft/plotting.py": "30eb7da14824c622a531f7b5565c07ac70098bf983c8716cddc91cbd31d09385",
     "qualicraft/reporting.py": "62d5c3f1faa5e127a90edf252e18487d2fa97c1db14fb208b6250dff8722fc4b",
-    "qualicraft/transcript.py": "2e4020ab39448a9dddf8e915e53a41cc0015ed663644f07658463349b368dfe4"
+    "qualicraft/transcript.py": "2e4020ab39448a9dddf8e915e53a41cc0015ed663644f07658463349b368dfe4",
+    "qualicraft/examples.py": "e54be71998376854bda0e308400757e6d00501a3186fd04dc1eb5f984fefddd5",
+    "demo-data/bologna-english.json": "3905257600224bd47adf675689aad1f5ee6e14bb6e5b49d6872eb002059049c4"
   },
   "scope": {
     "project": {
-      "documents": 19,
-      "codes": 317,
-      "codings": 874
+      "documents": 3,
+      "codes": 25,
+      "codings": 11
     },
     "notebook": {
-      "document": "interview02.txt",
-      "characters": 18239,
-      "codings": 53,
+      "document": "interview02-english-excerpts.txt",
+      "characters": 894,
+      "codings": 5,
       "tree_labels": "Explicit display convention: root Theme, intermediate Category, leaf Code. Saved names and links are unchanged."
     },
     "report": {
       "method": "Qualitative Content Analysis",
       "selected_evidence": 3,
-      "status": "Illustrative writing from existing codes; not a newly validated research analysis."
+      "status": "English translation teaching excerpts from Bologna CC0; not complete interviews or a newly validated research analysis."
     }
   },
   "files": [
     {
       "path": "figures-and-code.zip",
-      "bytes": 4922657,
-      "sha256": "869fd0edb7dffbc600bdd4c37d4d160a690d0e51784d7d56e8378bd1b0791a04"
+      "bytes": 1048191,
+      "sha256": "1a0a63b7558539ad44948fed04b73f2d2a26fe2805c27b9cf6a45a8990d1aea1"
     },
     {
       "path": "notebook-preview.png",
-      "bytes": 328490,
-      "sha256": "1573677a302ab16afdce1cb6d065c2e4700a7b6c90f98b3500ca9eda83deb71a"
+      "bytes": 161950,
+      "sha256": "b84ff78fc710aaff941080aa3fd7ff81b0c64cd1ccf2a2d8d92475a78d4df99a"
     },
     {
       "path": "notebook-record.json",
-      "bytes": 155378,
-      "sha256": "83648a21439073087b36e0fd8d132b5e0ca865f88da3676273bcc54e8afc7624"
+      "bytes": 13102,
+      "sha256": "ec74c6cc3b714157bf990577a2167a8316326df3617966d1a22090c5c57d7dd5"
     },
     {
       "path": "notebook.docx",
-      "bytes": 48398,
-      "sha256": "82254e94ff7ad0f0a94b99c967bf7109739c79b539af1907687b1875b7150a42"
+      "bytes": 8360,
+      "sha256": "98b60bd5b2cf71003a92ad45fcd831510afae8ed0cb247ce2c9a6152d6895b8d"
     },
     {
       "path": "notebook.html",
-      "bytes": 262267,
-      "sha256": "6aff2c3d72c1677bbd5d907ba4c8a85004d6d9525208105d425cf78963b3f0da"
+      "bytes": 30450,
+      "sha256": "412c333d8a7a3f49fae9f1cebba1b4f700da0faea5b24bd943ebd1c279fe4823"
     },
     {
       "path": "project.json",
-      "bytes": 7772896,
-      "sha256": "3a9e7b812da34e4e855b481990444165d6dbcb3caf99a48baafd0eff04fa80e4"
+      "bytes": 1449262,
+      "sha256": "a96b0a72e007c3366a58a16ef42c5cc8251088346ba8132853a1170e4b49d803"
     },
     {
       "path": "report-preview.png",
-      "bytes": 131761,
-      "sha256": "837e565140467487555f76cce8c017c439d22a59a1c4c1b8c1603f9b5aa51113"
+      "bytes": 93214,
+      "sha256": "ac11dc4c821d70db90c20a328438f7274f8037b524bf3ff809de97d8c2714c15"
     },
     {
       "path": "research-report.docx",
-      "bytes": 4743263,
-      "sha256": "dd5ed2ca8a3bba9e311b791d15da3a7fe810ed62bbfc76ac2b4b6d71ce502a05"
+      "bytes": 941217,
+      "sha256": "30585114334279444f0fea20362d4707d3a558fa737bac09ec7d1024d40d4d0b"
     },
     {
       "path": "research-report.html",
-      "bytes": 6997662,
-      "sha256": "dff088ae93183023e63f272d9ec3ea342fa622c2e7416e028f6e2ef340f97516"
+      "bytes": 1539279,
+      "sha256": "1527d5d137751727342392c3b220096fe721bab82ce6c1bfdf144d149ff760db"
     },
     {
       "path": "research-report.zip",
-      "bytes": 19579525,
-      "sha256": "a34e8ddb6d3874eb2f00188388fa557d31d9db04914dc0af89ead13c0a8eed46"
+      "bytes": 4066854,
+      "sha256": "cfa7d3857d2be20eaea7203cc50c4baa1c4b357e91b031277368f593aeb3b6b1"
     },
     {
       "path": "scope.json",
-      "bytes": 505,
-      "sha256": "45ff6a99ff7b7cee222a330cf453a240bfc800fe79fbaa9e642a6d16e083da0d"
+      "bytes": 553,
+      "sha256": "aa3cd9237c0e2d52da2638b211831a90066cabe98a6a9bc905fa2131f1c84591"
+    },
+    {
+      "path": "translation-map.json",
+      "bytes": 6830,
+      "sha256": "3905257600224bd47adf675689aad1f5ee6e14bb6e5b49d6872eb002059049c4"
     }
   ]
 }

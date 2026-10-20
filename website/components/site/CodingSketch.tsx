@@ -13,7 +13,7 @@ export default function CodingSketch({example}:{example:CodingExample}) {
    <article className="coding-document" aria-label="Source document with highlighted passage">
     <div className="coding-document-head mono"><span>{example.document_name}</span><span>01 / SELECT</span></div>
     <div className="pencil-ruling" aria-hidden="true"><i/><i/><i/></div>
-    <button type="button" className="coding-passage" aria-pressed={part===0} {...activate(0)} aria-label="Inspect highlighted original passage"><mark lang="it">{example.quote}</mark><svg className="coding-pencil" viewBox="0 0 50 50" fill="none" aria-hidden="true"><path d="M13 36L32 8L40 14L21 42L10 45Z M13 36L21 42M30 11L38 17M10 45L13 38"/></svg></button>
+    <button type="button" className="coding-passage" aria-pressed={part===0} {...activate(0)} aria-label="Inspect highlighted original passage"><mark lang="en">{example.quote}</mark><svg className="coding-pencil" viewBox="0 0 50 50" fill="none" aria-hidden="true"><path d="M13 36L32 8L40 14L21 42L10 45Z M13 36L21 42M30 11L38 17M10 45L13 38"/></svg></button>
     <div className="coding-range-rule" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></div><p className="mono coding-coordinates">Unicode [{example.start}, {example.end})</p>
    </article>
    <div className="coding-decision"><span className="mono">02 / ATTACH A CODE</span><svg className="coding-attachment" viewBox="0 0 180 50" fill="none" aria-hidden="true"><path className="coding-line-base" d="M3 12C47 10 29 39 75 38H168M158 30L170 38L158 46"/><path className="coding-line-trace" pathLength="1" d="M3 12C47 10 29 39 75 38H168M158 30L170 38L158 46"/></svg>

@@ -63,12 +63,8 @@ def main() -> int:
     if not DEMO_DB.exists():
         print(f"  FAIL {DEMO_DB} is missing — the demo corpus ships it")
         return 1
-    store = Store(str(DEMO_DB))
-    projects = store.list()
-    if not projects:
-        print("  FAIL the demo database holds no project")
-        return 1
-    project = store.get(projects[0]["id"])
+    from qualicraft.examples import teaching_project
+    project = teaching_project()
     print(f"  project {project['name']!r}: {len(project['documents'])} documents, "
           f"{len(project['codes'])} codes, {len(project['annotations'])} codings")
 
@@ -80,7 +76,7 @@ def main() -> int:
 
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO,
                             capture_output=True, text=True).stdout.strip()
-    source_paths = ["qualicraft/plotting.py", "qualicraft/analyze.py", "tools/report/build_assets.py"]
+    source_paths = ["qualicraft/plotting.py", "qualicraft/analyze.py", "tools/report/build_assets.py", "qualicraft/examples.py", "demo-data/bologna-english.json"]
     dirty = subprocess.run(["git", "status", "--porcelain", "--", *source_paths], cwd=REPO,
                            capture_output=True, text=True, check=True).stdout
     manifest = {
@@ -92,6 +88,7 @@ def main() -> int:
         "source_files": {name: sha256(REPO / name) for name in source_paths},
         "command": "python tools/report/build_assets.py",
         "source": "demo-data/qualicraft.sqlite3",
+        "translation": "English teaching excerpts; original Italian corpus preserved at /original-bologna/",
         "project": {
             "name": project["name"],
             "documents": len(project["documents"]),

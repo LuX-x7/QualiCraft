@@ -81,7 +81,7 @@ class CoverageAxesTests(unittest.TestCase):
         with sqlite3.connect((repo/'demo-data/qualicraft.sqlite3').as_uri()+'?mode=ro', uri=True) as conn:
             project = json.loads(conn.execute('SELECT data FROM projects WHERE id=?',
                 ('a71a0b538c024c3ab23fb4286cfe93e2',)).fetchone()[0])
-        root = repo/'website/public/report'
+        root = repo/'website/public/original-bologna/report'
         figure = next(f for f in json.loads((root/'manifest.json').read_text(encoding='utf-8'))['figures']
                       if f['kind']=='coverage')
         options = plotting.normalise({'kind':'coverage'})

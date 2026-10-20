@@ -1,286 +1,31 @@
 case,code,count
-interview01.txt,keeping working materials after the end of the project,0
-interview01.txt,working with others as part of a team,1
-interview01.txt,preceding academic work on the same subject,5
-interview01.txt,specificities of the humanities,0
-interview01.txt,primary sources are data,2
-interview01.txt,published with traditional academic publishers,0
-interview01.txt,interpretation and results are data,1
-interview01.txt,working with others through consultations,0
-interview01.txt,digitisation has changed the way of working on the documents,0
-interview01.txt,critical editions are deeply formalized,0
-interview01.txt,data are circunscribed and objective,0
-interview01.txt,discarded material can be useful for teaching and further research,0
-interview01.txt,conferences and workshops,0
-interview01.txt,journal articles,0
-interview01.txt,methodologies are formalized in manuals,0
-interview02.txt,keeping working materials after the end of the project,1
-interview02.txt,working with others as part of a team,2
-interview02.txt,preceding academic work on the same subject,0
-interview02.txt,specificities of the humanities,0
-interview02.txt,primary sources are data,1
-interview02.txt,published with traditional academic publishers,4
-interview02.txt,interpretation and results are data,1
-interview02.txt,working with others through consultations,0
-interview02.txt,digitisation has changed the way of working on the documents,2
-interview02.txt,critical editions are deeply formalized,0
-interview02.txt,data are circunscribed and objective,1
-interview02.txt,discarded material can be useful for teaching and further research,1
-interview02.txt,conferences and workshops,0
-interview02.txt,journal articles,0
-interview02.txt,methodologies are formalized in manuals,0
-interview03.txt,keeping working materials after the end of the project,2
-interview03.txt,working with others as part of a team,3
-interview03.txt,preceding academic work on the same subject,0
-interview03.txt,specificities of the humanities,4
-interview03.txt,primary sources are data,0
-interview03.txt,published with traditional academic publishers,1
-interview03.txt,interpretation and results are data,0
-interview03.txt,working with others through consultations,0
-interview03.txt,digitisation has changed the way of working on the documents,3
-interview03.txt,critical editions are deeply formalized,2
-interview03.txt,data are circunscribed and objective,1
-interview03.txt,discarded material can be useful for teaching and further research,0
-interview03.txt,conferences and workshops,0
-interview03.txt,journal articles,0
-interview03.txt,methodologies are formalized in manuals,0
-interview04.txt,keeping working materials after the end of the project,1
-interview04.txt,working with others as part of a team,2
-interview04.txt,preceding academic work on the same subject,0
-interview04.txt,specificities of the humanities,0
-interview04.txt,primary sources are data,2
-interview04.txt,published with traditional academic publishers,2
-interview04.txt,interpretation and results are data,2
-interview04.txt,working with others through consultations,0
-interview04.txt,digitisation has changed the way of working on the documents,3
-interview04.txt,critical editions are deeply formalized,1
-interview04.txt,data are circunscribed and objective,0
-interview04.txt,discarded material can be useful for teaching and further research,2
-interview04.txt,conferences and workshops,0
-interview04.txt,journal articles,0
-interview04.txt,methodologies are formalized in manuals,0
-interview05.txt,keeping working materials after the end of the project,2
-interview05.txt,working with others as part of a team,0
-interview05.txt,preceding academic work on the same subject,2
-interview05.txt,specificities of the humanities,0
-interview05.txt,primary sources are data,0
-interview05.txt,published with traditional academic publishers,0
-interview05.txt,interpretation and results are data,0
-interview05.txt,working with others through consultations,2
-interview05.txt,digitisation has changed the way of working on the documents,0
-interview05.txt,critical editions are deeply formalized,3
-interview05.txt,data are circunscribed and objective,0
-interview05.txt,discarded material can be useful for teaching and further research,0
-interview05.txt,conferences and workshops,0
-interview05.txt,journal articles,0
-interview05.txt,methodologies are formalized in manuals,1
-interview06.txt,keeping working materials after the end of the project,1
-interview06.txt,working with others as part of a team,2
-interview06.txt,preceding academic work on the same subject,1
-interview06.txt,specificities of the humanities,0
-interview06.txt,primary sources are data,0
-interview06.txt,published with traditional academic publishers,2
-interview06.txt,interpretation and results are data,0
-interview06.txt,working with others through consultations,0
-interview06.txt,digitisation has changed the way of working on the documents,0
-interview06.txt,critical editions are deeply formalized,0
-interview06.txt,data are circunscribed and objective,1
-interview06.txt,discarded material can be useful for teaching and further research,0
-interview06.txt,conferences and workshops,0
-interview06.txt,journal articles,1
-interview06.txt,methodologies are formalized in manuals,1
-interview07.txt,keeping working materials after the end of the project,1
-interview07.txt,working with others as part of a team,3
-interview07.txt,preceding academic work on the same subject,1
-interview07.txt,specificities of the humanities,0
-interview07.txt,primary sources are data,0
-interview07.txt,published with traditional academic publishers,1
-interview07.txt,interpretation and results are data,0
-interview07.txt,working with others through consultations,1
-interview07.txt,digitisation has changed the way of working on the documents,0
-interview07.txt,critical editions are deeply formalized,2
-interview07.txt,data are circunscribed and objective,1
-interview07.txt,discarded material can be useful for teaching and further research,0
-interview07.txt,conferences and workshops,2
-interview07.txt,journal articles,1
-interview07.txt,methodologies are formalized in manuals,1
-interview08.txt,keeping working materials after the end of the project,1
-interview08.txt,working with others as part of a team,1
-interview08.txt,preceding academic work on the same subject,0
-interview08.txt,specificities of the humanities,0
-interview08.txt,primary sources are data,0
-interview08.txt,published with traditional academic publishers,0
-interview08.txt,interpretation and results are data,0
-interview08.txt,working with others through consultations,0
-interview08.txt,digitisation has changed the way of working on the documents,0
-interview08.txt,critical editions are deeply formalized,0
-interview08.txt,data are circunscribed and objective,1
-interview08.txt,discarded material can be useful for teaching and further research,0
-interview08.txt,conferences and workshops,1
-interview08.txt,journal articles,2
-interview08.txt,methodologies are formalized in manuals,0
-interview09.txt,keeping working materials after the end of the project,2
-interview09.txt,working with others as part of a team,0
-interview09.txt,preceding academic work on the same subject,1
-interview09.txt,specificities of the humanities,3
-interview09.txt,primary sources are data,1
-interview09.txt,published with traditional academic publishers,0
-interview09.txt,interpretation and results are data,4
-interview09.txt,working with others through consultations,1
-interview09.txt,digitisation has changed the way of working on the documents,0
-interview09.txt,critical editions are deeply formalized,2
-interview09.txt,data are circunscribed and objective,0
-interview09.txt,discarded material can be useful for teaching and further research,1
-interview09.txt,conferences and workshops,1
-interview09.txt,journal articles,0
-interview09.txt,methodologies are formalized in manuals,0
-interview10.txt,keeping working materials after the end of the project,1
-interview10.txt,working with others as part of a team,0
-interview10.txt,preceding academic work on the same subject,2
-interview10.txt,specificities of the humanities,4
-interview10.txt,primary sources are data,0
-interview10.txt,published with traditional academic publishers,3
-interview10.txt,interpretation and results are data,1
-interview10.txt,working with others through consultations,3
-interview10.txt,digitisation has changed the way of working on the documents,0
-interview10.txt,critical editions are deeply formalized,0
-interview10.txt,data are circunscribed and objective,0
-interview10.txt,discarded material can be useful for teaching and further research,1
-interview10.txt,conferences and workshops,0
-interview10.txt,journal articles,0
-interview10.txt,methodologies are formalized in manuals,1
-interview11.txt,keeping working materials after the end of the project,1
-interview11.txt,working with others as part of a team,0
-interview11.txt,preceding academic work on the same subject,2
-interview11.txt,specificities of the humanities,0
-interview11.txt,primary sources are data,0
-interview11.txt,published with traditional academic publishers,1
-interview11.txt,interpretation and results are data,0
-interview11.txt,working with others through consultations,1
-interview11.txt,digitisation has changed the way of working on the documents,0
-interview11.txt,critical editions are deeply formalized,0
-interview11.txt,data are circunscribed and objective,0
-interview11.txt,discarded material can be useful for teaching and further research,1
-interview11.txt,conferences and workshops,0
-interview11.txt,journal articles,0
-interview11.txt,methodologies are formalized in manuals,0
-interview12.txt,keeping working materials after the end of the project,2
-interview12.txt,working with others as part of a team,3
-interview12.txt,preceding academic work on the same subject,0
-interview12.txt,specificities of the humanities,1
-interview12.txt,primary sources are data,2
-interview12.txt,published with traditional academic publishers,1
-interview12.txt,interpretation and results are data,0
-interview12.txt,working with others through consultations,1
-interview12.txt,digitisation has changed the way of working on the documents,1
-interview12.txt,critical editions are deeply formalized,0
-interview12.txt,data are circunscribed and objective,2
-interview12.txt,discarded material can be useful for teaching and further research,0
-interview12.txt,conferences and workshops,0
-interview12.txt,journal articles,0
-interview12.txt,methodologies are formalized in manuals,2
-interview13.txt,keeping working materials after the end of the project,2
-interview13.txt,working with others as part of a team,0
-interview13.txt,preceding academic work on the same subject,2
-interview13.txt,specificities of the humanities,2
-interview13.txt,primary sources are data,0
-interview13.txt,published with traditional academic publishers,0
-interview13.txt,interpretation and results are data,0
-interview13.txt,working with others through consultations,0
-interview13.txt,digitisation has changed the way of working on the documents,0
-interview13.txt,critical editions are deeply formalized,0
-interview13.txt,data are circunscribed and objective,1
-interview13.txt,discarded material can be useful for teaching and further research,2
-interview13.txt,conferences and workshops,1
-interview13.txt,journal articles,1
-interview13.txt,methodologies are formalized in manuals,0
-interview14.txt,keeping working materials after the end of the project,1
-interview14.txt,working with others as part of a team,1
-interview14.txt,preceding academic work on the same subject,0
-interview14.txt,specificities of the humanities,2
-interview14.txt,primary sources are data,0
-interview14.txt,published with traditional academic publishers,0
-interview14.txt,interpretation and results are data,0
-interview14.txt,working with others through consultations,0
-interview14.txt,digitisation has changed the way of working on the documents,0
-interview14.txt,critical editions are deeply formalized,0
-interview14.txt,data are circunscribed and objective,0
-interview14.txt,discarded material can be useful for teaching and further research,1
-interview14.txt,conferences and workshops,0
-interview14.txt,journal articles,0
-interview14.txt,methodologies are formalized in manuals,0
-interview15.txt,keeping working materials after the end of the project,1
-interview15.txt,working with others as part of a team,0
-interview15.txt,preceding academic work on the same subject,1
-interview15.txt,specificities of the humanities,0
-interview15.txt,primary sources are data,2
-interview15.txt,published with traditional academic publishers,0
-interview15.txt,interpretation and results are data,0
-interview15.txt,working with others through consultations,1
-interview15.txt,digitisation has changed the way of working on the documents,0
-interview15.txt,critical editions are deeply formalized,0
-interview15.txt,data are circunscribed and objective,1
-interview15.txt,discarded material can be useful for teaching and further research,0
-interview15.txt,conferences and workshops,0
-interview15.txt,journal articles,0
-interview15.txt,methodologies are formalized in manuals,0
-interview16.txt,keeping working materials after the end of the project,1
-interview16.txt,working with others as part of a team,0
-interview16.txt,preceding academic work on the same subject,1
-interview16.txt,specificities of the humanities,0
-interview16.txt,primary sources are data,1
-interview16.txt,published with traditional academic publishers,0
-interview16.txt,interpretation and results are data,0
-interview16.txt,working with others through consultations,0
-interview16.txt,digitisation has changed the way of working on the documents,0
-interview16.txt,critical editions are deeply formalized,0
-interview16.txt,data are circunscribed and objective,1
-interview16.txt,discarded material can be useful for teaching and further research,0
-interview16.txt,conferences and workshops,0
-interview16.txt,journal articles,1
-interview16.txt,methodologies are formalized in manuals,1
-interview17.txt,keeping working materials after the end of the project,1
-interview17.txt,working with others as part of a team,1
-interview17.txt,preceding academic work on the same subject,0
-interview17.txt,specificities of the humanities,1
-interview17.txt,primary sources are data,1
-interview17.txt,published with traditional academic publishers,0
-interview17.txt,interpretation and results are data,1
-interview17.txt,working with others through consultations,1
-interview17.txt,digitisation has changed the way of working on the documents,1
-interview17.txt,critical editions are deeply formalized,0
-interview17.txt,data are circunscribed and objective,0
-interview17.txt,discarded material can be useful for teaching and further research,0
-interview17.txt,conferences and workshops,1
-interview17.txt,journal articles,0
-interview17.txt,methodologies are formalized in manuals,0
-interview18.txt,keeping working materials after the end of the project,1
-interview18.txt,working with others as part of a team,1
-interview18.txt,preceding academic work on the same subject,1
-interview18.txt,specificities of the humanities,0
-interview18.txt,primary sources are data,1
-interview18.txt,published with traditional academic publishers,0
-interview18.txt,interpretation and results are data,1
-interview18.txt,working with others through consultations,1
-interview18.txt,digitisation has changed the way of working on the documents,0
-interview18.txt,critical editions are deeply formalized,0
-interview18.txt,data are circunscribed and objective,0
-interview18.txt,discarded material can be useful for teaching and further research,0
-interview18.txt,conferences and workshops,1
-interview18.txt,journal articles,2
-interview18.txt,methodologies are formalized in manuals,1
-interview19.txt,keeping working materials after the end of the project,1
-interview19.txt,working with others as part of a team,1
-interview19.txt,preceding academic work on the same subject,0
-interview19.txt,specificities of the humanities,0
-interview19.txt,primary sources are data,2
-interview19.txt,published with traditional academic publishers,0
-interview19.txt,interpretation and results are data,2
-interview19.txt,working with others through consultations,1
-interview19.txt,digitisation has changed the way of working on the documents,1
-interview19.txt,critical editions are deeply formalized,0
-interview19.txt,data are circunscribed and objective,0
-interview19.txt,discarded material can be useful for teaching and further research,1
-interview19.txt,conferences and workshops,2
-interview19.txt,journal articles,1
-interview19.txt,methodologies are formalized in manuals,1
+interview02-english-excerpts.txt,critically-reconstructed text,1
+interview02-english-excerpts.txt,Google Books,1
+interview02-english-excerpts.txt,Munich Staats Bibliotek,1
+interview02-english-excerpts.txt,attitudes towards digital scholarly editions,0
+interview02-english-excerpts.txt,difference between paleography and diplomatics,0
+interview02-english-excerpts.txt,digitisation has changed the way of working on the documents,1
+interview02-english-excerpts.txt,manuscripts from the Middle Ages,0
+interview02-english-excerpts.txt,printed books and manuscripts from the Renaissance,1
+interview02-english-excerpts.txt,stemma codicum,0
+interview02-english-excerpts.txt,website for dissemination to the wider public,0
+interview03-english-excerpts.txt,critically-reconstructed text,1
+interview03-english-excerpts.txt,Google Books,0
+interview03-english-excerpts.txt,Munich Staats Bibliotek,0
+interview03-english-excerpts.txt,attitudes towards digital scholarly editions,0
+interview03-english-excerpts.txt,difference between paleography and diplomatics,0
+interview03-english-excerpts.txt,digitisation has changed the way of working on the documents,0
+interview03-english-excerpts.txt,manuscripts from the Middle Ages,0
+interview03-english-excerpts.txt,printed books and manuscripts from the Renaissance,0
+interview03-english-excerpts.txt,stemma codicum,1
+interview03-english-excerpts.txt,website for dissemination to the wider public,1
+interview04-english-excerpts.txt,critically-reconstructed text,0
+interview04-english-excerpts.txt,Google Books,0
+interview04-english-excerpts.txt,Munich Staats Bibliotek,0
+interview04-english-excerpts.txt,attitudes towards digital scholarly editions,1
+interview04-english-excerpts.txt,difference between paleography and diplomatics,1
+interview04-english-excerpts.txt,digitisation has changed the way of working on the documents,0
+interview04-english-excerpts.txt,manuscripts from the Middle Ages,1
+interview04-english-excerpts.txt,printed books and manuscripts from the Renaissance,0
+interview04-english-excerpts.txt,stemma codicum,0
+interview04-english-excerpts.txt,website for dissemination to the wider public,0

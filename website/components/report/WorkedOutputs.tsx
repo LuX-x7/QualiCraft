@@ -20,11 +20,11 @@ export default function WorkedOutputs({manifest}:{manifest:ExampleManifest}){
   const scope=manifest.scope
   return <div className="worked-outputs">
     <p className="report-lead">Open the finished files.</p>
-    <p>One public Bologna record: {scope.project.documents} interviews, {scope.project.codes} defined codes and {scope.project.codings} codings. These files come from the workbench’s existing exporters.</p>
+    <p>English translation teaching subset: {scope.project.documents} excerpt documents, {scope.project.codes} defined codes and {scope.project.codings} codings. These files come from the workbench’s existing exporters.</p>
     <div className="output-grid">
       <article className="output-card"><span className="mono output-number">01 / CODED SOURCE</span><h3>Tree Notebook</h3>
         <a className="output-preview" href={siteUrl("/worked-example/notebook.html")} aria-label="Read the coded Bologna notebook"><img src={siteUrl("/worked-example/notebook-preview.png")} alt="An actual exported Notebook page with source text, highlighted passages and the code tree" width="600" height="850" loading="lazy" decoding="async"/></a>
-        <p>Full {scope.notebook.document} text, {scope.notebook.codings} saved codings, highlights and their tree paths.</p>
+        <p>Selected English excerpts in {scope.notebook.document}, {scope.notebook.codings} saved codings, highlights and their tree paths.</p>
         <div className="output-links"><a href={siteUrl("/worked-example/notebook.html")}>Read Notebook ↗</a><a href={siteUrl("/worked-example/notebook.docx")} download>Editable Word ↓</a></div>
         <details><summary>Source scope &amp; tree labels</summary><p>{scope.notebook.characters.toLocaleString('en')} characters. {scope.notebook.tree_labels}</p></details>
       </article>
@@ -34,8 +34,8 @@ export default function WorkedOutputs({manifest}:{manifest:ExampleManifest}){
         <div className="output-links"><a href={siteUrl("/worked-example/research-report.html")}>Read report ↗</a><a href={siteUrl("/worked-example/research-report.docx")} download>Editable Word ↓</a><a href={siteUrl("/worked-example/research-report.zip")} download>Complete report ZIP ↓</a></div>
       </article>
       <article className="output-card output-card--compact"><span className="mono output-number">03 / FIGURES AND RECIPES</span><h3>Five figures. Exact counts.</h3><p>SVG, PDF and 300 dpi PNG for each figure, with its CSV and standalone Python script. Extract the ZIP before running the code.</p><div className="output-links"><a href={siteUrl("#sec-frequency")}>Explore figures ↓</a><a href={siteUrl("/worked-example/figures-and-code.zip")} download>Five figures &amp; code ZIP ↓</a></div></article>
-      <article className="output-card output-card--compact"><span className="mono output-number">04 / CONTINUE THE PROJECT</span><h3>{externalWorkbench?'Restore in your workspace':'Restore and edit locally'}</h3><p>Project JSON preserves all {scope.project.documents} source documents, original coding and the saved example report. {externalWorkbench?'Restore it as a new project in your private online account, or use the local workspace.':'Restore it as a new local project.'}</p><div className="output-links"><a href={siteUrl("/worked-example/project.json")} download>Project JSON ↓</a><a href={siteUrl("https://github.com/LuX-x7/QualiCraft#local-installation")}>Local setup ↗</a></div></article>
+      <article className="output-card output-card--compact"><span className="mono output-number">04 / CONTINUE THE PROJECT</span><h3>{externalWorkbench?'Restore in your workspace':'Restore and edit locally'}</h3><p>Project JSON preserves all {scope.project.documents} source documents, source-linked teaching associations and the saved example report. {externalWorkbench?'Restore it as a new project in your private online account, or use the local workspace.':'Restore it as a new local project.'}</p><div className="output-links"><a href={siteUrl("/worked-example/project.json")} download>Project JSON ↓</a><a href={siteUrl("https://github.com/LuX-x7/QualiCraft#local-installation")}>Local setup ↗</a></div></article>
     </div>
-    <p className="output-scope">{scope.report.status} Word text and tree labels are editable; editing Word does not update QT. The five figures cover the whole corpus; the Notebook covers one complete interview. <a href={siteUrl("/worked-example/manifest.json")}>File hashes &amp; source record ↗</a></p>
+    <p className="output-scope">{scope.report.status} Word text and tree labels are editable; editing Word does not update QT. The five figures cover this teaching subset; the Notebook contains the selected English excerpts from one source interview. <a href={siteUrl("/original-bologna/worked-example/notebook.html")}>Original Italian outputs ↗</a>{' · '}<a href={siteUrl("/worked-example/manifest.json")}>File hashes &amp; source record ↗</a></p>
   </div>
 }

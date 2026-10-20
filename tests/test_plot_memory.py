@@ -49,7 +49,7 @@ class FullHierarchyMemoryTests(unittest.TestCase):
 
     def test_complete_bologna_script_exports_all_rows_below_memory_budget(self):
         # Use the public count fixture directly: no project database is touched.
-        source = Path(__file__).resolve().parents[1] / 'website/public/report/figures/hierarchy.csv'
+        source = Path(__file__).resolve().parents[1] / 'website/public/original-bologna/report/figures/hierarchy.csv'
         data = source.read_bytes()
         rows = list(csv.DictReader(io.StringIO(data.decode('utf-8'))))
         self.assertEqual(len(rows), 259)

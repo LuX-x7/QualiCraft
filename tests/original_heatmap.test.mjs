@@ -6,8 +6,8 @@ import {buildChartModel} from '../website/lib/report/chart-model.ts'
 import {readCsv} from '../website/lib/report/read.ts'
 import {originalHeatmap,originalCell,originalWindow,originalCellRow} from '../website/lib/site/original-heatmap.ts'
 const tables={};const cwd=process.cwd();process.chdir(fileURLToPath(new URL('../website',import.meta.url)));
-try{for(const kind of ['coverage','cooccurrence']){const [head,...rows]=await readCsv('figures/'+kind+'.csv');tables[kind]={head,rows}}}finally{process.chdir(cwd)}
-const load=kind=>{const root=new URL('../website/public/report/figures/',import.meta.url),svg=readFileSync(new URL(kind+'.svg',root),'utf8'),model=buildChartModel(kind,tables[kind]);return {svg,model,source:originalHeatmap(svg,kind,model,'test-hash')}}
+try{for(const kind of ['coverage','cooccurrence']){const [head,...rows]=await readCsv('../original-bologna/report/figures/'+kind+'.csv');tables[kind]={head,rows}}}finally{process.chdir(cwd)}
+const load=kind=>{const root=new URL('../website/public/original-bologna/report/figures/',import.meta.url),svg=readFileSync(new URL(kind+'.svg',root),'utf8'),model=buildChartModel(kind,tables[kind]);return {svg,model,source:originalHeatmap(svg,kind,model,'test-hash')}}
 test('actual original axes and plot bounds are recovered, including different CSV order',()=>{
  const coverage=load('coverage'),pairs=load('cooccurrence')
  assert.equal(coverage.source.x.length,19);assert.equal(coverage.source.y.length,15)

@@ -1,18 +1,18 @@
 {
   "project": {
-    "documents": 19,
-    "codes": 317,
-    "codings": 874
+    "documents": 3,
+    "codes": 25,
+    "codings": 11
   },
   "notebook": {
-    "document": "interview02.txt",
-    "characters": 18239,
-    "codings": 53,
+    "document": "interview02-english-excerpts.txt",
+    "characters": 894,
+    "codings": 5,
     "tree_labels": "Explicit display convention: root Theme, intermediate Category, leaf Code. Saved names and links are unchanged."
   },
   "report": {
     "method": "Qualitative Content Analysis",
     "selected_evidence": 3,
-    "status": "Illustrative writing from existing codes; not a newly validated research analysis."
+    "status": "English translation teaching excerpts from Bologna CC0; not complete interviews or a newly validated research analysis."
   }
 }

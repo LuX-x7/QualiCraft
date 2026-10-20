@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "language": "en",
+  "source_language": "it",
+  "source_database_sha256": "b8b44b814f2fa6286decf877364665ad8276977c08913d02d7b8a90db62a755d",
+  "source_project_id": "a71a0b538c024c3ab23fb4286cfe93e2",
+  "notice": "English translation teaching excerpts from the Bologna CC0 corpus. Selected passages only, not complete interviews or a new analysis. Translated for QT; check interpretation against the Italian source. Figures describe this teaching subset, not the full corpus.",
+  "passages": [
+    {
+      "source_annotation_id": "488bba0accd84c94ad2f904f241ad6ae",
+      "source_document_id": "f153cc3e3f694f1ea763188d3535eebf",
+      "source_start": 872,
+      "source_end": 960,
+      "source_quote_sha256": "b41db37d3cbe7944ad79174a326635ec9a3f1f8bb8b7bd0d316e15f7cbba10ae",
+      "english": "So, moving on to the method, we worked on the printed text — on two printed editions, let us say.",
+      "additional_codes": []
+    },
+    {
+      "source_annotation_id": "e7f3646a9d62439c803362907036227d",
+      "source_document_id": "f153cc3e3f694f1ea763188d3535eebf",
+      "source_start": 1177,
+      "source_end": 1466,
+      "source_quote_sha256": "7fe77509beaf268bb1d0e2a3d3d6ba68e2c127d51cd273719c3de84c8c41003c",
+      "english": "Sometimes there are errors that need to be corrected in the Latin text, or things that are not understood. Sometimes there are gaps because something was lost during printing, in the passage from manuscript to print, and so the text has to be critically restored with the help of two printed editions.",
+      "additional_codes": []
+    },
+    {
+      "source_annotation_id": "7748cde944af49b88b8255f3fa0d67e2",
+      "source_document_id": "f153cc3e3f694f1ea763188d3535eebf",
+      "source_start": 2860,
+      "source_end": 3348,
+      "source_quote_sha256": "88e78af2cf0d7bf61a53c870fe259ec9f79a3917e23c5a2c46f5da4995fa3b78",
+      "english": "This is [something new] compared with when I began this kind of research. Fifteen years ago I would of course have had to go to the library. Now one edition has been digitised by Google Books, while for the 1502 edition we used the digitised print from the Bavarian State Library in Munich, which is an exceptional repository of early printed books. Seventy per cent of what we look for among incunabula, late-fifteenth-century printed books and sixteenth-century editions can be found there.",
+      "additional_codes": [
+        {
+          "source_annotation_id": "feb8bbcd7d5646299645822bb146d117",
+          "english_quote": "has been digitised by Google Books"
+        },
+        {
+          "source_annotation_id": "1192d99ca055481dab04e4921e38456b",
+          "english_quote": "for the 1502 edition we used the digitised print from the Bavarian State Library in Munich, which is an exceptional repository of early printed books. Seventy per cent of what we look for among incunabula, late-fifteenth-century printed books and sixteenth-century editions can be found there."
+        }
+      ]
+    },
+    {
+      "source_annotation_id": "92c89881025c4fa9ace962993986a522",
+      "source_document_id": "7df6d4687c814b188de6db5a9ef97611",
+      "source_start": 2128,
+      "source_end": 2329,
+      "source_quote_sha256": "3d2f78a426c79b8e799e3194a7ffe3bb72b5d02c4b9f0a7b95bf3bcf1bda4ce2",
+      "english": "All this is to establish a critical text and a stemma codicum that helps me understand its transmission: where the text originated, how it spread, and what kinds of corruption then arose in that transmission.",
+      "additional_codes": [
+        {
+          "source_annotation_id": "26cdfee33a4d46e39008a10dc509bf35",
+          "english_quote": "a stemma codicum that helps me understand its transmission: where the text originated, how it spread, and what kinds of corruption then arose in that transmission."
+        }
+      ]
+    },
+    {
+      "source_annotation_id": "e3b2275270cc4e6e9a456fe1f1e2de9f",
+      "source_document_id": "7df6d4687c814b188de6db5a9ef97611",
+      "source_start": 2899,
+      "source_end": 3117,
+      "source_quote_sha256": "4cc56e9781625cf6b9e450b740451efd70b86a1b82b61940a780355030ed407b",
+      "english": "As regards the edition, we first built a website that is open to everyone, for public engagement, so to speak. There is also a password-protected section that we use for our work.",
+      "additional_codes": []
+    },
+    {
+      "source_annotation_id": "508cee280d174cc0a515d2dddb26a651",
+      "source_document_id": "2857937547ce46de8ac3633bbcd57c25",
+      "source_start": 674,
+      "source_end": 1459,
+      "source_quote_sha256": "b090187c50539a27eb37e67a890cfd9d0c1ef237d07c67d31b825a87d1440265",
+      "english": "Generally speaking, the object of my studies — given the nature of my discipline — is manuscript sources, usually from the medieval and/or Renaissance period. Manuscripts is a broad term, and I use it broadly: it can mean codices, manuscript books, or handwritten documents. These can of course be very different, with different materials and supports: often parchment, but also paper. They are always manuscript sources. My work is, as it were, to elucidate these sources and make them accessible, through a critical edition or through studies, to people working in history, philology, literature and so on.",
+      "additional_codes": []
+    },
+    {
+      "source_annotation_id": "e4443c25f2e049d18290053f50f91f01",
+      "source_document_id": "2857937547ce46de8ac3633bbcd57c25",
+      "source_start": 1747,
+      "source_end": 2013,
+      "source_quote_sha256": "f1bbc08fb37a42088a945a0b26c3fcdeadc377877cfe3f127d57d80846ea8bf3",
+      "english": "Certainly, however, the field is also opening up with great interest — sometimes through experimental research — to the possibility of digital editions. Digital editions are undoubtedly one of the new frontiers of our field.",
+      "additional_codes": []
+    },
+    {
+      "source_annotation_id": "675ab76e1cfc496bb27905ed68a6ae93",
+      "source_document_id": "2857937547ce46de8ac3633bbcd57c25",
+      "source_start": 2014,
+      "source_end": 2727,
+      "source_quote_sha256": "1b4547c3e5673e089eb6e3e94a9c3ee2b4147f0aac3e1397fdfd300ffa1c0178",
+      "english": "I would add that I work in palaeography and diplomatics. These are two very broad disciplines: connected, but also different. We have always had two strands: a more philological one, traditionally working on codices and books, and a more historical one, working on documents. The Bologna school has tended towards the documentary and diplomatic tradition — the study and editing of documentary sources. I try to carry on that tradition because that is how I was trained, but I am also open to the more philological side. Both interest me, so in practice I move between the two.",
+      "additional_codes": []
+    }
+  ]
+}

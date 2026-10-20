@@ -31,7 +31,7 @@ export default function OutputSketch({ example }: { example: CodingExample }) {
           <div className="notebook-context" aria-hidden="true"><i/><i/></div>
           <button className="output-quote" type="button" aria-label="Trace this saved quotation to its code path" aria-pressed={linked}
             onMouseEnter={() => setLinked(true)} onMouseLeave={() => setLinked(false)} onFocus={() => setLinked(true)} onBlur={() => setLinked(false)} onClick={() => setLinked(current => !current)}>
-            <mark lang="it">{example.quote}</mark></button>
+            <mark lang="en">{example.quote}</mark></button>
           <div className="notebook-context" aria-hidden="true"><i/><i/></div>
           <span className="mono">Unicode [{example.start}, {example.end})</span></article>
         <div className="output-tree"><span className="mono">SAVED CODE PATH</span><ol>{example.code_path.map((node, index) => <li key={node.id} style={{ marginLeft: `${index * 14}px` }} data-source-node={node.id}>

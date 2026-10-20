@@ -29,8 +29,17 @@ from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def bologna_example():
+def bologna_example(english=False):
     """Copy only the bundled public example; never open or modify user data."""
+    source = ROOT / "demo-data" / "qualicraft.sqlite3"
+    require(source.is_file(), "The bundled Bologna example is not installed.")
+    if english:
+        from .examples import teaching_project
+        project = teaching_project()
+        project["id"] = uid()
+        project["updated_at"] = now()
+        event(project, "example_copy", example="bologna")
+        return project
     source = ROOT / "demo-data" / "qualicraft.sqlite3"
     require(source.is_file(), "The bundled Bologna example is not installed.")
     with sqlite3.connect(source.resolve().as_uri() + "?mode=ro", uri=True) as db:
@@ -365,7 +374,7 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                 if parts == ["api", "projects"]:
                     kind = body.get("kind", "empty")
                     if kind == "bologna":
-                        project = bologna_example()
+                        project = bologna_example(english=True)
                     elif kind == "demo":
                         project = synthetic_project()
                     elif kind in {"benchmark", "reference"}:

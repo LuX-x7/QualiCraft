@@ -10,6 +10,8 @@ import sqlite3
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+import sys
+if str(REPO) not in sys.path: sys.path.insert(0,str(REPO))
 ANNOTATION = '1777fabb3fc0461b88e972664b078e03'
 PROJECT = 'a71a0b538c024c3ab23fb4286cfe93e2'
 
@@ -59,13 +61,8 @@ def build_evidence(project, database_sha256, manifest_raw, annotation_id=ANNOTAT
 
 def main():
     database = REPO/'demo-data/qualicraft.sqlite3'
-    with sqlite3.connect(database.as_uri()+'?mode=ro',uri=True) as conn:
-        row = conn.execute('SELECT data FROM projects WHERE id=?',(PROJECT,)).fetchone()
-    if not row:
-        raise ValueError('The Bologna CC0 project is missing')
-    project = json.loads(row[0])
-    if project['name'] != 'Bologna · What is data?':
-        raise ValueError('Only the Bologna CC0 example is permitted')
+    from qualicraft.examples import teaching_project
+    project = teaching_project()
     report_root = REPO/'website/public/report'
     manifest_raw = (report_root/'manifest.json').read_bytes()
     for item in json.loads(manifest_raw)['files']:
@@ -75,7 +72,7 @@ def main():
         raw = target.read_bytes()
         if len(raw) != item['bytes'] or sha(raw) != item['sha256']:
             raise ValueError('Report export bytes do not match the manifest')
-    result = build_evidence(project,sha(database.read_bytes()),manifest_raw)
+    result = build_evidence(project,sha(database.read_bytes()),manifest_raw,project['annotations'][0]['id'])
     out = REPO/'website/lib/site/bologna-evidence.json'
     out.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print('VERIFIED',result['example']['document_name'],result['example']['annotation_id'],

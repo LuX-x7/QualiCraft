@@ -44,6 +44,8 @@ class StartupTests(unittest.TestCase):
         digest = hashlib.sha256(TEMPLATE.read_bytes()).hexdigest()
         with sqlite3.connect(TEMPLATE.resolve().as_uri() + '?mode=ro', uri=True) as db:
             original = json.loads(db.execute('select data from projects where id=?', ('a71a0b538c024c3ab23fb4286cfe93e2',)).fetchone()[0])
+        from qualicraft.examples import teaching_project
+        original=teaching_project()
         with tempfile.TemporaryDirectory() as tmp, workspace(tmp) as request:
             boot = request('/api/bootstrap'); token = boot['token']
             copies = [request('/api/projects', {'kind': 'bologna'}, token) for _ in range(2)]
@@ -51,7 +53,7 @@ class StartupTests(unittest.TestCase):
             for p in copies:
                 self.assertEqual(p['schema_version'], 5)
                 self.assertTrue(all(not d['reading_state']['marks'] for d in p['documents']))
-                self.assertEqual([{k:v for k,v in d.items() if k!='reading_state'} for d in p['documents']], original['documents'])
+                self.assertEqual(p['documents'], original['documents'])
                 for key in ['codes', 'annotations', 'suggestions', 'blocks', 'provenance']:
                     self.assertEqual(p[key], original[key], key)
                 self.assertEqual(p['audit'][:-1], original['audit'])

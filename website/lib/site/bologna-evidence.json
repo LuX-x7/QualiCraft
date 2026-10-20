@@ -4,34 +4,34 @@
     "command": "python tools/site/build_evidence.py",
     "source": "demo-data/qualicraft.sqlite3",
     "database_sha256": "b8b44b814f2fa6286decf877364665ad8276977c08913d02d7b8a90db62a755d",
-    "project_id": "a71a0b538c024c3ab23fb4286cfe93e2",
-    "project_sha256": "250f0f29fa258ac3442c8d628acdc81871bc40232f864b29adb372fb0e033429",
-    "manifest_sha256": "1f8578120e788a61d14aab385e35796512f15e6cabcc5da74135e65cd523705a"
+    "project_id": "8b290d3b122056918b79c4b671f2e643",
+    "project_sha256": "edbdc54dc4f0f0799657fe9e4542b10250f3288b1d938bc0bf2cf2818b887e2d",
+    "manifest_sha256": "789b8cedde5ae83c772ab462a1a2ca0a6df84e129fda2cc47256e3562126a0f7"
   },
   "example": {
-    "annotation_id": "1777fabb3fc0461b88e972664b078e03",
-    "document_id": "7df6d4687c814b188de6db5a9ef97611",
-    "document_name": "interview03.txt",
-    "document_sha256": "9eb6536a63821fca540b0bc36ab51a64e23b9d80cfbb03cd084345d1761a6670",
-    "start": 26013,
-    "end": 26090,
-    "quote": "ma è impreciso il termine data. Se lo si intende solo in termini commerciali.",
-    "source": "imported",
-    "code_id": "080e089a9fdc4b2787bd48f05dc83711",
+    "annotation_id": "3f029191a6885f0e9fdef6174d572dff",
+    "document_id": "8c17e627c7d85f7c8967047bfa92531b",
+    "document_name": "interview02-english-excerpts.txt",
+    "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
+    "start": 0,
+    "end": 97,
+    "quote": "So, moving on to the method, we worked on the printed text — on two printed editions, let us say.",
+    "source": "manual",
+    "code_id": "177098f805974bae8e589c1cb2fae553",
     "code_path": [
       {
-        "id": "0edf71f286aa4dc8a97d68e281608471",
-        "name": "is this data? and what is data?",
+        "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+        "name": "materials",
         "definition": ""
       },
       {
-        "id": "44f50d1ef03c412191bfb551ebbf00f7",
-        "name": "refusal or non applicability of term",
+        "id": "d050cb3e46234516980d0f5f4371b06d",
+        "name": "ancient manuscripts and early printed books",
         "definition": ""
       },
       {
-        "id": "080e089a9fdc4b2787bd48f05dc83711",
-        "name": "term data is too generic or imprecise",
+        "id": "177098f805974bae8e589c1cb2fae553",
+        "name": "printed books and manuscripts from the Renaissance",
         "definition": ""
       }
     ]

@@ -80,7 +80,7 @@ class HierarchyLayoutTests(unittest.TestCase):
                         self.assertFalse(a.overlaps(b), 'Text from different themes overlaps')
 
     def test_complete_bologna_hierarchy_at_workbench_and_report_font_sizes(self):
-        path = Path(__file__).resolve().parents[1]/'website/public/report/figures/hierarchy.csv'
+        path = Path(__file__).resolve().parents[1]/'website/public/original-bologna/report/figures/hierarchy.csv'
         with path.open(encoding='utf-8', newline='') as handle:
             rows = list(csv.reader(handle))[1:]
         self.assertEqual(len(rows), 259)

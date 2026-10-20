@@ -41,7 +41,7 @@ export default function CodingEvidence({ example }: { example: CodingExample }) 
     <p className="evidence-explanation" aria-live="polite" aria-atomic="true">{EXPLAIN[step]}</p>
     <div ref={el => { targets.current[0] = el }} className={`evidence-quote${step === 0 ? ' is-selected' : ''}`}>
       <span className="mono evidence-label">Passage · {example.document_name}</span>
-      <blockquote lang="it"><mark className={step >= 1 ? 'is-coded' : ''}>{example.quote}</mark></blockquote>
+      <blockquote lang="en"><mark className={step >= 1 ? 'is-coded' : ''}>{example.quote}</mark></blockquote>
       <span className="mono evidence-range">Unicode range [{example.start}, {example.end})</span>
     </div>
     <div className="evidence-connector" aria-hidden="true">↓</div>

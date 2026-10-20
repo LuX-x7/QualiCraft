@@ -83,7 +83,7 @@ export function RecordedExample({ item, reduced }: { item: Module; reduced: bool
   const [open, setOpen] = useState(false)
   const clip = CLIPS[item.key]
   return <details className="recorded-example" open={open} onToggle={event => setOpen(event.currentTarget.open)} onKeyDown={event => { if (event.key === 'Escape') { setOpen(false); event.currentTarget.querySelector('summary')?.focus() } }}>
-    <summary>Real workspace recording · {item.title}</summary>
+    <summary>Archived Italian-source recording · {item.title}</summary>
     {open ? <ModuleMedia item={item} reduced={reduced} /> : clip && (
       // The native disclosure still has a real recorded image without JavaScript.
       // eslint-disable-next-line @next/next/no-img-element
@@ -211,7 +211,7 @@ export default function ModuleWalkthrough({ example, data }: { example: CodingEx
           <span className="sec-no">02</span>
           <h2 id="modules-title">Five steps, one traceable workflow.</h2>
           <p>Follow one record from source to export. Start with the Coding illustration,
-            or open a real Bologna recording at any step.</p>
+            with English teaching excerpts. Earlier Italian-source recordings remain available as an explicitly labelled archive.</p>
           <button className="walk__start" type="button" onClick={() => goTo(1, true)}>Explore the coding example →</button>
           <details className="workflow-settings"><summary>Workflow steps and project settings</summary>
             <p>These five steps are not capability switches. New projects enable theme grouping,

@@ -68,7 +68,7 @@ def build(args):
             raise ValueError('Static root/report pages were not generated')
         public = ROOT / 'website/public'
         files = {}
-        for folder in ['report', 'worked-example', 'clips', 'fonts']:
+        for folder in ['report', 'worked-example', 'clips', 'fonts', 'original-bologna']:
             for source in (public / folder).rglob('*'):
                 if source.is_file():
                     relative = str(source.relative_to(public))

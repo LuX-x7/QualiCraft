@@ -69,9 +69,8 @@ def build_report_evidence(project,database_sha256,manifest_raw,tables):
 
 def main():
     database=REPO/'demo-data/qualicraft.sqlite3'
-    with sqlite3.connect(database.as_uri()+'?mode=ro',uri=True) as conn:
-        project=json.loads(conn.execute('SELECT data FROM projects WHERE id=?',(PROJECT,)).fetchone()[0])
-    if project['name']!='Bologna · What is data?': raise ValueError('Only Bologna CC0 is permitted')
+    from qualicraft.examples import teaching_project
+    project = teaching_project()
     root=REPO/'website/public/report';raw=(root/'manifest.json').read_bytes();manifest=json.loads(raw)
     for f in manifest['files']:
         p=(root/f['path']).resolve()
