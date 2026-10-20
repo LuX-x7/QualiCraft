@@ -62,6 +62,5 @@ export default function OrbitMark(){
    {ORBIT_STEPS.map((step,index)=>{const p=orbitPoint(step.radius,step.phase,step.inclination);return <button type="button" key={step.key} ref={el=>{nodes.current[index]=el}} className={`orbit-satellite${selected===index?' is-current':''}`} style={{left:`${p.x/10}%`,top:`${p.y/5.2}%`}} aria-label={`Explore ${step.name}`} aria-pressed={selected===index} onPointerEnter={()=>setSelected(index)} onPointerLeave={event=>{if(document.activeElement!==event.currentTarget)setSelected(null)}} onFocus={()=>setSelected(index)} onBlur={()=>setSelected(null)} onClick={()=>setSelected(index)}><span className="orbit-node-label mono">{step.name}</span></button>})}
   </div>
   <div className="orbit-caption"><span role="status" aria-live="polite">{selected===null?'Move to explore. Follow a satellite.':ORBIT_STEPS[selected].detail}</span><button type="button" className="mono orbit-pause" aria-pressed={manual} disabled={reduced} onClick={()=>{setManual(value=>!value);setSelected(null)}}>{reduced?'Motion reduced':manual?'Play ↻':'Pause Ⅱ'}</button></div>
-  <span className="orbit-concept mono">FIVE WORKFLOW STEPS · CONCEPTUAL SKETCH</span>
  </div>
 }

@@ -9,13 +9,11 @@ export default function ModuleAtlas() {
  const [route,setRoute]=useState(MODULES.map(step=>step.key))
  const toggle=(key:(typeof MODULES)[number]['key'])=>setRoute(current=>current.includes(key)?current.filter(item=>item!==key):[...current,key])
  return <div className="module-atlas">
-  <div className="atlas-heading"><span className="sec-no mono">01 / THE WORKFLOW</span><h2 id="atlas-title">Five pieces.<br/><em>Room to make it yours.</em></h2><p>A small core. Use the tools that help.</p></div>
+  <div className="atlas-heading"><h2 id="atlas-title">Workflow</h2><p>A small core. Use the tools that help.</p></div>
   <ol className="atlas-blocks">{MODULES.map((item,index)=><li key={item.key}><button type="button" className={`atlas-block atlas-block--${item.key}${route.includes(item.key)?' is-picked':''}`} aria-label={`Include ${item.title} in the sketch`} aria-pressed={route.includes(item.key)} onClick={()=>toggle(item.key)}>
    <div className="atlas-engineering"><svg className="block-platform" viewBox="0 0 230 220" fill="none" aria-hidden="true"><path d="M17 147L112 111L214 145V177L116 211L17 177Z M17 147L116 182L214 145M116 182V211"/><path className="block-construction" d="M6 146H225M115 95V218M25 186L116 218L208 187"/><path className="block-socket" d="M44 157L61 151L78 157L61 163Z M145 157L162 151L179 157L162 163Z"/></svg><div className="atlas-floating"><SketchGlyph kind={item.key}/></div></div>
    <span className="atlas-caption"><span className="mono">{item.no}</span><strong>{item.title}</strong><span className="atlas-state" aria-hidden="true">{route.includes(item.key)?'−':'+'}</span></span><span className="atlas-purpose">{DESCRIPTIONS[index]}</span>
   </button><a className="atlas-preview-link" href={siteUrl(`#story-${item.key}`)}>Explore {item.title} ↘</a></li>)}</ol>
-  <div className="atlas-route"><div><span className="mono">SKETCH YOUR ROUTE</span><ol aria-label="Selected steps in your illustrative route">{route.map(key=>{const item=MODULES.find(step=>step.key===key)!;return <li key={key}><a href={siteUrl(`#story-${key}`)}>{item.title}</a></li>})}</ol>{!route.length&&<p>Select a block to start the sketch.</p>}</div><button type="button" onClick={()=>setRoute(MODULES.map(step=>step.key))}>Reset sketch ↻</button></div>
-  <p className="atlas-instruction">Select blocks to undock or reconnect them. The sketch illustrates a route; it does not change your project.</p>
-  <details className="atlas-options"><summary>What can I switch on or off in QT?</summary><p>These are five workflow steps. In the workbench, configure theme grouping, memos, AI suggestions, Insights, Audit and Figures in Tools → Capability blocks. Core documents, codes and codings remain available. AI requires configuration, request preview and confirmation.</p><a href={siteUrl("/w?lang=en")}>Configure your workspace ↗</a></details>
+  <details className="atlas-options"><summary>What can I switch on or off in QT?</summary><p>You do not need every module. Use the tools that help your study.</p></details>
  </div>
 }

@@ -16,8 +16,9 @@ import { externalWorkbench } from './url'
 export const NAV = [
   { href: '/#modules', label: 'Workflow' },
   { href: '/report#sec-outputs', label: 'Worked example' },
-  { href: '/#data', label: 'Data' },
+  { href: '/sources', label: 'Sources' },
   { href: '/#method', label: 'Methods' },
+  { href: '/help', label: 'Help' },
 ] as const
 
 export const HERO = {
@@ -176,24 +177,22 @@ export const NOT_DOING = {
     'Four product decisions keep the workflow researcher led. Open a reason to inspect the boundary and alternatives.',
   items: [
     {
-      name: 'Automatic coding',
+      name: 'No automatic coding',
       summary: 'The model proposes; you review each suggestion.',
       reason:
-        'A one-click codebook would be easy to build and would remove the thing that ' +
-        'makes the analysis valid. The model proposes; a person decides, and the decision ' +
-        'is recorded.',
+        'AI can suggest codings after you configure a model, preview the request and confirm sending. You accept or reject each suggestion; nothing is automatically confirmed.',
       instead: 'NVivo, MAXQDA and ATLAS.ti all ship autocoding or AI-assist features.',
     },
     {
-      name: externalWorkbench ? 'Uncontrolled sharing' : 'Cloud accounts',
-      summary: externalWorkbench ? 'Private accounts, separate projects, explicit exports.' : 'Keep research files in the workspace you control.',
+      name: 'No unrequested data sharing',
+      summary: externalWorkbench ? 'Online: your QT account. Local: your own machine.' : 'Local projects stay on your own machine.',
       reason: externalWorkbench ? 'The online workspace saves files on the QT server in your own account. Projects are not public. Share an export only when you choose; local use remains available.' :
         'An account means a server, which means the transcripts sit somewhere you cannot ' +
         'see. Local is the feature, not the limitation.',
       instead: externalWorkbench ? 'Use the local workspace when a study requires files to remain on your own machine.' : 'A hosted CAQDAS — Delve, or the web editions of the desktop suites.',
     },
     {
-      name: 'Real-time collaboration',
+      name: 'No simultaneous editing',
       summary: 'Share a portable project file, with its record.',
       reason:
         'Sharing live means accounts, conflict resolution and a server holding the data. ' +
@@ -201,7 +200,7 @@ export const NOT_DOING = {
       instead: 'The hosted tools above, which are built for shared projects.',
     },
     {
-      name: 'Semantic (vector) search',
+      name: 'No semantic search',
       summary: 'Review exact text matches and their source ranges.',
       struckReason:
         'A researcher looking for every quotation about data sharing wants to know why ' +
