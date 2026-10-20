@@ -384,7 +384,7 @@ function inspectorSelectionHtml(){
   const items=inspectorMatches(),a=inspectorCurrent(),code=codingInspector.codeId&&state.project.codes.find(c=>c.id===codingInspector.codeId);
   const selected=code?codeIdentity(code):QT('inspectPassage','Selected passage');
   const visible=a&&[...document.querySelectorAll('#reader .paragraph')].some(p=>Number(p.dataset.start)<=a.start&&Number(p.dataset.end)>a.start);
-  return `<section class="inspector-selection" aria-label="${QT('inspectSelection','Current selection')}"><strong>${esc(selected)}</strong><p class="inspector-match-count" role="status">${items.length?`${codingInspector.index+1} / ${items.length} ${QT('inspectMatches','coded passages in this document')}`:QT('inspectNoMatch','No matching coded passages in this document.')}</p>
+  return `<section class="inspector-selection" aria-label="${QT('inspectSelection','Current selection')}"><strong>${esc(selected)}</strong>${code?`<p class="code-count-summary">${esc(codeCountSummary(code))}</p>`:''}<p class="inspector-match-count" role="status">${items.length?`${codingInspector.index+1} / ${items.length} ${QT('inspectMatches','coded passages in this document')}`:QT('inspectNoMatch','No matching coded passages in this document.')}</p>
    ${items.length?`<div class="inspector-pager"><button data-action="inspect-prev"${codingInspector.index<=0?' disabled':''}>${QT('inspectPrevious','Previous passage')}</button><button data-action="inspect-next"${codingInspector.index>=items.length-1?' disabled':''}>${QT('inspectNext','Next passage')}</button></div>`:''}
    ${a?`<p class="inspector-path">${esc(codeIdentity(codesFor(a)))}</p><blockquote>${esc(a.quote)}</blockquote>${!visible&&(state.search||state.codeFilter)?`<p>${QT('inspectHidden','This passage is hidden by your current filters.')}</p><button data-action="inspect-show-all">${QT('ovFullJump','Show full text and jump')}</button>`:''}
    <details class="inspector-details"><summary>${QT('inspectDetails','Details and editing')}</summary><p>${esc(inspectorRole(codesFor(a)))} · [${a.start}, ${a.end}) · ${esc(codingSourceLabel(a))}</p>${codesFor(a).definition?`<p>${esc(codesFor(a).definition)}</p>`:''}${a.memo?`<p>${esc(a.memo)}</p>`:''}<button data-action="inspect-edit-coding" data-id="${a.id}">${QT('inspectEdit','Edit coding / memo')}</button><button data-action="code-edit" data-id="${a.code_id}"${demoLock()}>${QT('editCode','Edit code')}</button></details>`:''}
@@ -395,7 +395,7 @@ function inspectorBodyHtml(){
   return `<div class="inspector-tabs" role="group" aria-label="${QT('inspectViews','Coding panel')}"><button data-action="inspect-tree" aria-pressed="${codingInspector.mode==='tree'}">${QT_LANG==='zh'?'编码树':'Code tree'}</button>${hasBlock('ai')?`<button data-action="inspect-ai" aria-pressed="${codingInspector.mode==='ai'}">${QT('suggestions','Suggestions')} (${pending})</button>`:''}</div>
   ${inspectorReturn()?`<div class="inspector-return"><button data-action="inspect-return">${QT('inspectReturn','\u2190 Continue coding')}</button>${inspectorReturn()?`<button data-action="inspect-here">${QT('inspectHere','Continue here')}</button>`:''}</div>`:''}
   ${codingInspector.mode==='ai'&&hasBlock('ai')?`<div class="inspector-ai"><p class="inspector-hint">${QT('reviewSubtitle')}</p><label for="review-filter" class="sr-only">${QT('inspectReviewStatus','Suggestion status')}</label><select id="review-filter">${['pending','accepted','rejected'].map(v=>`<option value="${v}"${v===state.reviewFilter?' selected':''}>${QT(v==='pending'?'pending':v==='accepted'?'reviewAccepted':'reviewRejected')}</option>`).join('')}</select>${suggestionsHtml()}</div>`:
-  `<div id="inspector-readout">${inspectorSelectionHtml()}</div><div class="inspector-tree-head"><label for="inspector-search">${QT('codebookFind','Find a code or group')}</label><input id="inspector-search" type="search" autocomplete="off" value="${esc(codingInspector.query)}"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button></div><div id="inspector-tree">${codebookHtml('inspector')}</div>`}`;
+  `<div id="inspector-readout">${inspectorSelectionHtml()}</div><details class="code-count-help"><summary>${QT_LANG==='zh'?'编码数如何计算':'How counts work'}</summary><p>${esc(codeCountExplanation())}</p></details><div class="inspector-tree-head"><label for="inspector-search">${QT('codebookFind','Find a code or group')}</label><input id="inspector-search" type="search" autocomplete="off" value="${esc(codingInspector.query)}"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button></div><div id="inspector-tree">${codebookHtml('inspector')}</div>`}`;
 }
 // Move one live tree across layouts; never replace the source or an edit form.
 let parkedInspector=null;
@@ -921,6 +921,13 @@ function codeCounts() {
   });
   return {own, total};
 }
+function codeCountExplanation(){
+  return QT_LANG==='zh'?'树上的数字包含此节点及所有后代的已保存编码关联。父节点直接编码为0，不代表子编码没有原句。同一原句使用两个编码计为两条关联；不是参与者人数，不含待审核建议。':'Tree numbers include saved coding assignments on this node and all descendants. A parent can have 0 direct codings while its children have coded passages. Two codes on one passage count as two assignments, not participants. Pending suggestions are excluded.';
+}
+function codeCountSummary(code,counts=codeCounts()){
+ const {own,total}=counts,direct=own.get(code.id)||0,all=total.get(code.id)||0;
+ return QT_LANG==='zh'?`${direct} 直接编码 · ${all} 包含后代的编码关联`:`${direct} direct · ${all} including descendants`;
+}
 function codebookHtml(context='side') {
   const inspect=context==='inspector';
   const p=state.project;
@@ -934,7 +941,7 @@ function codebookHtml(context='side') {
       ${children.length&&!search?`<button class="twisty" data-action="toggle-code" data-id="${c.id}" aria-expanded="${open}" aria-controls="cb-${context}-${c.id}" aria-label="${esc((open?QT('collapse','Collapse'):QT('expand','Expand'))+' '+c.name)}">${open?'▾':'▸'}</button>`:'<span class="twisty leaf" aria-hidden="true">·</span>'}
       <button class="side-item${(inspect?codingInspector.codeId===c.id:state.codeFilter===c.id)?' selected':''}" data-action="${inspect?'inspect-code':'filter-code'}" data-id="${c.id}" aria-pressed="${inspect?codingInspector.codeId===c.id:state.codeFilter===c.id}" aria-label="${esc(role+': '+path+' · '+(total.get(c.id)||0)+' '+QT('savedCodings'))}" title="${esc(path+(c.definition?' — '+c.definition:''))}">
         <span class="code-row-label"><span class="code-role">${esc(role)}</span><span class="name">${esc(c.name)}${!inspect&&c.status!=='final'?`<span class="status-flag">${esc(c.status)}</span>`:''}</span>${search?`<small class="code-parent">${esc(path)}</small>`:path!==codePath(c)?`<small class="code-identity-id">${esc(c.id)}</small>`:''}</span>
-        <span class="count" title="${own.get(c.id)||0} direct · ${total.get(c.id)||0} including sub-codes">${total.get(c.id)||0}</span><span class="code-color-swatch" style="background:${esc(c.color)}" aria-hidden="true"></span>
+        <span class="count" title="${esc(codeCountSummary(c,{own,total}))}">${total.get(c.id)||0}</span><span class="code-color-swatch" style="background:${esc(c.color)}" aria-hidden="true"></span>
       </button><button class="edit-code" data-action="code-edit" data-id="${c.id}"${demoLock('Edit, re-parent, merge or delete')} aria-label="${esc(QT('editCode','Edit code')+': '+path)}">⋯</button>
     </div>${children.length&&!search?`<ul id="cb-${context}-${c.id}"${open?'':' hidden'}>${children.map(child=>row(child)).join('')}</ul>`:''}</li>`;
   };
@@ -1198,7 +1205,7 @@ function render() {
   const pending=p.suggestions.filter(s=>s.status==='pending').length;
   const titles={coding:QT('navCoding','Coding workspace'),insights:QT('navInsights','Insights'),audit:QT('navAudit','Audit trail'),plotting:QT('navPlotting','Figures')};
   $('#app').innerHTML=`<a class="workspace-skip" href="#workspace-content">Skip to workspace</a><div class="shell shell--${state.view}">
-    <aside class="sidebar"><div class="brand">${qtMark()}<span class="version">ALPHA</span></div>
+    <aside class="sidebar"><div class="brand"><button class="qt-home" data-action="workspace-home" aria-label="${QT_LANG==='zh'?'QT · 返回项目起步页':'QT · Back to project start'}" title="${QT_LANG==='zh'?'选择项目、导入或打开示例':'Choose a project, import or open an example'}">${qtMark()}</button><span class="version">ALPHA</span></div>
     <div class="section-label">${QT('project','PROJECT')}</div><select id="project-select" class="project-select" aria-label="${QT('switchProject','Switch project')}">${state.projects.map(x=>`<option value="${esc(x.id)}" ${x.id===p.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
     <button class="link new-project" data-action="projects">${QT('newProject','+ New / import project')}</button>
     <nav class="nav" aria-label="Main navigation">${[['coding','grid',QT('navCoding','Coding workspace')],['insights','chart',QT('navInsights','Insights')],['plotting','image',QT('figures','Figures')],['audit','history',QT('navAudit','Audit trail')]].filter(([view])=>view==='coding'||view==='plotting'||hasBlock(view)).map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}" aria-label="${t}"${state.view===view?' aria-current="page"':''}>${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>

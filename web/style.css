@@ -1064,3 +1064,13 @@ button:disabled{cursor:default}
 .shell--coding .reading-context[hidden]{display:none}
 .shell--coding .reading-details .coding-key{display:flex}
 .project-context-note{font-size:12px;line-height:1.6;color:var(--muted);padding:0 18px 12px;margin:0;max-width:90ch}
+
+/* UX85: one home destination and optional count guidance, no extra panel. */
+.qt-home{border:0;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent;min-width:44px;min-height:40px;flex-shrink:0}
+.qt-home:hover{background:var(--line)}
+.qt-home:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.qt-home .qtmark{pointer-events:none}
+.code-count-help{font-size:11px;color:var(--muted);margin:0 0 8px}
+.code-count-help summary{cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+.code-count-help p{font-size:12px;line-height:1.65;margin:6px 0 10px}
+.code-count-summary{font-variant-numeric:tabular-nums}
