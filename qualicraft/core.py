@@ -868,7 +868,7 @@ class Store:
         self._flush_snapshots()
         return project
 
-    def change(self, project_id, operation, snapshot=True):
+    def change(self, project_id, operation, snapshot=True, preserve_before=False):
         """Apply an operation and commit it.
 
         `snapshot=False` is for the steps of one batch: a single analysis run
@@ -883,7 +883,7 @@ class Store:
             project = migrate(json.loads(row[0]))
             result = operation(project)
             project["updated_at"] = now()
-            if original.get("schema_version", 1) < 5:
+            if original.get("schema_version", 1) < 5 or preserve_before:
                 validate_reading_capacity(project)
                 self._checked_snapshot(original, connection=conn)
             conn.execute("UPDATE projects SET data=? WHERE id=?", (json.dumps(project, ensure_ascii=False), project_id))

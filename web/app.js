@@ -167,7 +167,7 @@ const demoLock = (fallback = '') => state.config.public_demo
 const WRITE_ACTIONS = new Set([
   'reading-mark-read', 'reading-mark-undo', 'reading-mark-retry', 'reading-mark-reset',
   'import', 'run-import', 'import-export-open', 'code', 'save-code', 'code-save',
-  'code-delete', 'code-delete-ask', 'code-merge', 'code-merge-ask', 'save-document', 'keep-document', 'queue-start', 'queue-keep', 'queue-retry',
+  'document-remove-review', 'document-remove-confirm', 'code-delete', 'code-delete-ask', 'code-merge', 'code-merge-ask', 'save-document', 'keep-document', 'queue-start', 'queue-keep', 'queue-retry',
   'save-memo', 'save-annotation', 'annotate', 'annotation', 'remove-annotation',
   'save-blocks', 'enable-all-blocks', 'new-project', 'restore-pick', 'review', 'analyze',
   'analyze-selection', 'start-analysis', 'popup-apply', 'popup-create',
@@ -879,6 +879,82 @@ function showMobileCodebook() {beginReadingSearch();openCodingInspector(false);}
 // The sidebar's own scroll, re-rendered on every keystroke in the filter box.
 // Redrawing the whole app would take the caret out of the input.
 function refreshSideList(){const el=$('#side-list');if(el)el.innerHTML=sideListHtml();}
+// UX81: one document manager, opened on demand; removal always has its own review.
+let documentManager=null;
+const dmText=(en,zh)=>QT_LANG==='zh'?zh:en;
+function managedDocuments(){
+ const query=(documentManager?.query||'').trim().toLocaleLowerCase();
+ return state.project.documents.map((d,index)=>({d,index})).reverse().filter(({d})=>!query||d.name.toLocaleLowerCase().includes(query));
+}
+function managedDocumentRows(){
+ const p=state.project,rows=managedDocuments();
+ return rows.map(({d,index})=>{
+  const n=p.annotations.filter(a=>a.document_id===d.id).length,s=p.suggestions.filter(a=>a.document_id===d.id).length;
+  const when=d.created_at?new Date(d.created_at):null,date=when&&!Number.isNaN(when.valueOf())?when.toLocaleString(QT_LANG==='zh'?'zh-CN':'en-GB'):dmText('Date unavailable','日期未记录');
+  return `<li class="managed-document"><div><h3>${esc(d.name)}</h3><p>${esc(date)} · ${cp(d.text).length.toLocaleString()} ${dmText('characters','字符')} · ${n} ${dmText('codings','编码标注')}${s?` · ${s} ${dmText('suggestions','建议')}`:''}</p><small>${dmText('Document','文档')} ${index+1} · ID ${esc(d.id)}</small></div><div class="managed-actions"><button data-action="document-view" data-id="${esc(d.id)}">${dmText('View','查看')}</button><button data-action="document-remove-review" data-id="${esc(d.id)}"${demoLock()}>${dmText('Remove…','移除…')}</button></div></li>`;
+ }).join('')||`<li class="empty">${dmText('No matching documents.','没有匹配的文档。')}</li>`;
+}
+function installManagedProject(project){
+ const removed=state.docId&&!project.documents.some(d=>d.id===state.docId);
+ state.project=project;
+ if(removed){state.docId=project.documents[0]?.id||null;state.search='';state.codeFilter=null;state.selection=null;state.sourceFocus=null;state.networkReturn=null;resetCodingInspector();readingOverview={key:null,open:false};readingOverviewNav=null;readingOverviewFocus=null;}
+}
+async function showDocumentManager(opener=null){
+ if(!state.project)return;
+ captureReadingPosition();
+ const session=documentManager={projectId:state.project.id,query:'',opener:opener||documentManager?.opener,busy:false,loading:true,review:null};
+ modal(dmText('Manage documents','管理文档'),`<p role="status">${dmText('Loading saved documents…','正在读取已保存文档…')}</p>`);$('#dialog').dataset.workflow='documents';
+ try{
+  await codingSaveQueue;
+  const project=await api(`/api/projects/${session.projectId}`);
+  if(!documentManagerActive(session))return;
+  installManagedProject(project);render();renderDocumentManager();
+ }finally{session.loading=false;}
+}
+function renderDocumentManager(){
+ modal(dmText('Manage documents','管理文档'),`<p>${dmText('Find an import by name. Most recently added first. View the source before deciding to remove it.','按名称查找，最近加入的文档在前。移除前可先查看原文。')}</p><label class="field">${dmText('Find a document','查找文档')}<input id="manage-document-search" type="search" value="${esc(documentManager.query)}" autocomplete="off"></label><ul class="managed-documents" id="managed-document-list">${managedDocumentRows()}</ul>`,`<button data-action="document-recovery">${dmText('Recovery points','恢复点')}</button><button data-action="documents-done">← ${dmText('Continue coding','继续编码')}</button>`);
+ $('#dialog').dataset.workflow='documents';$('#manage-document-search').focus({preventScroll:true});
+}
+function documentManagerActive(session){return documentManager===session&&$('#dialog').open&&$('#dialog').dataset.workflow==='documents'&&state.project?.id===session.projectId;}
+function finishDocumentManager(){
+ if(documentManager?.busy)return;
+ const opener=documentManager?.opener;closeModal();documentManager=null;
+ const target=opener?.isConnected?opener:[...document.querySelectorAll('[data-action="documents"]')].find(e=>e.getClientRects().length);
+ target?.focus({preventScroll:true});
+}
+async function reviewDocumentRemoval(id){
+ const session=documentManager;if(!session||session.busy||session.loading||!documentManagerActive(session))return;
+ session.busy=true;
+ try{
+  const info=await api(`/api/projects/${session.projectId}/document-removal?id=${encodeURIComponent(id)}`);
+  if(!documentManagerActive(session))return;
+  session.review=info;
+  const blocked=info.blocked||info.analysis_running;
+  modal(dmText('Remove this document?','移除此文档？'),`<div class="document-removal-review"><h3>${esc(info.document.name)}</h3><small>ID ${esc(info.document.id)}</small><p>${info.characters.toLocaleString()} ${dmText('characters','字符')} · ${info.codings} ${dmText('codings','编码标注')} · ${info.suggestions} ${dmText('suggestions','建议')} · ${info.reading_marks} ${dmText('reading marks','阅读标记')}</p><p>${dmText('This removes the source, its codings, suggestions and reading notes from this project. The code tree and other documents stay.','将从当前项目移除此文档及其标注、建议和阅读笔记。编码树及其他文档保留。')}</p>${info.has_frozen_results?`<p>${dmText('Frozen reports and QCA results keep their original evidence and become out of date. Recovery points and the audit trail also remain. This is not permanent erasure of all copies.','冻结报告和QCA结果保留原证据，并标记为过期。恢复点及审计记录也保留；这不是清除所有副本。')}</p>`:`<p>${dmText('Recovery points and the audit trail remain. This is not permanent erasure of all copies.','恢复点及审计记录保留；这不是清除所有副本。')}</p>`}<p>${dmText('An exact recovery point is checked before removal. Restore it as a separate project from Manage documents → Recovery points.','移除前会核验完整恢复点，可从“管理文档 → 恢复点”恢复为独立项目。')}</p>${blocked?`<p class="inline-error" role="status">${info.analysis_running?dmText('An analysis is running. Stop it and wait for completion before removing a document.','分析正在运行，请停止并等待完成后再移除。'):dmText('Current Comparative QCA cases use this document. Update their mapping and calibration first in Export → Research report → Comparative QCA.','当前Comparative QCA案例使用此文档，请先在导出 → 研究报告 → Comparative QCA中更新映射与校准。')} ${esc((info.qca_cases||[]).join(', '))}</p>`:`<label class="document-remove-check"><input id="document-remove-confirm" type="checkbox">${dmText('I checked the document name and the records that will be removed.','我已核对文档名称及将移除的记录。')}</label>`}</div><p id="document-remove-status" role="status"></p>`,`<button data-action="document-remove-cancel">${dmText('Cancel — keep document','取消，保留文档')}</button><button data-action="document-remove-confirm" class="danger" disabled>${dmText('Remove document','移除文档')}</button>`);
+  $('#dialog').dataset.workflow='documents';$('[data-action="document-remove-cancel"]').focus({preventScroll:true});
+ }finally{session.busy=false;}
+}
+function syncRemovalConfirm(){const b=$('[data-action="document-remove-confirm"]');if(b)b.disabled=!!documentManager?.busy||!$('#document-remove-confirm')?.checked||!documentManager?.review||documentManager.review.blocked||documentManager.review.analysis_running;}
+async function confirmDocumentRemoval(){
+ const session=documentManager;if(!session||session.busy||!documentManagerActive(session)||!$('#document-remove-confirm')?.checked||!session.review||session.review.blocked||session.review.analysis_running)return;
+ session.busy=true;syncRemovalConfirm();$('#document-remove-status').textContent=dmText('Checking recovery point and removing…','正在核验恢复点并移除…');
+ for(const b of document.querySelectorAll('#dialog button'))b.disabled=true;
+ try{
+  await codingSaveQueue;
+  const id=session.review.document.id;
+  await api(`/api/projects/${session.projectId}/document-delete`,{id,confirmation:session.review.confirmation});
+  if(state.project?.id!==session.projectId)return;
+  // Read the committed state; do not retry the destructive request after a lost reply.
+  const [project,projects,backups]=await Promise.all([api(`/api/projects/${session.projectId}`),api('/api/projects'),api(`/api/projects/${session.projectId}/backups`)]);
+  installManagedProject(project);state.projects=projects;state.backups=backups.items;state.backupStatus=backups.status;
+  session.review=null;render();renderDocumentManager();toast(dmText('Document removed. Recovery points retained.','文档已移除，恢复点保留。'));
+ }catch(error){
+  // The commit may have succeeded even if its response or the refresh was lost.
+  // Require re-review; a retry cannot silently reuse the previous approval.
+  session.review=null;$('#document-remove-status').textContent=dmText('Removal was not confirmed. Reopen Manage documents to check saved state before trying again.','尚未确认移除结果，请重新打开文档管理检查已保存状态后再操作。');throw error;
+ }finally{session.busy=false;for(const b of document.querySelectorAll('#dialog button'))b.disabled=false;syncRemovalConfirm();}
+}
+
 function sideListHtml() {
   const p=state.project;
   const needle=state.sideFilter.trim().toLowerCase();
@@ -1009,12 +1085,12 @@ async function refresh() {
   const [project,projects]=await Promise.all([api(projectUrl()),api('/api/projects'),loadBackups()]);
   state.project=project;state.projects=projects;render();
 }
-function showSnapshots() {
+function showSnapshots(footer='') {
   const rows=state.backups.map(b=>{
     const when=new Date(b.written_at*1000).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});
     return `<div class="snap-row"><span class="snap-name">${esc(b.name)}</span><span class="muted">${esc(when)} · ${Math.round(b.bytes/1024)} KB</span><button data-action="restore-snapshot" data-name="${esc(b.name)}"${demoLock()}>${QT('restoreCopy','Restore as a copy')}</button></div>`;
   }).join('');
-  modal(QT('snapshotsTitle','Snapshots'),`<p>${QT('snapshotsIntro','A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.')}</p>${rows||`<div class="empty">${QT('noSnapshots','No snapshots yet.')}</div>`}`);
+  modal(QT('snapshotsTitle','Snapshots'),`<p>${QT('snapshotsIntro','A restorable copy is written after every change. Restoring one creates a new project and leaves this one untouched.')}</p>${rows||`<div class="empty">${QT('noSnapshots','No snapshots yet.')}</div>`}`,footer);
 }
 function modal(title, body, footer='') {
   pauseImportQueue();documentImport=null;
@@ -1042,7 +1118,7 @@ function render() {
     <main class="workspace" id="workspace-content" tabindex="-1"><header class="topbar"><div class="breadcrumb"><strong>${esc(p.name)}</strong><span>${titles[state.view]}</span></div><div class="top-actions">${saveStateHtml()}<button data-action="toggle-motion" aria-pressed="${motionPreference==='reduce'}" title="${QT('motionHint','Reduce movement, or follow system preferences')}">${motionLabel()}</button><button data-action="toggle-lang" title="${QT('switchLanguage','Switch language')}">${QT_LANG==='zh'?'EN':'ZH'}</button><button data-action="settings">${icon('setting')}${QT('model','Model')}</button><button data-action="export">${icon('down')}${QT('export','Export')}</button><button id="workspace-help" data-action="guide-open">${QT('help','Help')}</button></div></header>
     ${state.config.public_demo?`<div class="public-demo-banner" role="status"><strong>${QT('publicDemo','Public demo')}</strong><span>${QT('publicDemoNote','Read-only sample project. Changes and uploads are disabled here; run QualiCraft locally to code your own material.')}</span></div>`:''}
     ${!state.config.public_demo&&isBolognaExample(p)?`<details class="example-context"><summary><strong>${QT('bolognaLabel','Bologna example')}</strong><span>${QT('editableExample','Editable in this local workspace')}</span></summary><button class="link" data-action="start-project">${QT('startOwnAction','Start your own project')} →</button></details>`:''}
-    <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> ${QT('reviewCount','to review')}</span></div></div><div class="project-strip-actions">${hostedAccountHtml()}<button class="primary" data-action="import"${demoLock()}>${icon('upload')}${QT('importDlg','Import interview')}</button></div></section>
+    <section class="project-strip"><div><h1>${esc(p.name)}</h1><div class="metrics"><span><b>${p.documents.length}</b> documents</span><span><b>${p.codes.length}</b> codes</span><span><b>${p.annotations.length}</b> codings</span><span class="pending-metric"><b>${pending}</b> ${QT('reviewCount','to review')}</span></div></div><div class="project-strip-actions">${hostedAccountHtml()}<button data-action="documents">${QT_LANG==='zh'?'管理文档':'Manage documents'}</button><button class="primary" data-action="import"${demoLock()}>${icon('upload')}${QT('importDlg','Import interview')}</button></div></section>
     <div id="job-status"></div><div class="mobile-only mobile-project-bar"><button class="link" data-action="projects">${state.config.public_demo?QT('switchProject','Switch project'):QT('mobileSwitch','Switch / create project')}</button><button id="workspace-help-mobile" class="link" data-action="guide-open">${QT('help','Help')}</button></div>
     <div id="guide-region">${quickGuideHtml()}</div>
     ${state.view==='coding'?codingView():state.view==='insights'?insightsView():state.view==='plotting'?plottingView():auditView()}
@@ -1328,7 +1404,7 @@ async function exportPlotBundle(){
  finally{if(plotUi.key===key){plotUi.exporting=false;updatePlotStatus();}}
 }
 
-const actionNames={reading_mark_set:QT('projectMark','Project mark'),reading_marks_reset:QT('markReset','Reading marks reset'),document_import:'Document imported',code_create:QT('createCode','Create code'),annotation_create:'Coding created',suggestion_review:'Suggestion reviewed',analysis_start:'Analysis started',analysis_segment:'Segment analyzed',analysis_finish:'Analysis finished',benchmark_import:'Benchmark imported',annotation_remove:'Coding removed',memo_update:'Memo updated',project_restore:'Project restored'};
+const actionNames={document_remove:QT_LANG==='zh'?'文档已移除':'Document removed',reading_mark_set:QT('projectMark','Project mark'),reading_marks_reset:QT('markReset','Reading marks reset'),document_import:'Document imported',code_create:QT('createCode','Create code'),annotation_create:'Coding created',suggestion_review:'Suggestion reviewed',analysis_start:'Analysis started',analysis_segment:'Segment analyzed',analysis_finish:'Analysis finished',benchmark_import:'Benchmark imported',annotation_remove:'Coding removed',memo_update:'Memo updated',project_restore:'Project restored'};
 // The audit trail is one entry per action, so a study that coded 91 passages
 // has 91 near-identical rows and the reader learns nothing from the list. The
 // entries are grouped by day and consecutive runs of the same action collapse
@@ -1922,6 +1998,21 @@ async function action(button) {
     return;
   }
   if(state.config.public_demo&&WRITE_ACTIONS.has(a)){toast(DEMO_LOCK(),true);return;}
+  if(a==='documents'){ioReturnFocus=null;return showDocumentManager(button);}
+  if(a==='documents-done'){finishDocumentManager();return;}
+  if(a==='document-recovery'){
+    const session=documentManager;if(!session||session.busy||session.loading)return;
+    session.busy=true;
+    try{const backups=await api(`/api/projects/${session.projectId}/backups`);if(!documentManagerActive(session))return;state.backups=backups.items;state.backupStatus=backups.status;showSnapshots(`<button data-action="document-recovery-back">← ${dmText('Manage documents','管理文档')}</button>`);$('#dialog').dataset.workflow='documents-recovery';}
+    finally{session.busy=false;}return;
+  }
+  if(a==='document-recovery-back'){renderDocumentManager();return;}
+
+  if(a==='document-view'){const id=button.dataset.id;finishDocumentManager();switchReadingDocument(id);return;}
+  if(a==='document-remove-review')return reviewDocumentRemoval(button.dataset.id);
+  if(a==='document-remove-cancel'){if(!documentManager?.busy){documentManager.review=null;renderDocumentManager();}return;}
+  if(a==='document-remove-confirm')return confirmDocumentRemoval();
+  if(a==='close'&&$('#dialog').dataset.workflow?.startsWith('documents')){finishDocumentManager();return;}
   if(a==='close'){if($('#dialog').dataset.workflow==='coding-inspector')finishCodingInspection(false);else closeModal();return;}
   if(a==='workspace-home'){closeModal();showWorkspaceStart();return;}
   if(a==='start-project'){startReturnFocus=button;showStartProject();return;}
@@ -2115,7 +2206,7 @@ function renderJob(){
 function startPolling(){
   clearTimeout(pollTimer);pollTimer=setTimeout(async()=>{try{const before=state.jobs.filter(j=>j.status==='running').map(j=>j.id);state.jobs=await api('/api/jobs');renderJob();const finished=state.jobs.find(j=>before.includes(j.id)&&j.status!=='running');if(finished){if(finished.project_id===state.project?.id)await refresh();toast(finished.error||'Analysis finished. Review your suggestions.',finished.status==='failed');}if(state.jobs.some(j=>j.status==='running'))startPolling();}catch(e){toast('Could not read task status. Refresh to view saved results.',true);}},1500);
 }
-document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;if(['import','export'].includes(button.dataset.action))ioReturnFocus=button;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action.startsWith('net-'))drawNetworkControls();if(button.dataset.action.startsWith('queue-')&&activeImportQueue)renderImportQueue(activeImportQueue);}}});
+document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button||button.disabled)return;if(['import','export'].includes(button.dataset.action))ioReturnFocus=button;button.disabled=true;try{await action(button);}catch(error){errorDisplay(error);}finally{if(button.isConnected){button.disabled=button.dataset.action==='start-analysis'&&!$('#send-confirm')?.checked;if(button.dataset.action==='document-remove-confirm')syncRemovalConfirm();if(button.dataset.action.startsWith('net-'))drawNetworkControls();if(button.dataset.action.startsWith('queue-')&&activeImportQueue)renderImportQueue(activeImportQueue);}}});
 document.addEventListener('close',e=>{if(e.target.id==='dialog'&&e.target.dataset.workflow&&ioReturnFocus?.isConnected&&!ioReturnFocus.disabled)ioReturnFocus.focus({preventScroll:true});},true);
 document.addEventListener('click',e=>{
   const brick=e.target.closest('.brick'); if(!brick) return;
@@ -2123,7 +2214,7 @@ document.addEventListener('click',e=>{
   brick.setAttribute('aria-pressed',String(on));
   const state_=brick.querySelector('.brick-state'); if(state_) state_.textContent=on?QT('added','Added'):QT('add','Add');
 });
-document.addEventListener('cancel',e=>{if(e.target.id==='dialog')pauseImportQueue();},true);
+document.addEventListener('cancel',e=>{if(e.target.id==='dialog'){pauseImportQueue();if(e.target.dataset.workflow?.startsWith('documents')){e.preventDefault();finishDocumentManager();}}},true);
 document.addEventListener('close',e=>{if(e.target.id==='dialog'&&!e.target.open){pauseImportQueue();documentImport=null;}},true);
 document.addEventListener('change',async e=>{
   if(e.target.id==='coded-scope'||e.target.name==='coded-document'){refreshTranscriptScope();return;}
@@ -2152,10 +2243,11 @@ document.addEventListener('change',async e=>{
     if(e.target.id==='restore-file'&&e.target.files[0]){if(!e.target.files[0].size)throw new Error('The project file is empty.');if(e.target.files[0].size>20_000_000)throw new Error('Project file exceeds 20 MB.');await createProject(await e.target.files[0].text(),true);}
   }catch(error){errorDisplay(error);}
 });
-document.addEventListener('input',e=>{if(e.target.id==='inspector-search'){codingInspector.query=e.target.value;const tree=$('#inspector-tree');if(tree)tree.innerHTML=codebookHtml('inspector');return;}if(['document-name','document-text'].includes(e.target.id))resetImportDecision();if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
+document.addEventListener('input',e=>{if(e.target.id==='document-remove-confirm'){syncRemovalConfirm();return;}if(e.target.id==='manage-document-search'){documentManager.query=e.target.value;$('#managed-document-list').innerHTML=managedDocumentRows();return;}if(e.target.id==='inspector-search'){codingInspector.query=e.target.value;const tree=$('#inspector-tree');if(tree)tree.innerHTML=codebookHtml('inspector');return;}if(['document-name','document-text'].includes(e.target.id))resetImportDecision();if(e.target.id==='mobile-code-filter'){state.sideFilter=e.target.value;refreshSideList();$('#mobile-codebook-list').innerHTML=codebookHtml('mobile');}else if(e.target.id==='search'){beginReadingSearch();readingOverviewNav=null;readingOverviewFocus=null;state.search=e.target.value;state.selection=null;closeCodePopup();$('#reader').innerHTML=readerHtml();mountReading(!state.search);}else if(e.target.id==='side-filter'){state.sideFilter=e.target.value;refreshSideList();}});
 // Preview changes CSS only: no re-render, source text insertion or server write.
 document.addEventListener('click',event=>{const mark=event.target.closest?.('#reader mark[data-coding-ids]');if(!mark||window.getSelection?.()?.toString())return;inspectCodings(JSON.parse(mark.dataset.codingIds));});
 document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&$('#dialog').open&&$('#dialog').dataset.workflow?.startsWith('documents')){event.preventDefault();finishDocumentManager();return;}
  const mark=event.target.closest?.('#reader mark[data-coding-ids]');if(mark&&['Enter',' '].includes(event.key)){event.preventDefault();inspectCodings(JSON.parse(mark.dataset.codingIds));return;}
  if(event.key==='Escape'&&inspectorReturn()&&!$('#dialog').open&&!$('#code-popup')){event.preventDefault();finishCodingInspection(false);}
 });

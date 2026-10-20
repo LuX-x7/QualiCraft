@@ -22,6 +22,7 @@ from pathlib import Path
 from . import analyze, ingest, plotting, transcript, reporting, report_figures, qca_state
 from .ai import Analyzer
 from .document_import import ImportReply, import_document, read_document, source_info
+from . import document_management
 from .core import ReadingConflict, validate_reading_capacity
 from .core import BLOCKS, Store, endpoint_host, add_code, add_document, annotate, benchmark_project, csv_export, delete_code, event, find, grounded_theory_examples_project, merge_codes, methods_narrative, new_project, now, read_docx, require, review, set_blocks, synthetic_project, uid, update_code, update_document, validate_project
 
@@ -185,6 +186,13 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                         project = store.get(parts[2])
                         if len(parts) == 3:
                             return self.send(project, extra_headers=[("X-QT-Project-Version", project_version(project))])
+                        if len(parts) == 4 and parts[3] == 'document-removal':
+                            ids = urllib.parse.parse_qs(parsed.query).get('id', [])
+                            require(len(ids) == 1, 'Choose one document')
+                            info = document_management.removal_info(project, ids[0])
+                            with analyzer.lock:
+                                running = any(j['project_id'] == project['id'] and j['status'] == 'running' for j in analyzer.jobs.values())
+                            return self.send({**info, 'analysis_running': running})
                         if len(parts) == 4 and parts[3] == 'report':
                             return self.send(reporting.context(project))
                         if len(parts) == 4 and parts[3] == 'qca':
@@ -378,6 +386,15 @@ def create_server(data_dir, guide_dir, port=8765, base_path="", host="127.0.0.1"
                     return self.send(created, extra_headers=[("X-QT-Project-Version", project_version(created))])
                 if len(parts) == 4 and parts[:2] == ["api", "projects"]:
                     project_id, action = parts[2:]
+                    if action == 'document-delete':
+                        # The same lock guards model start. Refuse in-flight writes
+                        # and invalidate previews, without changing AI decisions.
+                        with analyzer.lock:
+                            require(not any(j['project_id'] == project_id and j['status'] == 'running' for j in analyzer.jobs.values()),
+                                    'An analysis is still running. Stop it and wait for it to finish before removing a document.')
+                            result = store.change(project_id, lambda p: document_management.remove_document(p, body), preserve_before=True)
+                            analyzer.previews = {k: v for k, v in analyzer.previews.items() if not (v['project_id'] == project_id and v['document_id'] == body.get('id'))}
+                        return self.send(result)
                     if action == 'document-check':
                         candidate = store.get(project_id)  # No write transaction.
                         try:

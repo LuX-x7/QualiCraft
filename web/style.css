@@ -1005,3 +1005,12 @@ button:disabled{cursor:default}
 .figure-workflow button:disabled{opacity:.45;cursor:not-allowed}
 .figure-workflow .plot-controls .field{font-size:13px}
 .figure-workflow .plot-controls select,.figure-workflow .plot-controls input{font-size:14px}
+
+/* UX81: on-demand document management, never a second permanent Coding panel. */
+.managed-documents{list-style:none;padding:0;margin:16px 0}.managed-document{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.managed-document>div:first-child{min-width:0}.managed-document h3,.document-removal-review h3{font-size:18px;line-height:1.4;margin:0 0 6px;overflow-wrap:anywhere}.managed-document p{font-size:13px;margin:0 0 5px}.managed-document small,.document-removal-review small{font-size:11px;overflow-wrap:anywhere;color:var(--muted)}
+.managed-actions{display:flex;gap:8px;flex-shrink:0}.managed-actions button,.document-remove-check{min-height:44px}.document-removal-review p{font-size:14px;line-height:1.6}.document-remove-check{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.5;margin-top:20px}.document-remove-check input{flex:none;width:18px;height:18px}
+#dialog[data-workflow="documents"]{width:min(760px,calc(100% - 24px))}#dialog[data-workflow="documents"] button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:600px){.managed-document{align-items:flex-start;flex-direction:column}.managed-actions{width:100%}.managed-actions button{flex:1}.project-strip-actions>[data-action="documents"]{min-height:36px}}
+
+#dialog[data-workflow="documents-recovery"]{width:min(760px,calc(100% - 24px))}#dialog[data-workflow="documents-recovery"] .snap-row{flex-wrap:wrap}#dialog[data-workflow="documents-recovery"] .snap-name{overflow-wrap:anywhere}#dialog[data-workflow="documents-recovery"] .snap-row button{min-height:44px;font-size:13px}

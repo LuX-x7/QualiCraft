@@ -182,6 +182,8 @@ class Analyzer:
             require(not any(j["status"] == "running" for j in self.jobs.values()), "Another analysis is already running")
             require(preview_id in self.previews, "This preview has expired; create a new preview")
             preview = self.previews[preview_id]
+            current = find(self.store.get(preview['project_id'])['documents'], preview['document_id'])
+            require(current['sha256'] == preview['document_sha256'], 'The document changed; create a new preview')
             config = self.config.copy()
             local = urllib.parse.urlsplit(config["base_url"]).hostname in {"localhost", "127.0.0.1", "::1"}
             require(config["api_key"] or local, "Add an API key in model settings before starting")
