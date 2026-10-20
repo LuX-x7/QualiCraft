@@ -332,7 +332,7 @@ function inspectorReturn(){
   const saved=codingInspector.returnTo,d=doc();
   return saved&&d&&state.view==='coding'&&saved.projectId===state.project?.id&&saved.documentId===d.id&&saved.text===d.text?saved:null;
 }
-function resetCodingInspector(){codingInspector={mode:'tree',query:'',codeId:null,ids:[],index:0,returnTo:null,drawer:false};}
+function resetCodingInspector(){parkedInspector=null;codingInspector={mode:'tree',query:'',codeId:null,ids:[],index:0,returnTo:null,drawer:false};}
 function beginCodingInspection(){
   if(inspectorReturn())return;
   const d=doc();if(!d)return;
@@ -397,6 +397,31 @@ function inspectorBodyHtml(){
   ${codingInspector.mode==='ai'&&hasBlock('ai')?`<div class="inspector-ai"><p class="inspector-hint">${QT('reviewSubtitle')}</p><label for="review-filter" class="sr-only">${QT('inspectReviewStatus','Suggestion status')}</label><select id="review-filter">${['pending','accepted','rejected'].map(v=>`<option value="${v}"${v===state.reviewFilter?' selected':''}>${QT(v==='pending'?'pending':v==='accepted'?'reviewAccepted':'reviewRejected')}</option>`).join('')}</select>${suggestionsHtml()}</div>`:
   `<div id="inspector-readout">${inspectorSelectionHtml()}</div><div class="inspector-tree-head"><label for="inspector-search">${QT('codebookFind','Find a code or group')}</label><input id="inspector-search" type="search" autocomplete="off" value="${esc(codingInspector.query)}"><button data-action="code"${demoLock()}>${QT('newCode','+ New code')}</button></div><div id="inspector-tree">${codebookHtml('inspector')}</div>`}`;
 }
+// Move one live tree across layouts; never replace the source or an edit form.
+let parkedInspector=null;
+function inspectorSurface(){
+ const node=$('#coding-inspector-body'),d=doc();if(!d)return null;
+ if(node){parkedInspector={project:state.project,document:d,node};return node;}
+ if(parkedInspector?.project===state.project&&parkedInspector.document===d)return parkedInspector.node;
+ const fresh=document.createElement('div');fresh.id='coding-inspector-body';fresh.innerHTML=inspectorBodyHtml();parkedInspector={project:state.project,document:d,node:fresh};return fresh;
+}
+function inspectorFocusSnapshot(node){const el=document.activeElement;return node?.contains(el)?{el,start:el.selectionStart,end:el.selectionEnd}:null;}
+function restoreInspectorFocus(saved){if(!saved?.el.isConnected)return;saved.el.focus({preventScroll:true});if(Number.isInteger(saved.start)&&Number.isInteger(saved.end))saved.el.setSelectionRange?.(saved.start,saved.end);}
+function syncCodingInspectorLayout(wide){
+ const grid=$('.work-grid.coding-single'),dlg=$('#dialog');if(!grid||!doc())return;
+ const node=inspectorSurface(),focus=inspectorFocusSnapshot(node),aside=grid.querySelector('.coding-inspector');
+ if(wide){
+  const wasDrawer=dlg?.open&&dlg.dataset.workflow==='coding-inspector';
+  const top=wasDrawer?dlg.querySelector('.modal-body').scrollTop:parkedInspector?.top||0;
+  let dock=aside;if(!dock){dock=document.createElement('aside');dock.className='coding-inspector';dock.setAttribute('aria-label',inspectorTitle());grid.appendChild(dock);}
+  dock.appendChild(node);dock.scrollTop=top;
+  if(wasDrawer){codingInspector.drawer=false;delete dlg.dataset.workflow;dlg.close();dlg.innerHTML='';}
+  restoreInspectorFocus(focus);
+ }else if(aside){
+  parkedInspector.top=aside.scrollTop;node.remove();aside.remove();
+  if(focus&&!dlg?.open&&!$('#code-popup')){openCodingInspector(false,true);restoreInspectorFocus(focus);}
+ }
+}
 function refreshInspectorReadout(){const target=$('#inspector-readout');if(target)target.innerHTML=inspectorSelectionHtml();}
 function refreshInspector(){
   const host=$('#coding-inspector-body'),dlg=$('#dialog');
@@ -404,12 +429,14 @@ function refreshInspector(){
   else if(dlg?.open&&dlg.dataset.workflow==='coding-inspector')dlg.querySelector('.modal-body').innerHTML=inspectorBodyHtml()+'<div id="modal-error" role="alert"></div>';
   const a=inspectorCurrent();previewCoding(codingInspector.ids.length?codingInspector.ids:a?[a.id]:[]);
 }
-function openCodingInspector(protect=true){
+function openCodingInspector(protect=true,preserve=false){
   if(protect)beginReadingSearch();
   if(inspectorWide()){$('#inspector-search')?.focus({preventScroll:true});return;}
+  const node=inspectorSurface();if(!node)return;if(!preserve)node.innerHTML=inspectorBodyHtml();
   codingInspector.drawer=true;
-  modal(inspectorTitle(),inspectorBodyHtml(),`<button data-action="inspect-close">${QT('inspectReturn','\u2190 Continue coding')}</button>`);
-  $('#dialog').dataset.workflow='coding-inspector';
+  modal(inspectorTitle(),' ',`<button data-action="inspect-close">${QT('inspectReturn','\u2190 Continue coding')}</button>`);
+  const dlg=$('#dialog');dlg.dataset.workflow='coding-inspector';dlg.querySelector('.modal-body').prepend(node);
+  if(parkedInspector?.top)dlg.querySelector('.modal-body').scrollTop=parkedInspector.top;
   $('#inspector-search')?.focus({preventScroll:true});
 }
 Object.assign(_T.zh,{inspectorTitle:'主题／类别／编码',inspectPrevious:'上一处原句',inspectNext:'下一处原句',inspectHint:'选择树节点或高亮原句，正文保持可见。',inspectPassage:'所选原句',inspectSelection:'当前选择',inspectMatches:'处原句（当前文档）',inspectNoMatch:'当前文档没有匹配的已编码原句。',inspectHidden:'当前筛选隐藏了这处原句。',inspectDetails:'详情与编辑',inspectEdit:'编辑编码／备忘录',inspectFilter:'仅显示匹配原句',inspectViews:'编码面板',inspectReturn:'← 继续编码',inspectHere:'在此继续',inspectReviewStatus:'建议状态'});
@@ -638,7 +665,7 @@ function jumpReadingOverview(full=false){
 function focusReadingOverviewSource(){
   if(!overviewPreviewNavigation()||state.sourceFocus||!readingOverviewNav.focusPending)return;
   scrollReadingParagraph(readingOverviewNav.start,true);
-  if(readingOverviewFocus){const target=document.querySelector('.overview-source-target');if(target){for(let pass=0;pass<2;pass++){const pane=$('#document-pane'),tools=$('.document-tools'),top=Math.max($('.reading-dock').getBoundingClientRect().bottom,pane.getBoundingClientRect().top,getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0),delta=target.getBoundingClientRect().top-top;if(getComputedStyle(pane).overflowY==='auto')pane.scrollTop+=delta;else window.scrollBy({top:delta,behavior:'instant'});}target.focus({preventScroll:true});}previewCoding(readingOverviewFocus.ids);}
+  if(readingOverviewFocus){const target=document.querySelector('.overview-source-target');if(target){for(let pass=0;pass<2;pass++){const pane=$('#document-pane'),scroller=readingScrollContainer(),tools=$('.document-tools'),top=Math.max($('.reading-dock').getBoundingClientRect().bottom,pane.getBoundingClientRect().top,getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0),delta=target.getBoundingClientRect().top-top;if(scroller)scroller.scrollTop+=delta;else window.scrollBy({top:delta,behavior:'instant'});}target.focus({preventScroll:true});}previewCoding(readingOverviewFocus.ids);}
   readingOverviewNav.focusPending=false;
   updateReadingPosition();
 }
@@ -652,6 +679,14 @@ document.addEventListener('click',e=>{const map=e.target.closest?.('#reading-ove
 document.addEventListener('change',e=>{if(e.target.id==='overview-source-scope'){readingOverview.sourceScope=e.target.value;readingOverview.sourcePage=0;renderReadingOverview();}});
 
 let readingMounted=null,readingFrame=0,readingSearchReturn=null;
+function readingScrollContainer(){
+ let element=$('#document-pane');
+ while(element&&element!==document.body&&element!==document.documentElement){
+  if(['auto','scroll'].includes(getComputedStyle(element).overflowY)&&element.scrollHeight>element.clientHeight+1)return element;
+  element=element.parentElement;
+ }
+ return null;
+}
 function readingViewportTop() {
   const pane=$('#document-pane'),dock=$('.reading-dock');if(!pane||!dock)return null;
   const tools=$('.document-tools'),toolsBottom=tools&&getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0;
@@ -684,6 +719,7 @@ function readingSearchGesture(event) {
   const region=['wheel','touchmove','touchend'].includes(event.type)?'#document-pane':'#reader';
   if(!readingMounted||readingMounted.filtered||!event.target.closest?.(region)||event.target.closest('button,input,textarea,select,.document-tools,#reading-overview'))return;
   if((event.type==='keydown'||event.type==='keyup')&&(!['Home','End','PageUp','PageDown','ArrowUp','ArrowDown',' '].includes(event.key)||event.target.isContentEditable))return;
+  cancelReadingWindow();
   if(document.activeElement?.id==='search')document.activeElement.blur();
   readingSearchReturn=null;const mounted=readingMounted;
   const sample=()=>{
@@ -706,7 +742,60 @@ document.addEventListener('touchmove',readingSearchGesture,{passive:true});
 document.addEventListener('touchend',readingSearchGesture,{passive:true});
 document.addEventListener('keydown',readingSearchGesture);
 document.addEventListener('keyup',readingSearchGesture);
+// Source-bound window recovery is ephemeral. It never marks a paragraph as read.
+let readingWindowRestore=null,readingWindowFrame=0,readingWindowTimer=0;
+let readingWindowSize={width:window.innerWidth,height:window.innerHeight};
+function readingWindowChanging(){
+ if(validReadingWindow(readingWindowRestore))return true;
+ if(readingMounted&&((Number.isFinite(readingWindowSize.width)&&window.innerWidth!==readingWindowSize.width)||(Number.isFinite(readingWindowSize.height)&&window.innerHeight!==readingWindowSize.height))){rememberReadingWindow();return true;}
+ return false;
+}
+function validReadingWindow(saved){
+ const d=doc();return !!(saved&&d&&state.view==='coding'&&state.project?.id===saved.projectId&&d.id===saved.documentId&&d.text===saved.text&&readingMounted===saved.mounted&&segments(d.text).some(p=>p.start===saved.start));
+}
+function rememberReadingWindow(){
+ if(validReadingWindow(readingWindowRestore))return readingWindowRestore;
+ if(readingWindowRestore)cancelReadingWindow();
+ const d=doc(),m=readingMounted;if(!d||!m||state.view!=='coding'||m.projectId!==state.project?.id||m.document.id!==d.id||m.document.text!==d.text)return null;
+ let start=m.start;
+ if($('#code-popup')&&state.selection?.document_id===d.id){const p=segments(d.text).find(p=>p.start<=state.selection.start&&state.selection.start<p.end);if(p)start=p.start;}
+ if(!Number.isInteger(start)||!segments(d.text).some(p=>p.start===start))return null;
+ readingWindowRestore={projectId:state.project.id,documentId:d.id,text:d.text,mounted:m,start,
+  restore:!readingOverview.open&&!document.activeElement?.closest?.('.reading-details, #reading-overview, .document-tools')};
+ return readingWindowRestore;
+}
+function cancelReadingWindow(){
+ if(readingWindowFrame&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(readingWindowFrame);
+ if(readingWindowTimer)clearTimeout(readingWindowTimer);
+ readingWindowFrame=0;readingWindowTimer=0;readingWindowRestore=null;readingWindowSize={width:window.innerWidth,height:window.innerHeight};
+}
+function finishReadingWindow(saved){
+ if(saved!==readingWindowRestore)return;
+ if(!validReadingWindow(saved)){cancelReadingWindow();return;}
+ if(document.visibilityState==='hidden')return;
+ if(saved.restore)scrollReadingParagraph(saved.start);
+ cancelReadingWindow();readingWindowSize={width:window.innerWidth,height:window.innerHeight};
+ if(saved.restore)updateReadingPosition();
+ positionCodePopup();
+}
+function restoreReadingWindow(){
+ const saved=rememberReadingWindow();if(!saved||document.visibilityState==='hidden')return;
+ if(readingWindowFrame&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(readingWindowFrame);
+ if(readingWindowTimer)clearTimeout(readingWindowTimer);
+ readingWindowFrame=requestAnimationFrame(()=>{
+  readingWindowFrame=0;if(!validReadingWindow(saved))return;
+  if(saved.restore)scrollReadingParagraph(saved.start);positionCodePopup();
+ });
+ // Keep the first anchor through a resize burst and settle after sticky reflow.
+ readingWindowTimer=setTimeout(()=>finishReadingWindow(saved),150);
+}
+function onCodingWindowResize(){
+ rememberReadingWindow();const wide=inspectorWide();
+ if(wide!==inspectorWasWide){inspectorWasWide=wide;if(state.project&&state.view==='coding')syncCodingInspectorLayout(wide);}
+ restoreReadingWindow();positionCodePopup();
+}
 function captureReadingPosition() {
+  if(readingWindowChanging())return;
   if(inspectorReturn()||!readingMounted||readingMounted.filtered||readingOverview.open||overviewPreviewNavigation()||document.activeElement?.id==='search'||readingSearchPosition({id:readingMounted.projectId},readingMounted.document))return;
   const paragraph=readingParagraph();if(!paragraph)return;
   writeReadingPosition({id:readingMounted.projectId},readingMounted.document,Number(paragraph.dataset.start));
@@ -718,6 +807,7 @@ function updateReadingPath() {
   const label=$('#reading-path-label');if(label)label.textContent=QT(state.codeFilter?'readingFilter':codingPreview.length||state.sourceFocus?'readingFocused':'readingHere',state.codeFilter?'Filter':codingPreview.length||state.sourceFocus?'Focused coding':'Codings here');
 }
 function updateReadingPosition() {
+  if(readingWindowChanging())return;
   if(!readingMounted||!$('#reading-document'))return;
   const paragraph=readingParagraph(),box=paragraph?.getBoundingClientRect(),pane=$('#document-pane')?.getBoundingClientRect();
   const inView=box&&box.top<Math.min(window.innerHeight,pane?.bottom||window.innerHeight);
@@ -737,18 +827,19 @@ function updateReadingPosition() {
   const resume=$('[data-action="reading-resume"]');if(resume)resume.disabled=!readReadingPosition(state.project,doc());
 }
 function scrollReadingParagraph(start,focus=false) {
-  const paragraph=[...document.querySelectorAll('#reader .paragraph')].find(p=>Number(p.dataset.start)===start),pane=$('#document-pane'),dock=$('.reading-dock');
+  const paragraph=[...document.querySelectorAll('#reader .paragraph')].find(p=>Number(p.dataset.start)===start),pane=$('#document-pane'),dock=$('.reading-dock'),scroller=readingScrollContainer();
   if(!paragraph||!pane||!dock)return;
   // A phone's dock enters sticky positioning during the first movement.
   // Re-measure once so restoration aligns with its final viewport position.
   for(let pass=0;pass<2;pass++) {
     const tools=$('.document-tools'),toolsBottom=tools&&getComputedStyle(tools).position==='sticky'?tools.getBoundingClientRect().bottom:0;
     const top=Math.max(dock.getBoundingClientRect().bottom,pane.getBoundingClientRect().top,toolsBottom),delta=paragraph.getBoundingClientRect().top-top;
-    if(getComputedStyle(pane).overflowY==='auto')pane.scrollTop+=delta;else window.scrollBy({top:delta,behavior:'instant'});
+    if(scroller)scroller.scrollTop+=delta;else window.scrollBy({top:delta,behavior:'instant'});
   }
   if(focus){paragraph.tabIndex=-1;paragraph.focus({preventScroll:true});}
 }
 function mountReading(restore=true) {
+  readingWindowSize={width:window.innerWidth,height:window.innerHeight};
   readingMounted=null;codingPreview=[];
   readingMarkTarget=null;readingFocusedStart=null;
   if(state.view!=='coding'||!doc()||!$('#reading-document'))return;
@@ -770,7 +861,7 @@ function mountReading(restore=true) {
   }
 }
 function scheduleReadingPosition(event) {
-  if(event&&event.type==='scroll'&&event.target!==document&&event.target!==$('#document-pane'))return;
+  if(event&&event.type==='scroll'&&event.target!==document&&event.target!==$('#document-pane')&&event.target!==readingScrollContainer())return;
   if(readingFrame||!readingMounted)return;
   readingFrame=requestAnimationFrame(()=>{readingFrame=0;updateReadingPosition();});
 }
@@ -2266,11 +2357,12 @@ document.addEventListener('keyup',e=>{if(e.shiftKey&&e.target.closest('#reader')
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#code-popup')&&!e.target.closest('#reader')&&!e.target.closest('dialog'))closeCodePopup();});
 window.addEventListener('scroll',()=>positionCodePopup(),true);
 let inspectorWasWide=inspectorWide();
-window.addEventListener('resize',()=>{positionCodePopup();const wide=inspectorWide();if(wide!==inspectorWasWide&&state.project&&state.view==='coding'){inspectorWasWide=wide;const dlg=$('#dialog');if(dlg?.open&&dlg.dataset.workflow==='coding-inspector'){delete dlg.dataset.workflow;dlg.close();dlg.innerHTML='';}codingInspector.drawer=false;render();}});
+window.addEventListener('resize',onCodingWindowResize);
 window.addEventListener('scroll',scheduleReadingPosition,true);
-window.addEventListener('resize',()=>{if(readingMounted&&!readingMounted.filtered&&readingMounted.start!==null)scrollReadingParagraph(readingMounted.start);scheduleReadingPosition();});
-window.addEventListener('pagehide',captureReadingPosition);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')captureReadingPosition();});
+window.addEventListener('pagehide',rememberReadingWindow);
+window.addEventListener('blur',rememberReadingWindow);
+window.addEventListener('focus',()=>{if(readingWindowRestore)restoreReadingWindow();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')rememberReadingWindow();else if(readingWindowRestore)restoreReadingWindow();});
 async function init(){try{
   const boot=await api('/api/bootstrap');state.token=boot.token;state.projects=boot.projects;state.config=boot.config;
   const id=selectedStartupProject(state.projects,state.config.public_demo,state.config.hosted);if(id)await loadProject(id);else render();

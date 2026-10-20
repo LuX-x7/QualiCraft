@@ -10,6 +10,10 @@ Start at **https://qt-review.taila524d0.ts.net/**. Allow 10–15 minutes. The we
 4. **Review an unwanted import.** Open Manage documents, find the source by name and inspect its ID/counts. View it first; Remove requires a separate review and checkbox. Cancel is the default. Recovery points restore a separate project. Current QCA mappings block removal until explicitly revised; frozen outputs keep their original evidence.
 5. **Save and recover.** Download Notebook/Word, a report, figure/code bundles and project JSON. Refresh or sign in again to check server saving; restore JSON as a new project. Word is editable, but edits in Word do not update QT.
 
+## Current window-recovery check
+
+The Coding reader now keeps its paragraph, selected source text, code search and unsaved forms when resizing or switching between controlled Mac Chrome windows. One tree moves between the desktop panel and narrow drawer. Window changes do not save research edits. Automated tests do not replace a new-user review; Windows remains deferred.
+
 ## Discussion
 
 - Are the source quotations, tree paths and selected method clear enough to support interpretation?
