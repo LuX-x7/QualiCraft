@@ -1,6 +1,6 @@
 # UX82 — 75D 完整候选编码浏览与选择
 
-2026-10-20。状态：已实现／测试通过；线上同步等待重新建立SSH。仅Bologna隔离副本，不改后端、项目格式、统计定义、CSV、绘图或导出格式，不推送GitHub，Windows暂缓。
+2026-10-20。状态：已实现／测试通过／已上线QT。仅Bologna隔离副本，不改后端、项目格式、统计定义、CSV、绘图或导出格式，不推送GitHub，Windows暂缓。
 
 ## 修复前证据
 
@@ -35,11 +35,23 @@
 
 不把触摸模拟写成真实手机系统验收；没有真实新手／导师签字、VoiceOver或Windows认证。真实新手能否独立完成仍留75E。
 
-## 线上同步门禁
+## 线上同步与复核（已完成）
 
-旧专用SSH通道失去响应，新的公钥连接返回`Permission denied (publickey,password)`。服务器指定SSH端口TCP／banner可达，不是据此判定网站故障。已向用户提供仅在自己终端输入密码的重新连接命令；不读取／保存密码。
+同步前旧专用SSH通道失去响应，新的公钥连接返回`Permission denied (publickey,password)`，失败输出保留。用户已在自己的终端重新建立专用连接；没有在聊天中收集或存储密码。
 
-连接恢复后，只同步QT `releases/ux72/web/app.js`、`web/style.css`，保留`QT/config/files-before-ux82-20261020/`回滚；不重启网关、不动其他项目、服务、隧道、网站静态发布、系统启动或Render。上线前先校验两份旧SHA，完成后核对线上响应字节，并用独立Bologna副本重跑14组。此项通过前不写“已上线”。
+只同步QT `releases/ux72/web/app.js`、`web/style.css`，保留`QT/config/files-before-ux82-20261020/`回滚；旧SHA先验证、新SHA及认证后的实际响应字节均与本地一致。不重启网关，不动其他项目、服务、隧道、网站静态发布、系统启动或Render。部署退出0：`raw/deployment.txt`／`hashes.json`。
+
+线上受控Chrome14组全部通过，命令退出0：`raw/browser-online.txt`、`after-online/results.json`。包含新建独立Bologna副本、真实鼠标拖选／末项点击、全部317及74结果、唯一完整叶编码Enter、More options路径和memo、首尾／翻页、故意503后明确重试、窄桌面及触摸模拟、刷新、浏览器JSON下载、健康恢复点。原19份文档、317条编码和建议不变，只有主动操作的6条精确范围标注增加；这些是验收操作，不是新的研究分析结论。
+
+正常控制台和页面脚本错误0；故意503保留在单独阶段。截图：`after-online/all-candidates-desktop.png`、`last-candidate-desktop.png`、`all-search-results.png`、`advanced-full-path.png`、`all-candidates-mobile.png`、`search-mobile.png`。
+
+| 单次观察 | 本地 | 线上QT |
+|---|---:|---:|
+| 客户端重新呈现317行（毫秒，无网络） | 12.7 | 13.1 |
+| 点击末项保存、收到提交回执（秒） | 1.212 | 1.568 |
+| 完整叶编码名Enter保存（秒） | 1.162 | 1.536 |
+
+以上是单次观察，非冷启动／p95／所有网络速度承诺。只读浏览没有写入，保存仍使用原提交回执和真实快照状态；后端保存和绘图路径保持原样。
 
 ## 后续
 
