@@ -484,55 +484,35 @@ def run(args):
 
             # ---- S8 · five figure kinds ---------------------------------
             def s8():
-                """Every figure kind draws, and states its counting unit.
+                """Choose visible types, explicitly generate and read real SVG credits.
 
-                The control's option values are opaque ids, so the visible label
-                is read alongside them: a log line reading
-                "297d6bb8...:MISSING" tells a reader nothing about which figure
-                failed.
+                A valid empty co-occurrence is recorded separately from a
+                rendering failure; the original analysis rule is unchanged.
                 """
                 s.click('[data-action="view"][data-view="plotting"]')
-                s.page.wait_for_timeout(2400)
-                pairs = s.page.evaluate("""() => {
-                  // By option content, never by index: index 0 is the
-                  // project switcher, which is how the previous run selected
-                  // the wrong control entirely.
-                  const sel = [...document.querySelectorAll('select')].find(
-                    (x) => [...x.options].filter((o) => /code frequency|co-occurrence|accumulation/i.test(o.textContent)).length >= 3);
-                  if (!sel) return [];
-                  return [...sel.options].map((o) => ({ value: o.value, label: o.textContent.trim() }));
-                }""")
+                pairs = s.page.evaluate("""() => [...document.querySelectorAll('input[data-plot="kind"]')]
+                  .map(x => ({value:x.value,label:x.closest('label').querySelector('strong').textContent.trim()}))""")
                 results = []
-                for pair in pairs[:5]:
-                    # Re-locate every time. The view body is rebuilt on each
-                    # render — measured: an id survives 1.5s idle but is gone
-                    # after a view switch, and select_option itself fires a
-                    # change that re-renders. Caching the locator across that
-                    # is what timed out.
-                    s.page.evaluate("""(value) => {
-                      const sel = [...document.querySelectorAll('.view-body select')].find(
-                        (x) => [...x.options].some((o) => /code frequency|co-occurrence|accumulation/i.test(o.textContent)));
-                      if (sel) sel.value = value;
-                    }""", pair["value"])
-                    s.page.dispatch_event(".view-body select:nth-of-type(1)", "change") if False else None
-                    s.page.evaluate("""() => {
-                      const sel = [...document.querySelectorAll('.view-body select')].find(
-                        (x) => [...x.options].some((o) => /code frequency|co-occurrence|accumulation/i.test(o.textContent)));
-                      if (sel) sel.dispatchEvent(new Event('change', { bubbles: true }));
-                    }""")
-                    s.page.wait_for_timeout(2800)
-                    drawn = s.page.evaluate(
-                        "!!document.querySelector('.plot-stage svg, .plot-stage img, .plot-preview svg, .plot-preview img')")
-                    credit = s.page.evaluate("""() => {
-                      const t = document.querySelector('.plot-stage, .plot-preview')?.innerText || '';
-                      return /not participants|not correlation|not saturation|descriptive/i.test(t);
-                    }""")
-                    results.append(f"{pair['label']}:{'drawn' if drawn else 'NOT-DRAWN'}"
-                                   f"{'/unit-stated' if credit else '/NO-UNIT-STATEMENT'}")
-                ok = (len(results) >= 5
-                      and all("NOT-DRAWN" not in r for r in results)
-                      and all("NO-UNIT-STATEMENT" not in r for r in results))
-                return ok, "; ".join(results) or "no figure-kind control found"
+                for pair in pairs:
+                    s.page.locator('input[data-plot="kind"][value="'+pair['value']+'"]').check()
+                    s.page.get_by_role('button', name='Generate preview', exact=True).click()
+                    s.page.wait_for_function("() => ['ready','empty','error'].includes(plotUi.status)", timeout=180000)
+                    status = s.page.evaluate('() => plotUi.status')
+                    if status == 'empty' and pair['value'] == 'cooccurrence':
+                        explanation = s.page.locator('.plot-stage').inner_text()
+                        results.append(pair['label']+(':empty-explained' if 'top ' in explanation.lower() else ':NOT-DRAWN'))
+                        continue
+                    drawn = s.page.evaluate("() => {const i=document.querySelector('#plot-preview');return !!(i&&i.complete&&i.naturalWidth)}")
+                    # Read the actual SVG credit, not an invented HTML caption.
+                    credit = s.page.evaluate("""async () => {
+                      const source=plotPreviewSources.get(document.querySelector('#plot-preview'));
+                      if(!source)return false;
+                      const svg=new DOMParser().parseFromString(await source.text(),'image/svg+xml');
+                      return /not participants|not correlation|not saturation|descriptive/i.test(svg.documentElement.textContent);
+                    }""") if drawn else False
+                    results.append(pair['label']+(':'+status if drawn else ':NOT-DRAWN')+('/unit-stated' if credit else '/NO-UNIT-STATEMENT'))
+                ok = (len(results) == 5 and all('NOT-DRAWN' not in item and 'NO-UNIT-STATEMENT' not in item for item in results))
+                return ok, "; ".join(results) or "no figure-kind choices found"
 
             # ---- S9 · exports -------------------------------------------
             def s9():

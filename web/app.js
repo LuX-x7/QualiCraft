@@ -1033,7 +1033,7 @@ function render() {
     <aside class="sidebar"><div class="brand">${qtMark()}<span class="version">ALPHA</span></div>
     <div class="section-label">${QT('project','PROJECT')}</div><select id="project-select" class="project-select" aria-label="${QT('switchProject','Switch project')}">${state.projects.map(x=>`<option value="${esc(x.id)}" ${x.id===p.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
     <button class="link new-project" data-action="projects">${QT('newProject','+ New / import project')}</button>
-    <nav class="nav" aria-label="Main navigation">${[['coding','grid',QT('navCoding','Coding workspace')],['insights','chart',QT('navInsights','Insights')],['plotting','image',QT('figures','Figures')],['audit','history',QT('navAudit','Audit trail')]].filter(([view])=>view==='coding'||hasBlock(view)).map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}" aria-label="${t}"${state.view===view?' aria-current="page"':''}>${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
+    <nav class="nav" aria-label="Main navigation">${[['coding','grid',QT('navCoding','Coding workspace')],['insights','chart',QT('navInsights','Insights')],['plotting','image',QT('figures','Figures')],['audit','history',QT('navAudit','Audit trail')]].filter(([view])=>view==='coding'||view==='plotting'||hasBlock(view)).map(([view,i,t])=>`<button class="${state.view===view?'active':''}" data-action="view" data-view="${view}" title="${t}" aria-label="${t}"${state.view===view?' aria-current="page"':''}>${icon(i)}<span class="nav-label">${t}</span></button>`).join('')}</nav>
     <div class="sidebar-scroll">
     <input id="side-filter" class="side-filter" type="search" autocomplete="off" spellcheck="false" aria-label="${QT('filterSidebar','Filter documents and codes')}" placeholder="${QT('filterSidebar','Filter documents and codes')}" value="${esc(state.sideFilter)}">
     <div id="side-list">${sideListHtml()}</div>
@@ -1115,6 +1115,9 @@ function insightsView() {
   return `<div class="view-body insights-body"><div class="qca-entry"><div><strong>Comparative QCA</strong><p>Define cases and calibrate sets independently of descriptive coding counts.</p></div><button data-action="open-qca">Open QCA workspace</button></div>${nav}${state.insightsTab==='frequency'?frequency:state.insightsTab==='matrix'?matrix:map}</div>`;
 }
 let plotBlobUrl = null;
+let plotSerial=0;
+let plotAppearanceOpen=false;
+let plotUi={key:null,status:'idle',blob:null,serial:0,controller:null};
 const plotPreviewSources = new WeakMap();
 
 function showPlotViewer(opener) {
@@ -1193,119 +1196,138 @@ function showPlotViewer(opener) {
   dialog.showModal(); zoom(1, 'actual', true); viewport.focus();
 }
 
-async function loadPlotPreview() {
-  const img = document.getElementById('plot-preview');
-  if (!img) return;
-  if (plotBlobUrl) { URL.revokeObjectURL(plotBlobUrl); plotBlobUrl = null; }
-  try {
-    const response = await fetch(projectUrl('plot') + '?' + plotQuery(),
-                                 {headers: {'X-QualiCraft-Token': state.token}});
-    if (!response.ok) {
-      const problem = await response.json().catch(() => ({error: 'The figure could not be produced.'}));
-      throw new Error(problem.error || 'The figure could not be produced.');
-    }
-    const source = await response.blob();
-    if (!img.isConnected) return; // A later setting or view owns the visible preview.
-    plotPreviewSources.set(img, source);
-    plotBlobUrl = URL.createObjectURL(source);
-    img.addEventListener('load', () => {
-      const button = document.querySelector('[data-action="plot-view"]');
-      if (img.isConnected && img.naturalWidth && button) button.disabled = false;
-    }, {once:true});
-    img.src = plotBlobUrl;
-    img.classList.remove('loading');
-  } catch (error) {
-    const stage = img.parentElement;
-    if (stage) {
-      // Co-occurrence is the one figure that can be empty while the project has
-      // codings to spare. It counts pairs of codes whose character ranges
-      // overlap inside the same interview, so codes placed on separate passages
-      // never form a pair — the figure stays blank however much has been coded.
-      // The backend says "no data at this setting; widen the filter", which is
-      // accurate and tells the reader nothing about what would change it.
-      const isCooccurrence = state.plotOptions && state.plotOptions.kind === 'cooccurrence';
-      stage.innerHTML = isCooccurrence
-        ? '<div class="plot-empty"><strong>' + QT('plotNoPairs', 'No overlapping code ranges') + '</strong>'
-          + '<p>' + QT('plotNoPairsHint', 'This figure counts codes that were applied to overlapping character ranges in the same interview. Two codes on separate passages are never a pair, so the figure stays empty however many codings the project has. Apply two codes to the same stretch of text, or choose a different figure type.') + '</p></div>'
-        : '<div class="plot-empty"><strong>' + QT('plotCouldNotDraw', 'Could not draw the figure') + '</strong><p>'
-          + esc(error.message) + '</p></div>';
-    }
-  }
+function figureKinds(){return [
+ ['frequency',QT('kindFrequency','Code frequency'),plotWords('Compare codes.','比较编码。')],
+ ['coverage',QT('kindCoverage','Code × interview'),plotWords('Compare interviews.','比较访谈。')],
+ ['cooccurrence',QT('kindCooccurrence','Co-occurrence heatmap'),plotWords('Inspect code pairs.','检查编码对。')],
+ ['hierarchy',plotWords('Code hierarchy','编码层级'),plotWords('Compare saved groups.','比较已有分组。')],
+ ['accumulation',QT('kindAccumulation','Code accumulation'),plotWords('Follow filename order.','按文件名顺序查看。')]
+];}
+function plotWords(en,zh){return QT_LANG==='zh'?zh:en;}
+function plotDefaults(){if(!state.plotOptions)state.plotOptions={kind:'frequency',level:'code',mode:'overlap',palette:'YlGnBu',cluster:1,method:'ward',annotate:1,top:15,title:'',fontsize:9};}
+function plotKey(){return JSON.stringify([state.project.id,state.project.updated_at,plotQuery()]);}
+function resetPlotUi(key){
+  plotUi.controller?.abort();if(plotBlobUrl)URL.revokeObjectURL(plotBlobUrl);plotBlobUrl=null;
+  plotUi={key,status:'idle',blob:null,error:null,serial:++plotSerial,controller:null,elapsed:null,exporting:false,download:null};
 }
-function plotQuery() {
-  const o = state.plotOptions;
-  const q = new URLSearchParams();
-  Object.keys(o).forEach(k => { if (o[k] !== '' && o[k] !== null) q.set(k, String(o[k])); });
-  return q.toString();
+function ensurePlotUi(){plotDefaults();const key=plotKey();if(plotUi.key!==key)resetPlotUi(key);}
+function plotPrerequisite(){
+ if(!hasBlock('plotting'))return {kind:'disabled',title:plotWords('Figures are off for this project','本项目未启用图表'),body:plotWords('Enable Figures to use these five views. Your coding stays unchanged.','启用图表即可使用这五种视图，已有编码保持不变。')};
+ if(!state.config.plotting?.available)return {kind:'unavailable',title:plotWords('The drawing tools are unavailable','绘图依赖尚不可用'),body:state.config.hosted?plotWords('The server drawing tools need attention. Your coding is saved; contact the QT host.','服务器绘图依赖需要检查。编码已保存，请联系 QT 管理者。'):plotWords('Install the drawing dependency and restart the local workbench.','安装绘图依赖后重新启动本地工作台。')};
+ const ids=new Set(state.project.codes.map(c=>c.id));
+ if(!state.project.annotations.some(a=>ids.has(a.code_id)))return {kind:'no-codings',title:plotWords('No saved codings','尚无已保存的编码标注'),body:plotWords('Return to Coding and code a passage. Pending suggestions do not count as saved coding.','返回编码工作区标注一段原句。待审核建议不计为已保存标注。')};
+ return null;
 }
-function plottingView() {
-  const conf = state.config.plotting || {};
-  if (!state.plotOptions) state.plotOptions = {kind:'frequency', level:'code', mode:'overlap',
-    palette:'YlGnBu', cluster:1, method:'ward', annotate:1, top:15, title:'', fontsize:9};
-  const o = state.plotOptions;
-  const codings = state.project.annotations.length;
-  const ready = conf.available && codings >= 2;
-  const select = (key, choices) => '<select data-plot="' + key + '">'
-    + choices.map(([v, label]) => '<option value="' + v + '"' + (String(o[key]) === String(v) ? ' selected' : '') + '>'
-        + esc(label) + '</option>').join('') + '</select>';
-
-  const field = (key, label, choices) => `<label class="field">${label}` + select(key, choices) + '</label>';
-  const paletteNames = ['YlGnBu','viridis','Blues','Greens','magma','rocket','mako','flare','crest'];
-  const kindChoices = [['frequency',QT('kindFrequency','Code frequency')],
-    ['coverage',QT('kindCoverage','Code × interview')],
-    ['cooccurrence',QT('kindCooccurrence','Co-occurrence heatmap')],
-    ['hierarchy',QT('kindHierarchy','Theme hierarchy')],
-    ['accumulation',QT('kindAccumulation','Code accumulation')]];
-  const kindLabel = (kindChoices.find(([v]) => v === o.kind) || kindChoices[0])[1];
-  const onOff = [['1',QT('on','On')],['0',QT('off','Off')]];
-
-  // Only the controls the chosen figure actually reads. The panel used to show
-  // all of them at once, so most of them looked broken: `level` and `unit` were
-  // option names the server had stopped using, and a frequency bar chart has no
-  // use for a palette or a clustering method.
-  const controls = '<div class="plot-controls">'
-    + field('kind', QT('figKind','Figure type'), kindChoices)
-    + (o.kind === 'frequency'
-        ? field('level', QT('groupBy','Group by'), [['code',QT('codes','Codes')],['theme',QT('themes','Themes')]])
-        : '')
-    + (o.kind === 'cooccurrence'
-        ? field('mode', QT('countWithin','Count within'),
-                [['overlap',QT('withinOverlap','Overlapping text')],['unit',QT('withinPassage','The same passage')]])
-        : '')
-    + (o.kind === 'coverage' || o.kind === 'cooccurrence'
-        ? field('top', QT('topN','Top N codes'), [['10','10'],['15','15'],['20','20'],['30','30'],['40','40']])
-        : '')
-    + (o.kind === 'coverage' || o.kind === 'cooccurrence'
-        ? field('palette', QT('palette','Palette'),
-                paletteNames.map(n => [n, n === 'YlGnBu' ? n : n[0].toUpperCase() + n.slice(1)]))
-        : '')
-    + (o.kind === 'cooccurrence' ? field('cluster', QT('clustering','Clustering'), onOff) : '')
-    + (o.kind === 'cooccurrence' ? field('method', QT('linkage','Linkage'), [['ward','Ward'],['complete','Complete'],['average','Average'],['single','Single']]) : '')
-    + (o.kind === 'cooccurrence' ? field('annotate', QT('showCounts','Show counts'), [['1',QT('yes','Yes')],['0',QT('no','No')]]) : '')
-    + `<label class="field">${QT('baseFontSize','Base font size')}<select data-plot="fontsize">`
-      + [7,8,9,10,11,12].map(n => '<option value="' + n + '"' + (Number(o.fontsize) === n ? ' selected' : '') + '>' + n + ' pt</option>').join('')
-      + '</select></label>'
-    + `<label class="field">${QT('titleOpt','Title')}<input type="text" data-plot="title" value="` + esc(o.title) + `" placeholder="${QT('optional','Optional')}"></label>`
-    + '</div>';
-
-  const stage = !conf.available
-    ? `<div class="plot-empty"><strong>${QT('plotNotInstalled','The plotting workbench is not installed')}</strong>`
-      + `<p>${QT('plotInstallHint','Figures are drawn by a Python script rather than in the browser, so the same script can be exported and re-run by a co-author. Install it and reopen this view:')}</p>`
-      + '<pre>' + esc(conf.install || 'pip install matplotlib') + '</pre></div>'
-    : codings < 2
-      ? `<div class="plot-empty"><strong>${QT('plotNotEnough','Not enough codings yet')}</strong><p>${QT('plotNeedTwo','A figure needs at least two coded passages before there is anything to plot.')}</p></div>`
-      : '<img class="plot-preview loading" id="plot-preview" alt="' + esc(kindLabel) + '">';
-
-  return `<div class="view-body"><section class="panel"><h2>${QT('navPlotting','Figures')}</h2>`
-    + `<p>${QT('plotDesc','The figure is drawn by a script on the server, not in the browser, so the preview you see is exactly what the exported script produces.')}</p>`
-    + '<div class="plot-grid">' + controls + '<div class="plot-preview-wrap">'
-    + (ready ? `<div class="plot-preview-tools"><button type="button" data-action="plot-view" disabled>${QT('plotEnlarge')}</button></div>` : '')
-    + '<div class="plot-stage">' + stage + '</div></div></div>'
-    + '<div class="plot-actions">'
-    + '<button class="primary" data-action="plot-export"' + (ready ? '' : ' disabled') + `>${QT('plotExportBtn','Download figure + script')}</button>`
-    + `<span class="muted">${QT('plotExportNote','A folder with the counts as CSV, the script, and the figure as SVG, PDF and 300 dpi PNG.')}</span>`
-    + '</div></section></div>';
+function plotFailure(status,message,options){
+ const body=String(message||plotWords('The request could not complete.','请求未能完成。'));
+ if(status===400&&/^No overlapping code ranges/.test(body)&&options.kind==='cooccurrence'){
+  const unit=options.mode==='unit',top=Math.min(60,Math.max(1,Number(options.top)||15));
+  return {state:'empty',title:unit?plotWords('No shared-passage pairs','没有同段落编码对'):plotWords('No overlapping pairs','没有重叠编码对'),body:(unit?plotWords(`Among the top ${top} codes, no distinct code pair occurs in the same passage.`,`前 ${top} 个编码中没有同段落的不同编码对。`):plotWords(`Among the top ${top} codes, no distinct code pair has overlapping ranges.`,`前 ${top} 个编码中没有区间重叠的不同编码对。`))+' '+plotWords('This is an empty result. Review the coding, increase Top N, or choose another figure. Change the rule only if it fits your method.','这是空结果。可检查已有编码、扩大前 N 个编码范围或选择其他图；仅在符合研究方法时更改规则。')};
+ }
+ if(status===400&&/^There is nothing to plot yet/.test(body))return {state:'empty',title:plotWords('No saved codings','尚无已保存的编码标注'),body:plotWords('Return to Coding to review the saved project.','返回编码工作区检查已保存项目。')};
+ if(status===400&&/^This figure has no data at this setting/.test(body))return {state:'empty',title:plotWords('No data for these settings','当前设置没有数据'),body:plotWords('Review the settings or choose another figure. Your saved coding is unchanged.','请检查设置或选择其他图，已保存编码不变。')};
+ return {state:'error',title:plotWords('Could not generate the preview','无法生成预览'),body};
 }
+function plotStatusText(){
+ const label=(figureKinds().find(k=>k[0]===state.plotOptions.kind)||figureKinds()[0])[1];
+ if(plotUi.exporting)return plotWords('Preparing download…','正在准备下载…');
+ if(plotUi.download)return plotUi.download;
+ if(plotUi.status==='loading')return plotWords(`Generating ${label}…`,`正在生成${label}…`);
+ if(plotUi.status==='ready')return plotWords(`Preview ready · ${plotUi.elapsed?.toFixed(1)} s`,`预览已生成 · ${plotUi.elapsed?.toFixed(1)} 秒`);
+ if(plotUi.status==='empty')return plotWords('Empty result · review the explanation below.','空结果 · 请查看下方说明。');
+ if(plotUi.status==='error')return plotWords('Preview failed · details below.','预览失败 · 请查看下方原因。');
+ return plotWords('Choose a figure, then generate its preview.','选择图表后生成预览。');
+}
+function updatePlotStatus(){
+ const output=document.getElementById('plot-status');if(output)output.textContent=plotStatusText();
+ const generate=document.querySelector('[data-action="plot-generate"]');if(generate)generate.disabled=!!plotPrerequisite()||plotUi.status==='loading';
+ const download=document.querySelector('[data-action="plot-export"]');if(download)download.disabled=plotUi.status!=='ready'||plotUi.exporting;
+ const stage=document.querySelector('.plot-stage');if(stage)stage.setAttribute('aria-busy',String(plotUi.status==='loading'));
+}
+function loadPlotPreview(){
+ if(state.view!=='plotting'){if(plotUi.status==='loading')resetPlotUi(plotUi.key);return;}
+ const img=document.getElementById('plot-preview');if(!img||!plotUi.blob)return;
+ const serial=plotUi.serial,key=plotUi.key;
+ plotPreviewSources.set(img,plotUi.blob);if(!plotBlobUrl)plotBlobUrl=URL.createObjectURL(plotUi.blob);
+ img.addEventListener('load',()=>{
+  if(!img.isConnected||plotUi.serial!==serial||plotUi.key!==key)return;
+  if(!img.naturalWidth)return;
+  if(plotUi.status==='loading'){plotUi.status='ready';plotUi.elapsed=(Date.now()-plotUi.started)/1000;plotUi.controller=null;}
+  img.classList.remove('loading');const button=document.querySelector('[data-action="plot-view"]');if(button)button.disabled=false;updatePlotStatus();
+ },{once:true});
+ img.addEventListener('error',()=>{
+  if(!img.isConnected||plotUi.serial!==serial)return;
+  plotUi.status='error';plotUi.error=plotFailure(0,plotWords('The returned preview could not be displayed. Try again.','返回的预览无法显示，请重试。'),state.plotOptions);plotUi.blob=null;render();
+ },{once:true});
+ img.src=plotBlobUrl;
+}
+async function generatePlotPreview(){
+ ensurePlotUi();if(plotPrerequisite()||plotUi.status==='loading')return;
+ const focusGenerate=document.activeElement?.dataset?.action==='plot-generate';
+ const options={...state.plotOptions},key=plotKey(),url=projectUrl('plot')+'?'+plotQuery();resetPlotUi(key);
+ const serial=plotUi.serial;plotUi.status='loading';plotUi.started=Date.now();plotUi.controller=new AbortController();const signal=plotUi.controller.signal;render();if(focusGenerate)document.getElementById('plot-status')?.focus({preventScroll:true});
+ const current=()=>state.view==='plotting'&&plotUi.key===key&&plotUi.serial===serial&&plotKey()===key;
+ try{
+  const response=await fetch(url,{headers:{'X-QualiCraft-Token':state.token},signal});
+  if(!response.ok){const problem=await response.json().catch(()=>({error:`HTTP ${response.status}`}));const error=new Error(problem.error||`HTTP ${response.status}`);error.status=response.status;throw error;}
+  const blob=await response.blob();if(!current())return;
+  plotUi.blob=blob;render();
+ }catch(error){
+  if(error.name==='AbortError'||!current())return;
+  plotUi.error=plotFailure(error.status,error.message,options);plotUi.status=plotUi.error.state;plotUi.controller=null;render();
+ }
+}
+function plotQuery(){const q=new URLSearchParams();Object.keys(state.plotOptions).forEach(k=>{const v=state.plotOptions[k];if(v!==''&&v!==null)q.set(k,String(v));});return q.toString();}
+function plottingView(){
+ ensurePlotUi();const conf=state.config.plotting||{},o=state.plotOptions,pre=plotPrerequisite(),kinds=figureKinds();
+ const kindLabel=(kinds.find(k=>k[0]===o.kind)||kinds[0])[1];
+ const select=(key,choices)=>`<select data-plot="${key}">`+choices.map(([v,label])=>`<option value="${v}"${String(o[key])===String(v)?' selected':''}>${esc(label)}</option>`).join('')+'</select>';
+ const field=(key,label,choices)=>`<label class="field">${label}${select(key,choices)}</label>`;
+ const onOff=[['1',QT('on','On')],['0',QT('off','Off')]],palettes=['YlGnBu','viridis','Blues','Greens','magma','rocket','mako','flare','crest'];
+ const choices=`<fieldset class="plot-kinds"><legend>${plotWords('Choose a figure','选择图表')}</legend><div class="plot-kind-grid">`+kinds.map(([id,label,hint])=>`<label class="plot-kind"><input type="radio" data-plot="kind" name="plot-kind" value="${id}"${o.kind===id?' checked':''}><span><strong>${esc(label)}</strong><small>${esc(hint)}</small></span></label>`).join('')+'</div></fieldset>';
+ const primary=(o.kind==='frequency'?field('level',QT('groupBy','Group by'),[['code',QT('codes','Codes')],['theme',QT('themes','Themes')]]):'')
+  +(o.kind==='cooccurrence'?field('mode',QT('countWithin','Count within'),[['overlap',QT('withinOverlap','Overlapping text')],['unit',QT('withinPassage','The same passage')]]):'')
+  +(['frequency','coverage','cooccurrence'].includes(o.kind)?field('top',QT('topN','Top N codes'),[10,15,20,30,40,60].map(n=>[String(n),String(n)])):'');
+ const advanced=(['coverage','cooccurrence'].includes(o.kind)?field('palette',QT('palette','Palette'),palettes.map(n=>[n,n])):'')
+  +(o.kind==='cooccurrence'?field('cluster',QT('clustering','Clustering'),onOff)+field('method',QT('linkage','Linkage'),[['ward','Ward'],['complete','Complete'],['average','Average'],['single','Single']])+field('annotate',QT('showCounts','Show counts'),[['1',QT('yes','Yes')],['0',QT('no','No')]]):'')
+  +field('fontsize',QT('baseFontSize','Base font size'),[7,8,9,10,11,12].map(n=>[String(n),n+' pt']))
+  +`<label class="field">${QT('titleOpt','Title')}<input type="text" data-plot="title" value="${esc(o.title)}" placeholder="${QT('optional','Optional')}"></label>`;
+ let stage;
+ if(pre)stage=`<div class="plot-empty"><strong>${esc(pre.title)}</strong><p>${esc(pre.body)}</p>`+(pre.kind==='disabled'?`<button data-action="enable-figures"${demoLock()}>${plotWords('Enable Figures','启用图表')}</button>`:pre.kind==='unavailable'&&!state.config.hosted?`<pre>${esc(conf.install||'pip install matplotlib')}</pre>`:'')+`<button class="link" data-action="view" data-view="coding">← ${plotWords('Continue coding','继续编码')}</button></div>`;
+ else if(plotUi.error)stage=`<div class="plot-empty plot-${plotUi.status}"><strong>${esc(plotUi.error.title)}</strong><p>${esc(plotUi.error.body)}</p>${plotUi.status==='error'?`<button data-action="plot-generate">${plotWords('Retry preview','重试预览')}</button>`:''}<button class="link" data-action="view" data-view="coding">← ${plotWords('Continue coding','继续编码')}</button></div>`;
+ else if(plotUi.blob)stage=`<img class="plot-preview${plotUi.status==='loading'?' loading':''}" id="plot-preview" alt="${esc(kindLabel)}">`;
+ else stage=`<div class="plot-empty"><strong>${plotUi.status==='loading'?plotWords('Generating preview…','正在生成预览…'):plotWords('Ready to generate','可以生成预览')}</strong><p>${plotUi.status==='loading'?plotWords('The existing drawing script is running. Large hierarchies can take longer.','正在运行现有绘图脚本，较大的层级图可能需要更多时间。'):plotWords('Choose one of the five figures above, then select Generate preview.','从上方五种图中选择一种，再点击生成预览。')}</p></div>`;
+ return `<div class="view-body"><section class="panel figure-workflow"><h2 id="figures-heading" tabindex="-1">${QT('navPlotting','Figures')}</h2>${choices}<div class="plot-grid"><div class="plot-controls">${primary}<details class="plot-options"${plotAppearanceOpen?' open':''}><summary>${plotWords('Appearance options','外观选项')}</summary>${advanced}</details>${o.kind==='cooccurrence'&&conf.optional_missing?.includes('scipy')?`<p class="muted">${plotWords('Clustering is unavailable here; the figure will remain unclustered.','本环境不支持聚类，将生成未聚类图。')}</p>`:''}<button class="primary" data-action="plot-generate"${pre||plotUi.status==='loading'?' disabled':''}>${plotWords('Generate preview','生成预览')}</button><output id="plot-status" tabindex="-1" role="status" aria-live="polite">${esc(plotStatusText())}</output></div><div class="plot-preview-wrap"><div class="plot-preview-tools"><button type="button" data-action="plot-view" disabled>${QT('plotEnlarge')}</button></div><div class="plot-stage" tabindex="0" role="region" aria-label="${plotWords('Figure preview · scroll or enlarge to explore','图表预览 · 可滚动或放大查看')}" aria-busy="${plotUi.status==='loading'}">${stage}</div></div></div><div class="plot-actions"><button data-action="plot-export"${plotUi.status!=='ready'||pre||plotUi.exporting?' disabled':''}>${QT('plotExportBtn','Download figure + script')}</button><span class="muted">${QT('plotExportNote','A folder with the counts as CSV, the script, and the figure as SVG, PDF and 300 dpi PNG.')}</span></div></section></div>`;
+}
+function changePlotOption(target){
+ const key=target.dataset.plot,value=target.value,appearance=document.querySelector('.plot-options');
+ if(appearance)plotAppearanceOpen=appearance.open;
+ state.plotOptions[key]=value;
+ if(key==='title'){
+  // Blur fires before a button's click. Keep that button mounted so the same
+  // click can generate; invalidate only the previous result, not the controls.
+  ensurePlotUi();const stage=document.querySelector('.plot-stage');
+  if(stage&&!plotPrerequisite())stage.innerHTML=`<div class="plot-empty"><strong>${plotWords('Ready to generate','可以生成预览')}</strong></div>`;
+  const viewer=document.querySelector('[data-action="plot-view"]');if(viewer)viewer.disabled=true;updatePlotStatus();return;
+ }
+ const focus=target.type==='radio'||target.tagName==='SELECT';render();
+ if(focus){const field=[...document.querySelectorAll('[data-plot]')].find(n=>n.dataset.plot===key&&n.value===value);field?.focus({preventScroll:true});}
+}
+document.addEventListener('toggle',e=>{if(e.target.matches?.('.plot-options'))plotAppearanceOpen=e.target.open;},true);
+async function exportPlotBundle(){
+ ensurePlotUi();if(plotUi.status!=='ready'||plotUi.exporting||plotPrerequisite())return;
+ const key=plotUi.key,url=projectUrl('plot-bundle')+'?'+plotQuery(),label=(figureKinds().find(k=>k[0]===state.plotOptions.kind)||figureKinds()[0])[1],started=Date.now();
+ plotUi.exporting=true;plotUi.download=null;updatePlotStatus();
+ try{
+  const response=await fetch(url,{headers:{'X-QualiCraft-Token':state.token}});
+  if(!response.ok){const problem=await response.json().catch(()=>({error:`HTTP ${response.status}`}));throw Error(problem.error||`HTTP ${response.status}`);}
+  const blob=await response.blob(),target=URL.createObjectURL(blob),link=document.createElement('a');link.href=target;link.download='qualicraft-figure.zip';link.click();setTimeout(()=>URL.revokeObjectURL(target),1000);
+  if(plotUi.key===key)plotUi.download=plotWords(`Download sent to browser · ${((Date.now()-started)/1000).toFixed(1)} s`,`下载已交给浏览器 · ${((Date.now()-started)/1000).toFixed(1)} 秒`);
+  toast(`${label} · ${plotWords('download sent to browser','下载已交给浏览器')}`);
+ }catch(error){if(plotUi.key===key)plotUi.download=plotWords('Download failed: ','下载失败：')+error.message;toast(error.message,true);}
+ finally{if(plotUi.key===key){plotUi.exporting=false;updatePlotStatus();}}
+}
+
 const actionNames={reading_mark_set:QT('projectMark','Project mark'),reading_marks_reset:QT('markReset','Reading marks reset'),document_import:'Document imported',code_create:QT('createCode','Create code'),annotation_create:'Coding created',suggestion_review:'Suggestion reviewed',analysis_start:'Analysis started',analysis_segment:'Segment analyzed',analysis_finish:'Analysis finished',benchmark_import:'Benchmark imported',annotation_remove:'Coding removed',memo_update:'Memo updated',project_restore:'Project restored'};
 // The audit trail is one entry per action, so a study that coded 91 passages
 // has 91 near-identical rows and the reader learns nothing from the list. The
@@ -1926,7 +1948,7 @@ async function action(button) {
   if(a==='net-locate'){openNetworkSource(button.dataset.id);return;}
   if(a==='net-return'){returnToNetwork();return;}
   if(a==='net-dismiss'){state.sourceFocus=null;state.networkReturn=null;render();return;}
-  if(a==='view'){state.view=button.dataset.view;state.selection=null;render();return;}
+  if(a==='view'){state.view=button.dataset.view;state.selection=null;render();if(state.view==='plotting')document.getElementById('figures-heading')?.focus({preventScroll:true});return;}
   if(a==='doc'){switchReadingDocument(button.dataset.id);return;}
   if(a==='reading-overview'){button.disabled=false;toggleReadingOverview();return;}
   if(a==='overview-select-paragraph'){selectReadingOverviewParagraph(Number(button.dataset.index));return;}
@@ -2066,18 +2088,9 @@ async function action(button) {
   if(a==='reference-project')return createProject({kind:'reference'});
   if(a==='restore-pick'){$('#restore-file').click();return;}
   if(a==='plot-view')return showPlotViewer(button);
-  if(a==='plot-export'){
-    const response=await fetch(projectUrl('plot-bundle')+'?'+plotQuery(),{headers:{'X-QualiCraft-Token':state.token}});
-    if(!response.ok){
-      const problem=await response.json().catch(()=>({error:'The figure could not be produced.'}));
-      throw new Error(problem.error||'The figure could not be produced.');
-    }
-    const url=URL.createObjectURL(await response.blob()),link=document.createElement('a');
-    link.href=url;link.download='qualicraft-figure.zip';link.click();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
-    toast(QT('figureExported','Figure, counts and script exported.'));
-    return;
-  }
+  if(a==='plot-generate')return generatePlotPreview();
+  if(a==='plot-export')return exportPlotBundle();
+  if(a==='enable-figures'){await api(projectUrl('blocks'),{blocks:[...new Set([...(state.project.blocks||[]),'plotting'])]});await refresh();return;}
   if(a==='download'){
     const result=$('#export-result');
     if(result){result.textContent=QT('exportPreparing');$('#modal-error').textContent='';}
@@ -2114,7 +2127,7 @@ document.addEventListener('cancel',e=>{if(e.target.id==='dialog')pauseImportQueu
 document.addEventListener('close',e=>{if(e.target.id==='dialog'&&!e.target.open){pauseImportQueue();documentImport=null;}},true);
 document.addEventListener('change',async e=>{
   if(e.target.id==='coded-scope'||e.target.name==='coded-document'){refreshTranscriptScope();return;}
-  if(e.target.dataset&&e.target.dataset.plot){state.plotOptions[e.target.dataset.plot]=e.target.value;render();return;}
+  if(e.target.dataset&&e.target.dataset.plot){changePlotOption(e.target);return;}
 
   try{
     if(['queue-add-files','queue-reselect-files'].includes(e.target.id)){

@@ -978,3 +978,30 @@ button:disabled{cursor:default}
  .shell--coding .sidebar{width:180px;flex-basis:180px}
 }
 @media(max-width:800px){.shell--coding .sidebar{width:58px;flex-basis:58px}}
+
+/* UX80: five visible choices, explicit generation and truthful result states. */
+.figure-workflow>h2{font-size:26px;margin-bottom:20px}
+.plot-kinds{border:0;padding:0;margin:0 0 18px;min-width:0}
+.plot-kinds legend{font-size:14px;font-weight:650;margin-bottom:10px}
+.plot-kind-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.plot-kind{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--line);background:#fff;padding:12px;cursor:pointer;min-width:0}
+.plot-kind:has(input:checked){border-color:var(--accent);background:#eef1f4;box-shadow:inset 0 2px var(--accent)}
+.plot-kind:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.plot-kind input{flex:none;margin:3px 0 0;accent-color:var(--accent);width:15px;height:15px}
+.plot-kind span{min-width:0}.plot-kind strong{display:block;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.plot-kind small{display:block;font-size:12px;line-height:1.5;color:var(--muted);margin-top:5px}
+.plot-options summary{font-size:13px;cursor:pointer;min-height:32px;padding:6px 0}
+.plot-options[open]{display:flex;flex-direction:column;gap:10px}
+.plot-options .field{margin-top:10px}
+#plot-status{font-size:13px;line-height:1.5;color:var(--muted)}
+.plot-controls>button{min-height:44px;white-space:normal}
+.plot-empty button{margin:8px 4px 0;min-height:44px}
+.plot-controls .muted{font-size:12px;line-height:1.5;margin:0}
+.plot-error strong{color:#8b4639}
+@media(max-width:1200px){.plot-kind-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){.plot-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.plot-kind{padding:10px;gap:6px}.plot-kind strong{font-size:14px}.plot-kind small{font-size:12px}}
+.figure-workflow .plot-stage{max-height:70vh;align-items:flex-start}
+#plot-status:focus{outline:2px solid var(--accent);outline-offset:3px}
+.figure-workflow button:disabled{opacity:.45;cursor:not-allowed}
+.figure-workflow .plot-controls .field{font-size:13px}
+.figure-workflow .plot-controls select,.figure-workflow .plot-controls input{font-size:14px}
