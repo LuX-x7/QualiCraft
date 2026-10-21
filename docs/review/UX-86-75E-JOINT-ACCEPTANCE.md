@@ -68,3 +68,8 @@ Build/check results are recorded below. Review artifacts live outside Git at `~/
 - `git diff --check`: exit 0; 191 protected tracked files byte-identical to baseline. No statistical or visual output code/data changes. Previous `-t .` collection limitation is outside this audit and is not concealed by changing the test entry point.
 
 Status: 75E execution/evidence **completed**; 75E acceptance **not passed**; UX86-01–05 **pending**, no implementations or online fixes claimed. Prior 75D fixes remain implemented/tested/online within their recorded scopes.
+
+
+## Follow-up UX87 (21 October 2026)
+
+UX86-01 was fixed and the browser regression now passes locally; see UX-87-HIGHLIGHT-RESELECT.md. It is no longer an open product issue; the active QT server file is synchronized and hash-verified. Authenticated online interaction remains unverified. UX86-02 through UX86-05 remain open. The historical 75E result above remains “not passed.”

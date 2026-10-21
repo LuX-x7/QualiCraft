@@ -1557,6 +1557,45 @@ function selectionUpdate() {
   markPendingSelection(range);
   showCodePopup();
 }
+// Chromium can lose a forward mouse drag when it starts on an existing coded
+// mark. Preserve the native caret endpoints and restore that selection only if
+// the browser finishes the gesture collapsed. Ordinary text selection remains
+// native, and a simple click on a mark still opens its coding inspector.
+let markedTextDrag=null;
+function caretAtPoint(x,y){
+  if(typeof document.caretPositionFromPoint==='function'){
+    const p=document.caretPositionFromPoint(x,y);return p?{node:p.offsetNode,offset:p.offset}:null;
+  }
+  if(typeof document.caretRangeFromPoint==='function'){
+    const r=document.caretRangeFromPoint(x,y);return r?{node:r.startContainer,offset:r.startOffset}:null;
+  }
+  return null;
+}
+document.addEventListener('pointerdown',e=>{
+  const mark=e.target.closest?.('#reader .passage mark[data-coding-ids]');
+  if(e.button!==0||e.pointerType!=='mouse'||!mark){markedTextDrag=null;return;}
+  const caret=caretAtPoint(e.clientX,e.clientY);
+  markedTextDrag=caret?{pointerId:e.pointerId,x:e.clientX,y:e.clientY,anchor:caret,moved:false}:null;
+},true);
+document.addEventListener('pointermove',e=>{
+  const drag=markedTextDrag;if(!drag||drag.pointerId!==e.pointerId)return;
+  if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>=3)drag.moved=true;
+},true);
+document.addEventListener('pointerup',e=>{
+  const drag=markedTextDrag;if(!drag||drag.pointerId!==e.pointerId)return;
+  markedTextDrag=null;
+  if(!drag.moved||!e.target.closest?.('#reader .passage'))return;
+  const focus=caretAtPoint(e.clientX,e.clientY);if(!focus)return;
+  setTimeout(()=>{
+    const selection=window.getSelection();
+    if(!selection||!selection.isCollapsed)return;
+    try{
+      selection.setBaseAndExtent(drag.anchor.node,drag.anchor.offset,focus.node,focus.offset);
+      selectionUpdate();
+    }catch(_){/* Let the browser's native selection stand if the source rerendered. */}
+  },0);
+},true);
+document.addEventListener('pointercancel',()=>{markedTextDrag=null;},true);
 let pendingRange=null;
 function markPendingSelection(range) {
   if(!window.CSS||!CSS.highlights||typeof Highlight==='undefined') return;
