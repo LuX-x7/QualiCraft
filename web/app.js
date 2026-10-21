@@ -113,7 +113,7 @@ Object.assign(_T.zh, {
   queueState_queued:'等待导入', queueState_reading:'正在读取文件…', queueState_checking:'正在核对文本…', queueState_saving:'正在保存…',
   queueState_saved:'已保存在本地', queueState_failed:'失败', queueState_duplicate:'名称和正文相同，请选择', queueState_cancelled:'已取消', 'queueState_needs-file':'请重新选择原文件',
 });
-const HOSTED_TEXT={en:{loading:'Opening your QT workspace…',localWorkspace:'Online workspace',savedLocally:'Saved on server',cloudNote:'Private account · persistent storage',workspaceIdentity:'QT 0.1 · ONLINE WORKSPACE',projectCreated:'Project created and saved on the server.',queueState_saved:'Saved on server',editableExample:'Editable in your private workspace',startLocal:'Projects and snapshots are saved in your private server workspace. Reading positions belong to this browser.'},zh:{loading:'正在打开 QT 工作台…',localWorkspace:'在线工作台',savedLocally:'已保存到服务器',cloudNote:'独立账号 · 持久存储',workspaceIdentity:'QT 0.1 · 在线工作台',projectCreated:'项目已创建并保存到服务器。',queueState_saved:'已保存到服务器',editableExample:'可在你的独立工作区编辑',startLocal:'项目和快照保存在你的独立服务器工作区。阅读位置保存在此浏览器。'}};
+const HOSTED_TEXT={en:{loading:'Opening your QT workspace…',localWorkspace:'Online workspace',savedLocally:'Saved on server',importedLocal:'Imported · saved on server',cloudNote:'Private account · persistent storage',workspaceIdentity:'QT 0.1 · ONLINE WORKSPACE',projectCreated:'Project created and saved on the server.',queueState_saved:'Saved on server',editableExample:'Editable in your private workspace',startLocal:'Projects and snapshots are saved in your private server workspace. Reading positions belong to this browser.'},zh:{loading:'正在打开 QT 工作台…',localWorkspace:'在线工作台',savedLocally:'已保存到服务器',importedLocal:'已导入 · 已保存到服务器',cloudNote:'独立账号 · 持久存储',workspaceIdentity:'QT 0.1 · 在线工作台',projectCreated:'项目已创建并保存到服务器。',queueState_saved:'已保存到服务器',editableExample:'可在你的独立工作区编辑',startLocal:'项目和快照保存在你的独立服务器工作区。阅读位置保存在此浏览器。'}};
 function QT(k,fb){const hosted=typeof window!=='undefined'&&window.QT_HOSTED;if(hosted&&HOSTED_TEXT[QT_LANG]?.[k])return HOSTED_TEXT[QT_LANG][k];const d=_T[QT_LANG];return(d&&d[k])||fb||k;}
 function hostedAccountHtml(){return window.QT_HOSTED?`<form class="hosted-account" action="/auth/logout" method="post"><input type="hidden" name="signout" value="1"><span>${esc(state.config.account||'')}</span><button type="submit">${QT_LANG==='zh'?'退出登录':'Sign out'}</button></form>`:'';}
 document.documentElement.lang = QT_LANG === 'zh' ? 'zh-CN' : 'en';
@@ -2097,7 +2097,7 @@ async function action(button) {
   if(a==='inspect-show-all'){state.search='';state.codeFilter=null;render();if(!inspectorWide())openCodingInspector(false);focusInspectorSource();return;}
   if(a==='inspect-ai'||a==='inspect-tree'){if(a==='inspect-ai')beginCodingInspection();codingInspector.mode=a==='inspect-ai'?'ai':'tree';refreshInspector();return;}
   if(a==='write-report')return openResearchReport();
-  if(a==='open-qca')return window.QTQCA.open({project:state.project,lang:QT_LANG,readonly:state.config.public_demo,request:api,endpoint:projectUrl(),modal,onSaved:refresh,onReport:()=>openResearchReport('comparative'),fetchFile:url=>fetch(url,{headers:{'X-QualiCraft-Token':state.token}})});
+  if(a==='open-qca')return window.QTQCA.open({project:state.project,hosted:!!window.QT_HOSTED,lang:QT_LANG,readonly:state.config.public_demo,request:api,endpoint:projectUrl(),modal,onSaved:refresh,onReport:()=>openResearchReport('comparative'),fetchFile:url=>fetch(url,{headers:{'X-QualiCraft-Token':state.token}})});
   if(a==='check-coded-export')return checkTranscriptVersion();
   if(a==='download-coded'){
     const ids=transcriptSelection();if(ids!==null&&!ids.length)throw new Error(QT('ctChoose','Choose at least one document.'));
@@ -2888,4 +2888,4 @@ window.addEventListener('resize', () => { if (NET.svg) drawNetwork(); });
 // A native select commits only an explicit change, never scroll or focus.
 document.addEventListener('change',e=>{if(e.target.id==='reading-mark-status')saveReadingMark(e.target.value);});
 
-function openResearchReport(method){return window.QTReport.open({project:state.project,method,figureOptions:state.plotOptions,lang:QT_LANG,readonly:state.config.public_demo,request:api,endpoint:projectUrl(),modal,onSaved:refresh,onLocate:locateReportEvidence,fetchFile:url=>fetch(url,{headers:{'X-QualiCraft-Token':state.token}})});}
+function openResearchReport(method){return window.QTReport.open({project:state.project,hosted:!!window.QT_HOSTED,method,figureOptions:state.plotOptions,lang:QT_LANG,readonly:state.config.public_demo,request:api,endpoint:projectUrl(),modal,onSaved:refresh,onLocate:locateReportEvidence,fetchFile:url=>fetch(url,{headers:{'X-QualiCraft-Token':state.token}})});}

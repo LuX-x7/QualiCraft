@@ -11,10 +11,14 @@ sha=lambda raw:hashlib.sha256(raw).hexdigest()
 KINDS=['frequency','coverage','cooccurrence','hierarchy','accumulation']
 
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--config',type=Path,required=True);ap.add_argument('--out',type=Path,required=True);args=ap.parse_args();c=json.loads(args.config.read_text(encoding='utf-8'));base=c['origin'];assert base.startswith('http://127.0.0.1:');out=args.out;out.mkdir(parents=True,exist_ok=True);result={'checks':[],'issues':[],'console':[],'page_errors':[],'http':[],'timings':{}};seed=teaching_project()
+ ap=argparse.ArgumentParser();ap.add_argument('--config',type=Path,required=True);ap.add_argument('--out',type=Path,required=True);ap.add_argument('--style-file',type=Path,help='Optional committed CSS to verify without altering local edits');args=ap.parse_args();c=json.loads(args.config.read_text(encoding='utf-8'));base=c['origin'];assert base.startswith('http://127.0.0.1:');out=args.out;out.mkdir(parents=True,exist_ok=True);result={'checks':[],'issues':[],'console':[],'page_errors':[],'http':[],'timings':{}};seed=teaching_project()
  def dump(name,value):(out/name).write_text(json.dumps(value,ensure_ascii=False,indent=2),encoding='utf-8')
  with sync_playwright() as pw:
-  browser=pw.chromium.launch(channel='chrome');ctx=browser.new_context(viewport={'width':1440,'height':1000},accept_downloads=True);page=ctx.new_page();page.set_default_timeout(20000);page.on('pageerror',lambda e:result['page_errors'].append(str(e)));page.on('console',lambda m:result['console'].append(m.text) if m.type=='error' else None);page.on('response',lambda r:result['http'].append([r.status,r.url]) if r.status>=400 else None)
+  browser=pw.chromium.launch(channel='chrome');ctx=browser.new_context(viewport={'width':1440,'height':1000},accept_downloads=True)
+  if args.style_file:
+   ctx.route('**/w/style.css*',lambda route:route.fulfill(path=str(args.style_file),content_type='text/css'))
+   result['style_sha256']=sha(args.style_file.read_bytes())
+  page=ctx.new_page();page.set_default_timeout(20000);page.on('pageerror',lambda e:result['page_errors'].append(str(e)));page.on('console',lambda m:result['console'].append(m.text) if m.type=='error' else None);page.on('response',lambda r:result['http'].append([r.status,r.url]) if r.status>=400 else None)
   def shot(name):page.screenshot(path=str(out/(name+'.png')))
   def check(name,fn,target=None):
    print('START '+name,flush=True);t=time.monotonic()
@@ -85,7 +89,7 @@ def main():
   def open_report():page.locator('.top-actions [data-action="export"]').click();page.locator('[data-action="write-report"]').click();expect(page.locator('#report-save-state')).to_be_visible()
   def rtab(id):page.locator('[data-report-tab="'+id+'"]').click()
   def rsave():
-   rev=get().get('research_report',{}).get('revision',0);page.locator('[data-report-action="save"]').press('Enter');expect(page.locator('#report-save-state')).to_have_text('Saved locally · version '+str(rev+1),timeout=120000)
+   rev=get().get('research_report',{}).get('revision',0);page.locator('[data-report-action="save"]').press('Enter');expect(page.locator('#report-save-state')).to_have_text('Saved on server · version '+str(rev+1),timeout=120000)
   settings={};plot_files={}
   def figures():
    page.locator('[data-action="view"][data-view="plotting"]').click();assert page.locator('[data-plot="kind"]').count()==5
@@ -128,7 +132,7 @@ def main():
           page.locator('#qca-case-select').select_option(id)
           for name,val in zip(['A','B','Y'],[(1,0,1),(0,1,0)][i]):page.locator('[data-qca-value="'+name+'"]').select_option(str(val));page.locator('[data-qca-rationale="'+name+'"]').fill('Explicit known-answer designation '+str(val)+' for a technical audit only.')
           if i==0:activate(page,page.locator('[data-qca-action="evidence"][data-set="A"]'),phone);page.locator('[data-qca-evidence="'+added[0]['id']+'"]').check()
-      activate(page,page.locator('[data-qca-action="save"]'),phone);expect(page.locator('#qca-save-state')).to_have_text('Saved locally · revision 1');activate(page,page.locator('[data-qca-action="run"]'),phone);expect(page.locator('#qca-save-state')).to_have_text('Saved locally · revision 2');run=get()['comparative_qca']['current'];assert run['result']['solutions'][0]['expression']=='A*~B';assert len(run['result']['truth_table'])==4
+      activate(page,page.locator('[data-qca-action="save"]'),phone);expect(page.locator('#qca-save-state')).to_have_text('Saved on server · revision 1');activate(page,page.locator('[data-qca-action="run"]'),phone);expect(page.locator('#qca-save-state')).to_have_text('Saved on server · revision 2');run=get()['comparative_qca']['current'];assert run['result']['solutions'][0]['expression']=='A*~B';assert len(run['result']['truth_table'])==4
       snap('11-frozen-qca-result');page.locator('[data-qca-tab="versions"]').click();download(page,page.locator('[data-qca-action="download"][data-format="zip"]'),folder/'qca-code.zip',phone);close(page);return {'calibrated_cases':2,'conditions':2,'truth_table_rows':4,'expected_solution':'A*~B','run_id':run['id'],'explicit_calibration_evidence':added[0]['id']}
   check(mode+' explicit QCA calibration frozen known-answer result and code export',qca,page)
   saved_reports={}
@@ -150,8 +154,8 @@ def main():
               if method=='comparative':assert json.loads(z.read('qca/qca-run.json'))==get()['comparative_qca']['current']
           with zipfile.ZipFile(folder/(method+'-report.docx')) as z:assert json.loads(ET.fromstring(z.read('customXml/item1.xml')).text)==entry
       # Restore a different saved method, then return to the frozen Comparative version.
-      rtab('versions');restore_rev=get()['research_report']['revision'];page.locator('#report-history').select_option(saved_reports['content']['id']);activate(page,page.locator('[data-report-action="restore"]'),phone);expect(page.locator('#report-save-state')).to_have_text('Saved locally · version '+str(restore_rev+1));assert get()['research_report']['current']['method_map']==saved_reports['content']['method_map']
-      restore_rev=get()['research_report']['revision'];page.locator('#report-history').select_option(saved_reports['comparative']['id']);activate(page,page.locator('[data-report-action="restore"]'),phone);expect(page.locator('#report-save-state')).to_have_text('Saved locally · version '+str(restore_rev+1));assert get()['research_report']['current']['bindings']==saved_reports['comparative']['bindings'];close(page)
+      rtab('versions');restore_rev=get()['research_report']['revision'];page.locator('#report-history').select_option(saved_reports['content']['id']);activate(page,page.locator('[data-report-action="restore"]'),phone);expect(page.locator('#report-save-state')).to_have_text('Saved on server · version '+str(restore_rev+1));assert get()['research_report']['current']['method_map']==saved_reports['content']['method_map']
+      restore_rev=get()['research_report']['revision'];page.locator('#report-history').select_option(saved_reports['comparative']['id']);activate(page,page.locator('[data-report-action="restore"]'),phone);expect(page.locator('#report-save-state')).to_have_text('Saved on server · version '+str(restore_rev+1));assert get()['research_report']['current']['bindings']==saved_reports['comparative']['bindings'];close(page)
       return {'methods':3,'formats_each':4,'maps_frozen_and_six_readable_steps':True,'all_25_original_figure_members_equal':True,'Word_native_metadata_exact':True,'restore_and_frozen_QCA_equal':True}
   check(mode+' saved research reports method maps Word ZIP and version restoration',reports,page)
   def notebook():

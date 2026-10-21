@@ -13,7 +13,7 @@
     const e=editor={env,context,draft:clone(context.state?.current.draft??blank(env.project.name,env.method??'content',context.checks)),dirty:false,tab:'setup',page:0,evidencePage:0,activeRow:null,previewId:null,useHierarchy:false};
     if(env.method&&e.draft.method!==env.method){e.draft.method=env.method;e.draft.checks=Object.fromEntries(context.checks[env.method].map(k=>[k,false]));e.dirty=true;}
     if(e.draft.method==='comparative'&&context.qca?.current){for(const [field,key] of [['research_question','question'],['case_unit','case_unit']])if(!e.draft[field]){e.draft[field]=context.qca.current.design[key];e.dirty=true;}}
-    const status=()=>{const el=dialog.querySelector('#report-save-state');if(el)el.textContent=e.dirty?L('Unsaved writing','写作未保存'):e.context.state?L('Saved locally · version ','本地已保存 · 版本 ')+e.context.state.revision:L('New draft · not saved','新草稿 · 未保存');};
+    const status=()=>{const el=dialog.querySelector('#report-save-state');if(el)el.textContent=e.dirty?L('Unsaved writing','写作未保存'):e.context.state?(env.hosted?L('Saved on server · version ','已保存到服务器 · 版本 '):L('Saved locally · version ','本地已保存 · 版本 '))+e.context.state.revision:L('New draft · not saved','新草稿 · 未保存');};
     const dirty=()=>{if(!e.dirty){e.dirty=true;status();}};
     const field=k=>`<label class="field">${L(...labels[k])}${k==='title'?`<input data-report-field="${k}" maxlength="${fields[k]}" value="${escape(e.draft[k])}">`:`<textarea data-report-field="${k}" maxlength="${fields[k]}" rows="${k==='narrative'?16:4}">${escape(e.draft[k])}</textarea>`}</label>`;
     const selectedRow=()=>e.draft.rows.find(r=>r.id===e.activeRow)??e.draft.rows[0];

@@ -160,6 +160,32 @@ class HostedTests(unittest.TestCase):
         self.assertIn('required minlength="6" maxlength="256"', html)
         self.assertIn('At least 6 characters.', html)
 
+    def test_username_pattern_and_server_validation_preserve_allowed_names(self):
+        from html.parser import HTMLParser
+        from qualicraft.hosted import NAME
+        class Inputs(HTMLParser):
+            pattern = None
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == 'input' and attrs.get('id') == 'register-name':
+                    self.pattern = attrs['pattern']
+        parser = Inputs()
+        parser.feed(self.request(self.client(), '/login')[1].decode('utf-8'))
+        self.assertIn(r'\-', parser.pattern)
+        client = self.client()
+        invitation = self.server.accounts.invite()
+        for name in ['ab', '_start', 'has space', 'bad/name', 'a' * 49]:
+            with self.subTest(name=name):
+                self.assertIsNone(NAME.fullmatch(name))
+                self.assertEqual(self.request(client, '/auth/register', {
+                    'username': name, 'password': 'abc123', 'invite': invitation})[0], 400)
+        valid = 'Bologna-review_1.test'
+        self.assertIsNotNone(NAME.fullmatch(valid))
+        self.assertEqual(self.request(client, '/auth/register', {
+            'username': valid, 'password': 'abc123', 'invite': invitation})[0], 200)
+        self.assertEqual(self.request(self.client(), '/auth/login', {
+            'username': valid, 'password': 'abc123'})[0], 200)
+
     def test_independent_full_workspaces_do_not_share_projects_tokens_or_model_settings(self):
         a, boot_a = self.register('researcher-a')
         b, boot_b = self.register('researcher-b')
