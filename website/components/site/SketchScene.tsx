@@ -27,7 +27,7 @@ export default function SketchScene({kind,example,records=[]}:{kind:string;examp
  }
  const activate=(index:number,count:number)=>({ref:(el:HTMLButtonElement|null)=>{refs.current[index]=el},onMouseEnter:()=>setPart(index),onPointerMove:(event:React.PointerEvent)=>{if(event.pointerType==='mouse')setPart(index)},onFocus:()=>setPart(index),onClick:()=>setPart(index),onKeyDown:(event:KeyboardEvent)=>keyboard(event,index,count)})
  if(!example)return <p role="status">The source illustration is unavailable. Open the verified example report.</p>
- if(kind==='coding')return <CodingSketch example={example}/>
+ if(kind==='coding')return <CodingSketch example={example} records={records}/>
  if(kind==='analysis')return <SavedPathSketch records={networkExamples(records,example)} initial={example}/>
  if(kind==='import')return <div className="import-sketch engineering-plate" data-flow-active={part}>
    <p className="engineering-caption mono">FILE → TEXT RECORD → SOURCE RANGE</p>

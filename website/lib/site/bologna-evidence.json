@@ -4,19 +4,19 @@
     "command": "python tools/site/build_evidence.py",
     "source": "demo-data/qualicraft.sqlite3",
     "database_sha256": "b8b44b814f2fa6286decf877364665ad8276977c08913d02d7b8a90db62a755d",
-    "project_id": "8b290d3b122056918b79c4b671f2e643",
-    "project_sha256": "edbdc54dc4f0f0799657fe9e4542b10250f3288b1d938bc0bf2cf2818b887e2d",
-    "manifest_sha256": "789b8cedde5ae83c772ab462a1a2ca0a6df84e129fda2cc47256e3562126a0f7"
+    "project_id": "c490e0dc380d4a119a2f219dd122e9d6",
+    "project_sha256": "b6f1e5cdd9391b19f16f8f8536cf5b97a0fc5648c918597454cd9d616b0a0e79",
+    "manifest_sha256": "1f8578120e788a61d14aab385e35796512f15e6cabcc5da74135e65cd523705a"
   },
   "example": {
-    "annotation_id": "3f029191a6885f0e9fdef6174d572dff",
-    "document_id": "8c17e627c7d85f7c8967047bfa92531b",
-    "document_name": "interview02-english-excerpts.txt",
-    "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
-    "start": 0,
-    "end": 97,
-    "quote": "So, moving on to the method, we worked on the printed text — on two printed editions, let us say.",
-    "source": "manual",
+    "annotation_id": "488bba0accd84c94ad2f904f241ad6ae",
+    "document_id": "f153cc3e3f694f1ea763188d3535eebf",
+    "document_name": "interview02.txt",
+    "document_sha256": "f43f005420b55b9fb7c8346d7f9e5c4c0cfb73f46bc295c8ca9c45e561734036",
+    "start": 872,
+    "end": 960,
+    "quote": "Quindi noi abbiamo lavorato, per passare al metodo, sulla stampa diciamo su due stampe, ",
+    "source": "imported",
     "code_id": "177098f805974bae8e589c1cb2fae553",
     "code_path": [
       {

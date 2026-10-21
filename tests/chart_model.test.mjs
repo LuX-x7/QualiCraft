@@ -58,6 +58,8 @@ test('all five saved Bologna CSVs retain every original row and value', async()=
    assert.equal(JSON.stringify(rows),before)
    total+=rows.length
   }
-  assert.equal(total,59) // English teaching subset; original geometry fixture remains archived and tested.
+  assert.equal(total,594) // Complete original Bologna results; teaching excerpts are a separate source.
+  const {readFile}=await import('node:fs/promises')
+  for(const figure of manifest.figures)for(const file of [figure.csv,figure.svg])assert.deepEqual(await readFile('public/report/'+file),await readFile('public/original-bologna/report/'+file))
  } finally {process.chdir(cwd)}
 })

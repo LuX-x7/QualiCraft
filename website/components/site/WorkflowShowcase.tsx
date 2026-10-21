@@ -1,15 +1,16 @@
 'use client'
 import {siteUrl} from '@/lib/site/url'
 
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { MODULES } from '@/lib/site/content'
 import { CLIPS } from '@/lib/site/clips'
 import { pickStoryIndex } from '@/lib/site/scroll-story'
 import { STORY_SCENES, pageSceneIndex } from '@/lib/site/story-scenes'
-import type { SavedCoding } from '@/lib/site/record-network'
+import { networkExamples, type SavedCoding } from '@/lib/site/record-network'
 import type { ChartTable } from '@/lib/report/chart-model'
 import type { OriginalHeatmap } from '@/lib/site/original-heatmap'
 import SketchScene from './SketchScene'
+import SavedPathSketch from './SavedPathSketch'
 import PlotSketch from './PlotSketch'
 import RelationshipSketch from './RelationshipSketch'
 import { RecordedExample } from './ModuleWalkthrough'
@@ -23,7 +24,8 @@ function StoryArt({kind,reduced,inline=false,children}:{kind:string;reduced:bool
  useEffect(()=>{if(!root.current)return;const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){setEntered(true);observer.disconnect()}},{threshold:.1});observer.observe(root.current);return()=>observer.disconnect()},[])
  return <div ref={root} className={`story-art${inline?' story-inline':''} story-art--${kind}${reduced||!entered?' is-static':''}`}>{children}</div>
 }
-export default function WorkflowShowcase({example,data,charts,records,heatmaps={}}:{example:CodingExample|null;data:WorkflowData;charts:Record<string,ChartTable>;records:SavedCoding[];heatmaps?:Record<string,OriginalHeatmap>}) {
+export default function WorkflowShowcase({example,analysisExample,data,charts,records,teachingRecords=[],heatmaps={}}:{example:CodingExample|null;analysisExample:SavedCoding|null;data:WorkflowData;charts:Record<string,ChartTable>;records:SavedCoding[];teachingRecords?:SavedCoding[];heatmaps?:Record<string,OriginalHeatmap>}) {
+ const [evidenceSource,setEvidenceSource]=useState<'english'|'original'>('english')
  const [active,setActive]=useState(0),[compact,setCompact]=useState(false),[replays,setReplays]=useState<Record<string,number>>({})
  const reduced=useReducedMotion(),sections=useRef<Array<HTMLElement|null>>([]),buttons=useRef<Array<HTMLButtonElement|null>>([]),stageBody=useRef<HTMLDivElement>(null)
  useEffect(()=>{const media=window.matchMedia('(max-width: 1000px)');const update=()=>setCompact(media.matches);update();media.addEventListener('change',update);return()=>media.removeEventListener('change',update)},[])
@@ -41,17 +43,25 @@ export default function WorkflowShowcase({example,data,charts,records,heatmaps={
  const visit=(index:number,focus=false)=>{const next=Math.max(0,Math.min(index,STORY_SCENES.length-1));setActive(next);sections.current[next]?.scrollIntoView({block:'center',behavior:'instant'});if(focus)buttons.current[next]?.focus({preventScroll:true})}
  const keyboard=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{if(!['ArrowDown','ArrowRight','ArrowUp','ArrowLeft','Home','End'].includes(event.key))return;event.preventDefault();visit(event.key==='Home'?0:event.key==='End'?STORY_SCENES.length-1:index+(['ArrowDown','ArrowRight'].includes(event.key)?1:-1),true)}
  const artKeyboard=(event:KeyboardEvent,index:number)=>{const next=pageSceneIndex(event.key,index,STORY_SCENES.length,(event.target as Element).tagName);if(next===null)return;event.preventDefault();visit(next,true)}
- const render=(index:number)=>{const scene=STORY_SCENES[index];return scene.module==='plotting'?<PlotSketch kind={scene.plot} data={data} charts={charts} source={heatmaps[scene.plot]}/>:scene.id==='qca'?<ComparativeSketch/>:scene.id==='network'&&example?<RelationshipSketch records={records} initial={example} pairs={charts.cooccurrence} credit={data.figures.find(figure=>figure.kind==='cooccurrence')?.credit}/>:<SketchScene kind={scene.module} example={example} records={records}/>}
+ const currentExample=evidenceSource==='english'?(example??analysisExample):analysisExample
+ const analysisRecords=useMemo(()=>currentExample?(evidenceSource==='english'?teachingRecords:networkExamples(records,currentExample)):[],[records,teachingRecords,currentExample,evidenceSource])
+ const render=(index:number)=>{
+  const scene=STORY_SCENES[index]
+  if(scene.module==='plotting')return <PlotSketch kind={scene.plot} data={data} charts={charts} source={heatmaps[scene.plot]}/>
+  if(scene.id==='qca')return <ComparativeSketch/>
+  if(['analysis','network'].includes(scene.id)&&currentExample)return <><div className="evidence-source-switch" role="group" aria-label="Evidence source"><button type="button" aria-pressed={evidenceSource==='english'} onClick={()=>setEvidenceSource('english')}>English teaching excerpt</button><button type="button" aria-pressed={evidenceSource==='original'} onClick={()=>setEvidenceSource('original')}>Original Bologna</button></div>{scene.id==='network'?<RelationshipSketch key={evidenceSource} records={analysisRecords} initial={currentExample} pairs={evidenceSource==='original'?charts.cooccurrence:undefined} credit={data.figures.find(figure=>figure.kind==='cooccurrence')?.credit}/>:<SavedPathSketch key={evidenceSource} records={analysisRecords} initial={currentExample}/>}</>
+  return <SketchScene kind={scene.module} example={example} records={teachingRecords}/>
+ }
  const artwork=(index:number,inline=false)=>{const step=STORY_SCENES[index];return <div data-story-art={step.id} className={`story-panel${['coding','analysis','network'].includes(step.id)?' evidence-plate':''}`} hidden={!inline&&active!==index} key={`${step.id}-${replays[step.id]??0}`} onKeyDown={event=>artKeyboard(event,index)}><StoryArt kind={step.module} reduced={reduced} inline={inline}>{render(index)}</StoryArt></div>}
  const scene=STORY_SCENES[active],module=MODULES.find(item=>item.key===scene.module)!
  return <section className="scroll-story section" id="workflow" aria-labelledby="story-title"><div className="wrap">
-  <header className="story-heading"><span className="sec-no mono">02 / FOLLOW THE RECORD</span><h2 id="story-title">One workflow.<br/><em>Every connection in view.</em></h2><p>Scroll to follow. Hover or focus to explore.</p><nav className="story-evidence-links" aria-label="Explore the source relationships"><a href={siteUrl("#story-coding")}>Coding: one assignment ↓</a><a href={siteUrl("#story-analysis")}>Analysis: a saved path ↓</a><a href={siteUrl("#story-network")}>Explore the network ↓</a></nav></header>
+  <header className="story-heading"><span className="sec-no mono">02</span><h2 id="story-title">Follow the record</h2><p>Scroll from source text to coding, analysis, figures and export.</p></header>
   <div className="story-layout">
    {!compact&&<aside className="story-stage story-stage--sequence" data-scene={scene.id} aria-label={`${module.title} interactive illustration`}>
     <div className="story-stage-head mono"><span>{scene.no} / {module.title.toUpperCase()}</span><span>{active+1} / {STORY_SCENES.length} · BOLOGNA CC0</span></div>
     {/* All drawings stay mounted; only the active panel is displayed and focusable. */}
     <div className="story-stage-body" ref={stageBody}>{STORY_SCENES.map((_,index)=>artwork(index))}</div>
-    <div className="story-stage-foot mono"><span>{scene.module==='plotting'?'ORIGINAL SVG · EXACT CSV VALUES':scene.id==='qca'?'METHOD PROCEDURE · RESEARCHER DECISIONS':scene.module==='export'?'OUTPUT GUIDE · SAVED BOLOGNA SOURCE':'SAVED SOURCE · INTERACTIVE SKETCH'}</span><button type="button" disabled={reduced} onClick={()=>setReplays(current=>({...current,[scene.id]:(current[scene.id]??0)+1}))}>Replay ↻</button></div>
+    <div className="story-stage-foot mono"><span>{scene.module==='plotting'?'ORIGINAL SVG · EXACT CSV VALUES':scene.id==='qca'?'METHOD PROCEDURE · RESEARCHER DECISIONS':scene.module==='export'?'OUTPUT GUIDE · SAVED BOLOGNA SOURCE':['analysis','network'].includes(scene.id)&&evidenceSource==='english'?'ENGLISH EXCERPTS · ORIGINAL FIGURE DATA RETAINED':'SAVED SOURCE · INTERACTIVE SKETCH'}</span><button type="button" disabled={reduced} onClick={()=>setReplays(current=>({...current,[scene.id]:(current[scene.id]??0)+1}))}>Replay ↻</button></div>
    </aside>}
    <ol className="story-steps">{STORY_SCENES.map((step,index)=>{const item=MODULES.find(item=>item.key===step.module)!;return <li key={step.id}><article id={`story-${step.id}`} ref={el=>{sections.current[index]=el}} className={`story-step${active===index?' is-current':''}`}>
     <h3><button className="story-step-title" type="button" ref={el=>{buttons.current[index]=el}} onMouseEnter={()=>setActive(index)} onPointerMove={event=>{if(event.pointerType==='mouse')setActive(index)}} onFocus={()=>setActive(index)} aria-current={active===index?'step':undefined} onClick={()=>visit(index)} onKeyDown={event=>keyboard(event,index)}><span className="mono">{step.no} / {item.title.toUpperCase()}</span><span className="story-step-heading">{step.title}</span></button></h3>

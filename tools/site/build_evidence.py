@@ -42,7 +42,8 @@ def build_evidence(project, database_sha256, manifest_raw, annotation_id=ANNOTAT
             raise ValueError('The example coding path is incomplete or cyclic')
         seen.add(current)
         code = by_id[current]
-        code_path.append({'id':code['id'],'name':code['name'],'definition':code.get('definition','')})
+        code_path.append({'id':code['id'],'name':code['name'],'definition':code.get('definition',''),
+                          **({'research_role':code['research_role']} if code.get('research_role') else {})})
         current = code.get('parent_id')
     project_raw = json.dumps(project,ensure_ascii=False,sort_keys=True).encode()
     return {'schema_version':1,'provenance':{

@@ -1,37 +1,28 @@
 # QT — supervisor review
 
-**21 October follow-up — UX86-01:** The saved-highlight forward drag issue is now fixed and passes a real-Chrome Bologna regression for both drag directions, exact source range and keyboard picker. Local tests/build pass. The QT server file is synchronized and its SHA-256 matches the local commit; the sign-in page responds, while authenticated online interaction remains unverified. UX86-02 through 05 remain open, so 75E is still not a full acceptance. Details: UX-87-HIGHLIGHT-RESELECT.md.
+**21 October 2026 · local review candidate UX90.** Website presentation and original-data scope checks pass locally; the updated presentation has not been pushed or deployed. The existing live site is [qt-review.taila524d0.ts.net](https://qt-review.taila524d0.ts.net/). It may show the previous presentation. The full online workbench uses the private invitation supplied separately; visitors need no software installation or Tailscale account.
 
-**21 October 2026 — 75E audit:** The full route and final JSON recovery were exercised in a fresh local hosted Bologna teaching workspace; the public website's actual downloads and all 59 CSV rows were also checked. This is **not yet a clean final acceptance**: selecting an existing highlight needed a reverse-drag workaround, short-document Keep/Resume lost the selected paragraph, registration logged a browser-pattern error, hosted save wording says “locally”, and two website scale descriptions still refer to the old Italian sample. Reports, editable Notebook/Word, five standalone figure scripts, QCA reproduction and frozen JSON data checks passed; 41 rendered pages showed no overlap. No feature changes or deployment this round. Findings and evidence: [UX86](UX-86-75E-JOINT-ACCEPTANCE.md). Windows and genuine newcomer acceptance remain pending.
+This remains an **alpha for review**, not a clean final acceptance. A short-document Keep/Resume defect was reproduced in a disposable Bologna copy: keeping paragraph 2 can still return to paragraph 1. Registration-pattern and hosted-save wording findings from the last joint audit remain open. Source text, codings and exports are separate from that browser-position issue.
 
-Start at **https://qt-review.taila524d0.ts.net/**. Allow 10–15 minutes. The website is public; the full online workbench uses the separate invitation supplied privately. No installation or Tailscale account is needed for visitors.
+## Suggested demonstration · 10–15 minutes
 
-## Suggested demonstration
-
-1. **See the workflow.** Explore the five modules and the passage–code–theme connections. Compare Content Analysis, Thematic Analysis and the separate Comparative QCA workflow.
-2. **Inspect real outputs.** Open [Worked example](https://qt-review.taila524d0.ts.net/QualiCraft/report/#sec-outputs): coded Notebook, editable Word, Research report with selected method and method map, five figures, exact CSVs and standalone Python scripts. These are English translation teaching excerpts from Bologna CC0, not new empirical findings or full interview translations. The five figures cover three excerpt documents, 25 tree nodes and 11 teaching associations. The Notebook contains the selected English excerpts from interview02. Original Italian outputs remain in the separately labelled source archive.
-3. **Try the full workbench.** Open https://qt-review.taila524d0.ts.net/login . Expand “First visit” and use the private invitation to choose your own username/password. Start empty and import an approved document, or choose Try English Bologna for an editable translated teaching copy. Project options, Reading marks and Coding actions expand when needed; the default reader stays compact. Tree numbers include descendant assignments: inspect a node to distinguish direct and total counts. Use the QT mark to return to project selection; reopening keeps the reading paragraph. Inspect coding paths, reading marks/overview and evidence links. In Figures, choose one of the five visible types and select Generate preview. An empty co-occurrence has its own explanation; real errors offer a retry.
-4. **Review an unwanted import.** Open Manage documents, find the source by name and inspect its ID/counts. View it first; Remove requires a separate review and checkbox. Cancel is the default. Recovery points restore a separate project. Current QCA mappings block removal until explicitly revised; frozen outputs keep their original evidence.
-5. **Save and recover.** Download Notebook/Word, a report, figure/code bundles and project JSON. Refresh or sign in again to check server saving; restore JSON as a new project. Word is editable, but edits in Word do not update QT.
-
-## Current window-recovery check
-
-The Coding reader now keeps its paragraph, selected source text, code search and unsaved forms when resizing or switching between controlled Mac Chrome windows. One tree moves between the desktop panel and narrow drawer. Window changes do not save research edits. Automated tests do not replace a new-user review; Windows remains deferred.
+1. **Workflow:** choose among the five tools and read the short introduction. The English illustration connects an exact highlighted passage to its saved codebook path. Theme and Category are explicit researcher assignments; unassigned legacy groups are labelled honestly. Open the independent network to trace connections and source quotations.
+2. **Methods:** compare TA, Comparative QCA and qualitative content analysis. Select a method for its explanation; expand the method map when needed. Comparative QCA calibrates cases, conditions and an outcome. Coding frequencies do not establish set membership.
+3. **Figures and worked outputs:** the candidate's five interactive figures and complete CSV tables use the original 19-document Bologna project: 317 codes and 874 codings. Notebook and editable Research report examples use selected English teaching excerpts from three sources. Original and English teaching outputs/code bundles are separately labelled. These demonstrations are not new validated empirical findings.
+4. **Workbench:** open [sign in](https://qt-review.taila524d0.ts.net/login), select an editable English Bologna copy or an approved project, then code a passage and inspect its path. Export a coded Notebook, editable Word, Research report with selected method/process map, figures/counts/Python code and restorable project JSON. Word edits stay in Word; JSON recovery creates a separate project.
 
 ## Discussion
 
-- Are the source quotations, tree paths and selected method clear enough to support interpretation?
-- Does the report help develop a narrative while keeping evidence and researcher judgement visible?
-- Which steps are confusing, missing or unnecessary for a small interview study?
+- Is the relationship between quotations, codes, categories and themes clear without imposing a method on the researcher?
+- Does the report support writing an interpretation while keeping its evidence and decisions inspectable?
+- Which controls or steps still confuse a first-time user?
 
-Comparative QCA uses explicit case/condition/outcome calibration and configuration analysis. Coding frequencies are not set memberships. The public worked report illustrates **Content Analysis** and does not claim an empirical Comparative QCA result. Agreement with one hand-coded analysis alone does not establish general methodological validity.
+## Status and next gate
 
-## Status and remaining work
+Local technical checks: **324 JavaScript tests, 345 Python tests (3 existing skips), production build, 37 website UI checks and original-heatmap acceptance pass**. All original SVG/CSV bytes match the preserved archive. These checks do not override the reproduced Keep/Resume failure or certify supervisor/newcomer acceptance.
 
-Fixed-origin website/workbench and full Bologna exports passed online checks. QT web/tunnel process restarts retained the hostname, saved coding and frozen report. **OS boot registration requires the server administrator; the shared server has not been rebooted.** Funnel is a free-plan candidate with provider limits, not a production SLA.
+Before final release: close the remaining workbench findings, rerun the joint route, then publish the reviewed source and verify any deployment separately. Windows and physical-phone follow-up remain deferred. Current native VoiceOver/OS checks are not claimed. Server OS-boot registration requires an administrator; it is not complete. GitHub Pages automatic publication is also a separate unfinished release item.
 
-Online projects are stored privately on the QT server. Use only material approved for that hosting arrangement. Local use remains available. Current technical regressions: 341 Python tests (3 existing skips), 303 JavaScript tests. Normal manual coding now returns a committed change receipt and real recovery status in one request. Three paired online saves measured 1.56–1.62 seconds, versus 16.39–24.81 seconds before this change. Stale baselines safely reload full state and can take longer; these timings are not a service guarantee. Researcher/supervisor acceptance and current native accessibility checks remain separate. Phone follow-up and Windows are deferred, not recorded as passed. Five-figure outputs match the previous counts and SVGs; large hierarchy previews can still take longer. Details: [current figure evidence](UX-80-FIVE-FIGURE-FLOW.md) and [save/recovery evidence](UX-79-CODING-SAVE-RECEIPTS.md).
+Online projects are stored in the user's private account on the QT server. Local use remains available. Any model request is a separate, explicit sharing decision.
 
-UX81 (20 October): document management tested locally and online using isolated Bologna copies. All 295 front-end tests and 341 Python tests (3 existing skips) complete successfully; production build passes. No independent novice sign-off or Windows certification is claimed. Other 75D items remain open.
-
-UX82 (20 October): complete candidate browsing and full-path selection are now live in QT. All 303 front-end tests, 341 Python tests (3 existing skips), and 14 local plus 14 online Bologna walkthrough groups pass. The picker exposes all 317 codes and full paths; empty Enter cannot silently choose the first parent. Online sample saves took 1.54–1.57 seconds. Only two UI files were synced with rollback, without restarting services. Physical-phone, native accessibility and independent novice acceptance are not claimed.
+[Full evidence and remaining sequence](UX-90-SITE-EVIDENCE-POLISH.md)

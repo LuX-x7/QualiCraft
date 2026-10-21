@@ -1,21 +1,23 @@
 
+"use client"
 import {siteUrl} from '@/lib/site/url'
-import Link from 'next/link'
+import {useRef} from 'react'
 import QtMark from '@/components/QtMark'
 import { NAV } from '@/lib/site/content'
 
 /**
- * The site's own header. Three destinations, no JavaScript: on a narrow screen
- * the list folds into a disclosure, which is the one control that works
- * without a script, without a focus trap, and without hijacking the page.
+ * The site's own header. On narrow screens the disclosure closes when a
+ * section is chosen so its overlay cannot hide the destination heading.
  */
 export default function SiteHeader() {
+  const mobileMenu = useRef<HTMLDetailsElement>(null)
+  const closeMobileMenu = () => mobileMenu.current?.removeAttribute('open')
   return (
     <header className="site-header">
       <div className="wrap site-header__inner">
-        <Link href="/" className="site-header__brand" aria-label="QT — home">
+        <a href={siteUrl("/#top")} className="site-header__brand" aria-label="QT — home">
           <QtMark size={7} />
-        </Link>
+        </a>
 
         <nav className="site-nav" aria-label="Site">
           <ul className="site-nav__list">
@@ -29,14 +31,14 @@ export default function SiteHeader() {
           </ul>
         </nav>
 
-        <details className="site-nav-disclosure">
+        <details className="site-nav-disclosure" ref={mobileMenu}>
           <summary className="site-nav-disclosure__summary" aria-label="Open the menu">
             <span className="mono">Menu</span>
           </summary>
           <ul className="site-nav-disclosure__list">
             {NAV.map((item) => (
               <li key={item.label}>
-                <a href={siteUrl(item.href)} className="site-nav__link">
+                <a href={siteUrl(item.href)} className="site-nav__link" onClick={closeMobileMenu}>
                   {item.label}
                 </a>
               </li>

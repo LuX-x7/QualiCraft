@@ -1,16 +1,18 @@
-import type { SavedCoding } from './record-network'
+import type {SavedCoding,RecordNode} from './record-network'
 import type { ChartTable } from '../report/chart-model'
-export type EvidenceNode={id:string;sourceId:string;kind:'theme'|'code'|'passage';label:string;root:string;path:string[];x:number;y:number;record?:SavedCoding}
+export type EvidenceNode={id:string;sourceId:string;kind:RecordNode['kind'];label:string;root:string;path:string[];x:number;y:number;record?:SavedCoding}
 export type EvidenceLink={from:string;to:string;kind:'hierarchy'|'coding'|'cooccurrence';value?:number}
+const savedNodeKind=(node:SavedCoding['code_path'][number],leaf=false):RecordNode['kind']=>node.research_role??(leaf?'code':'group')
+const savedNodeId=(node:SavedCoding['code_path'][number],leaf=false)=>`${savedNodeKind(node,leaf)}:${node.id}`
 
 /** A view of saved paths and exported pairs. No counts are recalculated. */
 export function evidenceNetwork(records:SavedCoding[],pairs?:ChartTable) {
  const nodes=new Map<string,EvidenceNode>(),links=new Map<string,EvidenceLink>()
  for(const record of records){
   if(!record.code_path.length||record.code_path.at(-1)?.id!==record.code_id||new Set(record.code_path.map(n=>n.id)).size!==record.code_path.length)throw new Error('Invalid saved path')
-  const root=record.code_path[0].id,path=record.code_path.map((n,i)=>(i?'code:':'theme:')+n.id)
+  const root=record.code_path[0].id,path=record.code_path.map((n,i)=>savedNodeId(n,i===record.code_path.length-1))
   record.code_path.forEach((node,i)=>{
-   if(!nodes.has(path[i]))nodes.set(path[i],{id:path[i],sourceId:node.id,kind:i?'code':'theme',label:node.name,root,path:path.slice(0,i+1),x:0,y:0})
+   if(!nodes.has(path[i]))nodes.set(path[i],{id:path[i],sourceId:node.id,kind:savedNodeKind(node,i===record.code_path.length-1),label:node.name,root,path:path.slice(0,i+1),x:0,y:0})
    if(i)links.set(path[i]+'>'+path[i-1],{from:path[i],to:path[i-1],kind:'hierarchy'})
   })
   const id='passage:'+record.annotation_id
@@ -26,21 +28,24 @@ export function evidenceNetwork(records:SavedCoding[],pairs?:ChartTable) {
  return {nodes:[...nodes.values()],links:[...links.values()]}
 }
 
-/** Bounded, deterministic display layout; node positions carry no data value. */
+/** A radial tree per saved family. Positions are display geometry, never data. */
 export function layoutEvidenceNetwork(input:EvidenceNode[],links:EvidenceLink[]) {
- const nodes=input.map(n=>({...n,vx:0,vy:0})),index=new Map(nodes.map(n=>[n.id,n])),roots=nodes.filter(n=>n.kind==='theme')
- const hash=(id:string)=>[...id].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7)
- nodes.forEach(node=>{const root=Math.max(0,roots.findIndex(n=>n.sourceId===node.root)),angle=root*2*Math.PI/Math.max(1,roots.length)-Math.PI/2,seed=hash(node.id),jitter=seed%628/100,r=node.kind==='theme'?0:24+seed%76
-  node.x=500+Math.cos(angle)*(roots.length===1?0:300)+Math.cos(jitter)*r;node.y=310+Math.sin(angle)*(roots.length===1?0:190)+Math.sin(jitter)*r})
- for(let step=0;step<150;step++){
-  const alpha=1-step/170
-  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
-   const a=nodes[i],b=nodes[j];let dx=b.x-a.x,dy=b.y-a.y;if(dx===0&&dy===0)dx=.1
-   const d=Math.max(64,dx*dx+dy*dy),distance=Math.sqrt(d),radius=(a.kind==='theme'?25:8)+(b.kind==='theme'?25:8)+5,f=450/(d*distance)+Math.max(0,radius-distance)*.12/distance;a.vx-=dx*f;a.vy-=dy*f;b.vx+=dx*f;b.vy+=dy*f
+ const nodes=input.map(node=>({...node})),index=new Map(nodes.map(node=>[node.id,node]))
+ const roots=nodes.filter(node=>node.path.length===1&&node.kind!=='passage')
+ const children=new Map<string,string[]>()
+ for(const edge of links)if(edge.kind!=='cooccurrence'&&index.has(edge.from)&&index.has(edge.to))children.set(edge.to,[...(children.get(edge.to)??[]),edge.from])
+ for(const ids of children.values())ids.sort((a,b)=>index.get(a)!.label.localeCompare(index.get(b)!.label)||a.localeCompare(b))
+ const columns=roots.length>1?Math.min(3,roots.length):1,rows=Math.ceil(roots.length/columns)
+ roots.forEach((root,family)=>{
+  const familyNodes=nodes.filter(node=>node.root===root.sourceId),leaves=familyNodes.filter(node=>!children.get(node.id)?.length)
+  const leafOrder=new Map(leaves.sort((a,b)=>a.id.localeCompare(b.id)).map((node,i)=>[node.id,i]))
+  const angleFor=(id:string):number=>{const branch=children.get(id)??[];return branch.length?branch.reduce((sum,child)=>sum+angleFor(child),0)/branch.length:(leafOrder.get(id)??0)}
+  const cx=columns===1?500:70+(family%columns+.5)*860/columns,cy=rows===1?310:60+(Math.floor(family/columns)+.5)*480/rows
+  const radiusX=columns===1?355:Math.min(120,370/columns),radiusY=rows===1?220:Math.min(105,220/rows)
+  const maxDepth=Math.max(1,...familyNodes.map(node=>node.path.length-1))
+  for(const node of familyNodes){const depth=node.path.length-1,angle=-Math.PI/2+2*Math.PI*(angleFor(node.id)+.5)/Math.max(1,leaves.length),radius=depth/maxDepth
+   node.x=cx+Math.cos(angle)*radiusX*radius;node.y=cy+Math.sin(angle)*radiusY*radius
   }
-  for(const link of links){if(link.kind==='cooccurrence')continue;const a=index.get(link.from),b=index.get(link.to);if(!a||!b)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,f=(d-(link.kind==='coding'?36:65))*.025;a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f}
-  for(const node of nodes){node.vx=(node.vx+(500-node.x)*.001)*.7;node.vy=(node.vy+(310-node.y)*.001)*.7;node.x+=node.vx*alpha;node.y+=node.vy*alpha}
- }
- const minX=Math.min(...nodes.map(n=>n.x)),maxX=Math.max(...nodes.map(n=>n.x)),minY=Math.min(...nodes.map(n=>n.y)),maxY=Math.max(...nodes.map(n=>n.y)),scale=Math.min(860/Math.max(1,maxX-minX),480/Math.max(1,maxY-minY))
- return nodes.map(({vx,vy,...node})=>({...node,x:500+(node.x-(minX+maxX)/2)*scale,y:300+(node.y-(minY+maxY)/2)*scale}))
+ })
+ return nodes
 }

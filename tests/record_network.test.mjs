@@ -30,5 +30,5 @@ test('same-name codes remain distinct network nodes',()=>{
  const b={...a,annotation_id:'p2',code_id:'c2',code_path:[a.code_path[0],{id:'c2',name:'same',definition:''}]}
  const family=recordFamily([a,b],'t')
  assert.equal(family.nodes.filter(n=>n.kind==='code').length,2)
- assert.equal(family.edges.filter(e=>e.to==='theme:t').length,2)
+ assert.equal(family.edges.filter(e=>e.to==='group:t').length,2)
 })

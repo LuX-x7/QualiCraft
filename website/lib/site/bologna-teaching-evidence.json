@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "command": "python tools/site/build_evidence.py",
+    "source": "demo-data/qualicraft.sqlite3",
+    "database_sha256": "b8b44b814f2fa6286decf877364665ad8276977c08913d02d7b8a90db62a755d",
+    "project_id": "8b290d3b122056918b79c4b671f2e643",
+    "project_sha256": "edbdc54dc4f0f0799657fe9e4542b10250f3288b1d938bc0bf2cf2818b887e2d",
+    "manifest_sha256": "789b8cedde5ae83c772ab462a1a2ca0a6df84e129fda2cc47256e3562126a0f7"
+  },
+  "example": {
+    "annotation_id": "3f029191a6885f0e9fdef6174d572dff",
+    "document_id": "8c17e627c7d85f7c8967047bfa92531b",
+    "document_name": "interview02-english-excerpts.txt",
+    "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
+    "start": 0,
+    "end": 97,
+    "quote": "So, moving on to the method, we worked on the printed text — on two printed editions, let us say.",
+    "source": "manual",
+    "code_id": "177098f805974bae8e589c1cb2fae553",
+    "code_path": [
+      {
+        "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+        "name": "materials",
+        "definition": ""
+      },
+      {
+        "id": "d050cb3e46234516980d0f5f4371b06d",
+        "name": "ancient manuscripts and early printed books",
+        "definition": ""
+      },
+      {
+        "id": "177098f805974bae8e589c1cb2fae553",
+        "name": "printed books and manuscripts from the Renaissance",
+        "definition": ""
+      }
+    ]
+  }
+}

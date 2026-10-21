@@ -1,0 +1,959 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "command": "python tools/report/build_evidence.py",
+    "source": "demo-data/qualicraft.sqlite3",
+    "database_sha256": "b8b44b814f2fa6286decf877364665ad8276977c08913d02d7b8a90db62a755d",
+    "project_id": "8b290d3b122056918b79c4b671f2e643",
+    "project_sha256": "edbdc54dc4f0f0799657fe9e4542b10250f3288b1d938bc0bf2cf2818b887e2d",
+    "manifest_sha256": "789b8cedde5ae83c772ab462a1a2ca0a6df84e129fda2cc47256e3562126a0f7"
+  },
+  "rows": {
+    "frequency": [
+      {
+        "row": [
+          "critically-reconstructed text",
+          "2"
+        ],
+        "annotation_ids": [
+          "b5e9ff6127485399b1057ecc04c8f7da"
+        ]
+      },
+      {
+        "row": [
+          "Google Books",
+          "1"
+        ],
+        "annotation_ids": [
+          "d5f381bc1f1c55bf8ce2f107b6b6db8b"
+        ]
+      },
+      {
+        "row": [
+          "Munich Staats Bibliotek",
+          "1"
+        ],
+        "annotation_ids": [
+          "77172b4bb4fd5133919a1a10fab058e3"
+        ]
+      },
+      {
+        "row": [
+          "attitudes towards digital scholarly editions",
+          "1"
+        ],
+        "annotation_ids": [
+          "ff6f61db70775456890234ecdec7f928"
+        ]
+      },
+      {
+        "row": [
+          "difference between paleography and diplomatics",
+          "1"
+        ],
+        "annotation_ids": [
+          "081a049b2edf5a87a60acfbe4286d851"
+        ]
+      },
+      {
+        "row": [
+          "digitisation has changed the way of working on the documents",
+          "1"
+        ],
+        "annotation_ids": [
+          "385e5468906559869404264689236561"
+        ]
+      },
+      {
+        "row": [
+          "manuscripts from the Middle Ages",
+          "1"
+        ],
+        "annotation_ids": [
+          "3eaf388f66c25fed99bd29a341820a59"
+        ]
+      },
+      {
+        "row": [
+          "printed books and manuscripts from the Renaissance",
+          "1"
+        ],
+        "annotation_ids": [
+          "3f029191a6885f0e9fdef6174d572dff"
+        ]
+      },
+      {
+        "row": [
+          "stemma codicum",
+          "1"
+        ],
+        "annotation_ids": [
+          "a481dfb9e559596a95077f5211d22d61"
+        ]
+      },
+      {
+        "row": [
+          "website for dissemination to the wider public",
+          "1"
+        ],
+        "annotation_ids": [
+          "13ea909e2cf352f688a5b8861ee986e4"
+        ]
+      }
+    ],
+    "coverage": [
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "critically-reconstructed text",
+          "1"
+        ],
+        "annotation_ids": [
+          "9ebf2d198c4b5376b175ec0e8a4af023"
+        ]
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "Google Books",
+          "1"
+        ],
+        "annotation_ids": [
+          "d5f381bc1f1c55bf8ce2f107b6b6db8b"
+        ]
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "Munich Staats Bibliotek",
+          "1"
+        ],
+        "annotation_ids": [
+          "77172b4bb4fd5133919a1a10fab058e3"
+        ]
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "attitudes towards digital scholarly editions",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "difference between paleography and diplomatics",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "digitisation has changed the way of working on the documents",
+          "1"
+        ],
+        "annotation_ids": [
+          "385e5468906559869404264689236561"
+        ]
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "manuscripts from the Middle Ages",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "printed books and manuscripts from the Renaissance",
+          "1"
+        ],
+        "annotation_ids": [
+          "3f029191a6885f0e9fdef6174d572dff"
+        ]
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "stemma codicum",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview02-english-excerpts.txt",
+          "website for dissemination to the wider public",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "critically-reconstructed text",
+          "1"
+        ],
+        "annotation_ids": [
+          "b5e9ff6127485399b1057ecc04c8f7da"
+        ]
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "Google Books",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "Munich Staats Bibliotek",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "attitudes towards digital scholarly editions",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "difference between paleography and diplomatics",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "digitisation has changed the way of working on the documents",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "manuscripts from the Middle Ages",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "printed books and manuscripts from the Renaissance",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "stemma codicum",
+          "1"
+        ],
+        "annotation_ids": [
+          "a481dfb9e559596a95077f5211d22d61"
+        ]
+      },
+      {
+        "row": [
+          "interview03-english-excerpts.txt",
+          "website for dissemination to the wider public",
+          "1"
+        ],
+        "annotation_ids": [
+          "13ea909e2cf352f688a5b8861ee986e4"
+        ]
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "critically-reconstructed text",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "Google Books",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "Munich Staats Bibliotek",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "attitudes towards digital scholarly editions",
+          "1"
+        ],
+        "annotation_ids": [
+          "ff6f61db70775456890234ecdec7f928"
+        ]
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "difference between paleography and diplomatics",
+          "1"
+        ],
+        "annotation_ids": [
+          "081a049b2edf5a87a60acfbe4286d851"
+        ]
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "digitisation has changed the way of working on the documents",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "manuscripts from the Middle Ages",
+          "1"
+        ],
+        "annotation_ids": [
+          "3eaf388f66c25fed99bd29a341820a59"
+        ]
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "printed books and manuscripts from the Renaissance",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "stemma codicum",
+          "0"
+        ],
+        "annotation_ids": []
+      },
+      {
+        "row": [
+          "interview04-english-excerpts.txt",
+          "website for dissemination to the wider public",
+          "0"
+        ],
+        "annotation_ids": []
+      }
+    ],
+    "cooccurrence": [
+      {
+        "row": [
+          "critically-reconstructed text",
+          "stemma codicum",
+          "1"
+        ],
+        "annotation_ids": [
+          "b5e9ff6127485399b1057ecc04c8f7da",
+          "a481dfb9e559596a95077f5211d22d61"
+        ]
+      },
+      {
+        "row": [
+          "Google Books",
+          "digitisation has changed the way of working on the documents",
+          "1"
+        ],
+        "annotation_ids": [
+          "d5f381bc1f1c55bf8ce2f107b6b6db8b",
+          "385e5468906559869404264689236561"
+        ]
+      },
+      {
+        "row": [
+          "Munich Staats Bibliotek",
+          "digitisation has changed the way of working on the documents",
+          "1"
+        ],
+        "annotation_ids": [
+          "77172b4bb4fd5133919a1a10fab058e3",
+          "385e5468906559869404264689236561"
+        ]
+      },
+      {
+        "row": [
+          "digitisation has changed the way of working on the documents",
+          "Google Books",
+          "1"
+        ],
+        "annotation_ids": [
+          "385e5468906559869404264689236561",
+          "d5f381bc1f1c55bf8ce2f107b6b6db8b"
+        ]
+      },
+      {
+        "row": [
+          "digitisation has changed the way of working on the documents",
+          "Munich Staats Bibliotek",
+          "1"
+        ],
+        "annotation_ids": [
+          "385e5468906559869404264689236561",
+          "77172b4bb4fd5133919a1a10fab058e3"
+        ]
+      },
+      {
+        "row": [
+          "stemma codicum",
+          "critically-reconstructed text",
+          "1"
+        ],
+        "annotation_ids": [
+          "a481dfb9e559596a95077f5211d22d61",
+          "b5e9ff6127485399b1057ecc04c8f7da"
+        ]
+      }
+    ],
+    "hierarchy": [
+      {
+        "row": [
+          "materials",
+          "critically-reconstructed text",
+          "2"
+        ],
+        "annotation_ids": [
+          "b5e9ff6127485399b1057ecc04c8f7da"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "printed books and manuscripts from the Renaissance",
+          "1"
+        ],
+        "annotation_ids": [
+          "3f029191a6885f0e9fdef6174d572dff"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "digitisation has changed the way of working on the documents",
+          "1"
+        ],
+        "annotation_ids": [
+          "385e5468906559869404264689236561"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "Google Books",
+          "1"
+        ],
+        "annotation_ids": [
+          "d5f381bc1f1c55bf8ce2f107b6b6db8b"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "Munich Staats Bibliotek",
+          "1"
+        ],
+        "annotation_ids": [
+          "77172b4bb4fd5133919a1a10fab058e3"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "stemma codicum",
+          "1"
+        ],
+        "annotation_ids": [
+          "a481dfb9e559596a95077f5211d22d61"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "website for dissemination to the wider public",
+          "1"
+        ],
+        "annotation_ids": [
+          "13ea909e2cf352f688a5b8861ee986e4"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "manuscripts from the Middle Ages",
+          "1"
+        ],
+        "annotation_ids": [
+          "3eaf388f66c25fed99bd29a341820a59"
+        ]
+      },
+      {
+        "row": [
+          "materials",
+          "attitudes towards digital scholarly editions",
+          "1"
+        ],
+        "annotation_ids": [
+          "ff6f61db70775456890234ecdec7f928"
+        ]
+      },
+      {
+        "row": [
+          "methodologies and workflows",
+          "difference between paleography and diplomatics",
+          "1"
+        ],
+        "annotation_ids": [
+          "081a049b2edf5a87a60acfbe4286d851"
+        ]
+      }
+    ],
+    "accumulation": [
+      {
+        "row": [
+          "1",
+          "interview02-english-excerpts.txt",
+          "5",
+          "5"
+        ],
+        "annotation_ids": [
+          "d5f381bc1f1c55bf8ce2f107b6b6db8b"
+        ]
+      },
+      {
+        "row": [
+          "2",
+          "interview03-english-excerpts.txt",
+          "7",
+          "2"
+        ],
+        "annotation_ids": [
+          "a481dfb9e559596a95077f5211d22d61"
+        ]
+      },
+      {
+        "row": [
+          "3",
+          "interview04-english-excerpts.txt",
+          "10",
+          "3"
+        ],
+        "annotation_ids": [
+          "ff6f61db70775456890234ecdec7f928"
+        ]
+      }
+    ]
+  },
+  "examples": {
+    "b5e9ff6127485399b1057ecc04c8f7da": {
+      "annotation_id": "b5e9ff6127485399b1057ecc04c8f7da",
+      "document_id": "e7159c7f4505558a9ef10fada37976da",
+      "document_name": "interview03-english-excerpts.txt",
+      "document_sha256": "3f5edd187abe2f020803238e56b5238f548385ccb145aba03b0bfaf86988e4a1",
+      "start": 0,
+      "end": 208,
+      "quote": "All this is to establish a critical text and a stemma codicum that helps me understand its transmission: where the text originated, how it spread, and what kinds of corruption then arose in that transmission.",
+      "source": "manual",
+      "code_id": "6cb80dbc23ce489e8da9428666efe6a0",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "30454c19415f4a30bc9ab37f239d4772",
+          "name": "publications, modern and contemporary",
+          "definition": ""
+        },
+        {
+          "id": "d891e2cd03d74e4dbccc2a0e4cd3f166",
+          "name": "publications stemming from the project",
+          "definition": ""
+        },
+        {
+          "id": "b95fdda438334f4999f49d057c4fe253",
+          "name": "critical editions",
+          "definition": ""
+        },
+        {
+          "id": "a0a17dcb28b740fabdaefd58d9b6584c",
+          "name": "structure of a critical edition",
+          "definition": ""
+        },
+        {
+          "id": "6cb80dbc23ce489e8da9428666efe6a0",
+          "name": "critically-reconstructed text",
+          "definition": ""
+        }
+      ]
+    },
+    "d5f381bc1f1c55bf8ce2f107b6b6db8b": {
+      "annotation_id": "d5f381bc1f1c55bf8ce2f107b6b6db8b",
+      "document_id": "8c17e627c7d85f7c8967047bfa92531b",
+      "document_name": "interview02-english-excerpts.txt",
+      "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
+      "start": 559,
+      "end": 593,
+      "quote": "has been digitised by Google Books",
+      "source": "manual",
+      "code_id": "d4c270067e624bffa0a810150cedf6be",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "dc99ba15739c4dc881d7a9e5fc702c33",
+          "name": "catalogues and other search tools",
+          "definition": ""
+        },
+        {
+          "id": "6565db6f92624cc6815999c3cb959fab",
+          "name": "general-purpose used",
+          "definition": ""
+        },
+        {
+          "id": "d4c270067e624bffa0a810150cedf6be",
+          "name": "Google Books",
+          "definition": ""
+        }
+      ]
+    },
+    "77172b4bb4fd5133919a1a10fab058e3": {
+      "annotation_id": "77172b4bb4fd5133919a1a10fab058e3",
+      "document_id": "8c17e627c7d85f7c8967047bfa92531b",
+      "document_name": "interview02-english-excerpts.txt",
+      "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
+      "start": 601,
+      "end": 894,
+      "quote": "for the 1502 edition we used the digitised print from the Bavarian State Library in Munich, which is an exceptional repository of early printed books. Seventy per cent of what we look for among incunabula, late-fifteenth-century printed books and sixteenth-century editions can be found there.",
+      "source": "manual",
+      "code_id": "7fbd8d367fc142c5a1ce2e76ad57c634",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "dc99ba15739c4dc881d7a9e5fc702c33",
+          "name": "catalogues and other search tools",
+          "definition": ""
+        },
+        {
+          "id": "bd6be074fd794cbdb514e48236603270",
+          "name": "subject-specific used",
+          "definition": ""
+        },
+        {
+          "id": "7fbd8d367fc142c5a1ce2e76ad57c634",
+          "name": "Munich Staats Bibliotek",
+          "definition": ""
+        }
+      ]
+    },
+    "ff6f61db70775456890234ecdec7f928": {
+      "annotation_id": "ff6f61db70775456890234ecdec7f928",
+      "document_id": "75588a51bbe45322a2413c7ef6c39560",
+      "document_name": "interview04-english-excerpts.txt",
+      "document_sha256": "72ec8fbfd1c436d3eba6f8c351b3af18802ce7c7f6265ad9de3948e3aa94026b",
+      "start": 610,
+      "end": 834,
+      "quote": "Certainly, however, the field is also opening up with great interest — sometimes through experimental research — to the possibility of digital editions. Digital editions are undoubtedly one of the new frontiers of our field.",
+      "source": "manual",
+      "code_id": "79349bc905e44ce7a34e37e0f8676ab8",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "30454c19415f4a30bc9ab37f239d4772",
+          "name": "publications, modern and contemporary",
+          "definition": ""
+        },
+        {
+          "id": "d891e2cd03d74e4dbccc2a0e4cd3f166",
+          "name": "publications stemming from the project",
+          "definition": ""
+        },
+        {
+          "id": "b95fdda438334f4999f49d057c4fe253",
+          "name": "critical editions",
+          "definition": ""
+        },
+        {
+          "id": "79349bc905e44ce7a34e37e0f8676ab8",
+          "name": "attitudes towards digital scholarly editions",
+          "definition": ""
+        }
+      ]
+    },
+    "081a049b2edf5a87a60acfbe4286d851": {
+      "annotation_id": "081a049b2edf5a87a60acfbe4286d851",
+      "document_id": "75588a51bbe45322a2413c7ef6c39560",
+      "document_name": "interview04-english-excerpts.txt",
+      "document_sha256": "72ec8fbfd1c436d3eba6f8c351b3af18802ce7c7f6265ad9de3948e3aa94026b",
+      "start": 836,
+      "end": 1413,
+      "quote": "I would add that I work in palaeography and diplomatics. These are two very broad disciplines: connected, but also different. We have always had two strands: a more philological one, traditionally working on codices and books, and a more historical one, working on documents. The Bologna school has tended towards the documentary and diplomatic tradition — the study and editing of documentary sources. I try to carry on that tradition because that is how I was trained, but I am also open to the more philological side. Both interest me, so in practice I move between the two.",
+      "source": "manual",
+      "code_id": "ebe44b17325045508e4e9e5f26ead62c",
+      "code_path": [
+        {
+          "id": "9d23f9b6eb324571ade7d591d020af55",
+          "name": "methodologies and workflows",
+          "definition": ""
+        },
+        {
+          "id": "6920f4f9ac944f9a97db6cb3e9184234",
+          "name": "macrodiscipline 1 - philology and literature",
+          "definition": ""
+        },
+        {
+          "id": "e957849e76c74838a2d31322a27b7cb4",
+          "name": "methodology-inclined",
+          "definition": ""
+        },
+        {
+          "id": "ebe44b17325045508e4e9e5f26ead62c",
+          "name": "difference between paleography and diplomatics",
+          "definition": ""
+        }
+      ]
+    },
+    "385e5468906559869404264689236561": {
+      "annotation_id": "385e5468906559869404264689236561",
+      "document_id": "8c17e627c7d85f7c8967047bfa92531b",
+      "document_name": "interview02-english-excerpts.txt",
+      "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
+      "start": 402,
+      "end": 894,
+      "quote": "This is [something new] compared with when I began this kind of research. Fifteen years ago I would of course have had to go to the library. Now one edition has been digitised by Google Books, while for the 1502 edition we used the digitised print from the Bavarian State Library in Munich, which is an exceptional repository of early printed books. Seventy per cent of what we look for among incunabula, late-fifteenth-century printed books and sixteenth-century editions can be found there.",
+      "source": "manual",
+      "code_id": "72b86059824e4ed5973875f0ee7ddff3",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "02554c7f12a94e4caa0807a6b75d4b82",
+          "name": "digital representations of cultural objects",
+          "definition": ""
+        },
+        {
+          "id": "d7e4832a27f2406d9588a625c7dc8628",
+          "name": "pros of using facsimiles and photographs",
+          "definition": ""
+        },
+        {
+          "id": "72b86059824e4ed5973875f0ee7ddff3",
+          "name": "digitisation has changed the way of working on the documents",
+          "definition": ""
+        }
+      ]
+    },
+    "3eaf388f66c25fed99bd29a341820a59": {
+      "annotation_id": "3eaf388f66c25fed99bd29a341820a59",
+      "document_id": "75588a51bbe45322a2413c7ef6c39560",
+      "document_name": "interview04-english-excerpts.txt",
+      "document_sha256": "72ec8fbfd1c436d3eba6f8c351b3af18802ce7c7f6265ad9de3948e3aa94026b",
+      "start": 0,
+      "end": 608,
+      "quote": "Generally speaking, the object of my studies — given the nature of my discipline — is manuscript sources, usually from the medieval and/or Renaissance period. Manuscripts is a broad term, and I use it broadly: it can mean codices, manuscript books, or handwritten documents. These can of course be very different, with different materials and supports: often parchment, but also paper. They are always manuscript sources. My work is, as it were, to elucidate these sources and make them accessible, through a critical edition or through studies, to people working in history, philology, literature and so on.",
+      "source": "manual",
+      "code_id": "84ccd1f91e6948268e63beecf88b3303",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "d050cb3e46234516980d0f5f4371b06d",
+          "name": "ancient manuscripts and early printed books",
+          "definition": ""
+        },
+        {
+          "id": "84ccd1f91e6948268e63beecf88b3303",
+          "name": "manuscripts from the Middle Ages",
+          "definition": ""
+        }
+      ]
+    },
+    "3f029191a6885f0e9fdef6174d572dff": {
+      "annotation_id": "3f029191a6885f0e9fdef6174d572dff",
+      "document_id": "8c17e627c7d85f7c8967047bfa92531b",
+      "document_name": "interview02-english-excerpts.txt",
+      "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
+      "start": 0,
+      "end": 97,
+      "quote": "So, moving on to the method, we worked on the printed text — on two printed editions, let us say.",
+      "source": "manual",
+      "code_id": "177098f805974bae8e589c1cb2fae553",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "d050cb3e46234516980d0f5f4371b06d",
+          "name": "ancient manuscripts and early printed books",
+          "definition": ""
+        },
+        {
+          "id": "177098f805974bae8e589c1cb2fae553",
+          "name": "printed books and manuscripts from the Renaissance",
+          "definition": ""
+        }
+      ]
+    },
+    "a481dfb9e559596a95077f5211d22d61": {
+      "annotation_id": "a481dfb9e559596a95077f5211d22d61",
+      "document_id": "e7159c7f4505558a9ef10fada37976da",
+      "document_name": "interview03-english-excerpts.txt",
+      "document_sha256": "3f5edd187abe2f020803238e56b5238f548385ccb145aba03b0bfaf86988e4a1",
+      "start": 45,
+      "end": 208,
+      "quote": "a stemma codicum that helps me understand its transmission: where the text originated, how it spread, and what kinds of corruption then arose in that transmission.",
+      "source": "manual",
+      "code_id": "edb642d79e4040318573ffc1b5b1bd62",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "30454c19415f4a30bc9ab37f239d4772",
+          "name": "publications, modern and contemporary",
+          "definition": ""
+        },
+        {
+          "id": "d891e2cd03d74e4dbccc2a0e4cd3f166",
+          "name": "publications stemming from the project",
+          "definition": ""
+        },
+        {
+          "id": "b95fdda438334f4999f49d057c4fe253",
+          "name": "critical editions",
+          "definition": ""
+        },
+        {
+          "id": "a0a17dcb28b740fabdaefd58d9b6584c",
+          "name": "structure of a critical edition",
+          "definition": ""
+        },
+        {
+          "id": "edb642d79e4040318573ffc1b5b1bd62",
+          "name": "stemma codicum",
+          "definition": ""
+        }
+      ]
+    },
+    "13ea909e2cf352f688a5b8861ee986e4": {
+      "annotation_id": "13ea909e2cf352f688a5b8861ee986e4",
+      "document_id": "e7159c7f4505558a9ef10fada37976da",
+      "document_name": "interview03-english-excerpts.txt",
+      "document_sha256": "3f5edd187abe2f020803238e56b5238f548385ccb145aba03b0bfaf86988e4a1",
+      "start": 210,
+      "end": 389,
+      "quote": "As regards the edition, we first built a website that is open to everyone, for public engagement, so to speak. There is also a password-protected section that we use for our work.",
+      "source": "manual",
+      "code_id": "1c3d5550260949939e7eefe8e685556a",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "c04f844685114bb7a4e57e4048719abc",
+          "name": "websites (ancillary)",
+          "definition": ""
+        },
+        {
+          "id": "1c3d5550260949939e7eefe8e685556a",
+          "name": "website for dissemination to the wider public",
+          "definition": ""
+        }
+      ]
+    },
+    "9ebf2d198c4b5376b175ec0e8a4af023": {
+      "annotation_id": "9ebf2d198c4b5376b175ec0e8a4af023",
+      "document_id": "8c17e627c7d85f7c8967047bfa92531b",
+      "document_name": "interview02-english-excerpts.txt",
+      "document_sha256": "be1817ce96cd101e2ecf98b1bdcb6cdd257b98251deb502633d002e00913e46a",
+      "start": 99,
+      "end": 400,
+      "quote": "Sometimes there are errors that need to be corrected in the Latin text, or things that are not understood. Sometimes there are gaps because something was lost during printing, in the passage from manuscript to print, and so the text has to be critically restored with the help of two printed editions.",
+      "source": "manual",
+      "code_id": "6cb80dbc23ce489e8da9428666efe6a0",
+      "code_path": [
+        {
+          "id": "b9fe6efc1e1348dd9f4b21a1bdb2ecf8",
+          "name": "materials",
+          "definition": ""
+        },
+        {
+          "id": "30454c19415f4a30bc9ab37f239d4772",
+          "name": "publications, modern and contemporary",
+          "definition": ""
+        },
+        {
+          "id": "d891e2cd03d74e4dbccc2a0e4cd3f166",
+          "name": "publications stemming from the project",
+          "definition": ""
+        },
+        {
+          "id": "b95fdda438334f4999f49d057c4fe253",
+          "name": "critical editions",
+          "definition": ""
+        },
+        {
+          "id": "a0a17dcb28b740fabdaefd58d9b6584c",
+          "name": "structure of a critical edition",
+          "definition": ""
+        },
+        {
+          "id": "6cb80dbc23ce489e8da9428666efe6a0",
+          "name": "critically-reconstructed text",
+          "definition": ""
+        }
+      ]
+    }
+  }
+}
