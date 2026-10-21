@@ -695,6 +695,13 @@ function readingViewportTop() {
 function readingParagraph() {
   const top=readingViewportTop();if(top===null)return null;
   const paragraphs=[...document.querySelectorAll('#reader .paragraph')];
+  // A short source (or its final paragraph) cannot always reach the reading
+  // line. Retain an explicit jump until the reader deliberately navigates.
+  const m=readingMounted,d=doc();
+  if(m&&d&&m.projectId===state.project?.id&&m.document.id===d.id&&m.document.text===d.text&&m.navigationTarget?.text===d.text&&Number.isInteger(m.navigationTarget.start)){
+    const target=paragraphs.find(p=>Number(p.dataset.start)===m.navigationTarget.start);
+    if(target)return target;
+  }
   return paragraphs.find(p=>p.getBoundingClientRect().bottom>top+2)||paragraphs.at(-1)||null;
 }
 function readingSearchPosition(project=state.project,d=doc()) {
@@ -720,6 +727,7 @@ function readingSearchGesture(event) {
   if(!readingMounted||readingMounted.filtered||!event.target.closest?.(region)||event.target.closest('button,input,textarea,select,.document-tools,#reading-overview'))return;
   if((event.type==='keydown'||event.type==='keyup')&&(!['Home','End','PageUp','PageDown','ArrowUp','ArrowDown',' '].includes(event.key)||event.target.isContentEditable))return;
   cancelReadingWindow();
+  readingMounted.navigationTarget=null;
   if(document.activeElement?.id==='search')document.activeElement.blur();
   readingSearchReturn=null;const mounted=readingMounted;
   const sample=()=>{
@@ -797,6 +805,7 @@ function onCodingWindowResize(){
 function captureReadingPosition() {
   if(readingWindowChanging())return;
   if(inspectorReturn()||!readingMounted||readingMounted.filtered||readingOverview.open||overviewPreviewNavigation()||document.activeElement?.id==='search'||readingSearchPosition({id:readingMounted.projectId},readingMounted.document))return;
+  if(readingMounted.projectId!==state.project?.id||readingMounted.document.id!==doc()?.id||readingMounted.document.text!==doc()?.text)return;
   const paragraph=readingParagraph();if(!paragraph)return;
   writeReadingPosition({id:readingMounted.projectId},readingMounted.document,Number(paragraph.dataset.start));
 }
@@ -817,7 +826,7 @@ function updateReadingPosition() {
   readingMounted.start=start;readingMounted.paragraph=all[index]||null;
   // A browser can scroll to a search input before delivering its focus event.
   // Remember the last actual reading line separately from that viewport move.
-  if(!readingMounted.filtered&&!readingSearchPosition()&&document.activeElement?.id!=='search'&&Number.isInteger(start)&&(readingMounted.readingStart==null||readingMounted.readingScroll||(inView&&box.top<=readingViewportTop()+2)))readingMounted.readingStart=start;
+  if(!readingMounted.filtered&&!readingSearchPosition()&&document.activeElement?.id!=='search'&&Number.isInteger(start)&&(readingMounted.navigationTarget?.start===start||readingMounted.readingStart==null||readingMounted.readingScroll||(inView&&box.top<=readingViewportTop()+2)))readingMounted.readingStart=start;
   readingMounted.readingScroll=false;
   // Revealing an overview control can expose the first source paragraph below
   // the reading line. Only actual reading at that line advances the Keep anchor.
@@ -837,6 +846,7 @@ function scrollReadingParagraph(start,focus=false) {
     const top=Math.max(dock.getBoundingClientRect().bottom,pane.getBoundingClientRect().top,toolsBottom),delta=paragraph.getBoundingClientRect().top-top;
     if(scroller)scroller.scrollTop+=delta;else window.scrollBy({top:delta,behavior:'instant'});
   }
+  if(readingMounted)readingMounted.navigationTarget=Math.abs(paragraph.getBoundingClientRect().top-readingViewportTop())>2?{start,text:doc().text}:null;
   if(focus){paragraph.tabIndex=-1;paragraph.focus({preventScroll:true});}
 }
 function mountReading(restore=true) {
@@ -868,6 +878,7 @@ function scheduleReadingPosition(event) {
 }
 function switchReadingDocument(id) {
   if(!state.project.documents.some(d=>d.id===id))return;
+  captureReadingPosition();
   state.sourceFocus=null;state.networkReturn=null;state.docId=id;state.selection=null;state.search='';state.codeFilter=null;state.view='coding';render();
   $('#reading-document')?.focus({preventScroll:true});
   const announcement=$('#reading-announcement');if(announcement)announcement.textContent=`${doc().name} · ${$('#reading-position').textContent}`;

@@ -1,8 +1,8 @@
 # QT — supervisor review
 
-**21 October 2026 · local review candidate UX90.** Website presentation and original-data scope checks pass locally; the updated presentation has not been pushed or deployed. The existing live site is [qt-review.taila524d0.ts.net](https://qt-review.taila524d0.ts.net/). It may show the previous presentation. The full online workbench uses the private invitation supplied separately; visitors need no software installation or Tailscale account.
+**21 October 2026 · local review candidate UX91.** Website presentation and original-data scope checks pass locally; the updated presentation has not been pushed or deployed. The existing live site is [qt-review.taila524d0.ts.net](https://qt-review.taila524d0.ts.net/). It may show the previous presentation. The full online workbench uses the private invitation supplied separately; visitors need no software installation or Tailscale account.
 
-This remains an **alpha for review**, not a clean final acceptance. A short-document Keep/Resume defect was reproduced in a disposable Bologna copy: keeping paragraph 2 can still return to paragraph 1. Registration-pattern and hosted-save wording findings from the last joint audit remain open. Source text, codings and exports are separate from that browser-position issue.
+This remains an **alpha for review**, not a clean final acceptance. The short-document Keep/Resume defect is fixed locally: explicit paragraph 2 survives sampling, reload, filters and document switching; normal reading remains live. Registration-pattern and hosted-save wording findings from the last joint audit remain open. Source text, codings and exports are separate from that browser-position issue.
 
 ## Suggested demonstration · 10–15 minutes
 
@@ -19,10 +19,10 @@ This remains an **alpha for review**, not a clean final acceptance. A short-docu
 
 ## Status and next gate
 
-Local technical checks: **324 JavaScript tests, 345 Python tests (3 existing skips), production build, 37 website UI checks and original-heatmap acceptance pass**. All original SVG/CSV bytes match the preserved archive. These checks do not override the reproduced Keep/Resume failure or certify supervisor/newcomer acceptance.
+Local technical checks: **331 JavaScript tests, 345 Python tests (3 existing skips), production build and 22 targeted position checks pass**. The unchanged website retains UX90’s 37 UI checks and original-heatmap evidence. All original SVG/CSV bytes match the preserved archive. These checks do not replace a fresh joint route or certify supervisor/newcomer acceptance.
 
 Before final release: close the remaining workbench findings, rerun the joint route, then publish the reviewed source and verify any deployment separately. Windows and physical-phone follow-up remain deferred. Current native VoiceOver/OS checks are not claimed. Server OS-boot registration requires an administrator; it is not complete. GitHub Pages automatic publication is also a separate unfinished release item.
 
 Online projects are stored in the user's private account on the QT server. Local use remains available. Any model request is a separate, explicit sharing decision.
 
-[Full evidence and remaining sequence](UX-90-SITE-EVIDENCE-POLISH.md)
+[Current position-fix evidence and remaining sequence](UX-91-SHORT-READING-POSITION.md)
