@@ -1,5 +1,7 @@
 # QT — supervisor review
 
+**21 October 2026 — 75E audit:** The full route and final JSON recovery were exercised in a fresh local hosted Bologna teaching workspace; the public website's actual downloads and all 59 CSV rows were also checked. This is **not yet a clean final acceptance**: selecting an existing highlight needed a reverse-drag workaround, short-document Keep/Resume lost the selected paragraph, registration logged a browser-pattern error, hosted save wording says “locally”, and two website scale descriptions still refer to the old Italian sample. Reports, editable Notebook/Word, five standalone figure scripts, QCA reproduction and frozen JSON data checks passed; 41 rendered pages showed no overlap. No feature changes or deployment this round. Findings and evidence: [UX86](UX-86-75E-JOINT-ACCEPTANCE.md). Windows and genuine newcomer acceptance remain pending.
+
 Start at **https://qt-review.taila524d0.ts.net/**. Allow 10–15 minutes. The website is public; the full online workbench uses the separate invitation supplied privately. No installation or Tailscale account is needed for visitors.
 
 ## Suggested demonstration
